@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+:root {
+  /* Cinematic Backgrounds */
+  --bg-primary: #0D0D0F;
+  --bg-secondary: #151518;
+  --card-bg: #1B1B20;
+
+  /* Borders */
+  --border: rgba(255,255,255,0.06);
+
+  /* Accent Colors */
+  --accent-orange: #FF7A1A;
+  --accent-orange-hover: #FF8F3D;
+
+  /* Typography */
+  --text-primary: #FFFFFF;
+  --text-secondary: #B3B3BD;
+
+  /* Radius */
+  --radius: 18px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background:
+    radial-gradient(circle at top right, rgba(255,122,26,0.12), transparent 30%),
+    radial-gradient(circle at bottom left, rgba(255,255,255,0.03), transparent 25%),
+    var(--bg-primary);
+
+  color: var(--text-primary);
+
+  font-family: Arial, Helvetica, sans-serif;
+
+  overflow-x: hidden;
+}
+
+* {
+  border-color: var(--border);
+}
+
+::selection {
+  background: var(--accent-orange);
+  color: white;
+}
+
+/* Cinematic utility classes */
+
+.glass-panel {
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.orange-glow {
+  box-shadow:
+    0 0 30px rgba(255,122,26,0.25);
+}
+
+.cinematic-text {
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
