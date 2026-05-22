@@ -127,7 +127,7 @@ export default function ImageCard({
 
       <img
         src={image.url}
-        alt=""
+        alt="Generated image"
         className="w-full aspect-square object-cover"
       />
 

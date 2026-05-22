@@ -51,6 +51,16 @@ export default function ResultsGrid({
     (image) => isValidImageUrl(image.url)
   );
 
+  if (validImages.length === 0) {
+
+    return (
+
+      <div className="border border-dashed border-[#1a1a1a] rounded-3xl p-10 text-center text-gray-500">
+        Images were generated but could not be displayed. Try generating again.
+      </div>
+    );
+  }
+
   return (
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

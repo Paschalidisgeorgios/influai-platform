@@ -55,7 +55,8 @@ export default function PromptEditor({
                   )
                 }
 
-                className="bg-black border border-[#1a1a1a] hover:border-[#c7a36a] transition rounded-2xl p-4 text-left"
+                disabled={loading}
+                className="bg-black border border-[#1a1a1a] hover:border-[#c7a36a] transition rounded-2xl p-4 text-left disabled:opacity-50 disabled:pointer-events-none"
               >
 
                 <p className="font-semibold text-sm md:text-base">

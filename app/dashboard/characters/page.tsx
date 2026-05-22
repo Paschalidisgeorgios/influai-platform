@@ -49,15 +49,9 @@ export default function CharactersPage() {
         { ascending: false }
       );
 
-    console.log(
-      "CHARACTERS:",
-      data
-    );
-
-    console.log(
-      "ERROR:",
-      error
-    );
+    if (error) {
+      console.error("Failed to load characters:", error.message);
+    }
 
     if (data) {
       setCharacters(data);
@@ -72,21 +66,17 @@ export default function CharactersPage() {
 
   return (
 
-    <main className="min-h-screen bg-black text-white">
+    <div className="max-w-7xl mx-auto px-4 md:px-6 py-10 md:py-16 text-white">
 
-      <div className="max-w-7xl mx-auto px-6 py-16">
-
-        {/* HEADER */}
-
-        <div className="flex items-center justify-between mb-14">
+        <div className="flex flex-wrap items-center justify-between gap-6 mb-12 md:mb-14">
 
           <div>
 
-            <p className="text-[#c7a36a] uppercase tracking-[0.3em] text-sm mb-4">
+            <p className="text-[#c7a36a] uppercase tracking-[0.3em] text-xs md:text-sm mb-4">
               CineAI Studio
             </p>
 
-            <h1 className="text-6xl font-bold">
+            <h1 className="text-4xl md:text-6xl font-bold">
               Characters
             </h1>
 
@@ -94,30 +84,47 @@ export default function CharactersPage() {
 
           <Link
             href="/dashboard/characters/create"
-            className="bg-[#c7a36a] text-black px-6 py-4 rounded-2xl font-semibold"
+            className="bg-[#c7a36a] text-black px-6 py-4 rounded-2xl font-semibold hover:opacity-90 transition"
           >
             Create Character
           </Link>
 
         </div>
 
-        {/* LOADING */}
-
         {loading && (
 
-          <div className="text-gray-500">
-            Loading characters...
+          <div className="border border-[#1a1a1a] rounded-3xl p-16 text-center">
+
+            <div className="w-12 h-12 rounded-full border-2 border-[#c7a36a] border-t-transparent animate-spin mx-auto mb-6" />
+
+            <p className="text-gray-400">
+              Loading characters...
+            </p>
+
           </div>
 
         )}
 
-        {/* EMPTY */}
-
         {!loading &&
           characters.length === 0 && (
 
-          <div className="border border-dashed border-[#1a1a1a] rounded-3xl p-20 text-center text-gray-500">
-            No characters yet.
+          <div className="border border-dashed border-[#1a1a1a] rounded-3xl p-12 md:p-20 text-center">
+
+            <p className="text-xl font-bold mb-3">
+              No characters yet
+            </p>
+
+            <p className="text-gray-500 mb-8 max-w-md mx-auto">
+              Create a character to unlock persistent identity in the image generator.
+            </p>
+
+            <Link
+              href="/dashboard/characters/create"
+              className="inline-block bg-[#c7a36a] text-black px-8 py-4 rounded-2xl font-semibold hover:opacity-90 transition"
+            >
+              Create Character
+            </Link>
+
           </div>
         )}
 
@@ -168,8 +175,6 @@ export default function CharactersPage() {
 
         </div>
 
-      </div>
-
-    </main>
+    </div>
   );
 }

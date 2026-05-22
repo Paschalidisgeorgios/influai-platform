@@ -210,7 +210,7 @@ export default function GenerationGallery() {
 
     <main className="min-h-screen bg-black text-white">
 
-      <div className="max-w-7xl mx-auto px-6 py-16">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-10 md:py-16">
 
         {/* HEADER */}
 
@@ -222,7 +222,7 @@ export default function GenerationGallery() {
               CineAI Studio
             </p>
 
-            <h1 className="text-6xl font-bold mb-6">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">
               Gallery
             </h1>
 

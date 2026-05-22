@@ -10,13 +10,11 @@ export default function GenerationStatus({
 
   return (
 
-    <div className="bg-black border border-[#1a1a1a] rounded-3xl p-8 mb-8">
+    <div className="bg-black border border-[#1a1a1a] rounded-3xl p-5 md:p-8 mb-8">
 
-      {/* HEADER */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
 
-      <div className="flex items-center justify-between mb-6">
-
-        <h3 className="text-2xl font-bold">
+        <h3 className="text-xl md:text-2xl font-bold">
           AI Generation Engine
         </h3>
 
@@ -40,8 +38,8 @@ export default function GenerationStatus({
           Current Step
         </p>
 
-        <p className="text-xl text-white font-semibold">
-          {step}
+        <p className="text-lg md:text-xl text-white font-semibold">
+          {step || "Preparing..."}
         </p>
 
       </div>

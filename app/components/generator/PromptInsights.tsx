@@ -19,7 +19,7 @@ export default function PromptInsights({
 
   return (
 
-    <div className="bg-black border border-[#1a1a1a] rounded-3xl p-6 mb-8">
+    <div className="bg-black border border-[#1a1a1a] rounded-3xl p-5 md:p-6 mb-8">
 
       <div className="flex items-center justify-between mb-6">
 

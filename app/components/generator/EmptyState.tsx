@@ -11,7 +11,7 @@ export default function EmptyState() {
 
   return (
 
-    <div className="border border-dashed border-[#1a1a1a] rounded-3xl p-10">
+    <div className="border border-dashed border-[#1a1a1a] rounded-3xl p-8 md:p-10">
 
       {/* HEADER */}
 

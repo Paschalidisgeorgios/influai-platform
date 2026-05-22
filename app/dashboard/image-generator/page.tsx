@@ -319,6 +319,8 @@ export default function ImageGeneratorPage() {
 
       setImages([]);
 
+      setEnhancedPrompt("");
+
       setEnhancementFallback(false);
 
       /*
@@ -347,6 +349,8 @@ export default function ImageGeneratorPage() {
 
       if (!consistencyPrompt) {
         toast.error("Enter a valid prompt");
+        setLoading(false);
+        setGenerationStep("");
         return;
       }
 
@@ -578,9 +582,7 @@ export default function ImageGeneratorPage() {
 
   return (
 
-    <main className="min-h-screen bg-black text-white">
-
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-10 md:py-16">
+    <div className="max-w-7xl mx-auto px-4 md:px-6 py-10 md:py-16 text-white">
 
         <div className="mb-10 md:mb-14">
 
@@ -727,7 +729,7 @@ export default function ImageGeneratorPage() {
 
             )}
 
-            {enhancedPrompt && (
+            {!loading && enhancedPrompt && (
 
               <PromptInsights
                 originalPrompt={prompt}
@@ -768,8 +770,6 @@ export default function ImageGeneratorPage() {
 
         </div>
 
-      </div>
-
-    </main>
+    </div>
   );
 }
