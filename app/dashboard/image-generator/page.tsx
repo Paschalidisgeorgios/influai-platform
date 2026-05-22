@@ -1,40 +1,250 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import toast from "react-hot-toast";
+
+import { supabase } from "../../lib/supabase";
+
+import ResultsGrid from "../../components/generator/ResultsGrid";
+
+import PromptEditor from "../../components/generator/PromptEditor";
+
+import GeneratorControls from "../../components/generator/GeneratorControls";
+
+import PromptInsights from "../../components/generator/PromptInsights";
+
+import GenerationStatus from "../../components/generator/GenerationStatus";
+
+import EmptyState from "../../components/generator/EmptyState";
+
+import {
+  buildConsistencyPrompt,
+} from "../../lib/ai/characterConsistency";
+
+import {
+  updateCharacterMemory,
+} from "../../lib/ai/updateCharacterMemory";
 
 type Character = {
   id: string;
   name: string;
   reference_images: string[];
+
+  dna?: string;
+
+  visual_signature?: string;
+
+  style_memory?: string;
+
+  favorite_prompt_style?: string;
 };
+
+type GeneratedImage = {
+  url: string;
+  prompt: string;
+};
+
+function isValidImageUrl(
+  url: unknown
+): url is string {
+  return (
+    typeof url === "string" &&
+    url.trim().length > 0 &&
+    (url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("data:image/"))
+  );
+}
+
+function sanitizePrompt(
+  value: unknown
+): string {
+  if (
+    typeof value !== "string"
+  ) {
+    return "";
+  }
+
+  const trimmed = value.trim();
+
+  if (
+    !trimmed ||
+    trimmed === "undefined" ||
+    trimmed.startsWith("undefined")
+  ) {
+    return "";
+  }
+
+  return trimmed;
+}
+
+function normalizeApiImages(
+  data: Record<string, unknown>
+): string[] {
+  const rawImages =
+    data.images ??
+    data.image ??
+    data.output ??
+    data.result ??
+    data.data ??
+    [];
+
+  if (typeof rawImages === "string") {
+    return isValidImageUrl(rawImages)
+      ? [rawImages]
+      : [];
+  }
+
+  if (!Array.isArray(rawImages)) {
+    return [];
+  }
+
+  return rawImages
+    .map((item: unknown) => {
+      if (isValidImageUrl(item)) {
+        return item;
+      }
+
+      if (
+        item &&
+        typeof item === "object"
+      ) {
+        const record = item as {
+          url?: unknown;
+          href?: unknown;
+        };
+
+        if (
+          isValidImageUrl(
+            record.url
+          )
+        ) {
+          return record.url;
+        }
+
+        if (
+          isValidImageUrl(
+            record.href
+          )
+        ) {
+          return record.href;
+        }
+      }
+
+      return null;
+    })
+    .filter(isValidImageUrl);
+}
+
+const presets = [
+  {
+    title: "Luxury Editorial",
+    prompt:
+      "luxury editorial fashion photoshoot",
+  },
+
+  {
+    title: "Fitness Influencer",
+    prompt:
+      "cinematic fitness influencer",
+  },
+
+  {
+    title: "Dark Moody",
+    prompt:
+      "dark moody cinematic portrait",
+  },
+
+  {
+    title: "Streetwear Campaign",
+    prompt:
+      "streetwear fashion campaign",
+  },
+
+  {
+    title: "Luxury Lifestyle",
+    prompt:
+      "luxury lifestyle influencer",
+  },
+
+  {
+    title: "Instagram Reel",
+    prompt:
+      "viral instagram reel aesthetic",
+  },
+];
+
+const lightingOptions = [
+  "Cinematic",
+  "Golden Hour",
+  "Dark Moody",
+  "Studio Softbox",
+  "Neon Night",
+  "Natural Daylight",
+];
+
+const cameraAngles = [
+  "Portrait",
+  "Close Up",
+  "Wide Shot",
+  "Low Angle",
+  "High Fashion",
+  "Full Body",
+];
+
+const aspectRatios = [
+  "1:1",
+  "16:9",
+  "9:16",
+  "4:5",
+];
 
 export default function ImageGeneratorPage() {
 
   const [prompt, setPrompt] =
     useState("");
 
-  const [image, setImage] =
+  const [enhancedPrompt,
+    setEnhancedPrompt] =
     useState("");
 
-  const [loading, setLoading] =
+  const [images, setImages] =
+    useState<GeneratedImage[]>([]);
+
+  const [loading,
+    setLoading] =
     useState(false);
 
-  const [characters, setCharacters] =
+  const [generationStep,
+    setGenerationStep] =
+    useState("");
+
+  const [characters,
+    setCharacters] =
     useState<Character[]>([]);
 
   const [selectedCharacter,
     setSelectedCharacter] =
-    useState<Character | null>(null);
+    useState<Character | null>(
+      null
+    );
 
-  /*
-    LOAD CHARACTERS
-  */
+  const [lighting,
+    setLighting] =
+    useState("Cinematic");
+
+  const [cameraAngle,
+    setCameraAngle] =
+    useState("Portrait");
+
+  const [aspectRatio,
+    setAspectRatio] =
+    useState("1:1");
+
+  const [realism,
+    setRealism] =
+    useState(80);
 
   useEffect(() => {
     loadCharacters();
@@ -42,30 +252,63 @@ export default function ImageGeneratorPage() {
 
   async function loadCharacters() {
 
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
     const { data, error } =
       await supabase
         .from("characters")
         .select("*")
+        .eq("user_id", user.id)
         .order("created_at", {
           ascending: false,
         });
 
     if (error) {
+
       console.log(error);
+
       return;
     }
 
     setCharacters(data || []);
   }
 
-  /*
-    GENERATE IMAGE
-  */
+  function reusePrompt(
+    prompt: string
+  ) {
+
+    setPrompt(prompt);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
+
+  function createVariations() {
+
+    setPrompt(
+      `${prompt}, alternate cinematic variation, luxury editorial quality`
+    );
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
 
   async function generateImage() {
 
     if (!prompt) {
-      alert("Enter a prompt");
+
+      toast.error(
+        "Enter a prompt"
+      );
+
       return;
     }
 
@@ -73,93 +316,296 @@ export default function ImageGeneratorPage() {
 
       setLoading(true);
 
-      const response = await fetch(
-        "/api/image-generator",
-        {
-          method: "POST",
+      setImages([]);
 
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
+      /*
+        STEP 1
+      */
 
-          body: JSON.stringify({
-            prompt,
-
-            model: "playground",
-
-            referenceImages:
-              selectedCharacter?.reference_images || [],
-
-            characterId:
-              selectedCharacter?.id || null,
-          }),
-        }
+      setGenerationStep(
+        "Analyzing character DNA..."
       );
 
-      const data =
-        await response.json();
+      /*
+        CONSISTENCY
+      */
 
-      console.log(
-        "FULL API RESPONSE:",
-        data
-      );
+      const consistencyPrompt =
+        buildConsistencyPrompt({
+          prompt: sanitizePrompt(prompt),
+          dna: selectedCharacter?.dna,
+          visualSignature:
+            selectedCharacter?.visual_signature,
+          styleMemory:
+            selectedCharacter?.style_memory,
+          favoritePromptStyle:
+            selectedCharacter?.favorite_prompt_style,
+        });
 
-      if (data.error) {
-
-        alert(data.error);
-
+      if (!consistencyPrompt) {
+        toast.error("Enter a valid prompt");
         return;
       }
 
-      console.log(
-        "IMAGE URL:",
-        data.image
+      /*
+        STEP 2
+      */
+
+      setGenerationStep(
+        "Enhancing cinematic composition..."
       );
 
-      setImage(data.image);
+      /*
+        PROMPT ENHANCEMENT
+      */
+
+      let safeEnhancedPrompt =
+        consistencyPrompt;
+
+      try {
+        const enhanceResponse =
+          await fetch("/api/enhance-prompt", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              prompt: consistencyPrompt,
+              dna: selectedCharacter?.dna || "",
+              lighting,
+              cameraAngle,
+            }),
+          });
+
+        const enhancedData =
+          await enhanceResponse.json();
+
+        const enhanced = sanitizePrompt(
+          enhancedData?.enhanced
+        );
+
+        if (enhanced) {
+          safeEnhancedPrompt = enhanced;
+        }
+      } catch (error) {
+        console.log("PROMPT ENHANCEMENT FAILED:", error);
+      }
+
+      setEnhancedPrompt(
+        safeEnhancedPrompt
+      );
+
+      /*
+        FINAL PROMPT
+      */
+
+      const finalPrompt = [
+        safeEnhancedPrompt,
+        `realism strength ${realism}%`,
+        `aspect ratio ${aspectRatio}`,
+        "8k editorial quality",
+      ]
+        .filter(Boolean)
+        .join(", ");
+
+      console.log(
+        "FINAL PROMPT:",
+        finalPrompt
+      );
+
+      /*
+        STEP 3
+      */
+
+      setGenerationStep(
+        "Building visual consistency..."
+      );
+
+      /*
+        SESSION
+      */
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        toast.error("Not authenticated");
+        return;
+      }
+
+      if (!sanitizePrompt(finalPrompt)) {
+        toast.error("Invalid prompt");
+        return;
+      }
+
+      /*
+        STEP 4
+      */
+
+      setGenerationStep(
+        "Rendering cinematic frames..."
+      );
+
+      /*
+        IMAGE GENERATION
+      */
+
+      const response =
+        await fetch(
+          "/api/image-generator",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+
+            body: JSON.stringify({
+              prompt:
+                finalPrompt,
+
+              characterId:
+                selectedCharacter?.id || null,
+            }),
+          }
+        );
+
+      const data = await response.json();
+
+      console.log("IMAGE API RESPONSE:", data);
+
+      if (!response.ok) {
+        toast.error(
+          typeof data?.error === "string"
+            ? data.error
+            : "Generation failed"
+        );
+        return;
+      }
+
+      const normalized = normalizeApiImages(data);
+
+      console.log("NORMALIZED IMAGES:", normalized);
+
+      if (normalized.length === 0) {
+        toast.error("No images returned");
+        return;
+      }
+
+      const mapped: GeneratedImage[] =
+        normalized.map((url) => ({
+          url,
+          prompt: finalPrompt,
+        }));
+
+      setImages(mapped);
+
+      const savedCount =
+        typeof data.savedCount === "number"
+          ? data.savedCount
+          : 0;
+
+      const hasDbErrors =
+        Array.isArray(data.dbErrors) &&
+        data.dbErrors.length > 0;
+
+      if (savedCount === 0 || hasDbErrors) {
+        toast.error(
+          "Images generated but not saved to gallery"
+        );
+      }
+
+      /*
+        MEMORY LEARNING
+      */
+
+      if (selectedCharacter) {
+        try {
+          const updatedMemory =
+            updateCharacterMemory({
+              existingMemory:
+                selectedCharacter.style_memory,
+              newPrompt: finalPrompt,
+            });
+
+          const { error: memoryError } =
+            await supabase
+              .from("characters")
+              .update({
+                style_memory: updatedMemory,
+              })
+              .eq("id", selectedCharacter.id);
+
+          if (memoryError) {
+            console.log(
+              "CHARACTER MEMORY UPDATE FAILED:",
+              memoryError
+            );
+          }
+        } catch (memoryError) {
+          console.log(
+            "CHARACTER MEMORY UPDATE FAILED:",
+            memoryError
+          );
+        }
+      }
+
+      if (
+        savedCount > 0 &&
+        !hasDbErrors
+      ) {
+        toast.success("Images generated");
+      }
 
     } catch (error) {
 
       console.log(error);
 
-      alert("Generation failed");
+      toast.error(
+        "Generation failed"
+      );
 
     } finally {
 
       setLoading(false);
+
+      setGenerationStep("");
     }
   }
 
   return (
+
     <main className="min-h-screen bg-black text-white">
 
-      <div className="max-w-7xl mx-auto px-6 py-16">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-10 md:py-16">
 
-        {/* HEADER */}
-        <div className="mb-14">
+        <div className="mb-10 md:mb-14">
 
-          <p className="text-[#c7a36a] uppercase tracking-[0.3em] text-sm mb-4">
+          <p className="text-[#c7a36a] uppercase tracking-[0.3em] text-xs md:text-sm mb-4">
             CineAI Studio
           </p>
 
-          <h1 className="text-6xl font-bold mb-6">
-            AI Image Generator
+          <h1 className="text-4xl md:text-6xl font-bold mb-6">
+            Advanced AI Generator
           </h1>
 
-          <p className="text-gray-400 text-lg">
-            Generate cinematic AI images with consistent influencer characters.
+          <p className="text-gray-400 text-base md:text-lg max-w-2xl">
+            Create cinematic AI visuals with persistent character consistency.
           </p>
 
         </div>
 
-        {/* GRID */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
 
           {/* LEFT */}
-          <div className="bg-[#080808] border border-[#1a1a1a] rounded-3xl p-8">
 
-            {/* CHARACTER */}
+          <div className="bg-[#080808] border border-[#1a1a1a] rounded-3xl p-5 md:p-8">
+
             <div className="mb-8">
 
               <label className="block text-sm text-gray-400 mb-3">
@@ -194,12 +640,14 @@ export default function ImageGeneratorPage() {
 
                 {characters.map(
                   (character) => (
+
                     <option
                       key={character.id}
                       value={character.id}
                     >
                       {character.name}
                     </option>
+
                   )
                 )}
 
@@ -207,106 +655,112 @@ export default function ImageGeneratorPage() {
 
             </div>
 
-            {/* REFERENCE IMAGES */}
-            {selectedCharacter && (
+            <GeneratorControls
+              lighting={lighting}
+              setLighting={setLighting}
 
-              <div className="mb-8">
+              cameraAngle={cameraAngle}
+              setCameraAngle={
+                setCameraAngle
+              }
 
-                <p className="text-sm text-gray-400 mb-4">
-                  Reference Images
-                </p>
+              aspectRatio={aspectRatio}
+              setAspectRatio={
+                setAspectRatio
+              }
 
-                <div className="flex gap-4">
+              realism={realism}
+              setRealism={
+                setRealism
+              }
 
-                  {selectedCharacter.reference_images?.map(
-                    (img) => (
+              lightingOptions={
+                lightingOptions
+              }
 
-                      <img
-                        key={img}
-                        src={img}
-                        alt=""
-                        className="w-24 h-24 object-cover rounded-2xl"
-                      />
+              cameraAngles={
+                cameraAngles
+              }
 
-                    )
-                  )}
+              aspectRatios={
+                aspectRatios
+              }
+            />
 
-                </div>
+            <PromptEditor
+              prompt={prompt}
 
-              </div>
-            )}
+              setPrompt={setPrompt}
 
-            {/* PROMPT */}
-            <div className="mb-8">
+              presets={presets}
 
-              <label className="block text-sm text-gray-400 mb-3">
-                Prompt
-              </label>
+              loading={loading}
 
-              <textarea
-                value={prompt}
-
-                onChange={(e) =>
-                  setPrompt(e.target.value)
-                }
-
-                className="w-full h-40 bg-black border border-[#1a1a1a] rounded-2xl p-4 resize-none"
-              />
-
-            </div>
-
-            {/* BUTTON */}
-            <button
-              onClick={generateImage}
-
-              disabled={loading}
-
-              className="w-full bg-[#c7a36a] text-black font-semibold py-4 rounded-2xl"
-            >
-              {loading
-                ? "Generating..."
-                : "Generate Image"}
-            </button>
+              onGenerate={
+                generateImage
+              }
+            />
 
           </div>
 
           {/* RIGHT */}
-          <div className="bg-[#080808] border border-[#1a1a1a] rounded-3xl p-8">
+
+          <div className="bg-[#080808] border border-[#1a1a1a] rounded-3xl p-5 md:p-8">
 
             <div className="flex items-center justify-between mb-6">
 
               <h2 className="text-2xl font-bold">
-                Result
+                Results
               </h2>
 
               <div className="bg-[#1a140d] text-[#c7a36a] text-sm px-4 py-2 rounded-full">
-                SDXL
+                FLUX
               </div>
 
             </div>
 
-            {image ? (
+            {loading && (
 
-              <div>
+              <GenerationStatus
+                step={
+                  generationStep
+                }
+              />
 
-                <img
-                  src={image}
-                  alt="Generated"
-                  className="w-full rounded-3xl"
-                />
+            )}
 
-                {/* DEBUG URL */}
-                <p className="text-xs text-gray-500 mt-4 break-all">
-                  {image}
-                </p>
+            {enhancedPrompt && (
 
-              </div>
+              <PromptInsights
+                originalPrompt={prompt}
+                enhancedPrompt={
+                  enhancedPrompt
+                }
 
-            ) : (
+                hasCharacter={
+                  !!selectedCharacter
+                }
+              />
 
-              <div className="h-[600px] border border-dashed border-[#1a1a1a] rounded-3xl flex items-center justify-center text-gray-500">
-                Generated image appears here
-              </div>
+            )}
+
+            {images.length === 0 && !loading && (
+              <EmptyState />
+            )}
+
+            {images.length > 0 && (
+
+              <ResultsGrid
+                images={images}
+
+                onReusePrompt={
+                  reusePrompt
+                }
+
+                onCreateVariations={
+                  createVariations
+                }
+              />
 
             )}
 

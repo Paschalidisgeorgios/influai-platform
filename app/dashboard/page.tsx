@@ -1,256 +1,117 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { supabase } from "@/app/lib/supabase";
+import { supabase } from "../lib/supabase";
 
 export default function DashboardPage() {
 
   const router = useRouter();
 
-  const [email, setEmail] = useState("");
-
-  useEffect(() => {
-
-    async function loadUser() {
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-
-        router.push("/auth");
-        return;
-      }
-
-      setEmail(user.email || "");
-    }
-
-    loadUser();
-
-  }, [router]);
-
-  async function logout() {
+  async function handleLogout() {
 
     await supabase.auth.signOut();
 
-    router.push("/auth");
+    router.push("/login");
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-      className="min-h-screen bg-[#050505] p-10 text-white"
-    >
 
-      {/* Header */}
-      <div className="mb-10 flex items-center justify-between">
+    <main className="min-h-screen bg-black text-white">
 
-        <div>
+      <div className="max-w-7xl mx-auto px-6 py-16">
 
-          <p className="text-sm uppercase tracking-[0.4em] text-[#D6A35D]">
+        {/* HEADER */}
 
-            INFLUAI Creator Studio
+        <div className="flex items-center justify-between mb-16">
 
-          </p>
+          <div>
 
-          <h1 className="mt-3 text-5xl font-semibold tracking-[-0.05em]">
+            <p className="text-[#c7a36a] uppercase tracking-[0.3em] text-sm mb-4">
+              CineAI Studio
+            </p>
 
-            Dashboard
+            <h1 className="text-6xl font-bold">
+              Dashboard
+            </h1>
 
-          </h1>
+          </div>
 
-          <p className="mt-4 text-zinc-500">
-
-            Logged in as:
-            <span className="ml-2 text-white">
-
-              {email}
-
-            </span>
-
-          </p>
-
-        </div>
-
-        <div className="flex items-center gap-4">
-
-          <button className="rounded-2xl bg-[#D6A35D] px-6 py-3 text-black transition hover:bg-[#e7b56f]">
-
-            New Project
-
-          </button>
+          {/* LOGOUT */}
 
           <button
-            onClick={logout}
-            className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-3 transition hover:bg-white/[0.05]"
+            onClick={handleLogout}
+            className="bg-red-600 hover:bg-red-700 transition px-6 py-3 rounded-2xl"
           >
-
             Logout
-
           </button>
 
         </div>
 
-      </div>
+        {/* CONTENT */}
 
-      {/* Grid */}
-      <div className="grid grid-cols-12 gap-6">
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-8">
 
-        {/* LEFT */}
-        <div className="col-span-8 space-y-6">
+          {/* CHARACTERS */}
 
-          {/* Welcome */}
-          <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl">
+          <div className="bg-[#080808] border border-[#1a1a1a] rounded-3xl p-8">
 
-            <p className="text-sm uppercase tracking-[0.35em] text-[#D6A35D]">
-
-              Welcome Back
-
-            </p>
-
-            <h2 className="mt-4 text-5xl font-semibold tracking-[-0.05em]">
-
-              Your cinematic AI creator workspace
-
+            <h2 className="text-2xl font-bold mb-4">
+              Characters
             </h2>
 
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400">
-
-              Manage AI influencers, generate cinematic videos, train voice models and build high-end AI content workflows.
-
+            <p className="text-gray-500 mb-8">
+              Create and manage cinematic AI characters.
             </p>
 
-          </div>
-
-          {/* Quick Actions */}
-          <div className="grid grid-cols-2 gap-6">
-
-            <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8 transition hover:border-[#D6A35D]/30 hover:bg-white/[0.05]">
-
-              <p className="text-sm uppercase tracking-[0.35em] text-[#D6A35D]">
-
-                Face Lock
-
-              </p>
-
-              <h3 className="mt-4 text-3xl font-semibold">
-
-                Generate consistent characters
-
-              </h3>
-
-            </div>
-
-            <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8 transition hover:border-[#D6A35D]/30 hover:bg-white/[0.05]">
-
-              <p className="text-sm uppercase tracking-[0.35em] text-[#D6A35D]">
-
-                AI Videos
-
-              </p>
-
-              <h3 className="mt-4 text-3xl font-semibold">
-
-                Create cinematic video scenes
-
-              </h3>
-
-            </div>
+            <a
+              href="/dashboard/characters"
+              className="inline-block bg-[#c7a36a] text-black px-5 py-3 rounded-2xl font-semibold"
+            >
+              Open Characters
+            </a>
 
           </div>
 
-        </div>
+          {/* GALLERY */}
 
-        {/* RIGHT */}
-        <div className="col-span-4 space-y-6">
+          <div className="bg-[#080808] border border-[#1a1a1a] rounded-3xl p-8">
 
-          {/* Stats */}
-          <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
+            <h2 className="text-2xl font-bold mb-4">
+              Gallery
+            </h2>
 
-            <h3 className="text-2xl font-semibold">
+            <p className="text-gray-500 mb-8">
+              Browse all generated AI assets.
+            </p>
 
-              Usage
-
-            </h3>
-
-            <div className="mt-6 space-y-5">
-
-              <div className="flex items-center justify-between">
-
-                <span className="text-zinc-500">
-                  Characters
-                </span>
-
-                <span className="font-medium">
-                  12
-                </span>
-
-              </div>
-
-              <div className="flex items-center justify-between">
-
-                <span className="text-zinc-500">
-                  Videos
-                </span>
-
-                <span className="font-medium">
-                  48
-                </span>
-
-              </div>
-
-              <div className="flex items-center justify-between">
-
-                <span className="text-zinc-500">
-                  Voice Models
-                </span>
-
-                <span className="font-medium">
-                  7
-                </span>
-
-              </div>
-
-            </div>
+            <a
+              href="/dashboard/gallery"
+              className="inline-block bg-[#c7a36a] text-black px-5 py-3 rounded-2xl font-semibold"
+            >
+              Open Gallery
+            </a>
 
           </div>
 
-          {/* Recent */}
-          <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
+          {/* GENERATOR */}
 
-            <h3 className="text-2xl font-semibold">
+          <div className="bg-[#080808] border border-[#1a1a1a] rounded-3xl p-8">
 
-              Recent Activity
+            <h2 className="text-2xl font-bold mb-4">
+              Image Generator
+            </h2>
 
-            </h3>
+            <p className="text-gray-500 mb-8">
+              Generate cinematic AI images.
+            </p>
 
-            <div className="mt-6 space-y-4">
-
-              <div className="rounded-2xl bg-black/30 p-4 text-sm text-zinc-400">
-
-                Generated cinematic AI video
-
-              </div>
-
-              <div className="rounded-2xl bg-black/30 p-4 text-sm text-zinc-400">
-
-                Trained new AI voice model
-
-              </div>
-
-              <div className="rounded-2xl bg-black/30 p-4 text-sm text-zinc-400">
-
-                Created consistent AI influencer
-
-              </div>
-
-            </div>
+            <a
+              href="/dashboard/image-generator"
+              className="inline-block bg-[#c7a36a] text-black px-5 py-3 rounded-2xl font-semibold"
+            >
+              Open Generator
+            </a>
 
           </div>
 
@@ -258,6 +119,6 @@ export default function DashboardPage() {
 
       </div>
 
-    </motion.div>
+    </main>
   );
 }

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import Replicate from "replicate";
+
 import { createClient } from "@supabase/supabase-js";
 
 const replicate = new Replicate({
@@ -11,148 +13,198 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+type DbErrorEntry = {
+  imageUrl: string;
+  message: string;
+  code?: string;
+  details?: string;
+};
+
+async function extractUrlFromItem(
+  item: unknown
+): Promise<string | null> {
+  if (item == null) return null;
+
+  if (typeof item === "string") {
+    const trimmed = item.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  if (item instanceof URL) {
+    return item.href;
+  }
+
+  if (typeof item === "object") {
+    const record = item as Record<string, unknown>;
+
+    if (typeof record.url === "string") {
+      const trimmed = record.url.trim();
+      return trimmed.length > 0 ? trimmed : null;
+    }
+
+    if (typeof record.href === "string") {
+      const trimmed = record.href.trim();
+      return trimmed.length > 0 ? trimmed : null;
+    }
+
+    if (typeof record.url === "function") {
+      try {
+        const result = await Promise.resolve(
+          (record.url as () => unknown)()
+        );
+        return extractUrlFromItem(result);
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  return null;
+}
+
+async function normalizeReplicateOutput(
+  output: unknown
+): Promise<string[]> {
+  if (output == null) return [];
+
+  const items = Array.isArray(output)
+    ? output
+    : [output];
+
+  const urls: string[] = [];
+
+  for (const item of items) {
+    const url = await extractUrlFromItem(item);
+
+    if (url && !urls.includes(url)) {
+      urls.push(url);
+    }
+  }
+
+  return urls;
+}
+
 export async function POST(req: NextRequest) {
   try {
+    const authHeader = req.headers.get("authorization");
 
-    /*
-      REQUEST BODY
-    */
+    if (!authHeader) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Invalid session" },
+        { status: 401 }
+      );
+    }
 
     const body = await req.json();
 
     const prompt =
-      body.prompt;
+      typeof body.prompt === "string"
+        ? body.prompt.trim()
+        : "";
 
     const characterId =
-      body.characterId || null;
+      typeof body.characterId === "string" &&
+      body.characterId.trim()
+        ? body.characterId.trim()
+        : null;
 
-    console.log(
-      "PROMPT:",
-      prompt
-    );
-
-    /*
-      GENERATE IMAGE
-    */
+    if (!prompt || prompt.startsWith("undefined")) {
+      return NextResponse.json(
+        { error: "Prompt is required" },
+        { status: 400 }
+      );
+    }
 
     const output = await replicate.run(
       "black-forest-labs/flux-schnell",
       {
         input: {
           prompt,
+          num_outputs: 4,
+          output_format: "jpg",
+          output_quality: 90,
         },
       }
     );
 
-    console.log(
-      "RAW OUTPUT:",
+    const images = await normalizeReplicateOutput(
       output
     );
 
-    /*
-      IMAGE URL
-    */
-
-    let image = "";
-
-    if (Array.isArray(output)) {
-
-      const first =
-        output[0];
-
-      console.log(
-        "FIRST OUTPUT:",
-        first
+    if (images.length === 0) {
+      return NextResponse.json(
+        { error: "No images returned from Replicate" },
+        { status: 500 }
       );
-
-      /*
-        NEW FILE OBJECT
-      */
-
-      if (
-        typeof first === "object" &&
-        first !== null &&
-        "url" in first
-      ) {
-
-        image = first.url();
-
-      /*
-        STRING URL
-      */
-
-      } else if (
-        typeof first === "string"
-      ) {
-
-        image = first;
-      }
     }
 
-    console.log(
-      "FINAL IMAGE:",
-      image
-    );
+    let savedCount = 0;
+    const dbErrors: DbErrorEntry[] = [];
 
-    /*
-      SAVE TO DATABASE
-    */
-
-    const { error } =
-      await supabase
+    for (const imageUrl of images) {
+      const { data, error } = await supabase
         .from("generations")
         .insert({
           prompt,
-          image_url: image,
+          image_url: imageUrl,
           model: "flux-schnell",
-          character_id:
-            characterId,
+          character_id: characterId,
+          user_id: user.id,
+          favorite: false,
+        })
+        .select("id")
+        .single();
+
+      if (error) {
+        console.error(
+          "GENERATIONS INSERT ERROR:",
+          JSON.stringify(error, null, 2)
+        );
+
+        dbErrors.push({
+          imageUrl,
+          message: error.message,
+          code: error.code,
+          details: error.details
+            ? String(error.details)
+            : undefined,
         });
-
-    if (error) {
-
-      console.log(
-        "DATABASE ERROR:"
-      );
-
-      console.dir(error, {
-        depth: null,
-      });
-
-    } else {
-
-      console.log(
-        "GENERATION SAVED"
-      );
+      } else if (data?.id) {
+        savedCount += 1;
+      }
     }
 
-    /*
-      RESPONSE
-    */
-
     return NextResponse.json({
-      image,
+      success: true,
+      images,
+      savedCount,
+      dbErrors,
     });
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Generation failed";
 
-  } catch (error: any) {
-
-    console.log(
-      "FULL ERROR:"
-    );
-
-    console.dir(error, {
-      depth: null,
-    });
+    console.error("IMAGE GENERATOR ERROR:", error);
 
     return NextResponse.json(
-      {
-        error:
-          error.message ||
-          "Generation failed",
-      },
-      {
-        status: 500,
-      }
+      { error: message },
+      { status: 500 }
     );
   }
 }

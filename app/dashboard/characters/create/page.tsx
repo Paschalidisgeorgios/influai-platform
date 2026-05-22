@@ -1,185 +1,438 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { useRouter } from "next/navigation";
+
+import { supabase } from "../../../lib/supabase";
 
 export default function CreateCharacterPage() {
-  const [name, setName] = useState("");
-  const [files, setFiles] = useState<FileList | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [previewImages, setPreviewImages] = useState<string[]>([]);
 
-  async function handleCreateCharacter() {
-    if (!name || !files || files.length === 0) {
-      alert("Please add name and images");
-      return;
-    }
+  const router = useRouter();
+
+  const [name, setName] =
+    useState("");
+
+  const [description,
+    setDescription] =
+    useState("");
+
+  const [referenceImages,
+    setReferenceImages] =
+    useState<string[]>([]);
+
+  const [loading,
+    setLoading] =
+    useState(false);
+
+  const [uploading,
+    setUploading] =
+    useState(false);
+
+  /*
+    UPLOAD IMAGE
+  */
+
+  async function uploadImage(
+    file: File
+  ) {
 
     try {
-      setLoading(true);
 
-      const uploadedImages: string[] = [];
+      setUploading(true);
 
-      for (const file of Array.from(files)) {
-        const fileName = `${Date.now()}-${file.name}`;
+      /*
+        FILE NAME
+      */
 
-        console.log("UPLOADING:", fileName);
+      const fileName =
+        `${Date.now()}-${file.name}`;
 
-        const { data, error } = await supabase.storage
-          .from("characters")
-          .upload(fileName, file);
+      /*
+        UPLOAD
+      */
 
-        console.log("UPLOAD DATA:", data);
-        console.log("UPLOAD ERROR:", error);
+      const {
+        error,
+      } = await supabase.storage
+        .from("character-images")
+        .upload(
+          fileName,
+          file
+        );
 
         if (error) {
-          alert(error.message);
+
+          console.log(
+            "UPLOAD ERROR:",
+            error
+          );
+        
+          alert(
+            JSON.stringify(error)
+          );
+        
           return;
         }
 
-        const { data: publicUrlData } = supabase.storage
-          .from("characters")
-          .getPublicUrl(fileName);
+      /*
+        GET URL
+      */
 
-        console.log("PUBLIC URL:", publicUrlData);
+      const {
+        data,
+      } = supabase.storage
+        .from("character-images")
+        .getPublicUrl(
+          fileName
+        );
 
-        uploadedImages.push(publicUrlData.publicUrl);
-      }
+      /*
+        SAVE URL
+      */
 
-      console.log("FINAL IMAGES:", uploadedImages);
+      setReferenceImages(
+        [
+          ...referenceImages,
+          data.publicUrl,
+        ]
+      );
 
-      const { error: insertError } = await supabase
-        .from("characters")
-        .insert({
-          name,
-          reference_images: uploadedImages,
-        });
-
-      console.log("DB ERROR:", insertError);
-
-      if (insertError) {
-        alert(insertError.message);
-        return;
-      }
-
-      alert("Character created!");
-
-      window.location.href = "/dashboard/characters";
     } catch (error) {
-      console.log("FULL ERROR:", error);
-      alert("Something went wrong");
+
+      console.log(error);
+
+      alert(
+        "Upload failed"
+      );
+
     } finally {
-      setLoading(false);
+
+      setUploading(false);
     }
   }
 
-  function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
-    const selectedFiles = e.target.files;
+  /*
+    DROP
+  */
 
-    if (!selectedFiles) return;
+  async function handleDrop(
+    e: React.DragEvent
+  ) {
 
-    setFiles(selectedFiles);
+    e.preventDefault();
 
-    const previews = Array.from(selectedFiles).map((file) =>
-      URL.createObjectURL(file)
+    const files =
+      e.dataTransfer.files;
+
+    if (!files.length) return;
+
+    await uploadImage(
+      files[0]
+    );
+  }
+
+  /*
+    FILE INPUT
+  */
+
+  async function handleFileChange(
+    e: React.ChangeEvent<HTMLInputElement>
+  ) {
+
+    const file =
+      e.target.files?.[0];
+
+    if (!file) return;
+
+    await uploadImage(file);
+  }
+
+  /*
+    CREATE CHARACTER
+  */
+
+  async function createCharacter() {
+
+    if (
+      !name ||
+      referenceImages.length === 0
+    ) {
+
+      alert(
+        "Please add at least one image."
+      );
+
+      return;
+    }
+
+    setLoading(true);
+
+    /*
+      GET USER
+    */
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+
+      alert(
+        "Not authenticated"
+      );
+
+      setLoading(false);
+
+      return;
+    }
+
+    /*
+      INSERT CHARACTER
+    */
+
+    const {
+      data,
+      error,
+    } = await supabase
+      .from("characters")
+      .insert([
+        {
+          name,
+          description,
+
+          reference_images:
+            referenceImages,
+
+          user_id:
+            user.id,
+        },
+      ])
+      .select()
+      .single();
+
+    console.log(
+      "CHARACTER:",
+      data
     );
 
-    setPreviewImages(previews);
+    console.log(
+      "ERROR:",
+      error
+    );
+
+    setLoading(false);
+
+    if (error) {
+
+      alert(
+        "Failed to create character."
+      );
+
+      return;
+    }
+
+    router.push(
+      `/dashboard/characters/${data.id}`
+    );
   }
 
   return (
+
     <main className="min-h-screen bg-black text-white">
+
       <div className="max-w-5xl mx-auto px-6 py-16">
 
-        <div className="mb-12">
+        {/* HEADER */}
+
+        <div className="mb-14">
+
           <p className="text-[#c7a36a] uppercase tracking-[0.3em] text-sm mb-4">
             CineAI Studio
           </p>
 
-          <h1 className="text-5xl font-bold mb-4">
+          <h1 className="text-6xl font-bold mb-6">
             Create Character
           </h1>
 
-          <p className="text-gray-400 text-lg">
-            Upload cinematic reference images for your AI influencer.
+          <p className="text-gray-500 text-lg">
+            Build a cinematic AI influencer identity.
           </p>
+
         </div>
 
-        <div className="bg-[#0b0b0b] border border-[#1a1a1a] rounded-3xl p-8">
+        {/* GRID */}
 
-          <div className="mb-8">
-            <label className="block text-sm text-gray-400 mb-3">
-              Character Name
-            </label>
+        <div className="grid lg:grid-cols-2 gap-12">
 
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Sophia"
-              className="w-full bg-black border border-[#1a1a1a] rounded-2xl px-5 py-4 outline-none focus:border-[#c7a36a]"
-            />
-          </div>
+          {/* LEFT */}
 
-          <div className="mb-10">
+          <div className="bg-[#080808] border border-[#1a1a1a] rounded-3xl p-8">
 
-            <label className="block text-sm text-gray-400 mb-3">
-              Reference Images
-            </label>
+            {/* NAME */}
 
-            <label className="border-2 border-dashed border-[#1a1a1a] rounded-3xl p-12 flex flex-col items-center justify-center cursor-pointer">
+            <div className="mb-8">
 
-              <div className="text-5xl mb-4">
-                📸
-              </div>
-
-              <p className="text-lg font-semibold mb-2">
-                Upload Character Images
-              </p>
+              <label className="block text-sm text-gray-400 mb-3">
+                Character Name
+              </label>
 
               <input
-                type="file"
-                multiple
-                onChange={handleFiles}
-                className="hidden"
+                type="text"
+                value={name}
+                onChange={(e) =>
+                  setName(
+                    e.target.value
+                  )
+                }
+                placeholder="Melodia"
+                className="w-full bg-black border border-[#1a1a1a] rounded-2xl px-5 py-4 outline-none focus:border-[#c7a36a]"
               />
-            </label>
+
+            </div>
+
+            {/* DESCRIPTION */}
+
+            <div className="mb-8">
+
+              <label className="block text-sm text-gray-400 mb-3">
+                Description
+              </label>
+
+              <textarea
+                value={description}
+                onChange={(e) =>
+                  setDescription(
+                    e.target.value
+                  )
+                }
+                rows={5}
+                placeholder="Describe the AI character..."
+                className="w-full bg-black border border-[#1a1a1a] rounded-2xl px-5 py-4 outline-none focus:border-[#c7a36a]"
+              />
+
+            </div>
+
+            {/* UPLOAD */}
+
+            <div className="mb-8">
+
+              <label className="block text-sm text-gray-400 mb-3">
+                Upload Reference Images
+              </label>
+
+              <div
+                onDrop={handleDrop}
+
+                onDragOver={(e) =>
+                  e.preventDefault()
+                }
+
+                className="border-2 border-dashed border-[#1a1a1a] rounded-3xl p-10 text-center hover:border-[#c7a36a] transition"
+              >
+
+                <p className="text-gray-400 mb-4">
+                  Drag & Drop Images Here
+                </p>
+
+                <p className="text-sm text-gray-600 mb-6">
+                  or
+                </p>
+
+                <label className="inline-block bg-[#c7a36a] text-black px-6 py-3 rounded-2xl font-semibold cursor-pointer">
+
+                  Select Images
+
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={
+                      handleFileChange
+                    }
+                  />
+
+                </label>
+
+              </div>
+
+              {uploading && (
+
+                <p className="text-sm text-[#c7a36a] mt-4">
+                  Uploading image...
+                </p>
+
+              )}
+
+            </div>
+
+            {/* BUTTON */}
+
+            <button
+              onClick={createCharacter}
+
+              disabled={
+                loading ||
+                uploading
+              }
+
+              className="w-full bg-[#c7a36a] text-black font-semibold py-4 rounded-2xl hover:opacity-90 transition disabled:opacity-50"
+            >
+
+              {loading
+                ? "Creating..."
+                : "Create Character"}
+
+            </button>
 
           </div>
 
-          {previewImages.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
+          {/* RIGHT */}
 
-              {previewImages.map((image) => (
-                <div
-                  key={image}
-                  className="rounded-2xl overflow-hidden"
-                >
-                  <img
-                    src={image}
-                    alt="Preview"
-                    className="w-full h-60 object-cover"
-                  />
-                </div>
-              ))}
+          <div className="bg-[#080808] border border-[#1a1a1a] rounded-3xl p-8">
+
+            <h2 className="text-2xl font-bold mb-8">
+              Reference Images
+            </h2>
+
+            {referenceImages.length === 0 && (
+
+              <div className="border border-dashed border-[#1a1a1a] rounded-3xl p-16 text-center text-gray-500">
+
+                No images uploaded yet.
+
+              </div>
+
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+
+              {referenceImages.map(
+                (image) => (
+
+                  <div
+                    key={image}
+                    className="rounded-2xl overflow-hidden border border-[#1a1a1a]"
+                  >
+
+                    <img
+                      src={image}
+                      alt=""
+                      className="w-full aspect-square object-cover"
+                    />
+
+                  </div>
+                )
+              )}
 
             </div>
-          )}
 
-          <button
-            onClick={handleCreateCharacter}
-            disabled={loading}
-            className="w-full bg-[#c7a36a] text-black font-bold py-5 rounded-2xl"
-          >
-            {loading ? "Creating Character..." : "Create Character"}
-          </button>
+          </div>
 
         </div>
+
       </div>
+
     </main>
   );
 }

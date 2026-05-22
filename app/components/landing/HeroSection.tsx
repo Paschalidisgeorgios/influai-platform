@@ -1,0 +1,248 @@
+"use client";
+
+import React from "react";
+
+import {
+  Sparkles,
+  Wand2,
+  Brain,
+  ImageIcon,
+} from "lucide-react";
+
+export default function HeroSection() {
+
+  return (
+
+    <section className="relative overflow-hidden border-b border-white/5">
+
+      {/* BACKGROUND GLOW */}
+
+      <div className="absolute inset-0 overflow-hidden">
+
+        <div className="absolute top-[-200px] left-[-200px] w-[500px] h-[500px] bg-[#c7a36a]/10 blur-[120px] rounded-full" />
+
+        <div className="absolute bottom-[-300px] right-[-200px] w-[600px] h-[600px] bg-purple-500/10 blur-[160px] rounded-full" />
+
+      </div>
+
+      <div className="relative max-w-7xl mx-auto px-6 py-28">
+
+        {/* BADGE */}
+
+        <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full border border-[#c7a36a]/20 bg-[#1a140d]/50 mb-10">
+
+          <Sparkles
+            size={16}
+            className="text-[#c7a36a]"
+          />
+
+          <span className="text-sm text-[#c7a36a] uppercase tracking-[0.25em]">
+            AI Creator Platform
+          </span>
+
+        </div>
+
+        {/* HERO GRID */}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+
+          {/* LEFT */}
+
+          <div>
+
+            <h1 className="text-6xl md:text-8xl font-black leading-[0.95] tracking-[-0.05em] mb-8">
+
+              Create
+              <br />
+
+              <span className="bg-gradient-to-r from-[#c7a36a] via-white to-[#c7a36a] bg-clip-text text-transparent">
+                Cinematic
+              </span>
+
+              <br />
+
+              AI Content
+
+            </h1>
+
+            <p className="text-xl text-gray-400 leading-relaxed max-w-2xl mb-10">
+
+              Generate ultra realistic influencer visuals,
+              cinematic AI photography and persistent
+              character identities powered by advanced
+              AI generation systems.
+
+            </p>
+
+            {/* CTA */}
+
+            <div className="flex flex-wrap gap-5 mb-14">
+
+              <button className="px-8 py-5 rounded-2xl bg-[#c7a36a] text-black font-bold hover:scale-[1.03] transition">
+
+                Start Creating
+
+              </button>
+
+              <button className="px-8 py-5 rounded-2xl border border-white/10 bg-white/5 backdrop-blur hover:bg-white/10 transition">
+
+                Explore Gallery
+
+              </button>
+
+            </div>
+
+            {/* STATS */}
+
+            <div className="grid grid-cols-3 gap-6">
+
+              <div>
+
+                <p className="text-4xl font-black mb-2">
+                  4K+
+                </p>
+
+                <p className="text-gray-500 text-sm uppercase tracking-[0.2em]">
+                  AI Generations
+                </p>
+
+              </div>
+
+              <div>
+
+                <p className="text-4xl font-black mb-2">
+                  98%
+                </p>
+
+                <p className="text-gray-500 text-sm uppercase tracking-[0.2em]">
+                  Consistency
+                </p>
+
+              </div>
+
+              <div>
+
+                <p className="text-4xl font-black mb-2">
+                  AI
+                </p>
+
+                <p className="text-gray-500 text-sm uppercase tracking-[0.2em]">
+                  Powered
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* RIGHT */}
+
+          <div className="relative">
+
+            {/* MAIN CARD */}
+
+            <div className="relative rounded-[40px] border border-white/10 bg-white/[0.03] backdrop-blur-xl p-8 overflow-hidden">
+
+              {/* CARD GLOW */}
+
+              <div className="absolute inset-0 bg-gradient-to-br from-[#c7a36a]/10 to-purple-500/10" />
+
+              <div className="relative">
+
+                {/* TOP */}
+
+                <div className="flex items-center justify-between mb-10">
+
+                  <div>
+
+                    <p className="text-[#c7a36a] uppercase tracking-[0.25em] text-xs mb-3">
+                      AI ENGINE
+                    </p>
+
+                    <h3 className="text-3xl font-bold">
+                      Cinematic Generation
+                    </h3>
+
+                  </div>
+
+                  <div className="w-4 h-4 rounded-full bg-[#c7a36a] animate-pulse" />
+
+                </div>
+
+                {/* PREVIEW */}
+
+                <div className="aspect-[4/5] rounded-[30px] bg-gradient-to-br from-[#1a140d] to-[#0f0f0f] border border-white/5 mb-8 flex items-center justify-center">
+
+                  <div className="text-center">
+
+                    <div className="w-24 h-24 rounded-3xl bg-[#c7a36a]/10 flex items-center justify-center mx-auto mb-6">
+
+                      <ImageIcon
+                        size={42}
+                        className="text-[#c7a36a]"
+                      />
+
+                    </div>
+
+                    <p className="text-gray-400 max-w-xs">
+                      Ultra realistic cinematic AI generations with persistent character intelligence.
+                    </p>
+
+                  </div>
+
+                </div>
+
+                {/* FEATURES */}
+
+                <div className="grid grid-cols-2 gap-4">
+
+                  <div className="rounded-2xl border border-white/5 bg-black/30 p-5">
+
+                    <Brain
+                      className="text-[#c7a36a] mb-4"
+                      size={22}
+                    />
+
+                    <p className="font-semibold mb-2">
+                      Character Memory
+                    </p>
+
+                    <p className="text-sm text-gray-500">
+                      Persistent identity system
+                    </p>
+
+                  </div>
+
+                  <div className="rounded-2xl border border-white/5 bg-black/30 p-5">
+
+                    <Wand2
+                      className="text-[#c7a36a] mb-4"
+                      size={22}
+                    />
+
+                    <p className="font-semibold mb-2">
+                      Prompt Intelligence
+                    </p>
+
+                    <p className="text-sm text-gray-500">
+                      AI enhanced cinematic prompts
+                    </p>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+  );
+}

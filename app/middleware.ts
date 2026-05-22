@@ -1,17 +1,35 @@
 import { NextResponse } from "next/server";
+
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+export function middleware(
+  request: NextRequest
+) {
 
-  const loggedIn = request.cookies.get("sb-access-token");
-
-  const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard");
-
-  if (isDashboardRoute && !loggedIn) {
-
-    return NextResponse.redirect(
-      new URL("/auth", request.url)
+  const token =
+    request.cookies.get(
+      "sb-access-token"
     );
+
+  /*
+    PROTECTED ROUTES
+  */
+
+  if (
+    request.nextUrl.pathname.startsWith(
+      "/dashboard"
+    )
+  ) {
+
+    if (!token) {
+
+      return NextResponse.redirect(
+        new URL(
+          "/login",
+          request.url
+        )
+      );
+    }
   }
 
   return NextResponse.next();
