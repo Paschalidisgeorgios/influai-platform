@@ -4,13 +4,11 @@ import { useState } from "react";
 
 import Link from "next/link";
 
-import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 import { supabase } from "../lib/supabase";
 
 export default function LoginPage() {
-
-  const router = useRouter();
 
   const [email, setEmail] =
     useState("");
@@ -37,15 +35,12 @@ export default function LoginPage() {
     });
 
     if (error) {
-
-      alert(error.message);
-
+      toast.error(error.message);
       setLoading(false);
-
       return;
     }
 
-    router.push("/dashboard");
+    window.location.href = "/dashboard";
   }
 
   return (

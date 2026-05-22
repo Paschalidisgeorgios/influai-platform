@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Link from "next/link";
 
 import {
   usePathname,
+  useRouter,
 } from "next/navigation";
 
 import {
@@ -26,19 +27,36 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
 
-  const pathname =
-    usePathname();
+  const pathname = usePathname();
+  const router = useRouter();
 
-  const [mobileMenu,
-    setMobileMenu] =
+  const [mobileMenu, setMobileMenu] =
     useState(false);
 
-  async function handleLogout() {
+  const [authChecked, setAuthChecked] =
+    useState(false);
 
+  useEffect(() => {
+    async function checkAuth() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
+
+      setAuthChecked(true);
+    }
+
+    checkAuth();
+  }, [router]);
+
+  async function handleLogout() {
     await supabase.auth.signOut();
 
-    window.location.href =
-      "/login";
+    window.location.href = "/login";
   }
 
   function isActiveLink(href: string) {
@@ -49,42 +67,41 @@ export default function DashboardLayout({
   }
 
   const links = [
-
     {
       href: "/dashboard",
       label: "Dashboard",
-      icon:
-        LayoutDashboard,
+      icon: LayoutDashboard,
     },
-
     {
-      href:
-        "/dashboard/characters",
+      href: "/dashboard/characters",
       label: "Characters",
       icon: Users,
     },
-
     {
-      href:
-        "/dashboard/gallery",
+      href: "/dashboard/gallery",
       label: "Gallery",
       icon: ImageIcon,
     },
-
     {
-      href:
-        "/dashboard/image-generator",
-      label:
-        "Image Generator",
+      href: "/dashboard/image-generator",
+      label: "Image Generator",
       icon: Sparkles,
     },
   ];
 
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <p className="text-gray-400">
+          Checking session...
+        </p>
+      </div>
+    );
+  }
+
   return (
 
     <div className="min-h-screen bg-black text-white flex">
-
-      {/* MOBILE TOPBAR */}
 
       <div className="fixed top-0 left-0 right-0 z-50 lg:hidden bg-[#050505] border-b border-[#1a1a1a] px-5 py-4 flex items-center justify-between">
 
@@ -98,9 +115,7 @@ export default function DashboardLayout({
 
         <button
           onClick={() =>
-            setMobileMenu(
-              !mobileMenu
-            )
+            setMobileMenu(!mobileMenu)
           }
         >
 
@@ -114,17 +129,14 @@ export default function DashboardLayout({
 
       </div>
 
-      {/* MOBILE OVERLAY */}
-
       {mobileMenu && (
 
         <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden" />
 
       )}
 
-      {/* SIDEBAR */}
-
-      <aside className={`
+      <aside
+        className={`
         fixed lg:relative z-50 top-0 left-0 h-screen w-[280px]
         border-r border-[#1a1a1a]
         bg-[#050505]
@@ -136,11 +148,10 @@ export default function DashboardLayout({
           ? "translate-x-0"
           : "-translate-x-full lg:translate-x-0"
         }
-      `}>
+      `}
+      >
 
         <div>
-
-          {/* DESKTOP LOGO */}
 
           <div className="mb-12 hidden lg:block">
 
@@ -150,34 +161,24 @@ export default function DashboardLayout({
 
           </div>
 
-          {/* MOBILE SPACER */}
-
           <div className="h-16 lg:hidden" />
-
-          {/* NAVIGATION */}
 
           <nav className="space-y-2">
 
             {links.map((link) => {
 
-              const Icon =
-                link.icon;
+              const Icon = link.icon;
 
-              const active =
-                isActiveLink(link.href);
+              const active = isActiveLink(link.href);
 
               return (
 
                 <Link
                   key={link.href}
                   href={link.href}
-
                   onClick={() =>
-                    setMobileMenu(
-                      false
-                    )
+                    setMobileMenu(false)
                   }
-
                   className={`flex items-center gap-4 px-5 py-4 rounded-2xl transition ${
                     active
                       ? "bg-[#c7a36a] text-black font-semibold"
@@ -185,9 +186,7 @@ export default function DashboardLayout({
                   }`}
                 >
 
-                  <Icon
-                    size={20}
-                  />
+                  <Icon size={20} />
 
                   {link.label}
 
@@ -199,11 +198,8 @@ export default function DashboardLayout({
 
         </div>
 
-        {/* LOGOUT */}
-
         <button
           onClick={handleLogout}
-
           className="flex items-center gap-4 px-5 py-4 rounded-2xl bg-red-600 hover:bg-red-700 transition"
         >
 
@@ -214,8 +210,6 @@ export default function DashboardLayout({
         </button>
 
       </aside>
-
-      {/* CONTENT */}
 
       <main className="flex-1 overflow-y-auto pt-[90px] lg:pt-0">
 
