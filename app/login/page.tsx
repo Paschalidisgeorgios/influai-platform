@@ -57,7 +57,7 @@ export default function LoginPage() {
         {/* HEADER */}
 
         <p className="text-[#c7a36a] uppercase tracking-[0.3em] text-sm mb-4">
-          CineAI Studio
+          InfluAI
         </p>
 
         <h1 className="text-5xl font-bold mb-4">

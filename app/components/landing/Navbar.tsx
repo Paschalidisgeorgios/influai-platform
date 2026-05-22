@@ -45,11 +45,11 @@ export default function Navbar() {
           <div>
 
             <p className="text-[#c7a36a] uppercase tracking-[0.35em] text-[10px] mb-1">
-              CineAI Studio
+              AI Creator Platform
             </p>
 
             <h1 className="text-lg md:text-xl font-black tracking-[-0.03em]">
-              INFLUA AI
+              InfluAI
             </h1>
 
           </div>

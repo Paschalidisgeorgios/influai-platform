@@ -42,7 +42,7 @@ export default function CTASection() {
           <br />
 
           <span className="bg-gradient-to-r from-[#c7a36a] via-white to-[#c7a36a] bg-clip-text text-transparent">
-            AI Creator Studio
+            InfluAI
           </span>
 
         </h2>

@@ -57,6 +57,10 @@ export default function HeroSection() {
 
           <div>
 
+            <p className="text-[#c7a36a] uppercase tracking-[0.3em] text-sm md:text-base mb-4 font-semibold">
+              InfluAI
+            </p>
+
             <h1 className="text-5xl sm:text-6xl md:text-8xl font-black leading-[0.95] tracking-[-0.05em] mb-8">
 
               Create
@@ -74,9 +78,9 @@ export default function HeroSection() {
 
             <p className="text-lg md:text-xl text-gray-400 leading-relaxed max-w-2xl mb-10">
 
-              Generate luxury editorial visuals with persistent
+              Create cinematic AI influencer content with persistent
               character consistency, AI prompt intelligence, and
-              multi-image FLUX generation — built for creators and brands.
+              multi-image FLUX generation.
 
             </p>
 

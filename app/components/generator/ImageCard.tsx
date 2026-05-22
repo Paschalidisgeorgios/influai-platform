@@ -69,7 +69,7 @@ export default function ImageCard({
       link.href = url;
 
       link.download =
-        `cineai-${Date.now()}.png`;
+        `influai-${Date.now()}.png`;
 
       document.body.appendChild(
         link

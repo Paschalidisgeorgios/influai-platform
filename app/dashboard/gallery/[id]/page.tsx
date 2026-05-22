@@ -258,7 +258,7 @@ export default function GenerationDetailPage() {
         <div className="mb-12">
 
           <p className="text-[#c7a36a] uppercase tracking-[0.3em] text-sm mb-4">
-            CineAI Generation
+            InfluAI Generation
           </p>
 
           <h1 className="text-6xl font-bold mb-6">

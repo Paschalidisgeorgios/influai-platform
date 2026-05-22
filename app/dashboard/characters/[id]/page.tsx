@@ -384,7 +384,7 @@ export default function CharacterDetailPage() {
         <div className="mb-14">
 
           <p className="text-[#c7a36a] uppercase tracking-[0.3em] text-sm mb-4">
-            CineAI Character
+            InfluAI Character
           </p>
 
           <h1 className="text-4xl md:text-6xl font-bold mb-6">

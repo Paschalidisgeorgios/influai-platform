@@ -90,12 +90,8 @@ export default function DashboardLayout({
 
         <div>
 
-          <p className="text-[#c7a36a] uppercase tracking-[0.3em] text-[10px] mb-1">
-            CineAI Studio
-          </p>
-
           <h1 className="font-bold text-lg">
-            Dashboard
+            InfluAI
           </h1>
 
         </div>
@@ -148,12 +144,8 @@ export default function DashboardLayout({
 
           <div className="mb-12 hidden lg:block">
 
-            <p className="text-[#c7a36a] uppercase tracking-[0.35em] text-xs mb-3">
-              CineAI Studio
-            </p>
-
             <h1 className="text-3xl font-bold">
-              Dashboard
+              InfluAI
             </h1>
 
           </div>
