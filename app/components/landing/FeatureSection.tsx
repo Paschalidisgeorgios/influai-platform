@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import Link from "next/link";
 
 import {
   Sparkles,
@@ -14,72 +14,54 @@ import {
 const features = [
 
   {
-    title: "Create Image",
-
+    title: "Image Generator",
     description:
-      "Generate cinematic influencer visuals powered by advanced AI rendering systems.",
-
+      "Create cinematic influencer visuals with FLUX via Replicate. Generate four variations per run.",
     icon: ImageIcon,
-
-    glow:
-      "from-[#c7a36a]/20 to-orange-500/10",
+    href: "/dashboard/image-generator",
+    glow: "from-[#c7a36a]/20 to-orange-500/10",
   },
 
   {
-    title: "Create Video",
-
+    title: "Character Studio",
     description:
-      "Transform prompts into viral cinematic AI videos optimized for creators.",
-
-    icon: Video,
-
-    glow:
-      "from-purple-500/20 to-pink-500/10",
-  },
-
-  {
-    title: "Character AI",
-
-    description:
-      "Persistent identity memory with cinematic consistency across generations.",
-
+      "Build persistent AI characters with DNA, visual signatures, and style memory.",
     icon: Brain,
-
-    glow:
-      "from-blue-500/20 to-cyan-500/10",
+    href: "/dashboard/characters",
+    glow: "from-blue-500/20 to-cyan-500/10",
   },
 
   {
     title: "Prompt Intelligence",
-
     description:
-      "AI enhanced prompting optimized for realism and cinematic aesthetics.",
-
+      "OpenAI enhances your prompts for luxury editorial quality, with automatic fallback when unavailable.",
     icon: Wand2,
+    href: "/dashboard/image-generator",
+    glow: "from-emerald-500/20 to-green-500/10",
+  },
 
-    glow:
-      "from-emerald-500/20 to-green-500/10",
+  {
+    title: "Generation Gallery",
+    description:
+      "Browse, favorite, and manage every image you create — owned by your account only.",
+    icon: ImageIcon,
+    href: "/dashboard/gallery",
+    glow: "from-purple-500/20 to-pink-500/10",
   },
 ];
 
-const models = [
-  "FLUX Pro",
-  "SDXL",
-  "Ideogram",
-  "GPT Image",
-  "Runway",
-  "Kling",
-  "Veo",
-  "Sora",
+const stack = [
+  "FLUX Schnell",
+  "Replicate",
+  "OpenAI Prompt Intelligence",
+  "Supabase Infrastructure",
 ];
 
 export default function FeatureSection() {
 
   return (
 
-    <section className="relative py-32 overflow-hidden">
-
-      {/* BACKGROUND */}
+    <section className="relative py-24 md:py-32 overflow-hidden">
 
       <div className="absolute inset-0">
 
@@ -87,11 +69,9 @@ export default function FeatureSection() {
 
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-6">
+      <div className="relative max-w-7xl mx-auto px-4 md:px-6">
 
-        {/* HEADER */}
-
-        <div className="text-center mb-24">
+        <div className="text-center mb-20 md:mb-24">
 
           <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full border border-[#c7a36a]/20 bg-[#1a140d]/50 mb-8">
 
@@ -101,53 +81,47 @@ export default function FeatureSection() {
             />
 
             <span className="text-sm text-[#c7a36a] uppercase tracking-[0.25em]">
-              AI Tools
+              Platform Tools
             </span>
 
           </div>
 
-          <h2 className="text-5xl md:text-7xl font-black tracking-[-0.05em] leading-[0.95] mb-8">
+          <h2 className="text-4xl md:text-7xl font-black tracking-[-0.05em] leading-[0.95] mb-8">
 
-            Build
+            Everything You Need
             <br />
 
-            Viral AI Content
+            For Your Demo
 
           </h2>
 
-          <p className="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
 
-            Powerful cinematic AI tools designed for creators,
-            influencers and next generation digital brands.
+            A focused creator workflow: characters, generation, gallery, and
+            prompt intelligence — ready for your Monday presentation.
 
           </p>
 
         </div>
 
-        {/* FEATURES */}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-20 md:mb-24">
 
           {features.map((feature) => {
 
-            const Icon =
-              feature.icon;
+            const Icon = feature.icon;
 
             return (
 
-              <div
+              <Link
                 key={feature.title}
+                href={feature.href}
 
-                className="group relative overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] backdrop-blur-xl p-10 hover:scale-[1.02] transition duration-500"
+                className="group relative overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] backdrop-blur-xl p-8 md:p-10 hover:scale-[1.02] transition duration-500"
               >
-
-                {/* GLOW */}
 
                 <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-500 bg-gradient-to-br ${feature.glow}`} />
 
                 <div className="relative">
-
-                  {/* ICON */}
 
                   <div className="w-20 h-20 rounded-3xl bg-black/40 border border-white/10 flex items-center justify-center mb-8">
 
@@ -158,11 +132,9 @@ export default function FeatureSection() {
 
                   </div>
 
-                  {/* TITLE */}
-
                   <div className="flex items-center justify-between mb-6">
 
-                    <h3 className="text-3xl font-bold">
+                    <h3 className="text-2xl md:text-3xl font-bold">
                       {feature.title}
                     </h3>
 
@@ -173,9 +145,7 @@ export default function FeatureSection() {
 
                   </div>
 
-                  {/* DESCRIPTION */}
-
-                  <p className="text-gray-400 leading-relaxed text-lg">
+                  <p className="text-gray-400 leading-relaxed text-base md:text-lg">
 
                     {feature.description}
 
@@ -183,37 +153,42 @@ export default function FeatureSection() {
 
                 </div>
 
-              </div>
+              </Link>
             );
           })}
 
         </div>
 
-        {/* MODELS */}
+        <div className="rounded-[32px] border border-white/10 bg-white/[0.03] backdrop-blur-xl p-8 md:p-12 text-center">
 
-        <div className="text-center">
-
-          <p className="text-[#c7a36a] uppercase tracking-[0.3em] text-sm mb-10">
-            Powered by leading AI models
+          <p className="text-[#c7a36a] uppercase tracking-[0.3em] text-sm mb-6">
+            Powered by
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4 mb-8">
 
-            {models.map((model) => (
+            {stack.map((item) => (
 
               <div
-                key={model}
-
-                className="px-6 py-4 rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur"
+                key={item}
+                className="px-5 py-3 md:px-6 md:py-4 rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur"
               >
 
-                <span className="text-lg font-semibold">
-                  {model}
+                <span className="text-base md:text-lg font-semibold">
+                  {item}
                 </span>
 
               </div>
 
             ))}
+
+          </div>
+
+          <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full border border-white/10 bg-black/40 text-gray-400 text-sm">
+
+            <Video size={16} className="text-[#c7a36a]" />
+
+            Video &amp; upscale integrations planned
 
           </div>
 

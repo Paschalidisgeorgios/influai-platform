@@ -129,6 +129,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log(
+      `Image generation started for user ${user.id}`
+    );
+
     const output = await replicate.run(
       "black-forest-labs/flux-schnell",
       {
@@ -186,6 +190,16 @@ export async function POST(req: NextRequest) {
       } else if (data?.id) {
         savedCount += 1;
       }
+    }
+
+    console.log(
+      `Generated ${images.length} images, saved ${savedCount} to gallery`
+    );
+
+    if (dbErrors.length > 0) {
+      console.error(
+        `Database save errors: ${dbErrors.length}`
+      );
     }
 
     return NextResponse.json({

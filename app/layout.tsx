@@ -3,9 +3,9 @@ import "./globals.css";
 import { Toaster } from "react-hot-toast";
 
 export const metadata = {
-  title: "CineAI Studio",
+  title: "INFLUA AI | CineAI Studio",
   description:
-    "AI Character Platform",
+    "Cinematic AI image generation with persistent characters, prompt intelligence, and private gallery.",
 };
 
 export default function RootLayout({

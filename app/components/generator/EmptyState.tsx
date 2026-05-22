@@ -31,7 +31,7 @@ export default function EmptyState() {
         </h3>
 
         <p className="text-gray-400 max-w-md mx-auto leading-relaxed">
-          Generate ultra realistic cinematic visuals with persistent character intelligence and AI enhanced prompting.
+          Enter a prompt, optionally select a character, and generate four FLUX variations. Results appear here instantly.
         </p>
 
       </div>
@@ -69,7 +69,7 @@ export default function EmptyState() {
           </h4>
 
           <p className="text-sm text-gray-400 leading-relaxed">
-            AI automatically enhances prompts for cinematic quality and realism.
+            OpenAI enhances prompts when available, with automatic fallback to your consistency prompt.
           </p>
 
         </div>

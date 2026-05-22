@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
+import Link from "next/link";
 
 import {
   Sparkles,
+  ArrowRight,
 } from "lucide-react";
 
 const images = [
@@ -25,9 +26,7 @@ export default function GallerySection() {
 
   return (
 
-    <section className="relative py-32 overflow-hidden">
-
-      {/* BACKGROUND */}
+    <section className="relative py-24 md:py-32 overflow-hidden border-t border-white/5">
 
       <div className="absolute inset-0">
 
@@ -35,44 +34,52 @@ export default function GallerySection() {
 
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-6">
+      <div className="relative max-w-7xl mx-auto px-4 md:px-6">
 
-        {/* HEADER */}
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 mb-16 md:mb-24">
 
-        <div className="text-center mb-24">
+          <div className="text-center md:text-left">
 
-          <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full border border-[#c7a36a]/20 bg-[#1a140d]/50 mb-8">
+            <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full border border-[#c7a36a]/20 bg-[#1a140d]/50 mb-8">
 
-            <Sparkles
-              size={16}
-              className="text-[#c7a36a]"
-            />
+              <Sparkles
+                size={16}
+                className="text-[#c7a36a]"
+              />
 
-            <span className="text-sm text-[#c7a36a] uppercase tracking-[0.25em]">
-              AI Showcase
-            </span>
+              <span className="text-sm text-[#c7a36a] uppercase tracking-[0.25em]">
+                Style Showcase
+              </span>
+
+            </div>
+
+            <h2 className="text-4xl md:text-7xl font-black tracking-[-0.05em] leading-[0.95] mb-6">
+
+              Cinematic
+              <br />
+
+              Visual Direction
+
+            </h2>
+
+            <p className="text-lg md:text-xl text-gray-400 max-w-2xl leading-relaxed">
+
+              Editorial-quality aesthetics your generator is tuned for.
+              Your own creations live in your private gallery after generation.
+
+            </p>
 
           </div>
 
-          <h2 className="text-5xl md:text-7xl font-black tracking-[-0.05em] leading-[0.95] mb-8">
-
-            Cinematic
-            <br />
-
-            AI Generations
-
-          </h2>
-
-          <p className="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
-
-            Explore ultra realistic cinematic visuals
-            generated with advanced AI consistency systems.
-
-          </p>
+          <Link
+            href="/dashboard/gallery"
+            className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-[#c7a36a] text-black font-bold hover:scale-[1.03] transition shrink-0"
+          >
+            View Your Gallery
+            <ArrowRight size={20} />
+          </Link>
 
         </div>
-
-        {/* MASONRY GRID */}
 
         <div className="columns-1 md:columns-2 xl:columns-3 gap-6 space-y-6">
 
@@ -80,56 +87,30 @@ export default function GallerySection() {
 
             <div
               key={index}
-
               className="group relative overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] break-inside-avoid"
             >
-
-              {/* IMAGE */}
 
               <div className="relative overflow-hidden">
 
                 <img
                   src={`${image}?w=1200&q=80&auto=format&fit=crop`}
-
-                  alt="AI Generation"
-
+                  alt="Editorial style reference"
                   className="w-full object-cover group-hover:scale-105 transition duration-700"
                 />
-
-                {/* OVERLAY */}
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition duration-500" />
 
               </div>
 
-              {/* CONTENT */}
-
               <div className="absolute bottom-0 left-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition duration-500">
 
-                <div className="flex items-center justify-between">
+                <p className="text-[#c7a36a] uppercase tracking-[0.25em] text-xs mb-2">
+                  Style Reference
+                </p>
 
-                  <div>
-
-                    <p className="text-[#c7a36a] uppercase tracking-[0.25em] text-xs mb-2">
-                      AI Generated
-                    </p>
-
-                    <h3 className="text-2xl font-bold">
-                      Cinematic Portrait
-                    </h3>
-
-                  </div>
-
-                  <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center">
-
-                    <Sparkles
-                      size={20}
-                      className="text-[#c7a36a]"
-                    />
-
-                  </div>
-
-                </div>
+                <h3 className="text-xl font-bold">
+                  Luxury Editorial
+                </h3>
 
               </div>
 

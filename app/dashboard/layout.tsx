@@ -41,6 +41,13 @@ export default function DashboardLayout({
       "/login";
   }
 
+  function isActiveLink(href: string) {
+    if (href === "/dashboard") {
+      return pathname === "/dashboard";
+    }
+    return pathname.startsWith(href);
+  }
+
   const links = [
 
     {
@@ -165,8 +172,7 @@ export default function DashboardLayout({
                 link.icon;
 
               const active =
-                pathname ===
-                link.href;
+                isActiveLink(link.href);
 
               return (
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import Link from "next/link";
 
 import {
   Sparkles,
@@ -9,13 +9,26 @@ import {
   ImageIcon,
 } from "lucide-react";
 
+const capabilities = [
+  {
+    label: "Persistent Characters",
+    value: "Identity",
+  },
+  {
+    label: "AI Prompt Intelligence",
+    value: "Enhanced",
+  },
+  {
+    label: "Multi-Image Generation",
+    value: "4 Variations",
+  },
+];
+
 export default function HeroSection() {
 
   return (
 
     <section className="relative overflow-hidden border-b border-white/5">
-
-      {/* BACKGROUND GLOW */}
 
       <div className="absolute inset-0 overflow-hidden">
 
@@ -25,9 +38,7 @@ export default function HeroSection() {
 
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-6 py-28">
-
-        {/* BADGE */}
+      <div className="relative max-w-7xl mx-auto px-4 md:px-6 py-20 md:py-28">
 
         <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full border border-[#c7a36a]/20 bg-[#1a140d]/50 mb-10">
 
@@ -42,15 +53,11 @@ export default function HeroSection() {
 
         </div>
 
-        {/* HERO GRID */}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-
-          {/* LEFT */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 
           <div>
 
-            <h1 className="text-6xl md:text-8xl font-black leading-[0.95] tracking-[-0.05em] mb-8">
+            <h1 className="text-5xl sm:text-6xl md:text-8xl font-black leading-[0.95] tracking-[-0.05em] mb-8">
 
               Create
               <br />
@@ -65,92 +72,61 @@ export default function HeroSection() {
 
             </h1>
 
-            <p className="text-xl text-gray-400 leading-relaxed max-w-2xl mb-10">
+            <p className="text-lg md:text-xl text-gray-400 leading-relaxed max-w-2xl mb-10">
 
-              Generate ultra realistic influencer visuals,
-              cinematic AI photography and persistent
-              character identities powered by advanced
-              AI generation systems.
+              Generate luxury editorial visuals with persistent
+              character consistency, AI prompt intelligence, and
+              multi-image FLUX generation — built for creators and brands.
 
             </p>
 
-            {/* CTA */}
+            <div className="flex flex-wrap gap-4 mb-14">
 
-            <div className="flex flex-wrap gap-5 mb-14">
-
-              <button className="px-8 py-5 rounded-2xl bg-[#c7a36a] text-black font-bold hover:scale-[1.03] transition">
-
+              <Link
+                href="/dashboard/image-generator"
+                className="px-8 py-5 rounded-2xl bg-[#c7a36a] text-black font-bold hover:scale-[1.03] transition"
+              >
                 Start Creating
+              </Link>
 
-              </button>
-
-              <button className="px-8 py-5 rounded-2xl border border-white/10 bg-white/5 backdrop-blur hover:bg-white/10 transition">
-
+              <Link
+                href="/dashboard/gallery"
+                className="px-8 py-5 rounded-2xl border border-white/10 bg-white/5 backdrop-blur hover:bg-white/10 transition"
+              >
                 Explore Gallery
-
-              </button>
+              </Link>
 
             </div>
 
-            {/* STATS */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
 
-            <div className="grid grid-cols-3 gap-6">
+              {capabilities.map((item) => (
 
-              <div>
+                <div key={item.label}>
 
-                <p className="text-4xl font-black mb-2">
-                  4K+
-                </p>
+                  <p className="text-2xl md:text-3xl font-black text-[#c7a36a] mb-2">
+                    {item.value}
+                  </p>
 
-                <p className="text-gray-500 text-sm uppercase tracking-[0.2em]">
-                  AI Generations
-                </p>
+                  <p className="text-gray-500 text-sm uppercase tracking-[0.2em]">
+                    {item.label}
+                  </p>
 
-              </div>
+                </div>
 
-              <div>
-
-                <p className="text-4xl font-black mb-2">
-                  98%
-                </p>
-
-                <p className="text-gray-500 text-sm uppercase tracking-[0.2em]">
-                  Consistency
-                </p>
-
-              </div>
-
-              <div>
-
-                <p className="text-4xl font-black mb-2">
-                  AI
-                </p>
-
-                <p className="text-gray-500 text-sm uppercase tracking-[0.2em]">
-                  Powered
-                </p>
-
-              </div>
+              ))}
 
             </div>
 
           </div>
 
-          {/* RIGHT */}
-
           <div className="relative">
 
-            {/* MAIN CARD */}
-
-            <div className="relative rounded-[40px] border border-white/10 bg-white/[0.03] backdrop-blur-xl p-8 overflow-hidden">
-
-              {/* CARD GLOW */}
+            <div className="relative rounded-[40px] border border-white/10 bg-white/[0.03] backdrop-blur-xl p-6 md:p-8 overflow-hidden">
 
               <div className="absolute inset-0 bg-gradient-to-br from-[#c7a36a]/10 to-purple-500/10" />
 
               <div className="relative">
-
-                {/* TOP */}
 
                 <div className="flex items-center justify-between mb-10">
 
@@ -160,7 +136,7 @@ export default function HeroSection() {
                       AI ENGINE
                     </p>
 
-                    <h3 className="text-3xl font-bold">
+                    <h3 className="text-2xl md:text-3xl font-bold">
                       Cinematic Generation
                     </h3>
 
@@ -170,11 +146,9 @@ export default function HeroSection() {
 
                 </div>
 
-                {/* PREVIEW */}
-
                 <div className="aspect-[4/5] rounded-[30px] bg-gradient-to-br from-[#1a140d] to-[#0f0f0f] border border-white/5 mb-8 flex items-center justify-center">
 
-                  <div className="text-center">
+                  <div className="text-center px-6">
 
                     <div className="w-24 h-24 rounded-3xl bg-[#c7a36a]/10 flex items-center justify-center mx-auto mb-6">
 
@@ -185,15 +159,13 @@ export default function HeroSection() {
 
                     </div>
 
-                    <p className="text-gray-400 max-w-xs">
-                      Ultra realistic cinematic AI generations with persistent character intelligence.
+                    <p className="text-gray-400 max-w-xs mx-auto">
+                      FLUX-powered multi-image generation with character memory and prompt intelligence.
                     </p>
 
                   </div>
 
                 </div>
-
-                {/* FEATURES */}
 
                 <div className="grid grid-cols-2 gap-4">
 
@@ -226,7 +198,7 @@ export default function HeroSection() {
                     </p>
 
                     <p className="text-sm text-gray-500">
-                      AI enhanced cinematic prompts
+                      OpenAI-enhanced prompts
                     </p>
 
                   </div>

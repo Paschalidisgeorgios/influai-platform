@@ -43,8 +43,8 @@ body {
 }
 
 ::selection {
-  background: var(--accent-orange);
-  color: white;
+  background: #c7a36a;
+  color: #000000;
 }
 
 /* Cinematic utility classes */

@@ -209,6 +209,10 @@ export default function ImageGeneratorPage() {
     setEnhancedPrompt] =
     useState("");
 
+  const [enhancementFallback,
+    setEnhancementFallback] =
+    useState(false);
+
   const [images, setImages] =
     useState<GeneratedImage[]>([]);
 
@@ -268,9 +272,6 @@ export default function ImageGeneratorPage() {
         });
 
     if (error) {
-
-      console.log(error);
-
       return;
     }
 
@@ -318,6 +319,8 @@ export default function ImageGeneratorPage() {
 
       setImages([]);
 
+      setEnhancementFallback(false);
+
       /*
         STEP 1
       */
@@ -362,6 +365,8 @@ export default function ImageGeneratorPage() {
       let safeEnhancedPrompt =
         consistencyPrompt;
 
+      let usedFallback = false;
+
       try {
         const enhanceResponse =
           await fetch("/api/enhance-prompt", {
@@ -384,12 +389,20 @@ export default function ImageGeneratorPage() {
           enhancedData?.enhanced
         );
 
+        if (enhancedData?.fallback) {
+          usedFallback = true;
+        }
+
         if (enhanced) {
           safeEnhancedPrompt = enhanced;
+        } else {
+          usedFallback = true;
         }
-      } catch (error) {
-        console.log("PROMPT ENHANCEMENT FAILED:", error);
+      } catch {
+        usedFallback = true;
       }
+
+      setEnhancementFallback(usedFallback);
 
       setEnhancedPrompt(
         safeEnhancedPrompt
@@ -407,11 +420,6 @@ export default function ImageGeneratorPage() {
       ]
         .filter(Boolean)
         .join(", ");
-
-      console.log(
-        "FINAL PROMPT:",
-        finalPrompt
-      );
 
       /*
         STEP 3
@@ -431,11 +439,15 @@ export default function ImageGeneratorPage() {
 
       if (!session) {
         toast.error("Not authenticated");
+        setLoading(false);
+        setGenerationStep("");
         return;
       }
 
       if (!sanitizePrompt(finalPrompt)) {
         toast.error("Invalid prompt");
+        setLoading(false);
+        setGenerationStep("");
         return;
       }
 
@@ -477,8 +489,6 @@ export default function ImageGeneratorPage() {
 
       const data = await response.json();
 
-      console.log("IMAGE API RESPONSE:", data);
-
       if (!response.ok) {
         toast.error(
           typeof data?.error === "string"
@@ -489,8 +499,6 @@ export default function ImageGeneratorPage() {
       }
 
       const normalized = normalizeApiImages(data);
-
-      console.log("NORMALIZED IMAGES:", normalized);
 
       if (normalized.length === 0) {
         toast.error("No images returned");
@@ -515,8 +523,9 @@ export default function ImageGeneratorPage() {
         data.dbErrors.length > 0;
 
       if (savedCount === 0 || hasDbErrors) {
-        toast.error(
-          "Images generated but not saved to gallery"
+        toast(
+          "Images generated but not saved to gallery",
+          { icon: "⚠️" }
         );
       }
 
@@ -542,16 +551,10 @@ export default function ImageGeneratorPage() {
               .eq("id", selectedCharacter.id);
 
           if (memoryError) {
-            console.log(
-              "CHARACTER MEMORY UPDATE FAILED:",
-              memoryError
-            );
+            // non-blocking
           }
-        } catch (memoryError) {
-          console.log(
-            "CHARACTER MEMORY UPDATE FAILED:",
-            memoryError
-          );
+        } catch {
+          // non-blocking
         }
       }
 
@@ -562,13 +565,8 @@ export default function ImageGeneratorPage() {
         toast.success("Images generated");
       }
 
-    } catch (error) {
-
-      console.log(error);
-
-      toast.error(
-        "Generation failed"
-      );
+    } catch {
+      toast.error("Generation failed");
 
     } finally {
 
@@ -736,9 +734,11 @@ export default function ImageGeneratorPage() {
                 enhancedPrompt={
                   enhancedPrompt
                 }
-
                 hasCharacter={
                   !!selectedCharacter
+                }
+                enhancementFallback={
+                  enhancementFallback
                 }
               />
 

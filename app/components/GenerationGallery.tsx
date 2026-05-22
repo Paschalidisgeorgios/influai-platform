@@ -8,6 +8,8 @@ import { usePathname } from "next/navigation";
 
 import {
   Heart,
+  Sparkles,
+  ImageIcon,
 } from "lucide-react";
 
 import toast from "react-hot-toast";
@@ -65,8 +67,6 @@ export default function GenerationGallery() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      console.log("GALLERY USER:", user?.id ?? null);
-
       if (!user) {
         setGenerations([]);
         setLoading(false);
@@ -94,7 +94,7 @@ export default function GenerationGallery() {
       error = withCharacters.error;
 
       if (error) {
-        console.log("GALLERY ERROR (with join):", error);
+        console.error("GALLERY ERROR:", error.message);
 
         const fallback = await supabase
           .from("generations")
@@ -108,10 +108,8 @@ export default function GenerationGallery() {
         error = fallback.error;
       }
 
-      console.log("GALLERY DATA:", data);
-      console.log("GALLERY ERROR:", error);
-
       if (error) {
+        console.error("GALLERY ERROR:", error.message);
         setGenerations([]);
         setLoading(false);
         return;
@@ -123,8 +121,6 @@ export default function GenerationGallery() {
             generation.image_url
           )
       );
-
-      console.log("VALID GENERATIONS:", valid);
 
       setGenerations(valid);
       setLoading(false);
@@ -273,26 +269,55 @@ export default function GenerationGallery() {
 
         {loading && (
 
-          <div className="text-gray-500">
-            Loading generations...
+          <div className="border border-[#1a1a1a] rounded-3xl p-16 text-center">
+
+            <div className="w-12 h-12 rounded-full border-2 border-[#c7a36a] border-t-transparent animate-spin mx-auto mb-6" />
+
+            <p className="text-gray-400">
+              Loading your gallery...
+            </p>
+
           </div>
 
         )}
 
-        {/* EMPTY */}
-
         {!loading &&
           filtered.length === 0 && (
 
-          <div className="border border-dashed border-[#1a1a1a] rounded-3xl p-20 text-center text-gray-500">
+          <div className="border border-dashed border-[#1a1a1a] rounded-3xl p-12 md:p-20 text-center">
 
-            <p className="text-lg mb-2">
-              No generations yet
+            <div className="w-20 h-20 rounded-3xl bg-[#1a140d] flex items-center justify-center mx-auto mb-8">
+
+              <ImageIcon
+                className="text-[#c7a36a]"
+                size={36}
+              />
+
+            </div>
+
+            <h3 className="text-2xl font-bold mb-4">
+              {showFavorites
+                ? "No favorites yet"
+                : "Your gallery is empty"}
+            </h3>
+
+            <p className="text-gray-500 max-w-md mx-auto mb-10 leading-relaxed">
+              {showFavorites
+                ? "Favorite images from your gallery to see them here."
+                : "Generate cinematic images in the AI Generator. Every save appears here automatically."}
             </p>
 
-            <p className="text-sm text-gray-600">
-              Generate images in the AI Generator and they will appear here.
-            </p>
+            {!showFavorites && (
+
+              <Link
+                href="/dashboard/image-generator"
+                className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-[#c7a36a] text-black font-bold hover:opacity-90 transition"
+              >
+                <Sparkles size={18} />
+                Open Image Generator
+              </Link>
+
+            )}
 
           </div>
         )}
