@@ -4,14 +4,31 @@ import Replicate from "replicate";
 
 import { createClient } from "@supabase/supabase-js";
 
-const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN!,
-});
+function getReplicate() {
+  const token = process.env.REPLICATE_API_TOKEN;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+  if (!token) {
+    throw new Error("Replicate is not configured");
+  }
+
+  return new Replicate({ auth: token });
+}
+
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !serviceKey) {
+    throw new Error("Supabase admin is not configured");
+  }
+
+  return createClient(url, serviceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
 
 type DbErrorEntry = {
   imageUrl: string;
@@ -86,6 +103,9 @@ async function normalizeReplicateOutput(
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = getSupabaseAdmin();
+    const replicate = getReplicate();
+
     const authHeader = req.headers.get("authorization");
 
     if (!authHeader) {

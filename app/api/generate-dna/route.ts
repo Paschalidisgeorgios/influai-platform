@@ -2,16 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey:
-    process.env.OPENAI_API_KEY,
-});
-
 export async function POST(
   req: NextRequest
 ) {
 
   try {
+
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: "OpenAI is not configured" },
+        { status: 503 }
+      );
+    }
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     const body =
       await req.json();
@@ -108,24 +114,22 @@ No intro text.
       response.choices?.[0]
         ?.message?.content || "";
 
-    console.log(
-      "GENERATED DNA:",
-      dna
-    );
-
     return NextResponse.json({
       dna,
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
 
-    console.log(error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "DNA generation failed";
+
+    console.error("GENERATE DNA ERROR:", message);
 
     return NextResponse.json(
       {
-        error:
-          error.message ||
-          "DNA generation failed",
+        error: message,
       },
       {
         status: 500,
