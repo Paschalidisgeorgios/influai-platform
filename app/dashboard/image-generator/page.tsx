@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { useRouter } from "next/navigation";
+
 import toast from "react-hot-toast";
 
 import { supabase } from "../../lib/supabase";
@@ -200,7 +202,15 @@ const aspectRatios = [
   "4:5",
 ];
 
+const CREDIT_PLANS = [
+  { id: "starter" as const, label: "Starter", credits: 50 },
+  { id: "professional" as const, label: "Professional", credits: 150 },
+  { id: "ultimate" as const, label: "Ultimate", credits: 300 },
+];
+
 export default function ImageGeneratorPage() {
+
+  const router = useRouter();
 
   const [prompt, setPrompt] =
     useState("");
@@ -250,9 +260,77 @@ export default function ImageGeneratorPage() {
     setRealism] =
     useState(80);
 
+  const [checkoutLoading,
+    setCheckoutLoading] =
+    useState<string | null>(null);
+
   useEffect(() => {
     loadCharacters();
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(
+      window.location.search
+    );
+
+    const payment = params.get("payment");
+
+    if (payment === "success") {
+      toast.success(
+        "Payment successful. Credits will be available shortly."
+      );
+      router.replace("/dashboard/image-generator");
+    } else if (payment === "cancelled") {
+      toast.error("Payment cancelled.");
+      router.replace("/dashboard/image-generator");
+    }
+  }, [router]);
+
+  async function startCheckout(
+    plan: "starter" | "professional" | "ultimate"
+  ) {
+    try {
+      setCheckoutLoading(plan);
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        toast.error("Not authenticated");
+        return;
+      }
+
+      const response = await fetch(
+        "/api/stripe/checkout",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ plan }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.url) {
+        toast.error(
+          typeof data?.error === "string"
+            ? data.error
+            : "Checkout failed"
+        );
+        return;
+      }
+
+      window.location.href = data.url;
+    } catch {
+      toast.error("Checkout failed");
+    } finally {
+      setCheckoutLoading(null);
+    }
+  }
 
   async function loadCharacters() {
 
@@ -316,8 +394,6 @@ export default function ImageGeneratorPage() {
     try {
 
       setLoading(true);
-
-      setImages([]);
 
       setEnhancedPrompt("");
 
@@ -493,6 +569,13 @@ export default function ImageGeneratorPage() {
 
       const data = await response.json();
 
+      if (response.status === 402 && data.paymentRequired) {
+        toast.error(
+          "Free image used. Buy credits to continue."
+        );
+        return;
+      }
+
       if (!response.ok) {
         toast.error(
           typeof data?.error === "string"
@@ -652,6 +735,56 @@ export default function ImageGeneratorPage() {
                 )}
 
               </select>
+
+            </div>
+
+            <div className="mb-8 bg-[#1a140d]/40 border border-[#c7a36a]/20 rounded-3xl p-5 md:p-6">
+
+              <p className="text-[#c7a36a] uppercase tracking-[0.2em] text-xs mb-2">
+                Credits
+              </p>
+
+              <h3 className="text-lg font-bold mb-2">
+                1 free image included
+              </h3>
+
+              <p className="text-sm text-gray-400 mb-5">
+                Buy credits to continue generating. Each image costs 1 credit.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+                {CREDIT_PLANS.map((plan) => (
+
+                  <button
+                    key={plan.id}
+                    type="button"
+                    disabled={!!checkoutLoading}
+                    onClick={() =>
+                      startCheckout(plan.id)
+                    }
+                    className="bg-black border border-[#1a1a1a] hover:border-[#c7a36a] rounded-2xl p-4 text-left transition disabled:opacity-50"
+                  >
+
+                    <p className="font-semibold text-[#c7a36a] mb-1">
+                      {plan.label}
+                    </p>
+
+                    <p className="text-sm text-gray-400">
+                      {plan.credits} credits
+                    </p>
+
+                    <p className="text-xs text-gray-500 mt-2">
+                      {checkoutLoading === plan.id
+                        ? "Redirecting..."
+                        : "Buy now"}
+                    </p>
+
+                  </button>
+
+                ))}
+
+              </div>
 
             </div>
 
