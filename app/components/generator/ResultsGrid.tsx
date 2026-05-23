@@ -1,5 +1,7 @@
 "use client";
 
+import { isHttpImageUrl } from "../../lib/image-url";
+
 import ImageCard from "./ImageCard";
 
 type Image = {
@@ -7,15 +9,12 @@ type Image = {
   prompt: string;
 };
 
-function isValidImageUrl(
-  url: unknown
-): url is string {
+function isValidResultImage(
+  image: Image
+): boolean {
   return (
-    typeof url === "string" &&
-    url.trim().length > 0 &&
-    (url.startsWith("http://") ||
-      url.startsWith("https://") ||
-      url.startsWith("data:image/"))
+    isHttpImageUrl(image.url) &&
+    typeof image.prompt === "string"
   );
 }
 
@@ -47,9 +46,12 @@ export default function ResultsGrid({
     );
   }
 
-  const validImages = images.filter(
-    (image) => isValidImageUrl(image.url)
-  );
+  const validImages = images
+    .filter(isValidResultImage)
+    .map((image) => ({
+      url: image.url.trim(),
+      prompt: image.prompt,
+    }));
 
   if (validImages.length === 0) {
 

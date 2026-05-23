@@ -1,6 +1,10 @@
 "use client";
 
+import { useState } from "react";
+
 import toast from "react-hot-toast";
+
+import { isHttpImageUrl } from "../../lib/image-url";
 
 import {
   Download,
@@ -22,26 +26,25 @@ type Props = {
   onCreateVariations: () => void;
 };
 
-function isValidImageUrl(
-  url: unknown
-): url is string {
-  return (
-    typeof url === "string" &&
-    url.trim().length > 0 &&
-    (url.startsWith("http://") ||
-      url.startsWith("https://") ||
-      url.startsWith("data:image/"))
-  );
-}
-
 export default function ImageCard({
   image,
   onReusePrompt,
   onCreateVariations,
 }: Props) {
 
-  if (!isValidImageUrl(image.url)) {
-    return null;
+  const [imageError, setImageError] =
+    useState(false);
+
+  const imageUrl = isHttpImageUrl(image.url)
+    ? image.url.trim()
+    : null;
+
+  if (!imageUrl || imageError) {
+    return (
+      <div className="bg-black border border-dashed border-[#1a1a1a] rounded-2xl p-6 text-center text-gray-500">
+        Image could not be displayed.
+      </div>
+    );
   }
 
   /*
@@ -50,10 +53,14 @@ export default function ImageCard({
 
   async function downloadImage() {
 
+    if (!imageUrl) {
+      return;
+    }
+
     try {
 
       const response =
-        await fetch(image.url);
+        await fetch(imageUrl);
 
       const blob =
         await response.blob();
@@ -128,7 +135,9 @@ export default function ImageCard({
       <img
         src={image.url}
         alt="Generated image"
-        className="w-full aspect-square object-cover"
+        referrerPolicy="no-referrer"
+        onError={() => setImageError(true)}
+        className="w-full aspect-square object-cover bg-black"
       />
 
       {/* ACTIONS */}

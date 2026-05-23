@@ -6,6 +6,11 @@ import {
   authenticateBearerUser,
 } from "../../lib/supabase-admin";
 
+import {
+  isHttpImageUrl,
+  normalizeImageUrlList,
+} from "../../lib/image-url";
+
 function getReplicate() {
   const token = process.env.REPLICATE_API_TOKEN;
 
@@ -22,70 +27,6 @@ type DbErrorEntry = {
   code?: string;
   details?: string;
 };
-
-async function extractUrlFromItem(
-  item: unknown
-): Promise<string | null> {
-  if (item == null) return null;
-
-  if (typeof item === "string") {
-    const trimmed = item.trim();
-    return trimmed.length > 0 ? trimmed : null;
-  }
-
-  if (item instanceof URL) {
-    return item.href;
-  }
-
-  if (typeof item === "object") {
-    const record = item as Record<string, unknown>;
-
-    if (typeof record.url === "string") {
-      const trimmed = record.url.trim();
-      return trimmed.length > 0 ? trimmed : null;
-    }
-
-    if (typeof record.href === "string") {
-      const trimmed = record.href.trim();
-      return trimmed.length > 0 ? trimmed : null;
-    }
-
-    if (typeof record.url === "function") {
-      try {
-        const result = await Promise.resolve(
-          (record.url as () => unknown)()
-        );
-        return extractUrlFromItem(result);
-      } catch {
-        return null;
-      }
-    }
-  }
-
-  return null;
-}
-
-async function normalizeReplicateOutput(
-  output: unknown
-): Promise<string[]> {
-  if (output == null) return [];
-
-  const items = Array.isArray(output)
-    ? output
-    : [output];
-
-  const urls: string[] = [];
-
-  for (const item of items) {
-    const url = await extractUrlFromItem(item);
-
-    if (url && !urls.includes(url)) {
-      urls.push(url);
-    }
-  }
-
-  return urls;
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -152,43 +93,48 @@ export async function POST(req: NextRequest) {
 
     const creditsBefore = creditsRow?.credits ?? 0;
     const priorGenerations = generationCount ?? 0;
-    const freeAlreadyUsed = priorGenerations >= 1;
+    const freeGenerationUsed = priorGenerations >= 1;
 
     let allowedImages = 0;
-    let usingFreeImage = false;
+    let usingFreeGeneration = false;
 
     if (creditsBefore > 0) {
       allowedImages = Math.min(4, creditsBefore);
+      usingFreeGeneration = false;
     } else if (priorGenerations === 0) {
-      allowedImages = 1;
-      usingFreeImage = true;
+      allowedImages = 4;
+      usingFreeGeneration = true;
     } else {
+      console.log("FREE_USAGE_STATE", {
+        priorGenerations,
+        creditsBefore,
+        freeGenerationUsed: true,
+        blocked: true,
+      });
+
       return NextResponse.json(
         {
           error: "Payment required",
           paymentRequired: true,
-          freeUsed: true,
+          freeGenerationUsed: true,
           credits: 0,
         },
         { status: 402 }
       );
     }
 
-    if (allowedImages <= 0) {
-      return NextResponse.json(
-        {
-          error: "Payment required",
-          paymentRequired: true,
-          freeUsed: freeAlreadyUsed,
-          credits: creditsBefore,
-        },
-        { status: 402 }
-      );
-    }
+    console.log("FREE_USAGE_STATE", {
+      priorGenerations,
+      freeGenerationUsed,
+      usingFreeGeneration,
+    });
 
-    console.log(
-      `Image generation started for user ${user.id} (${allowedImages} image(s))`
-    );
+    console.log("CREDITS_STATE", {
+      creditsBefore,
+      creditsRow: creditsRow ?? null,
+    });
+
+    console.log("ALLOWED_IMAGES", allowedImages);
 
     const output = await replicate.run(
       "black-forest-labs/flux-schnell",
@@ -202,13 +148,22 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    const allImages = await normalizeReplicateOutput(
+    const allImages = await normalizeImageUrlList(
       output
     );
 
-    const images = allImages.slice(0, allowedImages);
+    const images = allImages
+      .filter(isHttpImageUrl)
+      .slice(0, allowedImages);
 
     if (images.length === 0) {
+      console.error("REPLICATE OUTPUT HAD NO VALID URLS", {
+        outputType: typeof output,
+        rawCount: Array.isArray(output)
+          ? output.length
+          : 1,
+      });
+
       return NextResponse.json(
         { error: "No images returned from Replicate" },
         { status: 500 }
@@ -219,6 +174,10 @@ export async function POST(req: NextRequest) {
     const dbErrors: DbErrorEntry[] = [];
 
     for (const imageUrl of images) {
+      if (!isHttpImageUrl(imageUrl)) {
+        continue;
+      }
+
       const { data, error } = await supabase
         .from("generations")
         .insert({
@@ -253,7 +212,7 @@ export async function POST(req: NextRequest) {
 
     let creditsAfter = creditsBefore;
 
-    if (!usingFreeImage && savedCount > 0) {
+    if (!usingFreeGeneration && savedCount > 0) {
       creditsAfter = Math.max(
         0,
         creditsBefore - savedCount
@@ -278,7 +237,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(
-      `Generated ${images.length} images, saved ${savedCount}, credits ${creditsBefore} -> ${creditsAfter}`
+      `Generated ${images.length} valid image URL(s), saved ${savedCount}`
     );
 
     return NextResponse.json({
@@ -287,8 +246,9 @@ export async function POST(req: NextRequest) {
       savedCount,
       dbErrors,
       usage: {
-        freeLimit: 1,
-        freeUsed: freeAlreadyUsed || usingFreeImage,
+        freeGenerationLimit: 1,
+        freeGenerationUsed:
+          freeGenerationUsed || usingFreeGeneration,
         creditsBefore,
         creditsAfter,
         allowedImages,

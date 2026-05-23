@@ -28,6 +28,8 @@ import {
   updateCharacterMemory,
 } from "../../lib/ai/updateCharacterMemory";
 
+import { isHttpImageUrl } from "../../lib/image-url";
+
 type Character = {
   id: string;
   name: string;
@@ -50,13 +52,7 @@ type GeneratedImage = {
 function isValidImageUrl(
   url: unknown
 ): url is string {
-  return (
-    typeof url === "string" &&
-    url.trim().length > 0 &&
-    (url.startsWith("http://") ||
-      url.startsWith("https://") ||
-      url.startsWith("data:image/"))
-  );
+  return isHttpImageUrl(url);
 }
 
 function sanitizePrompt(
@@ -92,45 +88,37 @@ function normalizeApiImages(
     data.data ??
     [];
 
+  const candidates: unknown[] = [];
+
   if (typeof rawImages === "string") {
-    return isValidImageUrl(rawImages)
-      ? [rawImages]
-      : [];
+    candidates.push(rawImages);
+  } else if (Array.isArray(rawImages)) {
+    candidates.push(...rawImages);
   }
 
-  if (!Array.isArray(rawImages)) {
-    return [];
-  }
-
-  return rawImages
+  return candidates
     .map((item: unknown) => {
       if (isValidImageUrl(item)) {
-        return item;
+        return item.trim();
       }
 
-      if (
-        item &&
-        typeof item === "object"
-      ) {
+      if (item && typeof item === "object") {
         const record = item as {
           url?: unknown;
           href?: unknown;
+          image_url?: unknown;
         };
 
-        if (
-          isValidImageUrl(
-            record.url
-          )
-        ) {
-          return record.url;
+        if (isValidImageUrl(record.url)) {
+          return String(record.url).trim();
         }
 
-        if (
-          isValidImageUrl(
-            record.href
-          )
-        ) {
-          return record.href;
+        if (isValidImageUrl(record.href)) {
+          return String(record.href).trim();
+        }
+
+        if (isValidImageUrl(record.image_url)) {
+          return String(record.image_url).trim();
         }
       }
 
@@ -501,6 +489,8 @@ export default function ImageGeneratorPage() {
         .filter(Boolean)
         .join(", ");
 
+      console.log("FINAL_PROMPT:", finalPrompt);
+
       /*
         STEP 3
       */
@@ -569,9 +559,11 @@ export default function ImageGeneratorPage() {
 
       const data = await response.json();
 
+      console.log("IMAGE_API_RESPONSE:", data);
+
       if (response.status === 402 && data.paymentRequired) {
         toast.error(
-          "Free image used. Buy credits to continue."
+          "Free generation used. Buy credits to continue."
         );
         return;
       }
@@ -585,7 +577,11 @@ export default function ImageGeneratorPage() {
         return;
       }
 
-      const normalized = normalizeApiImages(data);
+      const normalized = normalizeApiImages(
+        data as Record<string, unknown>
+      );
+
+      console.log("NORMALIZED_IMAGES:", normalized);
 
       if (normalized.length === 0) {
         toast.error("No images returned");
@@ -745,11 +741,11 @@ export default function ImageGeneratorPage() {
               </p>
 
               <h3 className="text-lg font-bold mb-2">
-                1 free image included
+                1 free generation included
               </h3>
 
               <p className="text-sm text-gray-400 mb-5">
-                Buy credits to continue generating. Each image costs 1 credit.
+                Your first request includes up to 4 images. After that, each image costs 1 credit.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

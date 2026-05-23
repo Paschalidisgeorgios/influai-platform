@@ -14,6 +14,8 @@ import {
 
 import toast from "react-hot-toast";
 
+import { isHttpImageUrl } from "../lib/image-url";
+
 import { supabase } from "../lib/supabase";
 
 type Character = {
@@ -38,9 +40,21 @@ function isValidGalleryUrl(
 ): url is string {
   return (
     typeof url === "string" &&
-    url.trim().length > 0 &&
-    url.startsWith("https://")
+    isHttpImageUrl(url) &&
+    url.trim().startsWith("https://")
   );
+}
+
+function getGalleryImageSrc(
+  generation: Generation
+): string | null {
+  const url = generation.image_url;
+
+  if (!isValidGalleryUrl(url)) {
+    return null;
+  }
+
+  return url.trim();
 }
 
 export default function GenerationGallery() {
@@ -327,7 +341,17 @@ export default function GenerationGallery() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
 
           {filtered.map(
-            (generation) => (
+            (generation) => {
+
+              const imageSrc = getGalleryImageSrc(
+                generation
+              );
+
+              if (!imageSrc) {
+                return null;
+              }
+
+              return (
 
               <div
                 key={generation.id}
@@ -335,16 +359,19 @@ export default function GenerationGallery() {
                 className="bg-[#080808] border border-[#1a1a1a] rounded-3xl overflow-hidden hover:border-[#c7a36a] transition"
               >
 
-                {/* IMAGE */}
-
                 <Link
                   href={`/dashboard/gallery/${generation.id}`}
+                  className="block bg-black"
                 >
 
                   <img
-                    src={generation.image_url}
-                    alt={generation.prompt}
-                    className="w-full aspect-square object-cover cursor-pointer"
+                    src={imageSrc}
+                    alt="Generated image"
+                    referrerPolicy="no-referrer"
+                    className="w-full aspect-square object-cover cursor-pointer bg-black"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
                   />
 
                 </Link>
@@ -429,7 +456,8 @@ export default function GenerationGallery() {
                 </div>
 
               </div>
-            )
+            );
+            }
           )}
 
         </div>
