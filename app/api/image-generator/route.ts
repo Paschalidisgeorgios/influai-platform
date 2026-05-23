@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import Replicate from "replicate";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import {
   authenticateBearerUser,
 } from "../../lib/supabase-admin";
@@ -10,6 +12,9 @@ import {
   isHttpImageUrl,
   normalizeImageUrlList,
 } from "../../lib/image-url";
+
+const GENERATION_IMAGES_BUCKET =
+  "generation-images";
 
 function getReplicate() {
   const token = process.env.REPLICATE_API_TOKEN;
@@ -27,6 +32,61 @@ type DbErrorEntry = {
   code?: string;
   details?: string;
 };
+
+async function persistImageToStorage(
+  supabase: SupabaseClient,
+  userId: string,
+  remoteUrl: string,
+  index: number
+): Promise<string> {
+  const response = await fetch(remoteUrl, {
+    headers: {
+      Accept: "image/*",
+      "User-Agent": "InfluAI-Image-Persist/1.0",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch image (${response.status})`
+    );
+  }
+
+  const arrayBuffer =
+    await response.arrayBuffer();
+
+  const bytes = new Uint8Array(arrayBuffer);
+
+  if (bytes.byteLength === 0) {
+    throw new Error("Fetched image is empty");
+  }
+
+  const storagePath = `${userId}/${Date.now()}-${index}.webp`;
+
+  const { error: uploadError } =
+    await supabase.storage
+      .from(GENERATION_IMAGES_BUCKET)
+      .upload(storagePath, bytes, {
+        contentType: "image/webp",
+        upsert: false,
+      });
+
+  if (uploadError) {
+    throw new Error(uploadError.message);
+  }
+
+  const { data } = supabase.storage
+    .from(GENERATION_IMAGES_BUCKET)
+    .getPublicUrl(storagePath);
+
+  if (!data.publicUrl) {
+    throw new Error(
+      "Failed to resolve public storage URL"
+    );
+  }
+
+  return data.publicUrl;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -152,11 +212,11 @@ export async function POST(req: NextRequest) {
       output
     );
 
-    const images = allImages
+    const replicateUrls = allImages
       .filter(isHttpImageUrl)
       .slice(0, allowedImages);
 
-    if (images.length === 0) {
+    if (replicateUrls.length === 0) {
       console.error("REPLICATE OUTPUT HAD NO VALID URLS", {
         outputType: typeof output,
         rawCount: Array.isArray(output)
@@ -168,6 +228,43 @@ export async function POST(req: NextRequest) {
         { error: "No images returned from Replicate" },
         { status: 500 }
       );
+    }
+
+    const images: string[] = [];
+
+    for (
+      let index = 0;
+      index < replicateUrls.length;
+      index += 1
+    ) {
+      const replicateUrl = replicateUrls[index];
+
+      try {
+        const publicUrl =
+          await persistImageToStorage(
+            supabase,
+            user.id,
+            replicateUrl,
+            index
+          );
+
+        images.push(publicUrl);
+
+        console.log("STORAGE_UPLOAD_OK", {
+          index,
+          storagePath: `${user.id}/…-${index}.webp`,
+        });
+      } catch (storageError) {
+        console.error(
+          "STORAGE UPLOAD ERROR:",
+          storageError instanceof Error
+            ? storageError.message
+            : storageError,
+          { replicateUrl, index }
+        );
+
+        images.push(replicateUrl);
+      }
     }
 
     let savedCount = 0;
@@ -237,7 +334,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(
-      `Generated ${images.length} valid image URL(s), saved ${savedCount}`
+      `Generated ${images.length} image URL(s), saved ${savedCount}`
     );
 
     return NextResponse.json({
