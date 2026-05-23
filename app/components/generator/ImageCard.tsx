@@ -35,17 +35,17 @@ export default function ImageCard({
   const [imageError, setImageError] =
     useState(false);
 
-  const imageUrl = isHttpImageUrl(image.url)
-    ? image.url.trim()
-    : null;
+  const imageUrl =
+    typeof image.url === "string" &&
+    image.url.trim().startsWith("https://") &&
+    isHttpImageUrl(image.url)
+      ? image.url.trim()
+      : null;
 
-  if (!imageUrl || imageError) {
-    return (
-      <div className="bg-black border border-dashed border-[#1a1a1a] rounded-2xl p-6 text-center text-gray-500">
-        Image could not be displayed.
-      </div>
-    );
-  }
+  const promptText =
+    typeof image.prompt === "string"
+      ? image.prompt
+      : "";
 
   /*
     DOWNLOAD
@@ -111,7 +111,7 @@ export default function ImageCard({
     try {
 
       await navigator.clipboard.writeText(
-        image.prompt
+        promptText
       );
 
       toast.success(
@@ -128,17 +128,42 @@ export default function ImageCard({
 
   return (
 
-    <div className="bg-black border border-[#1a1a1a] rounded-2xl overflow-hidden">
+    <div className="flex flex-col bg-black border border-[#1a1a1a] rounded-2xl">
 
-      {/* IMAGE */}
+      {/* IMAGE — must render above text; fixed aspect prevents 0 height */}
 
-      <img
-        src={image.url}
-        alt="Generated image"
-        referrerPolicy="no-referrer"
-        onError={() => setImageError(true)}
-        className="w-full aspect-square object-cover bg-black"
-      />
+      <div className="p-4 pb-0 w-full shrink-0">
+
+        {!imageUrl || imageError ? (
+
+          <div className="flex w-full aspect-[4/5] items-center justify-center rounded-2xl border border-dashed border-[#1a1a1a] bg-[#080808] text-sm text-gray-500">
+            Image could not be displayed.
+          </div>
+
+        ) : (
+
+          <img
+            src={imageUrl}
+            alt="Generated AI image"
+            loading="lazy"
+            decoding="async"
+            onError={() => setImageError(true)}
+            className="block w-full aspect-[4/5] object-cover rounded-2xl bg-[#080808]"
+          />
+
+        )}
+
+      </div>
+
+      {/* PROMPT — below image, never used as image src */}
+
+      {promptText ? (
+
+        <p className="px-4 pt-3 text-sm text-gray-400 line-clamp-2">
+          {promptText}
+        </p>
+
+      ) : null}
 
       {/* ACTIONS */}
 
@@ -146,14 +171,12 @@ export default function ImageCard({
 
         <div className="flex flex-col gap-3">
 
-          {/* DOWNLOAD */}
-
           <button
             onClick={
               downloadImage
             }
-
-            className="w-full flex items-center justify-center gap-2 bg-[#c7a36a] text-black py-3 rounded-xl font-semibold hover:opacity-90 transition"
+            disabled={!imageUrl || imageError}
+            className="w-full flex items-center justify-center gap-2 bg-[#c7a36a] text-black py-3 rounded-xl font-semibold hover:opacity-90 transition disabled:opacity-50"
           >
 
             <Download
@@ -164,13 +187,10 @@ export default function ImageCard({
 
           </button>
 
-          {/* VARIATIONS */}
-
           <button
             onClick={
               onCreateVariations
             }
-
             className="w-full flex items-center justify-center gap-2 bg-[#1a1a1a] hover:bg-[#252525] transition py-3 rounded-xl font-semibold"
           >
 
@@ -182,15 +202,12 @@ export default function ImageCard({
 
           </button>
 
-          {/* REUSE */}
-
           <button
             onClick={() =>
               onReusePrompt(
-                image.prompt
+                promptText
               )
             }
-
             className="w-full flex items-center justify-center gap-2 bg-[#1a1a1a] hover:bg-[#252525] transition py-3 rounded-xl font-semibold"
           >
 
@@ -202,13 +219,10 @@ export default function ImageCard({
 
           </button>
 
-          {/* COPY */}
-
           <button
             onClick={
               copyPrompt
             }
-
             className="w-full flex items-center justify-center gap-2 bg-[#1a1a1a] hover:bg-[#252525] transition py-3 rounded-xl font-semibold"
           >
 

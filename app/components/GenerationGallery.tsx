@@ -35,26 +35,80 @@ type Generation = {
   characters?: Character | null;
 };
 
-function isValidGalleryUrl(
-  url: unknown
-): url is string {
-  return (
-    typeof url === "string" &&
-    isHttpImageUrl(url) &&
-    url.trim().startsWith("https://")
-  );
-}
+type GalleryImage = {
+  url: string;
+  prompt: string;
+};
 
-function getGalleryImageSrc(
+type GalleryItem = Generation & {
+  image: GalleryImage;
+};
+
+function mapGenerationToGalleryImage(
   generation: Generation
-): string | null {
-  const url = generation.image_url;
+): GalleryImage | null {
+  const rawUrl = generation.image_url;
 
-  if (!isValidGalleryUrl(url)) {
+  if (
+    typeof rawUrl !== "string" ||
+    !rawUrl.trim().startsWith("https://") ||
+    !isHttpImageUrl(rawUrl)
+  ) {
     return null;
   }
 
-  return url.trim();
+  return {
+    url: rawUrl.trim(),
+    prompt:
+      typeof generation.prompt === "string"
+        ? generation.prompt
+        : "",
+  };
+}
+
+function toGalleryItem(
+  generation: Generation
+): GalleryItem | null {
+  const image = mapGenerationToGalleryImage(
+    generation
+  );
+
+  if (!image) {
+    return null;
+  }
+
+  return {
+    ...generation,
+    image,
+  };
+}
+
+function GalleryCardImage({
+  url,
+}: {
+  url: string;
+}) {
+  const [imageError, setImageError] =
+    useState(false);
+
+  if (imageError) {
+    return (
+      <div className="flex w-full aspect-[4/5] items-center justify-center bg-[#080808] text-sm text-gray-500">
+        Image could not be displayed.
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={url}
+      alt="Generated AI image"
+      loading="lazy"
+      decoding="async"
+      onError={() => setImageError(true)}
+      className="block w-full aspect-[4/5] object-cover cursor-pointer bg-black"
+    />
+  );
 }
 
 export default function GenerationGallery() {
@@ -131,9 +185,9 @@ export default function GenerationGallery() {
 
       const valid = (data || []).filter(
         (generation) =>
-          isValidGalleryUrl(
-            generation.image_url
-          )
+          mapGenerationToGalleryImage(
+            generation
+          ) !== null
       );
 
       setGenerations(valid);
@@ -159,10 +213,6 @@ export default function GenerationGallery() {
       window.removeEventListener("focus", handleFocus);
     };
   }, [loadGenerations, pathname]);
-
-  /*
-    TOGGLE FAVORITE
-  */
 
   async function toggleFavorite(
     generationId: string,
@@ -212,21 +262,27 @@ export default function GenerationGallery() {
     );
   }
 
+  const galleryItems: GalleryItem[] =
+  generations
+    .map(toGalleryItem)
+    .filter(
+      (item): item is GalleryItem =>
+        item !== null
+    );
+
   const filtered =
     showFavorites
-      ? generations.filter(
-          (generation) =>
-            generation.favorite
+      ? galleryItems.filter(
+          (item) =>
+            item.favorite
         )
-      : generations;
+      : galleryItems;
 
   return (
 
     <main className="min-h-screen bg-black text-white">
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-10 md:py-16">
-
-        {/* HEADER */}
 
         <div className="flex flex-wrap items-center justify-between gap-6 mb-14">
 
@@ -245,8 +301,6 @@ export default function GenerationGallery() {
             </p>
 
           </div>
-
-          {/* FILTER */}
 
           <button
             onClick={() =>
@@ -278,8 +332,6 @@ export default function GenerationGallery() {
           </button>
 
         </div>
-
-        {/* LOADING */}
 
         {loading && (
 
@@ -336,63 +388,39 @@ export default function GenerationGallery() {
           </div>
         )}
 
-        {/* GRID */}
-
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
 
           {filtered.map(
-            (generation) => {
-
-              const imageSrc = getGalleryImageSrc(
-                generation
-              );
-
-              if (!imageSrc) {
-                return null;
-              }
-
-              return (
+            (item) => (
 
               <div
-                key={generation.id}
+                key={item.id}
 
-                className="bg-[#080808] border border-[#1a1a1a] rounded-3xl overflow-hidden hover:border-[#c7a36a] transition"
+                className="flex flex-col bg-[#080808] border border-[#1a1a1a] rounded-3xl hover:border-[#c7a36a] transition"
               >
 
                 <Link
-                  href={`/dashboard/gallery/${generation.id}`}
-                  className="block bg-black"
+                  href={`/dashboard/gallery/${item.id}`}
+                  className="block w-full shrink-0 bg-black"
                 >
 
-                  <img
-                    src={imageSrc}
-                    alt="Generated image"
-                    referrerPolicy="no-referrer"
-                    className="w-full aspect-square object-cover cursor-pointer bg-black"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
+                  <GalleryCardImage
+                    url={item.image.url}
                   />
 
                 </Link>
 
-                {/* CONTENT */}
-
                 <div className="p-6">
-
-                  {/* TOP */}
 
                   <div className="flex items-start justify-between gap-4 mb-4">
 
-                    <div>
+                    <div className="min-w-0">
 
-                      {/* CHARACTER */}
-
-                      {generation.characters && (
+                      {item.characters && (
 
                         <p className="text-[#c7a36a] text-sm mb-3 uppercase tracking-[0.2em]">
                           {
-                            generation
+                            item
                               .characters
                               .name
                           }
@@ -400,21 +428,17 @@ export default function GenerationGallery() {
 
                       )}
 
-                      {/* PROMPT */}
-
-                      <h2 className="text-lg font-semibold line-clamp-2">
-                        {generation.prompt}
+                      <h2 className="text-lg font-semibold line-clamp-2 text-gray-200">
+                        {item.image.prompt}
                       </h2>
 
                     </div>
 
-                    {/* FAVORITE */}
-
                     <button
                       onClick={() =>
                         toggleFavorite(
-                          generation.id,
-                          !!generation.favorite
+                          item.id,
+                          !!item.favorite
                         )
                       }
 
@@ -425,7 +449,7 @@ export default function GenerationGallery() {
                         size={24}
 
                         className={
-                          generation.favorite
+                          item.favorite
                             ? "text-red-500 fill-red-500"
                             : "text-gray-500"
                         }
@@ -435,18 +459,16 @@ export default function GenerationGallery() {
 
                   </div>
 
-                  {/* META */}
-
                   <div className="flex items-center justify-between text-sm text-gray-500">
 
                     <span>
-                      {generation.model}
+                      {item.model}
                     </span>
 
                     <span>
                       {
                         new Date(
-                          generation.created_at
+                          item.created_at
                         ).toLocaleDateString()
                       }
                     </span>
@@ -456,8 +478,7 @@ export default function GenerationGallery() {
                 </div>
 
               </div>
-            );
-            }
+            )
           )}
 
         </div>

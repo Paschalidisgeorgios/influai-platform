@@ -4,22 +4,24 @@ import { isHttpImageUrl } from "../../lib/image-url";
 
 import ImageCard from "./ImageCard";
 
-type Image = {
+export type ResultImage = {
   url: string;
   prompt: string;
 };
 
 function isValidResultImage(
-  image: Image
+  image: ResultImage
 ): boolean {
   return (
+    typeof image.url === "string" &&
+    image.url.trim().startsWith("https://") &&
     isHttpImageUrl(image.url) &&
     typeof image.prompt === "string"
   );
 }
 
 type Props = {
-  images: Image[];
+  images: ResultImage[];
 
   onReusePrompt: (
     prompt: string
@@ -46,7 +48,7 @@ export default function ResultsGrid({
     );
   }
 
-  const validImages = images
+  const validImages: ResultImage[] = images
     .filter(isValidResultImage)
     .map((image) => ({
       url: image.url.trim(),
