@@ -1,151 +1,84 @@
 "use client";
 
-import { useState } from "react";
-
 import Link from "next/link";
+import { Language, landingText } from "./landingText";
 
-import {
-  Sparkles,
-  Menu,
-  X,
-} from "lucide-react";
-
-const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/dashboard/gallery", label: "Gallery" },
-  { href: "/dashboard/image-generator", label: "Create" },
-];
-
-export default function Navbar() {
-
-  const [mobileOpen, setMobileOpen] =
-    useState(false);
+export default function Navbar({
+  language,
+  setLanguage,
+}: {
+  language: Language;
+  setLanguage: (language: Language) => void;
+}) {
+  const t = landingText[language];
 
   return (
-
-    <header className="sticky top-0 z-50 backdrop-blur-2xl bg-black/40 border-b border-white/5">
-
-      <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 md:h-24 flex items-center justify-between">
-
+    <header className="fixed left-0 right-0 top-0 z-50 px-4 pt-5">
+      <div className="mx-auto flex max-w-[1600px] items-center justify-between rounded-full border border-white/15 bg-black/35 px-5 py-3 shadow-2xl backdrop-blur-2xl sm:px-7">
         <Link
           href="/"
-          className="flex items-center gap-3 md:gap-4"
+          className="text-xs font-black uppercase tracking-[0.55em] text-white sm:text-sm"
         >
-
-          <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-[#c7a36a] to-[#8b6b3f] flex items-center justify-center shadow-[0_0_40px_rgba(199,163,106,0.3)]">
-
-            <Sparkles
-              size={20}
-              className="text-black"
-            />
-
-          </div>
-
-          <div>
-
-            <p className="text-[#c7a36a] uppercase tracking-[0.35em] text-[10px] mb-1">
-              AI Creator Platform
-            </p>
-
-            <h1 className="text-lg md:text-xl font-black tracking-[-0.03em]">
-              InfluAI
-            </h1>
-
-          </div>
-
+          AIINFLU<span className="text-[#d8ad5f]">GEN</span>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-10">
-
-          {navLinks.map((link) => (
-
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-gray-300 hover:text-white transition"
-            >
-              {link.label}
-            </Link>
-
-          ))}
-
+        <nav className="hidden items-center gap-10 text-sm font-semibold text-white/65 lg:flex">
+          <a href="#studio" className="transition hover:text-white">
+            {t.product}
+          </a>
+          <a href="#tools" className="transition hover:text-white">
+            {t.tools}
+          </a>
+          <a href="#pricing" className="transition hover:text-white">
+            {t.pricing}
+          </a>
+          <a href="#examples" className="transition hover:text-white">
+            {t.creators}
+          </a>
         </nav>
 
-        <div className="flex items-center gap-3 md:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex rounded-full border border-white/10 bg-white/5 p-1">
+            <button
+              type="button"
+              onClick={() => setLanguage("en")}
+              className={`rounded-full px-3 py-2 text-xs font-bold transition ${
+                language === "en"
+                  ? "bg-[#d8ad5f] text-black"
+                  : "text-white/60 hover:text-white"
+              }`}
+            >
+              🇬🇧 EN
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setLanguage("de")}
+              className={`rounded-full px-3 py-2 text-xs font-bold transition ${
+                language === "de"
+                  ? "bg-[#d8ad5f] text-black"
+                  : "text-white/60 hover:text-white"
+              }`}
+            >
+              🇩🇪 DE
+            </button>
+          </div>
 
           <Link
             href="/login"
-            className="hidden md:flex px-5 py-3 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition"
+            className="hidden text-sm font-semibold text-white/65 transition hover:text-white sm:block"
           >
-            Login
+            {t.signIn}
           </Link>
 
           <Link
             href="/dashboard"
-            className="hidden sm:flex px-5 md:px-6 py-3 rounded-2xl bg-[#c7a36a] text-black font-bold hover:scale-[1.03] transition"
+            className="hidden rounded-full bg-[#d8ad5f] px-5 py-3 text-xs font-extrabold text-black transition hover:bg-[#f0c979] sm:inline-flex sm:px-7 sm:text-sm"
           >
-            Launch App
+            {t.openApp}
           </Link>
-
-          <button
-            type="button"
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden p-2 rounded-xl border border-white/10 bg-white/5"
-            aria-label="Toggle menu"
-          >
-            {mobileOpen ? (
-              <X size={22} />
-            ) : (
-              <Menu size={22} />
-            )}
-          </button>
-
         </div>
-
       </div>
-
-      {mobileOpen && (
-
-        <div className="lg:hidden border-t border-white/5 bg-black/95 backdrop-blur-xl px-4 py-6 space-y-4">
-
-          {navLinks.map((link) => (
-
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setMobileOpen(false)}
-              className="block text-gray-300 hover:text-white py-2"
-            >
-              {link.label}
-            </Link>
-
-          ))}
-
-          <div className="flex flex-col gap-3 pt-4 border-t border-white/5">
-
-            <Link
-              href="/login"
-              onClick={() => setMobileOpen(false)}
-              className="px-5 py-3 rounded-2xl border border-white/10 text-center"
-            >
-              Login
-            </Link>
-
-            <Link
-              href="/dashboard"
-              onClick={() => setMobileOpen(false)}
-              className="px-5 py-3 rounded-2xl bg-[#c7a36a] text-black font-bold text-center"
-            >
-              Launch App
-            </Link>
-
-          </div>
-
-        </div>
-
-      )}
-
     </header>
   );
 }

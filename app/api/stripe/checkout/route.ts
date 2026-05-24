@@ -1,112 +1,98 @@
-import { NextRequest, NextResponse } from "next/server";
-
+import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import { createClient } from "@supabase/supabase-js";
 
-import { authenticateBearerUser } from "../../../lib/supabase-admin";
+export const runtime = "nodejs";
 
-const PLANS = {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2026-04-22.dahlia",
+});
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+const CREDIT_PRODUCTS = {
   starter: {
-    priceId: process.env.STRIPE_PRICE_ID_STARTER,
-    credits: 50,
+    credits: 100,
+    priceId: process.env.STRIPE_PRICE_STARTER!,
   },
   professional: {
-    priceId: process.env.STRIPE_PRICE_ID_PROFESSIONAL,
-    credits: 150,
+    credits: 500,
+    priceId: process.env.STRIPE_PRICE_PROFESSIONAL!,
   },
   ultimate: {
-    priceId: process.env.STRIPE_PRICE_ID_ULTIMATE,
-    credits: 300,
+    credits: 2000,
+    priceId: process.env.STRIPE_PRICE_ULTIMATE!,
   },
 } as const;
 
-type PlanKey = keyof typeof PLANS;
+type PackageKey = keyof typeof CREDIT_PRODUCTS;
 
-function getStripe() {
-  const secret = process.env.STRIPE_SECRET_KEY;
-
-  if (!secret) {
-    throw new Error("Stripe is not configured");
-  }
-
-  return new Stripe(secret);
-}
-
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const { user, error: authError } =
-      await authenticateBearerUser(req);
+    const authHeader = req.headers.get("authorization");
 
-    if (authError || !user) {
+    if (!authHeader) {
       return NextResponse.json(
-        { error: authError ?? "Unauthorized" },
+        { error: "Missing authorization header" },
         { status: 401 }
       );
     }
 
+    const token = authHeader.replace("Bearer ", "");
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseAdmin.auth.getUser(token);
+
+    if (userError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
+    const packageKey = body.packageKey as PackageKey;
 
-    const plan =
-      typeof body.plan === "string"
-        ? body.plan
-        : "";
-
-    if (!(plan in PLANS)) {
+    if (!packageKey || !(packageKey in CREDIT_PRODUCTS)) {
       return NextResponse.json(
-        { error: "Invalid plan" },
+        { error: "Invalid credit package" },
         { status: 400 }
       );
     }
 
-    const selected = PLANS[plan as PlanKey];
-
-    if (!selected.priceId) {
-      return NextResponse.json(
-        { error: "Plan price is not configured" },
-        { status: 500 }
-      );
-    }
+    const selectedPackage = CREDIT_PRODUCTS[packageKey];
 
     const origin =
-      req.headers.get("origin") ||
-      req.nextUrl.origin;
-
-    const stripe = getStripe();
+      req.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL!;
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [
         {
-          price: selected.priceId,
+          price: selectedPackage.priceId,
           quantity: 1,
         },
       ],
-      success_url: `${origin}/dashboard/image-generator?payment=success`,
-      cancel_url: `${origin}/dashboard/image-generator?payment=cancelled`,
+      success_url: `${origin}/dashboard?checkout=success`,
+      cancel_url: `${origin}/dashboard?checkout=cancelled`,
       metadata: {
-        user_id: user.id,
-        plan,
-        credits: String(selected.credits),
+        userId: user.id,
+        packageKey,
+        credits: String(selectedPackage.credits),
       },
     });
 
-    if (!session.url) {
-      return NextResponse.json(
-        { error: "Failed to create checkout session" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ url: session.url });
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Checkout failed";
-
-    console.error("STRIPE CHECKOUT ERROR:", message);
+    return NextResponse.json({
+      success: true,
+      url: session.url,
+    });
+  } catch (error) {
+    console.error("Stripe checkout route error:", error);
 
     return NextResponse.json(
-      { error: message },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
