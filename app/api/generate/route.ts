@@ -846,6 +846,66 @@ ${editInstruction.trim()}`,
   ]);
 }
 
+function userRequestsBrandedTextOrLogo(prompt: string) {
+  const text = prompt.toLowerCase();
+
+  const requestsText =
+    /\b(text|headline|caption|typography|slogan|title|wording|lettering|font|subtitle|tagline)\b/i.test(
+      prompt
+    ) || /\b(mit text|with text|schreibe|write)\b/i.test(text);
+
+  const requestsLogo =
+    /\b(logo|brand mark|brandmark|emblem|wordmark|icon mark)\b/i.test(text);
+
+  return { requestsText, requestsLogo };
+}
+
+function buildBrandAssetsSafetyBlock(userPrompt: string) {
+  const { requestsText, requestsLogo } =
+    userRequestsBrandedTextOrLogo(userPrompt);
+
+  const sections = [
+    `Brand Assets — mandatory (always apply):
+- Create a premium brand-ready advertising visual.
+- If no real brand assets or brand name are provided, use unbranded packaging.
+- Product labels should be blank or minimal.
+- No readable text.
+- No fake logo.
+- No fake brand name.
+- No random typography.
+- Leave clean negative space for future real branding, headline or campaign copy.
+- Clean commercial composition.
+- Product must be sharp, polished and usable as an ad creative.
+- High-end lighting, premium material detail, realistic reflections.
+- No watermark.`,
+    `Product and ad layout direction:
+- prioritize packaging cleanliness, blank or minimal labels, and clear product hero focus
+- strong product clarity with commercial ad layout and readable visual hierarchy without typography
+- avoid cluttered label mockups, gibberish packaging text, invented brand marks, or pseudo-brand packaging
+- surfaces should look ready for real branding in post-production`,
+  ];
+
+  if (requestsText || requestsLogo) {
+    sections.push(
+      `User mentioned text or logo — apply conservatively:
+- avoid fake unreadable typography and invented brand names
+- keep text areas clean unless exact wording was provided in the user brief
+- do not generate random logos, pseudo-brand marks, or illegible label text
+- prefer unbranded or blank label zones when exact copy or logo assets are not provided${
+        requestsText
+          ? "\n- only render text if exact words were given; otherwise leave headline and copy zones empty"
+          : ""
+      }${
+        requestsLogo
+          ? "\n- only render a logo if a real logo asset was provided; otherwise use unbranded packaging"
+          : ""
+      }`
+    );
+  }
+
+  return sections.join("\n\n");
+}
+
 function buildBrandAssetsFinalPrompt({
   prompt,
   outputFormat,
@@ -862,17 +922,7 @@ User brief (preserve exactly — do not replace or contradict):
 ${prompt}`,
     brief.sceneDirection,
     brief.formatBlock,
-    `Brand asset direction:
-- clean layout with commercial composition
-- strong product and brand clarity
-- high-end campaign asset finish
-- usable for social media ads, thumbnails and campaign layouts
-- design-forward polish suitable for marketing teams`,
-    `Brand safety (mandatory):
-- no actual text rendered in the image unless the user explicitly requests text
-- no logo unless explicitly requested
-- no watermark
-- leave clean negative space for optional post-production overlays where relevant`,
+    buildBrandAssetsSafetyBlock(prompt),
     buildQualityRules(),
     `Output target: ${outputFormat.label} · brand-ready campaign asset.`,
   ]);
@@ -902,17 +952,7 @@ User brief (preserve exactly — do not replace or contradict):
 ${prompt}`,
     brief.sceneDirection,
     brief.formatBlock,
-    `Brand asset direction:
-- clean layout with commercial composition
-- strong product and brand clarity
-- high-end campaign asset finish
-- usable for social media ads, thumbnails and campaign layouts
-- design-forward polish suitable for marketing teams`,
-    `Brand safety (mandatory):
-- no actual text rendered in the image unless the user explicitly requests text
-- no logo unless explicitly requested
-- no watermark
-- leave clean negative space for optional post-production overlays where relevant`,
+    buildBrandAssetsSafetyBlock(prompt),
     buildQualityRules(),
     `Blend the style profile aesthetic with the brand asset direction and format rules above.`,
   ]);
