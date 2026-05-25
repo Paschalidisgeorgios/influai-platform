@@ -304,6 +304,7 @@ const en = {
     queueFailed: "Failed to queue generation. Please try again.",
     noGenerationId: "Generation was queued, but no generation ID returned.",
     networkError: "Network error. Please try again.",
+    creditsRefundedHint: "Credits were refunded.",
     promptLoadedRegeneration: "Prompt loaded for regeneration.",
   },
   gallery: {
@@ -323,6 +324,7 @@ const en = {
     creditsCount: "{count} credits",
     processingLabel: "Processing",
     generationFailed: "Generation failed",
+    creditsRefundedHint: "Credits were refunded.",
     unknownError: "Unknown error",
     imageUnavailable: "Image unavailable",
     noImageUrl: "This generation has no image URL.",
@@ -830,6 +832,7 @@ const de: DeepString<typeof en> = {
     noGenerationId:
       "Generierung eingereiht, aber keine Generierungs-ID erhalten.",
     networkError: "Netzwerkfehler. Bitte erneut versuchen.",
+    creditsRefundedHint: "Credits wurden erstattet.",
     promptLoadedRegeneration: "Prompt für Regenerierung geladen.",
   },
   gallery: {
@@ -849,6 +852,7 @@ const de: DeepString<typeof en> = {
     creditsCount: "{count} Credits",
     processingLabel: "In Bearbeitung",
     generationFailed: "Generierung fehlgeschlagen",
+    creditsRefundedHint: "Credits wurden erstattet.",
     unknownError: "Unbekannter Fehler",
     imageUnavailable: "Bild nicht verfügbar",
     noImageUrl: "Diese Generierung hat keine Bild-URL.",

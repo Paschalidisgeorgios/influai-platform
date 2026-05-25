@@ -148,6 +148,23 @@ Record: tester name, date, environment, starting credits, ending credits.
 
 ---
 
+## 13. Failure and refund smoke (optional)
+
+Use only on a test account. Temporarily misconfigure a non-production worker flag or use an invalid reference source to force a provider failure after credits are debited.
+
+| Step | Action | Expected result | Pass |
+|------|--------|-----------------|------|
+| 13.1 | Note credits before failed job | Balance recorded | ☐ |
+| 13.2 | Trigger a generation that fails in the worker | Agent/Gallery show **Generation failed** and **Credits were refunded** | ☐ |
+| 13.3 | Check credits badge | Balance matches pre-job (no net debit) | ☐ |
+| 13.4 | In Supabase: `generations` row | `status = failed`, `credits_used = 0`, `error_message` set | ☐ |
+| 13.5 | In Supabase: `credit_transactions` | One `refund` with `source = generation_worker_failure` | ☐ |
+| 13.6 | Retry worker manually on same `generationId` (engineering) | No second refund; row stays `failed` | ☐ |
+
+See `docs/OPERATIONS_RUNBOOK.md` §10 for SQL queries.
+
+---
+
 ## Failure log
 
 | Step | What failed | Screenshot / log | Ticket |

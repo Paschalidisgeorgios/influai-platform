@@ -25,6 +25,9 @@ const FAL_PREMIUM_REQUEST_TIMEOUT_MS = 180_000;
 const FAL_REFERENCE_EDIT_TIMEOUT_MS = 180_000;
 const FAL_BRAND_ASSETS_TIMEOUT_MS = 180_000;
 
+const ERR_PROVIDER_NO_IMAGE_URL = "Provider did not return an image URL.";
+const REFUND_TRANSACTION_SOURCE = "generation_worker_failure";
+
 type ImageSize = "1024x1024" | "1024x1536" | "1536x1024";
 
 type FalImageSizeInput =
@@ -95,6 +98,7 @@ async function refundCredits(userId: string, creditsToRefund: number) {
 
   if (error) {
     console.error("Worker credit refund error:", error);
+    throw new Error("Credit refund failed.");
   }
 
   const { error: transactionError } = await supabaseAdmin
@@ -103,13 +107,19 @@ async function refundCredits(userId: string, creditsToRefund: number) {
       user_id: userId,
       amount: creditsToRefund,
       type: "refund",
-      source: "generation_worker_failure",
+      source: REFUND_TRANSACTION_SOURCE,
     });
 
   if (transactionError) {
     console.error("Worker refund transaction log error:", transactionError);
   }
 }
+
+type MarkFailedResult = {
+  markedFailed: boolean;
+  refunded: boolean;
+  skipped: boolean;
+};
 
 async function markFailedAndRefund({
   generationId,
@@ -121,21 +131,62 @@ async function markFailedAndRefund({
   userId: string;
   creditsUsed: number;
   errorMessage: string;
-}) {
-  await refundCredits(userId, creditsUsed);
+}): Promise<MarkFailedResult> {
+  const { data: current, error: fetchError } = await supabaseAdmin
+    .from("generations")
+    .select("id, status, credits_used, user_id")
+    .eq("id", generationId)
+    .maybeSingle();
 
-  const { error } = await supabaseAdmin
+  if (fetchError) {
+    console.error("Worker failed generation fetch error:", fetchError);
+    return { markedFailed: false, refunded: false, skipped: true };
+  }
+
+  if (!current || current.status !== "processing") {
+    return { markedFailed: false, refunded: false, skipped: true };
+  }
+
+  const refundTargetUserId =
+    typeof current.user_id === "string" ? current.user_id : userId;
+
+  const storedCredits =
+    typeof current.credits_used === "number" ? current.credits_used : creditsUsed;
+
+  const refundAmount = storedCredits > 0 ? storedCredits : 0;
+
+  const { data: updated, error: updateError } = await supabaseAdmin
     .from("generations")
     .update({
       status: "failed",
-      error_message: errorMessage,
+      error_message: errorMessage.trim() || "Generation failed.",
       credits_used: 0,
       failed_at: new Date().toISOString(),
     })
-    .eq("id", generationId);
+    .eq("id", generationId)
+    .eq("status", "processing")
+    .select("id")
+    .maybeSingle();
 
-  if (error) {
-    console.error("Worker failed generation update error:", error);
+  if (updateError) {
+    console.error("Worker failed generation update error:", updateError);
+    return { markedFailed: false, refunded: false, skipped: true };
+  }
+
+  if (!updated) {
+    return { markedFailed: false, refunded: false, skipped: true };
+  }
+
+  if (refundAmount <= 0) {
+    return { markedFailed: true, refunded: false, skipped: false };
+  }
+
+  try {
+    await refundCredits(refundTargetUserId, refundAmount);
+    return { markedFailed: true, refunded: true, skipped: false };
+  } catch (refundError) {
+    console.error("Worker refund after failed mark error:", refundError);
+    return { markedFailed: true, refunded: false, skipped: false };
   }
 }
 
@@ -175,7 +226,7 @@ async function completeGeneration({
   generationId: string;
   publicUrl: string;
 }) {
-  const { error: updateError } = await supabaseAdmin
+  const { data: updated, error: updateError } = await supabaseAdmin
     .from("generations")
     .update({
       image_url: publicUrl,
@@ -183,10 +234,17 @@ async function completeGeneration({
       error_message: null,
       completed_at: new Date().toISOString(),
     })
-    .eq("id", generationId);
+    .eq("id", generationId)
+    .eq("status", "processing")
+    .select("id")
+    .maybeSingle();
 
   if (updateError) {
     throw new Error(updateError.message);
+  }
+
+  if (!updated) {
+    throw new Error("Generation is no longer processing.");
   }
 }
 
@@ -321,7 +379,7 @@ async function processFalFluxImage({
         generationId,
         userId,
         creditsUsed,
-        errorMessage: `${modeLabel} did not return image data.`,
+        errorMessage: ERR_PROVIDER_NO_IMAGE_URL,
       });
 
       return NextResponse.json(
@@ -494,7 +552,7 @@ async function processReferenceEditImage({
         generationId,
         userId,
         creditsUsed,
-        errorMessage: "Reference Edit did not return image data.",
+        errorMessage: ERR_PROVIDER_NO_IMAGE_URL,
       });
 
       return NextResponse.json(
@@ -593,7 +651,7 @@ async function processOpenAIImage({
         generationId,
         userId,
         creditsUsed,
-        errorMessage: "OpenAI did not return image data.",
+        errorMessage: ERR_PROVIDER_NO_IMAGE_URL,
       });
 
       return NextResponse.json(

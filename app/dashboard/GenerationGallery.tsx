@@ -410,6 +410,9 @@ export default function GenerationGallery({
         <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-red-500/10 p-6 text-center">
           <AlertCircle className="h-8 w-8 text-red-200" />
           <p className="text-sm font-bold text-red-100">{g.generationFailed}</p>
+          <p className="text-xs font-semibold text-red-100/80">
+            {g.creditsRefundedHint}
+          </p>
           <p className="line-clamp-3 text-xs text-red-100/60">
             {generation.error_message ?? g.unknownError}
           </p>
@@ -697,6 +700,9 @@ export default function GenerationGallery({
                   <h3 className="text-2xl font-black text-red-100">
                     {g.generationFailed}
                   </h3>
+                  <p className="text-sm font-semibold text-red-100/80">
+                    {g.creditsRefundedHint}
+                  </p>
                   <p className="max-w-lg text-sm leading-7 text-red-100/60">
                     {selectedGeneration.error_message ?? g.unknownError}
                   </p>

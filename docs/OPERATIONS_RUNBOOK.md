@@ -271,6 +271,55 @@ limit 20;
 
 Credit refunds should go through `refund_user_credits` RPC + `credit_transactions` for audit. If bulk cleanup is needed, coordinate with engineering — do not only UPDATE `user_credits` without transaction log.
 
+The generation worker (`app/api/generate/process/route.ts`) refunds idempotently:
+
+1. Only processes rows with `status = 'processing'`.
+2. Atomically sets `status = 'failed'`, `credits_used = 0`, `error_message`, and `failed_at` with `.eq('status', 'processing')`.
+3. Refunds only when the update claims the row (no second refund if the worker retries).
+4. Skips refund when `credits_used` is already `0`.
+5. Logs a `credit_transactions` row with `type = 'refund'` and `source = 'generation_worker_failure'`.
+
+### Verify a failed generation and refund (single job)
+
+Replace `<generation-uuid>` and `<user-uuid>`:
+
+```sql
+-- Generation row
+select id, status, error_message, credits_used, failed_at, created_at
+from generations
+where id = '<generation-uuid>';
+
+-- Expect: status = failed, credits_used = 0, error_message set, failed_at not null
+
+-- Refund transaction (at most one per worker failure)
+select id, user_id, amount, type, source, created_at
+from credit_transactions
+where user_id = '<user-uuid>'
+  and type = 'refund'
+  and source = 'generation_worker_failure'
+order by created_at desc
+limit 10;
+
+-- Current balance
+select user_id, credits
+from user_credits
+where user_id = '<user-uuid>';
+```
+
+### Detect duplicate refunds (should return zero rows)
+
+```sql
+select user_id, count(*) as refund_count, sum(amount) as total_refunded
+from credit_transactions
+where type = 'refund'
+  and source = 'generation_worker_failure'
+  and created_at > now() - interval '7 days'
+group by user_id, date_trunc('minute', created_at), amount
+having count(*) > 1;
+```
+
+If duplicates appear, stop manual refunds and inspect Vercel worker logs for repeated `POST /api/generate/process` on the same `generationId`.
+
 ---
 
 ## 11. Standard operating procedures

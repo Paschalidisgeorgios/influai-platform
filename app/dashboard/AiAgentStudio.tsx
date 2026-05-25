@@ -121,6 +121,25 @@ type AiAgentStudioProps = {
   onOpenCredits?: () => void;
 };
 
+function shouldShowCreditsRefundedHint(
+  errorMessage: string | null,
+  hasGenerationId: boolean,
+  signInAgain: string,
+  networkError: string
+): boolean {
+  if (errorMessage?.toLowerCase().includes("refund")) {
+    return false;
+  }
+
+  if (!hasGenerationId) {
+    if (errorMessage === signInAgain || errorMessage === networkError) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function getRequiredCreditsForImageMode(imageMode: ImageModeKey): number {
   switch (imageMode) {
     case "premium_image":
@@ -1868,6 +1887,17 @@ export default function AiAgentStudio({
                       <p className="text-sm font-bold text-red-100">
                         {a.failed}
                       </p>
+
+                      {shouldShowCreditsRefundedHint(
+                        agentResult.error_message,
+                        Boolean(agentResult.id),
+                        a.signInAgain,
+                        a.networkError
+                      ) && (
+                        <p className="text-xs font-semibold text-red-100/80">
+                          {a.creditsRefundedHint}
+                        </p>
+                      )}
 
                       <p className="max-w-md text-xs leading-6 text-red-100/60">
                         {agentResult.error_message ?? copy.gallery.unknownError}
