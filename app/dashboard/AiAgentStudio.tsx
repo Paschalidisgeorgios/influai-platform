@@ -243,6 +243,75 @@ Focus on a strong hook, modern creator-brand aesthetics, premium social media co
   return prompt.trim();
 }
 
+function ModeCardBody({
+  Icon,
+  isLive,
+  isSelected,
+  label,
+  description,
+  statusLabel,
+  showLock = false,
+}: {
+  Icon: typeof ImageIcon;
+  isLive: boolean;
+  isSelected: boolean;
+  label: string;
+  description: string;
+  statusLabel: string;
+  showLock?: boolean;
+}) {
+  return (
+    <>
+      {!isLive && (
+        <div
+          className="pointer-events-none absolute inset-0 rounded-xl bg-[linear-gradient(135deg,rgba(255,255,255,0.03)_0%,transparent_50%)]"
+          aria-hidden
+        />
+      )}
+
+      <div className="relative flex items-start justify-between gap-1.5">
+        <div
+          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg sm:h-7 sm:w-7 ${
+            isSelected && isLive
+              ? "bg-[#d8ad5f] text-black"
+              : isLive
+                ? "bg-white/[0.08] text-white/60"
+                : "bg-white/[0.05] text-white/45"
+          }`}
+        >
+          <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+        </div>
+
+        <span
+          className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.08em] sm:px-2 sm:text-[9px] ${
+            isLive
+              ? "bg-emerald-500/15 text-emerald-200"
+              : "border border-[#d8ad5f]/20 bg-[#d8ad5f]/8 text-[#d8ad5f]/80"
+          }`}
+        >
+          {statusLabel}
+        </span>
+      </div>
+
+      <p
+        className={`relative mt-1.5 text-[11px] font-black leading-tight sm:mt-2 sm:text-xs ${
+          isLive ? "text-white" : "text-white/55"
+        }`}
+      >
+        {label}
+      </p>
+
+      <p className="relative mt-0.5 line-clamp-2 flex-1 text-[9px] leading-3.5 text-white/36 sm:line-clamp-3 sm:text-[10px] sm:leading-4">
+        {description}
+      </p>
+
+      {showLock && (
+        <Lock className="relative mt-1 h-2.5 w-2.5 text-white/25 sm:h-3 sm:w-3" aria-hidden />
+      )}
+    </>
+  );
+}
+
 export default function AiAgentStudio({
   charactersRefreshKey = 0,
   regenerateDraft = null,
@@ -359,6 +428,12 @@ export default function AiAgentStudio({
   useEffect(() => {
     loadCharacters();
   }, [charactersRefreshKey]);
+
+  useEffect(() => {
+    if (imageMode !== "standard") {
+      setImageMode("standard");
+    }
+  }, [imageMode]);
 
   useEffect(() => {
     if (!regenerateDraft) return;
@@ -815,102 +890,92 @@ export default function AiAgentStudio({
             <div className="border-t border-white/10 px-3 py-3 sm:px-4 sm:py-4">
               <div className="flex flex-col gap-3">
                 <fieldset className="rounded-2xl border border-white/10 bg-black/20 p-2.5 sm:p-3">
-                  <legend className="px-0.5 text-[10px] font-black uppercase tracking-[0.22em] text-white/40">
-                    {a.imageMode}
-                  </legend>
-
-                  <div className="mb-2.5 flex flex-wrap items-start justify-between gap-2 px-0.5">
-                    <p className="min-w-0 max-w-md text-[10px] leading-4 text-white/30">
-                      {a.imageModeIntro}
-                    </p>
-                    <p
-                      className="shrink-0 text-[9px] font-bold uppercase tracking-[0.12em] text-white/25"
-                      title={a.plannedExpansion}
-                    >
-                      {a.plannedExpansion}
-                    </p>
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-0.5">
+                    <legend className="text-[10px] font-black uppercase tracking-[0.22em] text-white/40">
+                      {a.imageMode}
+                    </legend>
+                    <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-emerald-200">
+                      {a.imageModeActiveNote}
+                    </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+                  <p className="mb-2.5 px-0.5 text-[10px] leading-4 text-white/32">
+                    {a.imageModeIntro}
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2 sm:gap-2.5 lg:grid-cols-4">
                     {imageModes.map((mode) => {
                       const Icon = mode.icon;
                       const isLive = mode.status === "live";
                       const isSelected = isLive && imageMode === mode.key;
 
                       return (
-                        <button
+                        <div
                           key={mode.key}
-                          type="button"
-                          disabled={!isLive}
-                          aria-pressed={isSelected}
-                          aria-disabled={!isLive}
-                          tabIndex={isLive ? 0 : -1}
-                          onClick={() => {
-                            if (isLive) setImageMode(mode.key);
-                          }}
-                          title={
-                            isLive
-                              ? mode.description
-                              : `${mode.description} ${a.imageModes.plannedTooltip}`
-                          }
-                          className={`relative flex min-h-[5.5rem] flex-col rounded-xl border p-2.5 text-left transition sm:min-h-[6rem] sm:p-3 ${
+                          className={`relative flex min-h-[5rem] flex-col rounded-xl border p-2 text-left sm:min-h-[5.75rem] sm:p-2.5 ${
                             isLive
                               ? isSelected
-                                ? "border-[#d8ad5f]/50 bg-[#d8ad5f]/12 ring-1 ring-[#d8ad5f]/30"
-                                : "border-white/10 bg-white/[0.04] hover:border-[#d8ad5f]/30 hover:bg-white/[0.06]"
-                              : "pointer-events-none cursor-not-allowed border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-transparent opacity-70"
+                                ? "border-[#d8ad5f]/50 bg-[#d8ad5f]/12 ring-1 ring-[#d8ad5f]/25"
+                                : "border-white/10 bg-white/[0.04]"
+                              : "border-white/[0.08] bg-white/[0.025]"
                           }`}
                         >
-                          {!isLive && (
-                            <div
-                              className="pointer-events-none absolute inset-0 rounded-xl bg-[repeating-linear-gradient(-45deg,transparent,transparent_6px,rgba(255,255,255,0.02)_6px,rgba(255,255,255,0.02)_12px)]"
-                              aria-hidden
-                            />
-                          )}
-
-                          <div className="relative flex items-start justify-between gap-2">
-                            <div
-                              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                                isSelected
-                                  ? "bg-[#d8ad5f] text-black"
-                                  : "bg-white/[0.06] text-white/55"
-                              }`}
+                          {isLive ? (
+                            <button
+                              type="button"
+                              aria-pressed={isSelected}
+                              onClick={() => setImageMode("standard")}
+                              title={mode.description}
+                              className="flex h-full w-full flex-col text-left outline-none focus-visible:ring-2 focus-visible:ring-[#d8ad5f]/40 rounded-lg"
                             >
-                              <Icon className="h-3.5 w-3.5" />
+                              <ModeCardBody
+                                Icon={Icon}
+                                isLive={isLive}
+                                isSelected={isSelected}
+                                label={mode.label}
+                                description={mode.description}
+                                statusLabel={a.imageModes.live}
+                              />
+                            </button>
+                          ) : (
+                            <div
+                              aria-disabled="true"
+                              title={`${mode.description} — ${a.imageModes.plannedTooltip}`}
+                              className="flex h-full flex-col"
+                            >
+                              <ModeCardBody
+                                Icon={Icon}
+                                isLive={false}
+                                isSelected={false}
+                                label={mode.label}
+                                description={mode.description}
+                                statusLabel={a.imageModes.planned}
+                                showLock
+                              />
                             </div>
-
-                            <span
-                              className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] ${
-                                isLive
-                                  ? "bg-emerald-500/15 text-emerald-200"
-                                  : "border border-white/10 bg-white/[0.04] text-white/40"
-                              }`}
-                            >
-                              {isLive ? a.imageModes.live : a.imageModes.planned}
-                            </span>
-                          </div>
-
-                          <p
-                            className={`relative mt-2 text-xs font-black leading-tight ${
-                              isLive ? "text-white" : "text-white/50"
-                            }`}
-                          >
-                            {mode.label}
-                          </p>
-
-                          <p className="relative mt-1 line-clamp-3 flex-1 text-[10px] leading-4 text-white/38">
-                            {mode.description}
-                          </p>
-
-                          {!isLive && (
-                            <Lock
-                              className="relative mt-1.5 h-3 w-3 text-white/20"
-                              aria-hidden
-                            />
                           )}
-                        </button>
+                        </div>
                       );
                     })}
+                  </div>
+
+                  <div className="mt-3 rounded-xl border border-white/[0.06] bg-black/25 px-2.5 py-2.5 sm:px-3">
+                    <p className="text-[9px] font-black uppercase tracking-[0.14em] text-white/35">
+                      {a.imageModeRoadmapLabel}
+                    </p>
+                    <p className="mt-1 text-[10px] leading-4 text-white/28">
+                      {a.imageModeRoadmapNote}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {a.studioRoadmapChips.map((chip) => (
+                        <span
+                          key={chip}
+                          className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[9px] font-semibold text-white/42"
+                        >
+                          {chip}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </fieldset>
 

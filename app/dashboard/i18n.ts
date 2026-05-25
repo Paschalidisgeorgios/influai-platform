@@ -128,17 +128,32 @@ const en = {
     styleProfile: "Style Profile",
     imageMode: "Image Mode",
     imageModeIntro:
-      "Generation mode for the AI Agent. Only Standard Image is active in this release.",
-    plannedExpansion: "Additional modes on the roadmap",
+      "Choose how the AI Agent generates visuals. Only Standard Image is live in this release — additional modes are on the roadmap.",
+    plannedExpansion: "Studio roadmap",
+    imageModeActiveNote: "Standard Image · Live · 1 credit per image",
+    imageModeRoadmapLabel: "Also on the studio roadmap",
+    imageModeRoadmapNote:
+      "Preview only — not connected to generation or billing yet.",
+    studioRoadmapChips: [
+      "Fast Draft Mode",
+      "Premium Image Mode",
+      "Reference Edit Mode",
+      "Brand Assets",
+      "Video Studio",
+      "Lip Sync Studio",
+      "Cinema Agent",
+      "Omni Campaign Agent",
+    ],
     imageModes: {
       standard: {
         label: "Standard Image",
         description:
-          "Reliable campaign visuals powered by the current production image workflow.",
+          "Reliable campaign visuals powered by the production image workflow.",
       },
       fastDraft: {
         label: "Fast Draft",
-        description: "Faster low-cost drafts for quick visual exploration.",
+        description:
+          "Faster low-cost drafts for quick visual exploration.",
       },
       premium: {
         label: "Premium Image",
@@ -147,12 +162,13 @@ const en = {
       },
       referenceEdit: {
         label: "Reference Edit",
-        description: "Guided image editing and reference-based workflows.",
+        description:
+          "Guided image editing and reference-based workflows.",
       },
       live: "Live",
       planned: "Planned",
       comingSoon: "Coming soon",
-      plannedTooltip: "(planned — not available yet)",
+      plannedTooltip: "Planned — not available in this release",
     },
     modes: {
       auto: {
@@ -560,13 +576,27 @@ const de: DeepString<typeof en> = {
     styleProfile: "Style Profile",
     imageMode: "Bildmodus",
     imageModeIntro:
-      "Generierungsmodus für den AI Agent. In diesem Release ist nur Standard Image aktiv.",
-    plannedExpansion: "Weitere Modi auf der Roadmap",
+      "Wähle, wie der AI Agent Visuals erzeugt. In diesem Release ist nur Standard Image live — weitere Modi sind auf der Roadmap.",
+    plannedExpansion: "Studio-Roadmap",
+    imageModeActiveNote: "Standard Image · Live · 1 Credit pro Bild",
+    imageModeRoadmapLabel: "Ebenfalls auf der Studio-Roadmap",
+    imageModeRoadmapNote:
+      "Nur Vorschau — noch nicht an Generierung oder Abrechnung angebunden.",
+    studioRoadmapChips: [
+      "Fast Draft Mode",
+      "Premium Image Mode",
+      "Reference Edit Mode",
+      "Brand Assets",
+      "Video Studio",
+      "Lip Sync Studio",
+      "Cinema Agent",
+      "Omni Campaign Agent",
+    ],
     imageModes: {
       standard: {
         label: "Standard Image",
         description:
-          "Zuverlässige Kampagnenvisuals über den aktuellen Produktions-Image-Workflow.",
+          "Zuverlässige Kampagnenvisuals über den Produktions-Image-Workflow.",
       },
       fastDraft: {
         label: "Fast Draft",
@@ -586,7 +616,7 @@ const de: DeepString<typeof en> = {
       live: "Live",
       planned: "Geplant",
       comingSoon: "Demnächst",
-      plannedTooltip: "(geplant — noch nicht verfügbar)",
+      plannedTooltip: "Geplant — in diesem Release nicht verfügbar",
     },
     modes: {
       auto: {
