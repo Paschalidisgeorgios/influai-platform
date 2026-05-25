@@ -105,7 +105,9 @@ Video capabilities are **not live**. UI modules (Video Studio, Cinema Agent) are
 | **Intended use** | Text-to-video, image-to-video, short-form creator ads, product clips |
 | **Suggested credit cost** | Short clip: **15–30 credits**; longer/premium clip: **40–80 credits** ([strategy doc](./CREDIT_AND_MODE_STRATEGY.md) §6) |
 | **Status** | Planned |
-| **User-visible status** | Coming soon / Planned |
+| **User-visible status** | Coming soon / Planned — **not Live** |
+
+**Implementation spec:** [VIDEO_STUDIO_IMPLEMENTATION_PLAN.md](./VIDEO_STUDIO_IMPLEMENTATION_PLAN.md).
 
 ### 3.2 Cinema Agent
 
@@ -114,9 +116,11 @@ Video capabilities are **not live**. UI modules (Video Studio, Cinema Agent) are
 | **Module** | Cinema Agent |
 | **Provider** | TBD — likely orchestration over Video Studio + planning layer |
 | **Intended use** | Storyboard, shot lists, visual sequences before generation |
-| **Suggested credit cost** | TBD — may be planning-only credits + per-shot video credits |
-| **Status** | Planned |
-| **User-visible status** | Planned / Roadmap |
+| **Suggested credit cost** | Planning: **free/low-cost** text-only; generation: image + video credits charged separately |
+| **Status** | Planned — **not Live** |
+| **User-visible status** | Planned / Roadmap only in MVP |
+
+**Implementation spec:** [CINEMA_AGENT_IMPLEMENTATION_PLAN.md](./CINEMA_AGENT_IMPLEMENTATION_PLAN.md).
 
 ---
 
@@ -129,9 +133,11 @@ Video capabilities are **not live**. UI modules (Video Studio, Cinema Agent) are
 | **Module** | Lip Sync Studio |
 | **Future provider candidates** | Lip-sync / talking-avatar providers (evaluate quality, language support, latency) |
 | **Intended use** | Talking creator clips, UGC-style ads, voice-to-video |
-| **Suggested credit cost** | **10–30 credits** depending on length (per clip or per duration) — [strategy doc](./CREDIT_AND_MODE_STRATEGY.md) §7 |
-| **Status** | Planned |
+| **Suggested credit cost** | Short: **10–30**; longer/premium: **30–60** credits — [strategy doc](./CREDIT_AND_MODE_STRATEGY.md) §7 |
+| **Status** | Planned — **not Live** |
 | **User-visible status** | Coming soon / Planned |
+
+**Implementation spec:** [LIP_SYNC_IMPLEMENTATION_PLAN.md](./LIP_SYNC_IMPLEMENTATION_PLAN.md).
 
 ---
 

@@ -8,7 +8,7 @@
 
 This document defines how InfluExAi should price and roll out image, video, lip-sync, and promotional modes. It is the authoritative reference for **credit costs**, **rollout order**, and **safety rules** before any new provider is activated.
 
-Nothing in this file enables a mode in production. Live behavior today remains **Standard Image only** (OpenAI `gpt-image-1`, **1 credit**). Fast Draft, Premium Image, and Reference Edit are **planned** — no UI or API activation without backend implementation and cost monitoring ([§11](#11-important-implementation-rule)).
+Nothing in this file enables a mode in production. Live behavior today remains **Standard Image only** (OpenAI `gpt-image-1`, **1 credit**). All other modules (image modes, Video Studio, Lip Sync, Cinema Agent) are **planned** — no UI or API activation without backend implementation and cost monitoring ([§12](#12-important-implementation-rule)).
 
 ---
 
@@ -98,6 +98,8 @@ May surface under Expansion / Brand Assets in the UI when backend support exists
 
 Billing unit (per clip vs per second) must be fixed before UI goes Live. Store `video_url` and `duration_seconds` for audit and support.
 
+**Implementation spec:** [VIDEO_STUDIO_IMPLEMENTATION_PLAN.md](./VIDEO_STUDIO_IMPLEMENTATION_PLAN.md) (planning only, **not Live**).
+
 ---
 
 ## 7. Planned Lip Sync Studio
@@ -105,15 +107,32 @@ Billing unit (per clip vs per second) must be fixed before UI goes Live. Store `
 | Field | Value |
 |-------|--------|
 | **Future provider candidates** | Lip-sync / talking-avatar providers |
-| **Suggested cost model** | Per clip or per duration — e.g. **10–30 credits** depending on length |
+| **Suggested cost model** | Short clip: **10–30 credits**; longer/premium: **30–60 credits** (duration, provider, quality) |
 | **Purpose** | Talking creator clips, UGC ads, avatar content |
-| **Status** | Planned |
+| **Status** | Planned — **not Live** |
 
 Higher perceived value and COGS than still images; separate tier from Video Studio where both exist.
 
+**Implementation spec:** [LIP_SYNC_IMPLEMENTATION_PLAN.md](./LIP_SYNC_IMPLEMENTATION_PLAN.md) (planning only, **not Live**).
+
 ---
 
-## 8. Watermarked Promo Package
+## 8. Planned Cinema Agent
+
+| Field | Value |
+|-------|--------|
+| **Module** | Cinema Agent |
+| **Role** | Campaign planning — shot lists, prompts, optional video briefs (orchestration, not a media provider) |
+| **Planning credits** | **Free or low-cost** text-only (e.g. 0–1 credit per plan — TBD) |
+| **Generation credits** | Charged separately: images at Standard/Premium rates; video at Video Studio tiers when live |
+| **Purpose** | Storyboards, pre-production, selective/batch shot generation with estimate before run |
+| **Status** | Planned — **not Live** (roadmap UI only in MVP) |
+
+**Implementation spec:** [CINEMA_AGENT_IMPLEMENTATION_PLAN.md](./CINEMA_AGENT_IMPLEMENTATION_PLAN.md). No automatic provider calls without user confirmation and credit estimate.
+
+---
+
+## 9. Watermarked Promo Package
 
 | Field | Value |
 |-------|--------|
@@ -128,7 +147,7 @@ Do not sell or auto-enable until watermark pipeline and Stripe SKU (if paid) are
 
 ---
 
-## 9. Credit safety rules
+## 10. Credit safety rules
 
 These rules apply to **every** paid generation path, current and future.
 
@@ -151,7 +170,7 @@ Violating any gate blocks marking the mode **Live** in UI or API.
 
 ---
 
-## 10. Rollout order recommendation
+## 11. Rollout order recommendation
 
 | Phase | Scope | Notes |
 |-------|--------|--------|
@@ -161,14 +180,15 @@ Violating any gate blocks marking the mode **Live** in UI or API.
 | **Phase 4** | Add Reference Edit | Source image + edit pipeline |
 | **Phase 5** | Add Brand Assets | Recraft / layout-oriented outputs |
 | **Phase 6** | Add Video Studio | Video storage, 15–80 credit tiers |
-| **Phase 7** | Add Lip Sync Studio | 10–30 credit band (length-based) |
-| **Phase 8** | Add Omni Campaign Agent | Orchestration across formats; after image + video maturity |
+| **Phase 6b** | Cinema Agent (planning) | Text-only plans; shot-to-image with confirm |
+| **Phase 7** | Add Lip Sync Studio | 10–60 credits (duration/provider tiers) |
+| **Phase 8** | Add Omni Campaign Agent | Cross-format orchestration; after video + lip sync maturity |
 
 Watermarked Promo can ship in parallel with Phase 2–3 once server watermarking exists, or as a dedicated monetization phase—see [ROADMAP_IMAGE_VIDEO_MODES.md](./ROADMAP_IMAGE_VIDEO_MODES.md) §5 and §10.
 
 ---
 
-## 11. Important implementation rule
+## 12. Important implementation rule
 
 **Do not activate new modes in the UI until backend support exists for:**
 
@@ -181,7 +201,7 @@ Planned cards in Image Mode and Expansion sidebar stay disabled/non-selectable u
 
 ---
 
-## 12. Future fields to consider
+## 13. Future fields to consider
 
 When extending `generations` (or related tables), prefer explicit audit fields:
 
@@ -210,7 +230,11 @@ Existing columns (`provider`, `model`, `workflow`) remain required for Standard 
 | Brand Assets | Planned | 2–4 |
 | Video Studio (short) | Planned | 15–30 |
 | Video Studio (long/premium) | Planned | 40–80 |
-| Lip Sync Studio | Planned | 10–30 (length-based) |
+| Lip Sync Studio (short) | Planned | 10–30 |
+| Lip Sync Studio (long/premium) | Planned | 30–60 |
+| Cinema Agent (planning) | Planned | 0–1 (text-only, TBD) |
+| Cinema Agent (per-shot image) | Planned | Standard/Premium rates |
+| Cinema Agent (per-shot video) | Planned | Video Studio tiers when live |
 | Watermarked Promo | Planned | Low / free tier (TBD) |
 
 ---
