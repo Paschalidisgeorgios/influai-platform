@@ -48,7 +48,7 @@ export default function Navbar({
                   : "text-white/60 hover:text-white"
               }`}
             >
-              🇬🇧 EN
+              EN
             </button>
 
             <button
@@ -60,7 +60,7 @@ export default function Navbar({
                   : "text-white/60 hover:text-white"
               }`}
             >
-              🇩🇪 DE
+              DE
             </button>
           </div>
 

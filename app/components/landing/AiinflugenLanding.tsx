@@ -93,23 +93,23 @@ export default function AiinflugenLanding({
       creators: "Creators",
       signIn: "Sign in",
       openApp: "Open App",
-      label: "Cinematic AI Photoshoot",
-      title1: "Create your AI",
-      title2: "influencer in",
-      gold: "seconds",
+      label: "AI Creator Studio",
+      title1: "Premium AI visuals",
+      title2: "for creator",
+      gold: "campaigns",
       subtitle:
-        "Hyper-realistic virtual influencers and cinematic visuals — crafted with next-generation creative intelligence.",
-      start: "Start Creating",
-      demo: "Watch Demo",
-      studioTitle: "One platform for AI creator workflows.",
+        "InfluExAi is an enterprise-grade AI Creator Studio for campaign visuals, social formats, style profiles and asset management — built for modern creator teams.",
+      start: "Open Studio",
+      demo: "View Examples",
+      studioTitle: "One studio for the full visual workflow.",
       studioText:
-        "InfluExAi combines characters, prompt intelligence, image generation, gallery management and credit payments in one creator system.",
-      toolsTitle: "Built for repeatable content.",
-      workflowTitle: "From idea to creator visuals.",
-      examplesTitle: "Example visuals.",
-      pricingTitle: "Choose your credits.",
+        "InfluExAi combines an AI Visual Agent, Style Profiles, Social Formats, Asset Gallery and Credits in one professional creator platform.",
+      toolsTitle: "Built for production-ready creator output.",
+      workflowTitle: "From brief to published visual.",
+      examplesTitle: "Campaign visual examples.",
+      pricingTitle: "Choose your credit package.",
       secure: "Secure checkout via Stripe",
-      powered: "Powered by creator AI tools",
+      powered: "Core platform capabilities",
     },
     de: {
       product: "Produkt",
@@ -118,23 +118,23 @@ export default function AiinflugenLanding({
       creators: "Creator",
       signIn: "Einloggen",
       openApp: "App öffnen",
-      label: "Cinematic AI Fotoshooting",
-      title1: "Erstelle deinen AI",
-      title2: "Influencer in",
-      gold: "Sekunden",
+      label: "AI Creator Studio",
+      title1: "Premium AI-Visuals",
+      title2: "für Creator",
+      gold: "Kampagnen",
       subtitle:
-        "Hyperrealistische virtuelle Influencer und cinematic Visuals — erstellt mit moderner kreativer KI.",
-      start: "Jetzt erstellen",
-      demo: "Demo ansehen",
-      studioTitle: "Eine Plattform für AI-Creator-Workflows.",
+        "InfluExAi ist ein professionelles AI Creator Studio für Kampagnenvisuals, Social Formats, Style Profiles und Asset Management — entwickelt für moderne Creator-Teams.",
+      start: "Studio öffnen",
+      demo: "Beispiele ansehen",
+      studioTitle: "Ein Studio für den gesamten Visual-Workflow.",
       studioText:
-        "InfluExAi verbindet Charaktere, Prompt-Intelligenz, Bildgenerierung, Gallery-Management und Credit-Zahlungen in einem Creator-System.",
-      toolsTitle: "Gebaut für wiederholbaren Content.",
-      workflowTitle: "Von der Idee zum Creator-Visual.",
-      examplesTitle: "Beispielbilder.",
-      pricingTitle: "Wähle deine Credits.",
+        "InfluExAi verbindet AI Visual Agent, Style Profiles, Social Formats, Asset Gallery und Credits in einer professionellen Creator-Plattform.",
+      toolsTitle: "Gebaut für produktionsreife Creator-Ergebnisse.",
+      workflowTitle: "Vom Briefing zum fertigen Visual.",
+      examplesTitle: "Kampagnen-Beispielvisuals.",
+      pricingTitle: "Wähle dein Credit-Paket.",
       secure: "Sichere Zahlung über Stripe",
-      powered: "Unterstützt durch Creator-AI-Tools",
+      powered: "Kernfunktionen der Plattform",
     },
   };
 
@@ -142,62 +142,62 @@ export default function AiinflugenLanding({
 
   const tools = [
     {
-      title: language === "en" ? "AI Characters" : "AI-Charaktere",
+      title: language === "en" ? "AI Visual Agent" : "AI Visual Agent",
       description:
         language === "en"
-          ? "Create reusable creator identities with a consistent look."
-          : "Erstelle wiederverwendbare Creator-Identitäten mit konsistentem Look.",
-      icon: UserRound,
-    },
-    {
-      title: language === "en" ? "Image Generation" : "Bildgenerierung",
-      description:
-        language === "en"
-          ? "Generate cinematic portraits, campaign images and social visuals."
-          : "Generiere cinematic Portraits, Kampagnenbilder und Social Visuals.",
+          ? "Generate premium campaign visuals from natural-language briefs with guided creative modes."
+          : "Erzeuge Premium-Kampagnenvisuals aus natürlichen Briefings mit geführten Creative-Modi.",
       icon: Sparkles,
     },
     {
-      title: language === "en" ? "Prompt Enhancer" : "Prompt-Verbesserung",
+      title: language === "en" ? "Style Profiles" : "Style Profiles",
       description:
         language === "en"
-          ? "Turn simple ideas into stronger image prompts."
-          : "Verbessere einfache Ideen automatisch zu starken Bild-Prompts.",
-      icon: Wand2,
+          ? "Define reusable creative direction for look, mood, styling and brand aesthetics."
+          : "Definiere wiederverwendbare Creative Direction für Look, Mood, Styling und Brand-Aesthetics.",
+      icon: UserRound,
     },
     {
-      title: "Gallery",
+      title: language === "en" ? "Social Formats" : "Social Formats",
       description:
         language === "en"
-          ? "Save, open, favorite and organize your best images."
-          : "Speichere, öffne, favorisiere und organisiere deine besten Bilder.",
+          ? "Export-ready formats for posts, stories, shorts and campaign placements."
+          : "Exportfertige Formate für Posts, Stories, Shorts und Kampagnen-Placements.",
+      icon: Film,
+    },
+    {
+      title: language === "en" ? "Asset Gallery" : "Asset Gallery",
+      description:
+        language === "en"
+          ? "Review, favorite, download and organize every generated visual in one place."
+          : "Prüfe, favorisiere, lade herunter und organisiere jedes generierte Visual an einem Ort.",
       icon: GalleryVerticalEnd,
     },
   ];
 
   const workflow = [
     {
-      title: language === "en" ? "Create Character" : "Charakter erstellen",
+      title: language === "en" ? "Define style profile" : "Style Profile anlegen",
       description:
         language === "en"
-          ? "Build AI characters with style, description and visual identity."
-          : "Lege AI-Charaktere mit Stil, Beschreibung und visueller Identität an.",
+          ? "Set appearance and style direction for repeatable campaign aesthetics."
+          : "Lege Appearance- und Style-Direction für wiederholbare Kampagnen-Ästhetik fest.",
       icon: UserRound,
     },
     {
-      title: language === "en" ? "Generate Visuals" : "Visuals generieren",
+      title: language === "en" ? "Generate with agent" : "Mit Agent generieren",
       description:
         language === "en"
-          ? "Create cinematic AI images with a consistent creator look."
-          : "Erzeuge cinematic AI-Bilder mit konsistentem Creator-Look.",
-      icon: Film,
+          ? "Turn briefs into premium AI visuals with social format presets and credits."
+          : "Wandle Briefings in Premium-AI-Visuals mit Social-Format-Presets und Credits um.",
+      icon: Sparkles,
     },
     {
-      title: language === "en" ? "Scale Content" : "Content skalieren",
+      title: language === "en" ? "Manage assets" : "Assets verwalten",
       description:
         language === "en"
-          ? "Save your best results and create content series."
-          : "Speichere deine besten Ergebnisse und erstelle Serien-Content.",
+          ? "Track processing, completed and failed jobs in your Asset Gallery."
+          : "Verfolge Processing-, Completed- und Failed-Jobs in deiner Asset Gallery.",
       icon: Layers,
     },
   ];
@@ -279,7 +279,7 @@ export default function AiinflugenLanding({
                     : "text-white/60 hover:text-white"
                 }`}
               >
-                🇬🇧 EN
+                EN
               </button>
 
               <button
@@ -291,7 +291,7 @@ export default function AiinflugenLanding({
                     : "text-white/60 hover:text-white"
                 }`}
               >
-                🇩🇪 DE
+                DE
               </button>
             </div>
 
@@ -394,7 +394,12 @@ export default function AiinflugenLanding({
               </p>
 
               <div className="flex flex-wrap gap-3">
-                {["Omni", "Kling", "Nano Banana", "OpenAI"].map((tool) => (
+                {[
+                  "AI Visual Agent",
+                  "Style Profiles",
+                  "Social Formats",
+                  "OpenAI",
+                ].map((tool) => (
                   <div
                     key={tool}
                     className="rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-bold text-white/60 backdrop-blur-xl"
@@ -444,12 +449,12 @@ export default function AiinflugenLanding({
 
         <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[
-            "Character consistency",
-            "Cinematic images",
-            "Gallery workflow",
-            "Stripe credits",
-            "Favorites",
-            "Prompt enhancement",
+            "AI Visual Agent",
+            "Style Profiles",
+            "Social Formats",
+            "Asset Gallery",
+            "Credits & Stripe",
+            "Video Studio coming soon",
           ].map((item, index) => (
             <Reveal key={item} delay={index * 80}>
               <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-5 py-4">
@@ -657,6 +662,20 @@ export default function AiinflugenLanding({
             </Reveal>
           ))}
         </div>
+
+        <Reveal>
+          <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.03] px-6 py-5">
+            <p className="text-xs font-bold uppercase tracking-[0.28em] text-white/35">
+              {language === "en" ? "Expansion roadmap" : "Roadmap"}
+            </p>
+
+            <p className="mt-3 text-sm leading-6 text-white/45">
+              {language === "en"
+                ? "Video Studio, Lip Sync Studio and Automation are planned modules — not available in the current release."
+                : "Video Studio, Lip Sync Studio und Automation sind geplante Module — in der aktuellen Version noch nicht verfügbar."}
+            </p>
+          </div>
+        </Reveal>
       </section>
 
       <style jsx global>{`

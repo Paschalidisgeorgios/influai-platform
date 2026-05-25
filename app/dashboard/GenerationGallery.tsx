@@ -64,9 +64,10 @@ function getStatusClass(status: GenerationStatus) {
 }
 
 function getWorkflowLabel(workflow?: string | null) {
-  if (workflow === "character_pro") return "Legacy Pro";
-  if (workflow === "face_consistent_pulid") return "Legacy";
-  if (workflow === "face_consistent") return "Legacy";
+  if (!workflow || workflow === "standard" || workflow === "openai") {
+    return "Standard";
+  }
+
   return "Standard";
 }
 
@@ -435,7 +436,7 @@ export default function GenerationGallery({
             className="rounded-full bg-white px-4 py-2 text-xs font-black text-black"
             onClick={(event) => event.stopPropagation()}
           >
-            Open image
+            Open image directly
           </a>
         </div>
       );
@@ -458,8 +459,8 @@ export default function GenerationGallery({
 
   function Toolbar() {
     return (
-      <div className="space-y-4 rounded-[2rem] border border-white/10 bg-white/[0.035] p-4">
-        <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+      <div className="space-y-3 rounded-[1.5rem] border border-white/10 bg-white/[0.035] p-3 sm:space-y-4 sm:rounded-[2rem] sm:p-4">
+        <div className="grid gap-3 sm:gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
           <input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
@@ -470,7 +471,7 @@ export default function GenerationGallery({
           <select
             value={selectedCharacterId}
             onChange={(event) => setSelectedCharacterId(event.target.value)}
-            className="rounded-full border border-white/10 bg-black/25 px-5 py-3 text-sm font-bold text-white outline-none focus:border-white/25"
+            className="w-full rounded-full border border-white/10 bg-black/25 px-4 py-2.5 text-sm font-bold text-white outline-none focus:border-white/25 sm:px-5 sm:py-3"
           >
             <option value="all">All style profiles</option>
             <option value="free">No style profile</option>
@@ -483,42 +484,39 @@ export default function GenerationGallery({
           </select>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          {(["all", "completed", "processing", "failed"] as const).map(
-            (status) => (
-              <button
-                key={status}
-                type="button"
-                onClick={() => setStatusFilter(status)}
-                className={`rounded-full px-5 py-3 text-sm font-bold capitalize transition ${
-                  statusFilter === status
-                    ? "bg-white text-black"
-                    : "border border-white/10 bg-black/25 text-white"
-                }`}
-              >
-                {status === "all" ? "All status" : status}
-              </button>
-            )
-          )}
+        <div className="flex flex-wrap gap-2 sm:gap-3">
+          {(
+            [
+              { key: "all", label: "All" },
+              { key: "completed", label: "Completed" },
+              { key: "processing", label: "Processing" },
+              { key: "failed", label: "Failed" },
+            ] as const
+          ).map((status) => (
+            <button
+              key={status.key}
+              type="button"
+              onClick={() => setStatusFilter(status.key)}
+              className={`rounded-full px-3 py-2 text-xs font-bold transition sm:px-5 sm:py-3 sm:text-sm ${
+                statusFilter === status.key
+                  ? "bg-white text-black"
+                  : "border border-white/10 bg-black/25 text-white"
+              }`}
+            >
+              {status.label}
+            </button>
+          ))}
 
           <button
             type="button"
-            onClick={() => setFavoriteFilter("all")}
-            className={`rounded-full px-5 py-3 text-sm font-bold transition ${
-              favoriteFilter === "all"
-                ? "bg-white text-black"
-                : "border border-white/10 bg-black/25 text-white"
-            }`}
-          >
-            All
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setFavoriteFilter("favorites")}
-            className={`rounded-full px-5 py-3 text-sm font-bold transition ${
+            onClick={() =>
+              setFavoriteFilter((current) =>
+                current === "favorites" ? "all" : "favorites"
+              )
+            }
+            className={`rounded-full px-3 py-2 text-xs font-bold transition sm:px-5 sm:py-3 sm:text-sm ${
               favoriteFilter === "favorites"
-                ? "bg-white text-black"
+                ? "bg-[#d8ad5f] text-black"
                 : "border border-white/10 bg-black/25 text-white"
             }`}
           >
@@ -547,11 +545,11 @@ export default function GenerationGallery({
             No matching generations.
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3 2xl:grid-cols-4">
             {generations.map((generation) => (
               <div
                 key={generation.id}
-                className="group overflow-hidden rounded-3xl border border-white/10 bg-[#0a0a0a] shadow-[0_16px_50px_rgba(0,0,0,0.28)]"
+                className="group overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-[0_16px_50px_rgba(0,0,0,0.28)] sm:rounded-3xl"
               >
                 <div
                   className={`relative overflow-hidden ${getImageAspectClass(
@@ -592,7 +590,7 @@ export default function GenerationGallery({
                   </button>
                 </div>
 
-                <div className="space-y-3 p-4">
+                <div className="space-y-2.5 p-3 sm:space-y-3 sm:p-4">
                   <div className="flex flex-wrap gap-2">
                     <span
                       className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${getStatusClass(
@@ -606,9 +604,11 @@ export default function GenerationGallery({
                       {getWorkflowLabel(generation.workflow)}
                     </span>
 
-                    {generation.output_format && (
-                      <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/45">
-                        {generation.output_format}
+                    {(generation.output_format ||
+                      generation.social_platform) && (
+                      <span className="rounded-full border border-[#d8ad5f]/20 bg-[#d8ad5f]/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#d8ad5f]">
+                        {generation.output_format ??
+                          generation.social_platform}
                       </span>
                     )}
                   </div>
@@ -644,11 +644,11 @@ export default function GenerationGallery({
       </div>
 
       {selectedGeneration && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 backdrop-blur-xl">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center overflow-y-auto bg-black/85 p-2 backdrop-blur-xl sm:items-center sm:p-4">
           <button
             type="button"
             onClick={() => setSelectedGeneration(null)}
-            className="absolute right-5 top-5 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-xl transition hover:bg-white/20"
+            className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-xl transition hover:bg-white/20 sm:right-5 sm:top-5 sm:h-11 sm:w-11"
           >
             <X className="h-5 w-5" />
           </button>
@@ -660,7 +660,7 @@ export default function GenerationGallery({
             </div>
           )}
 
-          <div className="grid max-h-[92vh] w-full max-w-7xl overflow-hidden rounded-[2rem] border border-white/10 bg-[#070707] shadow-2xl lg:grid-cols-[1fr_420px]">
+          <div className="my-auto grid max-h-[min(95dvh,920px)] w-full max-w-7xl overflow-hidden rounded-[1.25rem] border border-white/10 bg-[#070707] shadow-2xl sm:rounded-[2rem] lg:grid-cols-[1fr_420px]">
             <div className="relative min-h-[60vh] bg-black lg:min-h-[92vh]">
               {selectedGeneration.status === "processing" ? (
                 <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-4 bg-white/[0.04] p-8 text-center lg:min-h-[92vh]">

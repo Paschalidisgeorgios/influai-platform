@@ -31,7 +31,7 @@ export default function CTASection() {
           />
 
           <span className="text-sm text-[#c7a36a] uppercase tracking-[0.25em]">
-            Ready for Demo
+            AI Creator Studio
           </span>
 
         </div>
@@ -49,8 +49,8 @@ export default function CTASection() {
 
         <p className="text-lg md:text-xl text-gray-400 leading-relaxed max-w-3xl mx-auto mb-14">
 
-          Create characters, generate cinematic images, and build your
-          gallery — all in one premium creator workspace.
+          Launch campaign visuals with the AI Visual Agent, Style Profiles,
+          Social Formats and your Asset Gallery — in one professional studio.
 
         </p>
 

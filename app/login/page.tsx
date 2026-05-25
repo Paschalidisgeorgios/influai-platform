@@ -21,7 +21,7 @@ export default function LoginPage() {
     try {
       setLoading(true);
       setLoginSuccess(false);
-      setStatusMessage("Trying to sign in...");
+      setStatusMessage("Signing in to your studio...");
       setErrorMessage(null);
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -36,20 +36,20 @@ export default function LoginPage() {
       }
 
       if (!data.session) {
-        setErrorMessage("Login failed. No session was created.");
+        setErrorMessage("Sign-in failed. No session was created.");
         setStatusMessage(null);
         return;
       }
 
       setLoginSuccess(true);
-      setStatusMessage("Login successful. Opening dashboard...");
+      setStatusMessage("Sign-in successful. Opening InfluExAi Studio...");
 
       window.setTimeout(() => {
         window.location.replace("/dashboard");
       }, 600);
     } catch (error) {
       console.error("Login error:", error);
-      setErrorMessage("Login failed. Please try again.");
+      setErrorMessage("Sign-in failed. Please try again.");
       setStatusMessage(null);
     } finally {
       setLoading(false);
@@ -67,19 +67,26 @@ export default function LoginPage() {
         href="/"
         className="absolute left-5 top-5 z-20 inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white/80 transition hover:border-[#d8ad5f]/40 hover:text-white"
       >
-        ← Back to Home
+        Back to Home
       </Link>
 
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-5">
-        <div className="w-full max-w-md rounded-[2rem] border border-white/10 bg-black/60 p-7 shadow-2xl backdrop-blur-xl sm:p-10">
-          <p className="mb-4 text-xs font-bold uppercase tracking-[0.35em] text-[#d8ad5f]">
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-5 py-16">
+        <div className="w-full max-w-md rounded-[2rem] border border-white/10 bg-black/60 p-7 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-10">
+          <p className="text-[10px] font-black uppercase tracking-[0.38em] text-[#d8ad5f]">
             InfluExAi
           </p>
 
-          <h1 className="text-5xl font-black tracking-tight">Login</h1>
+          <p className="mt-2 text-xs font-semibold uppercase tracking-[0.22em] text-white/35">
+            AI Creator Studio
+          </p>
+
+          <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl">
+            Sign in
+          </h1>
 
           <p className="mt-4 text-sm leading-6 text-white/55">
-            Access your AI creator workspace.
+            Access your studio for the AI Visual Agent, Style Profiles, Social
+            Formats, Asset Gallery and Credits.
           </p>
 
           {statusMessage && (
@@ -99,13 +106,13 @@ export default function LoginPage() {
               href="/dashboard"
               className="mt-6 inline-flex h-14 w-full items-center justify-center rounded-2xl bg-white text-sm font-black text-black transition hover:bg-white/80"
             >
-              Open Dashboard
+              Open Studio
             </Link>
           )}
 
           <form onSubmit={handleLogin} className="mt-8 space-y-5">
             <div>
-              <label className="mb-2 block text-sm text-white/70">
+              <label className="mb-2 block text-sm font-medium text-white/70">
                 Email
               </label>
 
@@ -113,14 +120,14 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="you@example.com"
+                placeholder="you@company.com"
                 required
                 className="h-14 w-full rounded-2xl border border-white/10 bg-white/[0.06] px-5 text-sm outline-none transition focus:border-[#d8ad5f]/60"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm text-white/70">
+              <label className="mb-2 block text-sm font-medium text-white/70">
                 Password
               </label>
 
@@ -128,7 +135,7 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="••••••••••"
+                placeholder="Enter your password"
                 required
                 minLength={6}
                 className="h-14 w-full rounded-2xl border border-white/10 bg-white/[0.06] px-5 text-sm outline-none transition focus:border-[#d8ad5f]/60"
@@ -140,14 +147,14 @@ export default function LoginPage() {
               disabled={loading}
               className="mt-2 inline-flex h-14 w-full items-center justify-center rounded-2xl bg-[#d8ad5f] text-sm font-black text-black transition hover:bg-[#f0c979] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? "Logging in..." : "Login"}
+              {loading ? "Signing in..." : "Sign in to Studio"}
             </button>
           </form>
 
           <p className="mt-8 text-center text-sm text-white/45">
             No account yet?{" "}
             <Link href="/signup" className="font-bold text-[#d8ad5f]">
-              Sign up
+              Create account
             </Link>
           </p>
         </div>

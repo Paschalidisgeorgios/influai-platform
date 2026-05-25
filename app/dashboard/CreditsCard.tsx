@@ -152,11 +152,11 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
   return (
     <section className="space-y-6">
       <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.035] shadow-[0_20px_70px_rgba(0,0,0,0.25)]">
-        <div className="relative p-6">
+        <div className="relative p-4 sm:p-6">
           <div className="pointer-events-none absolute right-0 top-0 h-48 w-48 rounded-full bg-[#d8ad5f]/10 blur-3xl" />
 
-          <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
+          <div className="relative z-10 flex flex-col gap-5 sm:gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
               <p className="text-[10px] font-black uppercase tracking-[0.34em] text-[#d8ad5f]">
                 Balance
               </p>
@@ -171,12 +171,12 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
               </p>
             </div>
 
-            <div className="rounded-[1.5rem] border border-white/10 bg-black/30 p-5 text-right">
+            <div className="rounded-[1.5rem] border border-white/10 bg-black/30 p-4 text-left sm:p-5 sm:text-right">
               <p className="text-xs font-bold uppercase tracking-[0.24em] text-white/35">
                 Available
               </p>
 
-              <div className="mt-2 flex items-center justify-end gap-3">
+              <div className="mt-2 flex items-center gap-3 sm:justify-end">
                 <CreditCard className="h-6 w-6 text-[#d8ad5f]" />
 
                 <p className="text-4xl font-black tracking-tight text-white">
@@ -203,14 +203,14 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3">
         {creditPackages.map((creditPackage) => {
           const isLoading = checkoutPackage === creditPackage.key;
 
           return (
             <div
               key={creditPackage.key}
-              className={`relative overflow-hidden rounded-[2rem] border p-6 shadow-[0_20px_70px_rgba(0,0,0,0.2)] ${
+              className={`relative overflow-hidden rounded-[1.5rem] border p-5 shadow-[0_20px_70px_rgba(0,0,0,0.2)] sm:rounded-[2rem] sm:p-6 ${
                 creditPackage.highlight
                   ? "border-[#d8ad5f]/35 bg-[#d8ad5f]/10"
                   : "border-white/10 bg-white/[0.035]"

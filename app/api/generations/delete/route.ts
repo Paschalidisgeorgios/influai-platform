@@ -10,7 +10,9 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-function getStoragePathFromPublicUrl(publicUrl: string) {
+function getStoragePathFromPublicUrl(publicUrl: string | null) {
+  if (!publicUrl) return null;
+
   const marker = `/storage/v1/object/public/${STORAGE_BUCKET}/`;
   const index = publicUrl.indexOf(marker);
 

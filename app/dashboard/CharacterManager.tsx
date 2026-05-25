@@ -153,7 +153,7 @@ export default function CharacterManager({
       const data = await response.json();
 
       if (!response.ok) {
-        showError(data.error || "Failed to load characters.");
+        showError(data.error || "Failed to load style profiles.");
         return;
       }
 
@@ -167,7 +167,7 @@ export default function CharacterManager({
       );
     } catch (error) {
       console.error("Load characters error:", error);
-      showError("Failed to load characters.");
+      showError("Failed to load style profiles.");
     } finally {
       setLoading(false);
     }
@@ -235,7 +235,7 @@ export default function CharacterManager({
       const cleanName = form.name.trim();
 
       if (!cleanName) {
-        showError("Character name is required.");
+        showError("Style profile name is required.");
         return;
       }
 
@@ -261,17 +261,17 @@ export default function CharacterManager({
       const data = await response.json();
 
       if (!response.ok) {
-        showError(data.error || "Failed to create character.");
+        showError(data.error || "Failed to create style profile.");
         return;
       }
 
       setForm(initialForm);
-      showStatus("Character created.");
+      showStatus("Style profile created.");
       await loadCharacters();
       onCharactersChange?.();
     } catch (error) {
       console.error("Create character error:", error);
-      showError("Failed to create character.");
+      showError("Failed to create style profile.");
     } finally {
       setCreating(false);
     }
@@ -280,7 +280,7 @@ export default function CharacterManager({
   async function deleteCharacter(characterId: string) {
     try {
       const confirmed = window.confirm(
-        "Delete this character and all its reference images?"
+        "Delete this style profile and all its visual references?"
       );
 
       if (!confirmed) return;
@@ -309,7 +309,7 @@ export default function CharacterManager({
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        showError(data.error || "Failed to delete character.");
+        showError(data.error || "Failed to delete style profile.");
         return;
       }
 
@@ -323,11 +323,11 @@ export default function CharacterManager({
         return copy;
       });
 
-      showStatus("Character deleted.");
+      showStatus("Style profile deleted.");
       onCharactersChange?.();
     } catch (error) {
       console.error("Delete character error:", error);
-      showError("Failed to delete character.");
+      showError("Failed to delete style profile.");
     } finally {
       setDeletingCharacterId(null);
     }
@@ -363,16 +363,16 @@ export default function CharacterManager({
       const data = await response.json();
 
       if (!response.ok) {
-        showError(data.error || "Failed to upload reference image.");
+        showError(data.error || "Failed to upload visual reference.");
         return;
       }
 
-      showStatus("Reference image uploaded.");
+      showStatus("Visual reference uploaded.");
       await loadCharacters();
       onCharactersChange?.();
     } catch (error) {
       console.error("Reference upload error:", error);
-      showError("Failed to upload reference image.");
+      showError("Failed to upload visual reference.");
     } finally {
       setUploadingCharacterId(null);
     }
@@ -404,16 +404,16 @@ export default function CharacterManager({
       const data = await response.json();
 
       if (!response.ok) {
-        showError(data.error || "Failed to set primary reference.");
+        showError(data.error || "Failed to set cover reference.");
         return;
       }
 
-      showStatus("Primary reference updated.");
+      showStatus("Cover reference updated.");
       await loadCharacters();
       onCharactersChange?.();
     } catch (error) {
       console.error("Set primary reference error:", error);
-      showError("Failed to set primary reference.");
+      showError("Failed to set cover reference.");
     } finally {
       setUpdatingReferenceId(null);
     }
@@ -421,7 +421,7 @@ export default function CharacterManager({
 
   async function deleteReferenceImage(referenceImageId: string) {
     try {
-      const confirmed = window.confirm("Delete this reference image?");
+      const confirmed = window.confirm("Delete this visual reference?");
       if (!confirmed) return;
 
       setDeletingReferenceId(referenceImageId);
@@ -448,41 +448,25 @@ export default function CharacterManager({
       const data = await response.json();
 
       if (!response.ok) {
-        showError(data.error || "Failed to delete reference image.");
+        showError(data.error || "Failed to delete visual reference.");
         return;
       }
 
-      showStatus("Reference image deleted.");
+      showStatus("Visual reference deleted.");
       await loadCharacters();
       onCharactersChange?.();
     } catch (error) {
       console.error("Delete reference image error:", error);
-      showError("Failed to delete reference image.");
+      showError("Failed to delete visual reference.");
     } finally {
       setDeletingReferenceId(null);
     }
   }
 
-  function getCharacterModeLabel(character: Character) {
-    if (character.training_status === "completed") {
-      return "Pro model saved";
-    }
-
-    return "Character Style";
-  }
-
-  function getCharacterModeClass(character: Character) {
-    if (character.training_status === "completed") {
-      return "border-emerald-500/20 bg-emerald-500/10 text-emerald-200";
-    }
-
-    return "border-white/10 bg-white/[0.04] text-white/45";
-  }
-
   if (loading) {
     return (
-      <section className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-10 text-center text-white/50">
-        Loading characters...
+      <section className="rounded-[1.5rem] border border-white/10 bg-white/[0.035] p-8 text-center text-white/50 sm:rounded-[2rem] sm:p-10">
+        Loading style profiles...
       </section>
     );
   }
@@ -503,23 +487,29 @@ export default function CharacterManager({
         </div>
       )}
 
+      <div className="rounded-[2rem] border border-[#d8ad5f]/15 bg-[#d8ad5f]/[0.04] px-5 py-4 sm:px-6">
+        <p className="text-sm leading-6 text-white/55 sm:leading-6">
+          Style profiles guide look, mood, styling and brand direction. They do
+          not act as fixed identity models.
+        </p>
+      </div>
+
       <form
         onSubmit={createCharacter}
         className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-5 shadow-[0_20px_70px_rgba(0,0,0,0.25)] sm:p-6"
       >
         <div className="mb-6">
           <p className="text-[10px] font-black uppercase tracking-[0.32em] text-[#d8ad5f]">
-            Create character
+            New style profile
           </p>
 
-          <h3 className="mt-3 text-2xl font-black tracking-tight text-white">
-            New AI Persona
+          <h3 className="mt-3 text-xl font-black tracking-tight text-white sm:text-2xl">
+            Build creative direction
           </h3>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-white/45">
-            Create a reusable character style. Characters guide the visual
-            direction, brand identity, styling and scene consistency without
-            promising exact face identity.
+            Define reusable appearance and styling direction for campaign
+            visuals, portraits and product shots.
           </p>
         </div>
 
@@ -527,14 +517,14 @@ export default function CharacterManager({
           <input
             value={form.name}
             onChange={(event) => updateForm("name", event.target.value)}
-            placeholder="Character name"
+            placeholder="Profile name"
             className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
           />
 
           <input
             value={form.gender}
             onChange={(event) => updateForm("gender", event.target.value)}
-            placeholder="Gender / identity"
+            placeholder="Creative tag (optional)"
             className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
           />
         </div>
@@ -542,7 +532,7 @@ export default function CharacterManager({
         <textarea
           value={form.description}
           onChange={(event) => updateForm("description", event.target.value)}
-          placeholder="Short character description"
+          placeholder="Short profile description"
           className="mt-4 min-h-[86px] w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
         />
 
@@ -551,14 +541,14 @@ export default function CharacterManager({
           onChange={(event) =>
             updateForm("appearancePrompt", event.target.value)
           }
-          placeholder="Appearance prompt: hair, body type, age, style details, signature look..."
+          placeholder="Appearance direction: hair, age range, wardrobe, signature look, subject framing..."
           className="mt-4 min-h-[96px] w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
         />
 
         <textarea
           value={form.stylePrompt}
           onChange={(event) => updateForm("stylePrompt", event.target.value)}
-          placeholder="Style prompt: cinematic, fashion editorial, lighting, lens, color grading..."
+          placeholder="Style direction: lighting, lens, color grading, mood, brand aesthetic..."
           className="mt-4 min-h-[96px] w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
         />
 
@@ -575,15 +565,22 @@ export default function CharacterManager({
           ) : (
             <>
               <Sparkles className="mr-2 h-4 w-4" />
-              Create character
+              Create style profile
             </>
           )}
         </button>
       </form>
 
       {sortedCharacters.length === 0 ? (
-        <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] py-16 text-center text-white/45">
-          No characters yet.
+        <div className="rounded-[2rem] border border-dashed border-white/10 bg-white/[0.02] py-16 text-center">
+          <UserRound className="mx-auto h-10 w-10 text-white/25" />
+          <p className="mt-4 text-sm font-bold text-white/45">
+            No style profiles yet.
+          </p>
+          <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-white/30">
+            Create your first profile, then add visual references to guide
+            future generations.
+          </p>
         </div>
       ) : (
         <div className="grid gap-5 xl:grid-cols-2">
@@ -608,26 +605,24 @@ export default function CharacterManager({
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-white/35">
-                      <UserRound className="h-9 w-9" />
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-b from-white/[0.03] to-black/40 text-white/35">
+                      <ImagePlus className="h-9 w-9" />
                       <p className="text-xs font-black uppercase tracking-[0.3em]">
-                        No reference image
+                        Add cover reference
                       </p>
                     </div>
                   )}
 
                   <div className="absolute left-4 top-4 flex flex-wrap gap-2">
                     <span className="rounded-full border border-white/10 bg-black/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white backdrop-blur-xl">
-                      style profile
+                      Style Profile
                     </span>
 
-                    <span
-                      className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] backdrop-blur-xl ${getCharacterModeClass(
-                        character
-                      )}`}
-                    >
-                      {getCharacterModeLabel(character)}
-                    </span>
+                    {primaryReference && (
+                      <span className="rounded-full border border-[#d8ad5f]/40 bg-[#d8ad5f]/20 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#d8ad5f] backdrop-blur-xl">
+                        Cover Reference
+                      </span>
+                    )}
                   </div>
 
                   <button
@@ -661,22 +656,44 @@ export default function CharacterManager({
                         {character.description}
                       </p>
                     )}
+
+                    {character.appearance_prompt && (
+                      <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/30">
+                          Appearance Direction
+                        </p>
+                        <p className="mt-2 line-clamp-4 text-sm leading-6 text-white/55">
+                          {character.appearance_prompt}
+                        </p>
+                      </div>
+                    )}
+
+                    {character.style_prompt && (
+                      <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-4">
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/30">
+                          Style Direction
+                        </p>
+                        <p className="mt-2 line-clamp-4 text-sm leading-6 text-white/55">
+                          {character.style_prompt}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <p className="text-sm font-black text-white">
-                          Reference images
+                          Visual References
                         </p>
 
-                        <p className="mt-1 text-xs text-white/35">
-                          {references.length} uploaded · used as visual style
-                          references for this character profile.
+                        <p className="mt-1 text-xs leading-5 text-white/35">
+                          {references.length} reference
+                          {references.length === 1 ? "" : "s"} for this profile.
                         </p>
                       </div>
 
-                      <label className="inline-flex cursor-pointer items-center justify-center rounded-full bg-white px-4 py-2 text-xs font-black text-black transition hover:bg-white/85">
+                      <label className="inline-flex w-full cursor-pointer items-center justify-center rounded-full bg-white px-4 py-2.5 text-xs font-black text-black shadow-[0_8px_24px_rgba(255,255,255,0.12)] transition hover:bg-white/85 sm:w-auto">
                         {uploadingCharacterId === character.id ? (
                           <>
                             <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
@@ -708,16 +725,36 @@ export default function CharacterManager({
                     </div>
 
                     {references.length === 0 ? (
-                      <div className="mt-4 flex items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.025] py-10 text-center text-white/35">
-                        <div>
-                          <ImagePlus className="mx-auto h-8 w-8" />
-                          <p className="mt-3 text-sm font-bold">
-                            No reference images uploaded yet.
-                          </p>
-                        </div>
-                      </div>
+                      <label className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[#d8ad5f]/25 bg-[#d8ad5f]/[0.03] px-6 py-12 text-center transition hover:border-[#d8ad5f]/40 hover:bg-[#d8ad5f]/[0.06]">
+                        <Upload className="h-8 w-8 text-[#d8ad5f]" />
+                        <p className="mt-4 text-sm font-bold text-white">
+                          Upload visual references
+                        </p>
+                        <p className="mt-2 max-w-xs text-xs leading-5 text-white/40">
+                          Upload mood frames or product shots. The first file
+                          becomes the cover reference.
+                        </p>
+                        <span className="mt-5 rounded-full bg-white px-4 py-2 text-xs font-black text-black">
+                          Choose files
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={uploadingCharacterId === character.id}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+
+                            if (file) {
+                              uploadReferenceImage(character.id, file);
+                            }
+
+                            event.currentTarget.value = "";
+                          }}
+                        />
+                      </label>
                     ) : (
-                      <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
+                      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
                         {references.map((reference) => (
                           <div
                             key={reference.id}
@@ -735,7 +772,7 @@ export default function CharacterManager({
 
                             {reference.is_primary && (
                               <div className="absolute left-2 top-2 rounded-full bg-[#d8ad5f] px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-black">
-                                Primary
+                                Cover Reference
                               </div>
                             )}
 
@@ -748,7 +785,7 @@ export default function CharacterManager({
                                 }
                                 onClick={() => setPrimaryReference(reference.id)}
                                 className="flex h-8 flex-1 items-center justify-center rounded-full bg-white text-black transition hover:bg-white/85 disabled:cursor-not-allowed disabled:opacity-50"
-                                title="Set as primary"
+                                title="Set as cover reference"
                               >
                                 {updatingReferenceId === reference.id ? (
                                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -786,13 +823,15 @@ export default function CharacterManager({
                       </div>
 
                       <div>
-                      <p className="text-xs font-black uppercase tracking-[0.24em] text-white/35">
-  Advanced consistency
-</p>
+                        <p className="text-xs font-black uppercase tracking-[0.24em] text-[#d8ad5f]">
+                          Advanced consistency
+                        </p>
 
-<p className="mt-2 text-sm leading-6 text-white/55">
-  Advanced consistency is currently disabled. Current profiles are used as visual style references for reliable standard image generation.
-</p>
+                        <p className="mt-2 text-sm leading-6 text-white/55">
+                          Coming later. Advanced consistency modules are not
+                          active in this release. Profiles currently guide
+                          standard OpenAI image generation only.
+                        </p>
                       </div>
                     </div>
                   </div>

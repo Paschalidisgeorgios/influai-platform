@@ -11,16 +11,16 @@ import {
 
 const capabilities = [
   {
-    label: "Persistent Characters",
-    value: "Identity",
+    label: "AI Visual Agent",
+    value: "Live",
   },
   {
-    label: "AI Prompt Intelligence",
-    value: "Enhanced",
+    label: "Style Profiles",
+    value: "Live",
   },
   {
-    label: "Multi-Image Generation",
-    value: "4 Variations",
+    label: "Social Formats",
+    value: "Presets",
   },
 ];
 
@@ -78,9 +78,9 @@ export default function HeroSection() {
 
             <p className="text-lg md:text-xl text-gray-400 leading-relaxed max-w-2xl mb-10">
 
-              Create cinematic AI influencer content with persistent
-              character consistency, AI prompt intelligence, and
-              multi-image FLUX generation.
+              Generate premium campaign visuals with the AI Visual Agent,
+              reusable Style Profiles, Social Formats and a centralized
+              Asset Gallery.
 
             </p>
 
@@ -164,7 +164,7 @@ export default function HeroSection() {
                     </div>
 
                     <p className="text-gray-400 max-w-xs mx-auto">
-                      FLUX-powered multi-image generation with character memory and prompt intelligence.
+                      Premium AI visual generation with style profiles and campaign-ready output.
                     </p>
 
                   </div>

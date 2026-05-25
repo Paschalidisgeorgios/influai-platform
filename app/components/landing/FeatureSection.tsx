@@ -16,16 +16,16 @@ const features = [
   {
     title: "Image Generator",
     description:
-      "Create cinematic influencer visuals with FLUX via Replicate. Generate four variations per run.",
+      "Generate premium campaign visuals through the studio image workflow.",
     icon: ImageIcon,
     href: "/dashboard/image-generator",
     glow: "from-[#c7a36a]/20 to-orange-500/10",
   },
 
   {
-    title: "Character Studio",
+    title: "Style Profiles",
     description:
-      "Build persistent AI characters with DNA, visual signatures, and style memory.",
+      "Define reusable creative direction for look, mood, styling and brand aesthetics.",
     icon: Brain,
     href: "/dashboard/characters",
     glow: "from-blue-500/20 to-cyan-500/10",
@@ -51,10 +51,10 @@ const features = [
 ];
 
 const stack = [
-  "FLUX Schnell",
-  "Replicate",
-  "OpenAI Prompt Intelligence",
-  "Supabase Infrastructure",
+  "AI Visual Agent",
+  "Style Profiles",
+  "Social Formats",
+  "Asset Gallery",
 ];
 
 export default function FeatureSection() {

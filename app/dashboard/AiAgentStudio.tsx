@@ -1,18 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
+  CheckCircle2,
+  Clock,
   Clapperboard,
+  ExternalLink,
+  GalleryVerticalEnd,
   ImageIcon,
+  ImageOff,
   Loader2,
   Megaphone,
   MonitorPlay,
   Plus,
   Search,
   Send,
-  Sparkles,
   Square,
   UserRound,
   Wand2,
@@ -24,9 +28,6 @@ type Character = {
   name: string;
   reference_image_url: string | null;
   face_workflow?: string | null;
-  training_status?: string | null;
-  trained_model_url?: string | null;
-  trained_trigger_word?: string | null;
 };
 
 type RegenerateDraft = {
@@ -54,11 +55,22 @@ type OutputFormat = {
   icon: typeof Square;
 };
 
+type AgentResult = {
+  id: string;
+  prompt: string;
+  image_url: string | null;
+  status: "processing" | "completed" | "failed";
+  error_message: string | null;
+  output_format?: string | null;
+  image_size?: string | null;
+};
+
 type AiAgentStudioProps = {
   charactersRefreshKey?: number;
   regenerateDraft?: RegenerateDraft | null;
   onGenerationQueued?: () => void;
   onClearRegenerateDraft?: () => void;
+  onOpenGallery?: () => void;
 };
 
 const agentModes: {
@@ -74,7 +86,8 @@ const agentModes: {
   {
     key: "portrait",
     label: "Portrait",
-    description: "Best for creator portraits, editorials and people-focused visuals.",
+    description:
+      "Best for creator portraits, editorials and people-focused visuals.",
   },
   {
     key: "product",
@@ -161,6 +174,20 @@ const quickPrompts = [
     prompt:
       "Create a premium product campaign visual with luxury lighting, clean composition, modern creator-brand aesthetic, high contrast, elegant commercial photography, no text, no logo.",
   },
+  {
+    label: "Ad concept",
+    icon: Megaphone,
+    format: "instagram_story" as OutputFormatKey,
+    prompt:
+      "Create a premium social media campaign visual with a strong visual hook, modern creator-brand aesthetic, luxury lighting and high-end commercial quality.",
+  },
+  {
+    label: "Research style",
+    icon: Search,
+    format: "square" as OutputFormatKey,
+    prompt:
+      "Create a visual concept inspired by high-performing creator ads: strong composition, clear subject focus, premium commercial style and polished social media campaign quality.",
+  },
 ];
 
 const examplePrompts = [
@@ -213,8 +240,12 @@ export default function AiAgentStudio({
   regenerateDraft = null,
   onGenerationQueued,
   onClearRegenerateDraft,
+  onOpenGallery,
 }: AiAgentStudioProps) {
   const supabase = createClient();
+
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const resultRef = useRef<HTMLDivElement | null>(null);
 
   const [prompt, setPrompt] = useState("");
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -230,6 +261,8 @@ export default function AiAgentStudio({
   const [queuedGenerationId, setQueuedGenerationId] = useState<string | null>(
     null
   );
+
+  const [agentResult, setAgentResult] = useState<AgentResult | null>(null);
 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -248,6 +281,24 @@ export default function AiAgentStudio({
     );
   }, [outputFormatKey]);
 
+  const resultStatusLabel =
+    agentResult?.status === "processing"
+      ? "Processing"
+      : agentResult?.status === "completed"
+        ? "Completed"
+        : agentResult?.status === "failed"
+          ? "Failed"
+          : "Waiting";
+
+  const resultStatusDescription =
+    agentResult?.status === "processing"
+      ? "Your image is being generated. This can take a short moment."
+      : agentResult?.status === "completed"
+        ? "Your image is ready."
+        : agentResult?.status === "failed"
+          ? "The generation failed."
+          : "Start a generation to see the result here.";
+
   useEffect(() => {
     loadCharacters();
   }, [charactersRefreshKey]);
@@ -258,6 +309,7 @@ export default function AiAgentStudio({
     setPrompt(regenerateDraft.prompt);
     setSelectedCharacterId(regenerateDraft.characterId ?? "");
     setQueuedGenerationId(null);
+    setAgentResult(null);
     setErrorMessage(null);
     setStatusMessage("Prompt loaded for regeneration.");
   }, [regenerateDraft]);
@@ -287,6 +339,69 @@ export default function AiAgentStudio({
 
     return () => window.clearInterval(typing);
   }, [exampleIndex]);
+
+  useEffect(() => {
+    if (!queuedGenerationId) return;
+
+    let cancelled = false;
+    let intervalId: number | null = null;
+
+    async function pollGeneration() {
+      try {
+        const token = await getAccessToken();
+
+        if (!token || cancelled) return;
+
+        const response = await fetch("/api/generations?limit=24&offset=0", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          cache: "no-store",
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || cancelled) return;
+
+        const generations = data.generations ?? [];
+
+        const found = generations.find(
+          (generation: AgentResult) => generation.id === queuedGenerationId
+        );
+
+        if (!found) return;
+
+        setAgentResult({
+          id: found.id,
+          prompt: found.prompt,
+          image_url: found.image_url,
+          status: found.status,
+          error_message: found.error_message,
+          output_format: found.output_format,
+          image_size: found.image_size,
+        });
+
+        if (found.status === "completed" || found.status === "failed") {
+          if (intervalId) {
+            window.clearInterval(intervalId);
+          }
+        }
+      } catch (error) {
+        console.error("Agent result polling error:", error);
+      }
+    }
+
+    pollGeneration();
+    intervalId = window.setInterval(pollGeneration, 2500);
+
+    return () => {
+      cancelled = true;
+
+      if (intervalId) {
+        window.clearInterval(intervalId);
+      }
+    };
+  }, [queuedGenerationId]);
 
   async function getAccessToken() {
     const {
@@ -336,6 +451,26 @@ export default function AiAgentStudio({
     }
   }
 
+  function scrollToResult() {
+    window.setTimeout(() => {
+      resultRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 150);
+  }
+
+  function submitFromTextarea(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key !== "Enter") return;
+    if (event.shiftKey) return;
+
+    event.preventDefault();
+
+    if (!queuing) {
+      formRef.current?.requestSubmit();
+    }
+  }
+
   function getSafeErrorMessage(status: number, apiError?: string) {
     if (status === 401) return "Please sign in again.";
     if (status === 402) return "Not enough credits. Please buy more credits.";
@@ -348,22 +483,50 @@ export default function AiAgentStudio({
   async function queueGeneration(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    const cleanPrompt = prompt.trim();
+
+    if (!cleanPrompt) {
+      setErrorMessage("Please describe what you want to create.");
+      return;
+    }
+
+    const temporaryGenerationId = `temp-${Date.now()}`;
+
     try {
       setQueuing(true);
       setQueuedGenerationId(null);
       setErrorMessage(null);
-      setStatusMessage(null);
+      setStatusMessage(
+        selectedCharacter
+          ? `Preparing generation using ${selectedCharacter.name} as style profile.`
+          : `Preparing generation for ${selectedOutputFormat.label} (${selectedOutputFormat.ratio}).`
+      );
 
-      const cleanPrompt = prompt.trim();
+      setAgentResult({
+        id: temporaryGenerationId,
+        prompt: cleanPrompt,
+        image_url: null,
+        status: "processing",
+        error_message: null,
+        output_format: selectedOutputFormat.label,
+        image_size: "",
+      });
 
-      if (!cleanPrompt) {
-        setErrorMessage("Please describe what you want to create.");
-        return;
-      }
+      scrollToResult();
 
       const token = await getAccessToken();
 
       if (!token) {
+        setAgentResult({
+          id: temporaryGenerationId,
+          prompt: cleanPrompt,
+          image_url: null,
+          status: "failed",
+          error_message: "Please sign in again.",
+          output_format: selectedOutputFormat.label,
+          image_size: "",
+        });
+
         setErrorMessage("Please sign in again.");
         return;
       }
@@ -387,22 +550,76 @@ export default function AiAgentStudio({
       const data = await response.json();
 
       if (!response.ok) {
-        setErrorMessage(getSafeErrorMessage(response.status, data.error));
+        const safeMessage = getSafeErrorMessage(response.status, data.error);
+
+        setAgentResult({
+          id: temporaryGenerationId,
+          prompt: cleanPrompt,
+          image_url: null,
+          status: "failed",
+          error_message: safeMessage,
+          output_format: selectedOutputFormat.label,
+          image_size: "",
+        });
+
+        setErrorMessage(safeMessage);
         return;
       }
 
-      setQueuedGenerationId(data.generationId ?? null);
+      const generationId =
+        typeof data.generationId === "string" ? data.generationId : null;
+
+      if (!generationId) {
+        setAgentResult({
+          id: temporaryGenerationId,
+          prompt: cleanPrompt,
+          image_url: null,
+          status: "failed",
+          error_message: "Generation was queued, but no generation ID returned.",
+          output_format: selectedOutputFormat.label,
+          image_size: "",
+        });
+
+        setErrorMessage("Generation was queued, but no generation ID returned.");
+        return;
+      }
+
+      setQueuedGenerationId(generationId);
+
+      setAgentResult((current) => ({
+        id: generationId,
+        prompt: current?.prompt ?? cleanPrompt,
+        image_url: null,
+        status: "processing",
+        error_message: null,
+        output_format: selectedOutputFormat.label,
+        image_size: "",
+      }));
+
       setStatusMessage(
         selectedCharacter
           ? `Generation queued using ${selectedCharacter.name} as style profile.`
           : `Generation queued for ${selectedOutputFormat.label} (${selectedOutputFormat.ratio}).`
       );
+
       setPrompt("");
       setAgentMode("auto");
       onClearRegenerateDraft?.();
       onGenerationQueued?.();
+      scrollToResult();
     } catch (error) {
       console.error("Agent queue error:", error);
+
+      setAgentResult({
+        id: temporaryGenerationId,
+        prompt: cleanPrompt,
+        image_url: null,
+        status: "failed",
+        error_message: "Network error. Please try again.",
+        output_format: selectedOutputFormat.label,
+        image_size: "",
+      });
+
       setErrorMessage("Network error. Please try again.");
     } finally {
       setQueuing(false);
@@ -414,7 +631,7 @@ export default function AiAgentStudio({
   return (
     <section
       id="agent"
-      className="relative h-screen min-h-screen overflow-hidden bg-[#06060a] px-4 py-6 sm:px-8 lg:px-10"
+      className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#06060a] px-3 pb-28 pt-[4.75rem] sm:px-6 sm:pb-16 sm:pt-10 lg:px-10 lg:pb-10 lg:pt-10"
     >
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="agent-film-bg absolute inset-0 overflow-hidden" />
@@ -465,7 +682,7 @@ export default function AiAgentStudio({
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(6,6,10,0.92)_0%,rgba(6,6,10,0.68)_36%,rgba(38,30,36,0.34)_60%,rgba(18,15,24,0.72)_100%)]" />
       </div>
 
-      <div className="relative z-10 flex h-full flex-col items-center justify-center">
+      <div className="relative z-10 mx-auto flex w-full min-w-0 max-w-6xl flex-col items-center justify-start py-4 sm:py-8 lg:min-h-[calc(100dvh-5rem)] lg:justify-center lg:py-10">
         <motion.p
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -479,7 +696,7 @@ export default function AiAgentStudio({
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.05 }}
-          className="mt-3 text-center text-3xl font-black tracking-[-0.055em] text-white sm:text-4xl lg:text-5xl"
+          className="mt-3 text-center text-2xl font-black tracking-[-0.055em] text-white sm:text-3xl lg:text-5xl"
         >
           Create campaign-ready visuals
         </motion.h2>
@@ -508,11 +725,12 @@ export default function AiAgentStudio({
         )}
 
         <motion.form
+          ref={formRef}
           initial={{ opacity: 0, y: 22, scale: 0.985 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.16 }}
           onSubmit={queueGeneration}
-          className="relative isolate mt-8 w-full max-w-5xl overflow-visible rounded-[1.7rem] border border-white/12 bg-white/[0.075] shadow-[0_30px_110px_rgba(0,0,0,0.55)] backdrop-blur-2xl"
+          className="relative isolate mt-6 w-full max-w-5xl overflow-visible rounded-[1.35rem] border border-white/12 bg-white/[0.075] shadow-[0_30px_110px_rgba(0,0,0,0.55)] backdrop-blur-2xl sm:mt-8 sm:rounded-[1.7rem]"
         >
           <div className="pointer-events-none absolute inset-0 rounded-[1.7rem] bg-[radial-gradient(circle_at_50%_100%,rgba(216,173,95,0.16),transparent_42%)]" />
           <div className="pointer-events-none absolute inset-0 rounded-[1.7rem] bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.08),transparent_38%)]" />
@@ -521,11 +739,18 @@ export default function AiAgentStudio({
             <textarea
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
-              placeholder={typedExample || "Describe the visual you want to create"}
-              className="min-h-[78px] w-full resize-none bg-transparent px-5 py-5 text-base text-white outline-none placeholder:text-white/32 sm:px-6 sm:text-lg"
+              onKeyDown={submitFromTextarea}
+              placeholder={
+                typedExample || "Describe the visual you want to create"
+              }
+              className="min-h-[104px] w-full resize-y bg-transparent px-4 py-4 text-base leading-relaxed text-white outline-none placeholder:text-white/32 sm:min-h-[78px] sm:resize-none sm:px-6 sm:py-5 sm:text-lg"
             />
 
-            <div className="border-t border-white/10 px-3 py-4 sm:px-4">
+            <p className="border-t border-white/10 px-4 py-2 text-[11px] font-medium text-white/35 sm:px-6">
+              Enter to generate · Shift+Enter for a new line
+            </p>
+
+            <div className="border-t border-white/10 px-3 py-3 sm:px-4 sm:py-4">
               <div className="flex flex-col gap-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-3 py-2 text-xs font-bold text-white/65">
@@ -567,7 +792,7 @@ export default function AiAgentStudio({
                     </button>
 
                     {formatMenuOpen && (
-                      <div className="absolute left-0 top-12 z-50 w-64 rounded-2xl border border-white/10 bg-[#101014] p-1.5 shadow-2xl">
+                      <div className="absolute left-0 right-0 top-12 z-50 max-h-[min(60vh,320px)] overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-[#101014] p-1.5 shadow-2xl sm:right-auto sm:w-64">
                         <div className="space-y-1">
                           {outputFormats.map((format) => {
                             const Icon = format.icon;
@@ -624,7 +849,7 @@ export default function AiAgentStudio({
                   </div>
 
                   <div className="rounded-full bg-[#d8ad5f] px-3 py-2 text-xs font-black text-black">
-                    {selectedCharacter ? "Character Style" : "Standard"}
+                    {selectedCharacter ? "Style Profile" : "Standard"}
                   </div>
                 </div>
 
@@ -635,7 +860,7 @@ export default function AiAgentStudio({
                         key={mode.key}
                         type="button"
                         onClick={() => setAgentMode(mode.key)}
-                        className={`rounded-full px-4 py-2 text-xs font-bold transition ${
+                        className={`rounded-full px-3 py-2 text-xs font-bold transition sm:px-4 ${
                           agentMode === mode.key
                             ? "bg-white text-black"
                             : "border border-white/10 bg-black/25 text-white/55"
@@ -666,19 +891,228 @@ export default function AiAgentStudio({
           </div>
         </motion.form>
 
-        {queuedGenerationId && (
-          <p className="mt-4 text-center text-xs text-white/40">
-            Queued job: {queuedGenerationId}
-          </p>
-        )}
+        <div ref={resultRef} className="mt-6 w-full max-w-5xl scroll-mt-24 sm:mt-8 sm:scroll-mt-28">
+          {agentResult && (
+            <motion.div
+              initial={{ opacity: 0, y: 22 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.06] shadow-[0_30px_110px_rgba(0,0,0,0.45)] backdrop-blur-2xl sm:rounded-[1.7rem]"
+            >
+              <div className="border-b border-white/10 p-4 sm:p-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d8ad5f]">
+                      Latest result
+                    </p>
+
+                    <h3 className="mt-2 text-xl font-black text-white sm:text-2xl">
+                      {agentResult.status === "processing"
+                        ? "Generating your image…"
+                        : agentResult.status === "completed"
+                          ? "Generation completed"
+                          : "Generation failed"}
+                    </h3>
+
+                    <p className="mt-2 text-sm text-white/45">
+                      {resultStatusDescription}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-bold text-white/55">
+                      {agentResult.output_format ?? selectedOutputFormat.label}
+                    </span>
+
+                    <span
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black ${
+                        agentResult.status === "completed"
+                          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-200"
+                          : agentResult.status === "failed"
+                            ? "border-red-500/20 bg-red-500/10 text-red-200"
+                            : "border-[#d8ad5f]/25 bg-[#d8ad5f]/10 text-[#d8ad5f]"
+                      }`}
+                    >
+                      {agentResult.status === "processing" && (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      )}
+
+                      {agentResult.status === "completed" && (
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      )}
+
+                      {agentResult.status === "failed" && (
+                        <AlertCircle className="h-3.5 w-3.5" />
+                      )}
+
+                      {resultStatusLabel}
+                    </span>
+                  </div>
+                </div>
+
+                {agentResult.status === "processing" && (
+                  <div className="mt-5">
+                    <div className="h-2 overflow-hidden rounded-full bg-white/[0.08]">
+                      <motion.div
+                        className="h-full rounded-full bg-[#d8ad5f]"
+                        initial={{ width: "12%" }}
+                        animate={{ width: ["12%", "68%", "42%", "88%"] }}
+                        transition={{
+                          duration: 3.2,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                      />
+                    </div>
+
+                    <div className="mt-3 flex items-start gap-2 text-xs font-bold leading-5 text-white/40">
+                      <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      <span>
+                        Processing in the background. The image will appear here
+                        automatically.
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid gap-0 lg:grid-cols-[1fr_360px]">
+                <div className="relative flex min-h-[min(320px,50dvh)] items-center justify-center bg-black/45 sm:min-h-[420px]">
+                  {agentResult.status === "processing" && (
+                    <div className="flex w-full max-w-md flex-col items-center justify-center gap-5 p-10 text-center">
+                      <div className="relative">
+                        <div className="absolute inset-0 rounded-full bg-[#d8ad5f]/30 blur-2xl" />
+
+                        <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-[#d8ad5f]/25 bg-[#d8ad5f]/10">
+                          <Loader2 className="h-9 w-9 animate-spin text-[#d8ad5f]" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-lg font-black text-white">
+                          Generating your image…
+                        </p>
+
+                        <p className="mt-3 text-sm leading-6 text-white/45">
+                          Please wait while InfluExAi generates and saves your
+                          image. Stay on this page — the result appears here
+                          automatically.
+                        </p>
+                      </div>
+
+                      <div className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left">
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/30">
+                          Current job
+                        </p>
+
+                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-white/55">
+                          {agentResult.prompt}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {agentResult.status === "failed" && (
+                    <div className="flex flex-col items-center justify-center gap-4 p-10 text-center">
+                      <AlertCircle className="h-12 w-12 text-red-200" />
+
+                      <p className="text-sm font-bold text-red-100">
+                        Generation failed
+                      </p>
+
+                      <p className="max-w-md text-xs leading-6 text-red-100/60">
+                        {agentResult.error_message ?? "Unknown error"}
+                      </p>
+                    </div>
+                  )}
+
+                  {agentResult.status === "completed" &&
+                    agentResult.image_url && (
+                      <img
+                        src={agentResult.image_url}
+                        alt={agentResult.prompt}
+                        className="max-h-[640px] w-full object-contain"
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
+
+                  {agentResult.status === "completed" &&
+                    !agentResult.image_url && (
+                      <div className="flex flex-col items-center justify-center gap-4 p-10 text-center">
+                        <ImageOff className="h-12 w-12 text-white/45" />
+
+                        <p className="text-sm font-bold text-white">
+                          Image URL missing
+                        </p>
+                      </div>
+                    )}
+                </div>
+
+                <aside className="flex flex-col justify-between gap-5 border-t border-white/10 p-4 sm:gap-6 sm:p-5 lg:border-l lg:border-t-0">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.24em] text-white/35">
+                      Prompt
+                    </p>
+
+                    <p className="mt-3 line-clamp-6 text-sm leading-6 text-white/65">
+                      {agentResult.prompt}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3">
+                    {agentResult.image_url && (
+                      <a
+                        href={agentResult.image_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-black text-black transition hover:bg-white/85"
+                      >
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Open image
+                      </a>
+                    )}
+
+                    {agentResult.status === "completed" && (
+                      <button
+                        type="button"
+                        onClick={onOpenGallery}
+                        className="inline-flex items-center justify-center rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-5 py-3 text-sm font-bold text-[#d8ad5f] transition hover:bg-[#d8ad5f]/15"
+                      >
+                        <GalleryVerticalEnd className="mr-2 h-4 w-4" />
+                        View in Gallery
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQueuedGenerationId(null);
+                        setAgentResult(null);
+                        setStatusMessage(null);
+                        setErrorMessage(null);
+
+                        window.scrollTo({
+                          top: 0,
+                          behavior: "smooth",
+                        });
+                      }}
+                      className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-bold text-white/70 transition hover:border-white/20 hover:text-white"
+                    >
+                      Create another
+                    </button>
+                  </div>
+                </aside>
+              </div>
+            </motion.div>
+          )}
+        </div>
 
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.28 }}
-          className="mt-5 flex max-w-4xl flex-wrap justify-center gap-3"
+          className="mt-5 flex w-full max-w-4xl flex-wrap justify-center gap-2 px-1 sm:gap-3"
         >
-          {quickPrompts.map((quickPrompt) => {
+          {quickPrompts.slice(0, 4).map((quickPrompt) => {
             const Icon = quickPrompt.icon;
 
             return (
@@ -690,10 +1124,10 @@ export default function AiAgentStudio({
                 onClick={() =>
                   insertQuickPrompt(quickPrompt.prompt, quickPrompt.format)
                 }
-                className="inline-flex items-center gap-2 rounded-xl border border-white/12 bg-white/[0.07] px-4 py-2.5 text-xs font-bold text-white/68 transition hover:border-white/22 hover:text-white"
+                className="inline-flex max-w-full items-center gap-2 rounded-xl border border-white/12 bg-white/[0.07] px-3 py-2 text-xs font-bold text-white/68 transition hover:border-white/22 hover:text-white sm:px-4 sm:py-2.5"
               >
                 <Icon className="h-3.5 w-3.5 shrink-0" />
-                <span>{quickPrompt.label}</span>
+                <span className="truncate">{quickPrompt.label}</span>
               </motion.button>
             );
           })}
@@ -707,7 +1141,7 @@ export default function AiAgentStudio({
         >
           <Wand2 className="h-3.5 w-3.5 shrink-0" />
           <span>
-          Style profiles guide the look, mood and creative direction.
+            Style profiles guide the look, mood and creative direction.
           </span>
         </motion.div>
       </div>
