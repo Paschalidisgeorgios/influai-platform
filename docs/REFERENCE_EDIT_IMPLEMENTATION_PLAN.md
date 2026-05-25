@@ -223,8 +223,9 @@ sequenceDiagram
 
 | Step | Scope | Deliverable |
 |------|--------|-------------|
-| **1** | UI mockup / disabled state | Agent planned panel — **done**; see [REFERENCE_EDIT_BACKEND_PLAN.md](./REFERENCE_EDIT_BACKEND_PLAN.md) Phase 1 |
-| **2** | Storage + upload API | Validated upload limits; no public edit yet |
+| **1** | UI mockup / disabled state | Agent planned panel — **done** |
+| **2** | DB + storage SQL | [reference-edit-sql.md](./reference-edit-sql.md) — **prepared**, run manually |
+| **2b** | Storage + upload API | Validated upload limits; no public edit yet |
 | **3** | Backend behind flag | `REFERENCE_EDIT_ENABLED=false`; worker branch |
 | **4** | Manual internal test | §10 checklist |
 | **5** | Admin-only UI | Upload + generate for allowlisted users |

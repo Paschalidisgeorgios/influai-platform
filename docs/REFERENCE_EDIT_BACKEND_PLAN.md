@@ -4,7 +4,7 @@
 **Audience:** Engineering, product, operations  
 **Status:** Planning only — **no provider activated**, **no backend changes authorized by this document**  
 **Last updated:** 2026-05-22  
-**Related:** [REFERENCE_EDIT_IMPLEMENTATION_PLAN.md](./REFERENCE_EDIT_IMPLEMENTATION_PLAN.md), [CREDIT_AND_MODE_STRATEGY.md](./CREDIT_AND_MODE_STRATEGY.md), [FAST_DRAFT_IMPLEMENTATION_PLAN.md](./FAST_DRAFT_IMPLEMENTATION_PLAN.md)
+**Related:** [REFERENCE_EDIT_IMPLEMENTATION_PLAN.md](./REFERENCE_EDIT_IMPLEMENTATION_PLAN.md), [CREDIT_AND_MODE_STRATEGY.md](./CREDIT_AND_MODE_STRATEGY.md), [FAST_DRAFT_IMPLEMENTATION_PLAN.md](./FAST_DRAFT_IMPLEMENTATION_PLAN.md), [reference-edit-sql.md](./reference-edit-sql.md)
 
 This document defines what is required to implement **Reference Edit** in production. Today Reference Edit is **UI-prepared only** (planned panel, disabled mode, no API). Standard, Fast Draft, and Premium Image remain the only active generation paths.
 
@@ -99,11 +99,13 @@ sequenceDiagram
 
 | Step | Storage behavior |
 |------|------------------|
-| **Source upload** | Authenticated upload → Supabase Storage (bucket TBD: `generations` subpath or `reference-inputs/{userId}/`) |
-| **Source URL** | Persist **`source_image_url`** on `generations` row (public or signed URL policy — decide at implementation) |
+| **Source upload** | Authenticated upload → bucket **`reference-sources`** via service role (`{user_id}/{uuid}.png`) |
+| **Source URL** | Persist **`source_image_url`** on `generations` row (public URL from `reference-sources` or Gallery `image_url`) |
 | **Provider read** | Worker downloads source from URL before edit call |
-| **Result** | Same pattern as image modes: buffer → upload → **`generations.image_url`** |
+| **Result** | Same pattern as image modes: buffer → upload → bucket **`generations`** → **`generations.image_url`** |
 | **Gallery lineage** | If source from Gallery: set **`parent_generation_id`** to source `generations.id` |
+
+**Phase 2 SQL (prepared, not auto-applied):** [reference-edit-sql.md](./reference-edit-sql.md) and [../supabase/migrations/20260523100000_reference_edit_phase2.sql](../supabase/migrations/20260523100000_reference_edit_phase2.sql).
 
 **Do not** skip storage test: no provider call until upload → read → delete lifecycle is verified in staging.
 
@@ -199,9 +201,9 @@ Today `reference_image_url` on `generations` is used for **Style Profile / chara
 
 | Tier | Credits | Notes |
 |------|---------|--------|
-| **Suggested range** | **2–4** per job | [CREDIT_AND_MODE_STRATEGY.md](./CREDIT_AND_MODE_STRATEGY.md) §4 |
-| **First provider test** | **2 credits** | Start low; tune after COGS |
-| **Later** | 3–4 | Complex edits or Pro model |
+| **Suggested range** | **3–5** per job | [CREDIT_AND_MODE_STRATEGY.md](./CREDIT_AND_MODE_STRATEGY.md) §4 |
+| **First provider test** | **3 credits** | Start after COGS sign-off |
+| **Later** | 4–5 | Complex edits or Pro model |
 
 | Rule | Requirement |
 |------|-------------|
@@ -265,9 +267,10 @@ API `GET /api/generations` may need to return `source_image_url` / `parent_gener
 
 | Phase | Scope | Status |
 |-------|--------|--------|
-| **1** | UI mockup / disabled state | **Done** (Agent panel, planned card, no API) |
-| **2** | Storage / upload prototype | Upload route + RLS path; no public edit |
-| **3** | Generation row with `source_image_url` | Schema + insert from API (flag off) |
+| **1** | UI mockup / disabled state | **Done** (Agent panel, local preview, no API) |
+| **2** | DB + storage prepare | **SQL prepared** — run migration manually; bucket `reference-sources` |
+| **2b** | Storage / upload prototype | Upload route + service-role path; no public edit |
+| **3** | Generation row with `source_image_url` | Insert from API (flag off) after migration applied |
 | **4** | Provider test locally | fal edit endpoint; worker branch behind flag |
 | **5** | Refund / error handling | Parity with Fast Draft / Premium |
 | **6** | Admin-only activation | Allowlisted users |
@@ -292,7 +295,7 @@ Use before marking Reference Edit **Live**.
 ### Job & credits
 
 - [ ] Create job with `workflow: reference_edit`  
-- [ ] Credits deducted (2 on first tier) before provider  
+- [ ] Credits deducted (3 on first tier) before provider  
 - [ ] Insufficient credits → 402, no provider call  
 - [ ] Flag off → 400, no debit  
 
@@ -321,7 +324,7 @@ Use before marking Reference Edit **Live**.
 ### Production
 
 - [ ] End-to-end on Vercel with `FAL_KEY` + flags  
-- [ ] COGS per job documented vs 2-credit price  
+- [ ] COGS per job documented vs 3-credit price  
 
 ---
 
