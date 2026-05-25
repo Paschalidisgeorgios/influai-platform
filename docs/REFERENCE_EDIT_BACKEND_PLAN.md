@@ -89,7 +89,7 @@ sequenceDiagram
 | 2 | User provides **source image** (upload or Gallery) |
 | 3 | User enters **edit instruction** |
 | 4 | User selects **social format** (reuse output format selector) |
-| 5 | UI shows **estimated credits** (2–4 band; start at 2 for first test) |
+| 5 | UI shows **estimated credits** (3–5 band; start at 3 for first test) |
 | 6 | User **confirms** — no silent provider call |
 | 7 | Job created → processing → result in Agent + Gallery |
 
@@ -129,7 +129,7 @@ Today `reference_image_url` on `generations` is used for **Style Profile / chara
 | `workflow` | `reference_edit` |
 | `provider` | `fal` (or vendor slug) |
 | `model` | Provider model id |
-| `credits_used` | 2–4 (audit debit) |
+| `credits_used` | 3–5 (audit debit when Live) |
 | `image_url` | Edited output URL |
 | `image_size`, `output_width`, `output_height` | Target format |
 | `prompt` | Raw user brief (optional) |
