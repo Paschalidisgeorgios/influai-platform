@@ -18,6 +18,9 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+import { PricingSection } from "./PricingSection";
+import { RoadmapSection } from "./RoadmapSection";
+
 type Props = {
   images: string[];
   bodyFontClass: string;
@@ -34,9 +37,16 @@ function Reveal({
   delay?: number;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
     const element = ref.current;
     if (!element) return;
 
@@ -49,14 +59,16 @@ function Reveal({
 
     observer.observe(element);
     return () => observer.disconnect();
-  }, []);
+  }, [mounted]);
+
+  const hidden = mounted && !visible;
 
   return (
     <div
       ref={ref}
       style={{ transitionDelay: `${delay}ms` }}
       className={`transition-all duration-1000 ease-out ${
-        visible ? "translate-y-0 opacity-100" : "translate-y-16 opacity-0"
+        hidden ? "translate-y-16 opacity-0" : "translate-y-0 opacity-100"
       }`}
     >
       {children}
@@ -100,7 +112,8 @@ export default function AiinflugenLanding({
       subtitle:
         "InfluExAi is an enterprise-grade AI Creator Studio for campaign visuals, social formats, style profiles and asset management — built for modern creator teams.",
       start: "Open Studio",
-      demo: "View Examples",
+      startCreating: "Start creating",
+      explore: "Explore features",
       studioTitle: "One studio for the full visual workflow.",
       studioText:
         "InfluExAi combines an AI Visual Agent, Style Profiles, Social Formats, Asset Gallery and Credits in one professional creator platform.",
@@ -108,6 +121,8 @@ export default function AiinflugenLanding({
       workflowTitle: "From brief to published visual.",
       examplesTitle: "Campaign visual examples.",
       pricingTitle: "Choose your credit package.",
+      pricingNote:
+        "Credits are used when you generate images. 1 standard image = 1 credit.",
       secure: "Secure checkout via Stripe",
       powered: "Core platform capabilities",
     },
@@ -125,7 +140,8 @@ export default function AiinflugenLanding({
       subtitle:
         "InfluExAi ist ein professionelles AI Creator Studio für Kampagnenvisuals, Social Formats, Style Profiles und Asset Management — entwickelt für moderne Creator-Teams.",
       start: "Studio öffnen",
-      demo: "Beispiele ansehen",
+      startCreating: "Jetzt erstellen",
+      explore: "Features entdecken",
       studioTitle: "Ein Studio für den gesamten Visual-Workflow.",
       studioText:
         "InfluExAi verbindet AI Visual Agent, Style Profiles, Social Formats, Asset Gallery und Credits in einer professionellen Creator-Plattform.",
@@ -133,6 +149,8 @@ export default function AiinflugenLanding({
       workflowTitle: "Vom Briefing zum fertigen Visual.",
       examplesTitle: "Kampagnen-Beispielvisuals.",
       pricingTitle: "Wähle dein Credit-Paket.",
+      pricingNote:
+        "Credits werden beim Generieren von Bildern verwendet. 1 Standard-Bild = 1 Credit.",
       secure: "Sichere Zahlung über Stripe",
       powered: "Kernfunktionen der Plattform",
     },
@@ -202,36 +220,6 @@ export default function AiinflugenLanding({
     },
   ];
 
-  const pricing = [
-    {
-      name: "Starter",
-      credits: "100 Credits",
-      description:
-        language === "en"
-          ? "Perfect for first AI creator visuals."
-          : "Perfekt für erste AI-Creator-Visuals.",
-      highlight: false,
-    },
-    {
-      name: "Professional",
-      credits: "500 Credits",
-      description:
-        language === "en"
-          ? "For regular creator workflows."
-          : "Für regelmäßige Creator-Workflows.",
-      highlight: true,
-    },
-    {
-      name: "Ultimate",
-      credits: "2000 Credits",
-      description:
-        language === "en"
-          ? "For larger content productions."
-          : "Für große Content-Produktionen.",
-      highlight: false,
-    },
-  ];
-
   useEffect(() => {
     if (slides.length <= 1) return;
 
@@ -254,16 +242,16 @@ export default function AiinflugenLanding({
           </Link>
 
           <nav className="order-3 flex w-full items-center justify-center gap-5 overflow-x-auto whitespace-nowrap text-[11px] font-semibold text-white/70 [scrollbar-width:none] sm:order-none sm:w-auto sm:gap-7 sm:text-sm lg:gap-10 [&::-webkit-scrollbar]:hidden">
-            <a href="#studio" className="transition hover:text-white">
+            <a href="#studio" className="transition hover:text-[#d8ad5f]">
               {t.product}
             </a>
-            <a href="#tools" className="transition hover:text-white">
+            <a href="#tools" className="transition hover:text-[#d8ad5f]">
               {t.tools}
             </a>
-            <a href="#pricing" className="transition hover:text-white">
+            <a href="#pricing" className="transition hover:text-[#d8ad5f]">
               {t.pricing}
             </a>
-            <a href="#examples" className="transition hover:text-white">
+            <a href="#examples" className="transition hover:text-[#d8ad5f]">
               {t.creators}
             </a>
           </nav>
@@ -297,14 +285,14 @@ export default function AiinflugenLanding({
 
             <Link
               href="/login"
-              className="hidden text-sm font-semibold text-white/65 transition hover:text-white md:block"
+              className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[10px] font-bold text-white/75 transition hover:border-[#d8ad5f]/40 hover:text-[#d8ad5f] sm:px-4 sm:text-xs md:border-transparent md:bg-transparent md:px-0 md:py-0 md:text-sm md:font-semibold"
             >
               {t.signIn}
             </Link>
 
             <Link
-              href="/dashboard"
-              className="hidden rounded-full bg-[#d8ad5f] px-5 py-3 text-xs font-extrabold text-black transition hover:bg-[#f0c979] sm:inline-flex sm:px-6 sm:text-sm"
+              href="/login"
+              className="inline-flex rounded-full bg-[#d8ad5f] px-4 py-2.5 text-[10px] font-extrabold text-black transition hover:bg-[#efc777] sm:px-6 sm:py-3 sm:text-sm"
             >
               {t.openApp}
             </Link>
@@ -335,7 +323,7 @@ export default function AiinflugenLanding({
                     sizes="100vw"
                     quality={100}
                     unoptimized
-                    className={`object-cover object-[center_20%] transition-transform duration-[7000ms] ease-out ${
+                    className={`object-cover object-[center_10%] transition-transform duration-[7000ms] ease-out ${
                       active ? "scale-[1.08]" : "scale-100"
                     }`}
                   />
@@ -368,23 +356,30 @@ export default function AiinflugenLanding({
               {t.subtitle}
             </p>
 
-            <div className="hero-buttons mt-10 flex flex-col gap-4 sm:flex-row">
+            <div className="hero-buttons mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link
-                href="/dashboard"
-                className="inline-flex items-center justify-center rounded-full bg-[#d8ad5f] px-8 py-4 text-sm font-extrabold text-black transition hover:bg-[#f0c979]"
+                href="/login"
+                className="inline-flex items-center justify-center rounded-full bg-[#d8ad5f] px-8 py-4 text-sm font-extrabold text-black transition hover:bg-[#efc777]"
               >
                 {t.start}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
 
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-8 py-4 text-sm font-extrabold text-white backdrop-blur-xl transition hover:border-[#d8ad5f]/60 hover:text-[#d8ad5f]"
+              >
+                {t.startCreating}
+              </Link>
+
               <a
-                href="#examples"
-                className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-8 py-4 text-sm font-extrabold text-white backdrop-blur-xl transition hover:border-[#d8ad5f]/60"
+                href="#tools"
+                className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-8 py-4 text-sm font-extrabold text-white backdrop-blur-xl transition hover:border-[#d8ad5f]/60 hover:text-[#d8ad5f]"
               >
                 <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/20">
                   <Play className="h-4 w-4" />
                 </span>
-                {t.demo}
+                {t.explore}
               </a>
             </div>
 
@@ -398,11 +393,11 @@ export default function AiinflugenLanding({
                   "AI Visual Agent",
                   "Style Profiles",
                   "Social Formats",
-                  "OpenAI",
+                  "Credits",
                 ].map((tool) => (
                   <div
                     key={tool}
-                    className="rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-bold text-white/60 backdrop-blur-xl"
+                    className="rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-bold text-white/60 backdrop-blur-xl transition hover:border-[#d8ad5f]/40 hover:text-[#d8ad5f]"
                   >
                     {tool}
                   </div>
@@ -453,11 +448,11 @@ export default function AiinflugenLanding({
             "Style Profiles",
             "Social Formats",
             "Asset Gallery",
-            "Credits & Stripe",
-            "Video Studio coming soon",
+            "Credits",
+            "Planned: Video Studio",
           ].map((item, index) => (
             <Reveal key={item} delay={index * 80}>
-              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-5 py-4">
+              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-5 py-4 transition hover:border-[#d8ad5f]/35">
                 <Check className="h-4 w-4 text-[#d8ad5f]" />
                 <span className="text-sm font-semibold text-white/75">
                   {item}
@@ -525,7 +520,7 @@ export default function AiinflugenLanding({
 
             return (
               <Reveal key={step.title} delay={index * 150}>
-                <div className="relative rounded-3xl border border-white/10 bg-white/[0.035] p-7">
+                <div className="relative rounded-3xl border border-white/10 bg-white/[0.035] p-7 transition hover:border-[#d8ad5f]/35">
                   <div className="mb-8 flex items-center justify-between">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#d8ad5f]/15 text-[#d8ad5f]">
                       <Icon className="h-5 w-5" />
@@ -601,82 +596,25 @@ export default function AiinflugenLanding({
                 sizes="340px"
                 quality={100}
                 unoptimized
-                className="object-cover transition duration-700 group-hover:scale-105"
+                className="object-cover object-[center_25%] transition duration-700 group-hover:scale-105"
               />
             </div>
           ))}
         </div>
       </section>
 
-      <section id="pricing" className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
-        <Reveal>
-          <p className="mb-4 text-xs font-extrabold uppercase tracking-[0.35em] text-[#d8ad5f]">
-            {t.pricing}
-          </p>
+      <RoadmapSection language={language} headingFontClass={headingFontClass} />
 
-          <h2
-            className={`${headingFontClass} max-w-4xl text-5xl font-bold leading-none tracking-tight sm:text-7xl`}
-          >
-            {t.pricingTitle}
-          </h2>
-        </Reveal>
-
-        <div className="mt-12 grid gap-5 lg:grid-cols-3">
-          {pricing.map((plan, index) => (
-            <Reveal key={plan.name} delay={index * 150}>
-              <div
-                className={`relative rounded-3xl border p-7 ${
-                  plan.highlight
-                    ? "border-[#d8ad5f]/70 bg-[#d8ad5f]/10"
-                    : "border-white/10 bg-white/[0.035]"
-                }`}
-              >
-                {plan.highlight && (
-                  <div className="mb-5 inline-flex rounded-full bg-[#d8ad5f] px-3 py-1 text-xs font-extrabold text-black">
-                    Recommended
-                  </div>
-                )}
-
-                <h3 className="text-2xl font-extrabold">{plan.name}</h3>
-
-                <p className="mt-5 text-4xl font-extrabold text-[#d8ad5f]">
-                  {plan.credits}
-                </p>
-
-                <p className="mt-4 text-sm leading-7 text-white/55">
-                  {plan.description}
-                </p>
-
-                <div className="mt-6 flex items-center gap-2 text-xs text-white/45">
-                  <CreditCard className="h-4 w-4" />
-                  {t.secure}
-                </div>
-
-                <Link
-                  href="/dashboard"
-                  className="mt-7 inline-flex w-full items-center justify-center rounded-full bg-[#d8ad5f] px-5 py-3 text-sm font-extrabold text-black transition hover:bg-[#f0c979]"
-                >
-                  {t.openApp}
-                </Link>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-
-        <Reveal>
-          <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.03] px-6 py-5">
-            <p className="text-xs font-bold uppercase tracking-[0.28em] text-white/35">
-              {language === "en" ? "Expansion roadmap" : "Roadmap"}
-            </p>
-
-            <p className="mt-3 text-sm leading-6 text-white/45">
-              {language === "en"
-                ? "Video Studio, Lip Sync Studio and Automation are planned modules — not available in the current release."
-                : "Video Studio, Lip Sync Studio und Automation sind geplante Module — in der aktuellen Version noch nicht verfügbar."}
-            </p>
-          </div>
-        </Reveal>
-      </section>
+      <Reveal>
+        <PricingSection
+          language={language}
+          headingFontClass={headingFontClass}
+          secureLabel={t.secure}
+          pricingTitle={t.pricingTitle}
+          pricingNote={t.pricingNote}
+          getStartedLabel={language === "en" ? "Start creating" : "Jetzt erstellen"}
+        />
+      </Reveal>
 
       <style jsx global>{`
         .hero-label {

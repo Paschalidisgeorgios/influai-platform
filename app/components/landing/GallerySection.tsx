@@ -73,7 +73,7 @@ export default function GallerySection() {
 
           <Link
             href="/dashboard/gallery"
-            className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-[#c7a36a] text-black font-bold hover:scale-[1.03] transition shrink-0"
+            className="inline-flex shrink-0 items-center justify-center gap-3 rounded-2xl bg-[#d8ad5f] px-8 py-4 font-bold text-black transition hover:scale-[1.03] hover:bg-[#efc777]"
           >
             View Your Gallery
             <ArrowRight size={20} />

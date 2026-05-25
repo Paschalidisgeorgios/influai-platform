@@ -38,19 +38,19 @@ export default function CTASection() {
 
         <h2 className="text-4xl md:text-7xl font-black tracking-[-0.05em] leading-[0.95] mb-10">
 
-          Launch Your
+          Open your
           <br />
 
           <span className="bg-gradient-to-r from-[#c7a36a] via-white to-[#c7a36a] bg-clip-text text-transparent">
-            InfluExAi
+            InfluExAi Studio
           </span>
 
         </h2>
 
         <p className="text-lg md:text-xl text-gray-400 leading-relaxed max-w-3xl mx-auto mb-14">
 
-          Launch campaign visuals with the AI Visual Agent, Style Profiles,
-          Social Formats and your Asset Gallery — in one professional studio.
+          Generate campaign visuals with the AI Agent, Style Profiles, Social
+          Formats, Asset Gallery and Credits.
 
         </p>
 
@@ -58,9 +58,9 @@ export default function CTASection() {
 
           <Link
             href="/dashboard"
-            className="group px-8 md:px-10 py-4 md:py-5 rounded-2xl bg-[#c7a36a] text-black font-bold text-lg hover:scale-[1.03] transition flex items-center gap-4"
+            className="group flex items-center gap-4 rounded-2xl bg-[#d8ad5f] px-8 py-4 text-lg font-bold text-black transition hover:scale-[1.03] hover:bg-[#efc777] md:px-10 md:py-5"
           >
-            Launch App
+            Open Studio
             <ArrowRight
               size={22}
               className="group-hover:translate-x-1 transition"
@@ -68,18 +68,18 @@ export default function CTASection() {
           </Link>
 
           <Link
-            href="/dashboard/image-generator"
-            className="px-8 md:px-10 py-4 md:py-5 rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur hover:bg-white/[0.06] transition text-lg"
+            href="/login"
+            className="rounded-2xl border border-white/10 bg-white/[0.03] px-8 py-4 text-lg backdrop-blur transition hover:border-[#d8ad5f] hover:bg-[#d8ad5f] hover:text-black md:px-10 md:py-5"
           >
-            Start Creating
+            Start creating
           </Link>
 
-          <Link
-            href="/dashboard/gallery"
-            className="px-8 md:px-10 py-4 md:py-5 rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur hover:bg-white/[0.06] transition text-lg"
+          <a
+            href="#tools"
+            className="rounded-2xl border border-white/10 bg-white/[0.03] px-8 py-4 text-lg backdrop-blur transition hover:border-[#d8ad5f] hover:bg-[#d8ad5f] hover:text-black md:px-10 md:py-5"
           >
-            Explore Gallery
-          </Link>
+            Explore features
+          </a>
 
         </div>
 

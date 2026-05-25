@@ -48,7 +48,7 @@ export default function HeroSection() {
           />
 
           <span className="text-sm text-[#c7a36a] uppercase tracking-[0.25em]">
-            AI Creator Platform
+            AI Creator Studio
           </span>
 
         </div>
@@ -63,41 +63,40 @@ export default function HeroSection() {
 
             <h1 className="text-5xl sm:text-6xl md:text-8xl font-black leading-[0.95] tracking-[-0.05em] mb-8">
 
-              Create
+              Campaign-ready
               <br />
 
               <span className="bg-gradient-to-r from-[#c7a36a] via-white to-[#c7a36a] bg-clip-text text-transparent">
-                Cinematic
+                AI visuals
               </span>
 
               <br />
 
-              AI Content
+              for creators
 
             </h1>
 
             <p className="text-lg md:text-xl text-gray-400 leading-relaxed max-w-2xl mb-10">
 
-              Generate premium campaign visuals with the AI Visual Agent,
-              reusable Style Profiles, Social Formats and a centralized
-              Asset Gallery.
+              InfluExAi is an AI Creator Studio — AI Agent, Social Formats,
+              Style Profiles, Asset Gallery and Credits in one workspace.
 
             </p>
 
             <div className="flex flex-wrap gap-4 mb-14">
 
               <Link
-                href="/dashboard/image-generator"
-                className="px-8 py-5 rounded-2xl bg-[#c7a36a] text-black font-bold hover:scale-[1.03] transition"
+                href="/dashboard"
+                className="px-8 py-5 rounded-2xl bg-[#d8ad5f] text-black font-bold transition hover:bg-[#efc777] hover:scale-[1.03]"
               >
-                Start Creating
+                Open Studio
               </Link>
 
               <Link
-                href="/dashboard/gallery"
-                className="px-8 py-5 rounded-2xl border border-white/10 bg-white/5 backdrop-blur hover:bg-white/10 transition"
+                href="/login"
+                className="px-8 py-5 rounded-2xl border border-white/10 bg-white/5 backdrop-blur transition hover:border-[#d8ad5f] hover:bg-[#d8ad5f] hover:text-black"
               >
-                Explore Gallery
+                Start creating
               </Link>
 
             </div>
@@ -141,7 +140,7 @@ export default function HeroSection() {
                     </p>
 
                     <h3 className="text-2xl md:text-3xl font-bold">
-                      Cinematic Generation
+                      AI Agent
                     </h3>
 
                   </div>
@@ -164,7 +163,7 @@ export default function HeroSection() {
                     </div>
 
                     <p className="text-gray-400 max-w-xs mx-auto">
-                      Premium AI visual generation with style profiles and campaign-ready output.
+                      Generate campaign visuals with social format presets and style profiles.
                     </p>
 
                   </div>
@@ -181,11 +180,11 @@ export default function HeroSection() {
                     />
 
                     <p className="font-semibold mb-2">
-                      Character Memory
+                      Style Profiles
                     </p>
 
                     <p className="text-sm text-gray-500">
-                      Persistent identity system
+                      Reusable creative direction
                     </p>
 
                   </div>
@@ -202,7 +201,7 @@ export default function HeroSection() {
                     </p>
 
                     <p className="text-sm text-gray-500">
-                      OpenAI-enhanced prompts
+                      Prompt-assisted briefs
                     </p>
 
                   </div>

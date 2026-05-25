@@ -14,6 +14,8 @@ import {
   X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useDashboardLanguage } from "./DashboardLanguageProvider";
+import { formatCopy } from "./i18n";
 
 type GenerationCharacter = {
   id: string;
@@ -63,12 +65,21 @@ function getStatusClass(status: GenerationStatus) {
   return "border-red-500/20 bg-red-500/10 text-red-200";
 }
 
-function getWorkflowLabel(workflow?: string | null) {
+function getStatusLabel(
+  status: GenerationStatus,
+  labels: { completed: string; processing: string; failed: string }
+) {
+  if (status === "completed") return labels.completed;
+  if (status === "processing") return labels.processing;
+  return labels.failed;
+}
+
+function getWorkflowLabel(workflow: string | null | undefined, standardLabel: string) {
   if (!workflow || workflow === "standard" || workflow === "openai") {
-    return "Standard";
+    return standardLabel;
   }
 
-  return "Standard";
+  return standardLabel;
 }
 
 function getImageAspectClass(generation: Generation) {
@@ -87,6 +98,8 @@ export default function GenerationGallery({
   refreshKey = 0,
   onRegenerate,
 }: GenerationGalleryProps) {
+  const { copy, format } = useDashboardLanguage();
+  const g = copy.gallery;
   const supabase = createClient();
 
   const [generations, setGenerations] = useState<Generation[]>([]);
@@ -313,7 +326,7 @@ export default function GenerationGallery({
 
   async function deleteGeneration(generationId: string) {
     try {
-      const confirmed = window.confirm("Delete this generation permanently?");
+      const confirmed = window.confirm(g.deleteConfirm);
       if (!confirmed) return;
 
       const token = await getAccessToken();
@@ -348,7 +361,7 @@ export default function GenerationGallery({
   async function copyPrompt(prompt: string, label: string) {
     try {
       await navigator.clipboard.writeText(prompt);
-      setCopiedLabel(label);
+      setCopiedLabel(`${label} ${g.copied}`);
     } catch (error) {
       console.error("Copy prompt error:", error);
     }
@@ -386,10 +399,8 @@ export default function GenerationGallery({
       return (
         <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-white/[0.04] p-6 text-center">
           <Loader2 className="h-8 w-8 animate-spin text-[#d8ad5f]" />
-          <p className="text-sm font-bold text-white">Processing</p>
-          <p className="line-clamp-3 text-xs text-white/45">
-            Your image is being generated. The gallery refreshes automatically.
-          </p>
+          <p className="text-sm font-bold text-white">{g.processingLabel}</p>
+          <p className="line-clamp-3 text-xs text-white/45">{g.processingHint}</p>
         </div>
       );
     }
@@ -398,9 +409,9 @@ export default function GenerationGallery({
       return (
         <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-red-500/10 p-6 text-center">
           <AlertCircle className="h-8 w-8 text-red-200" />
-          <p className="text-sm font-bold text-red-100">Generation failed</p>
+          <p className="text-sm font-bold text-red-100">{g.generationFailed}</p>
           <p className="line-clamp-3 text-xs text-red-100/60">
-            {generation.error_message ?? "Unknown error"}
+            {generation.error_message ?? g.unknownError}
           </p>
         </div>
       );
@@ -410,10 +421,8 @@ export default function GenerationGallery({
       return (
         <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-white/[0.04] p-6 text-center">
           <ImageOff className="h-8 w-8 text-white/50" />
-          <p className="text-sm font-bold text-white">Image unavailable</p>
-          <p className="line-clamp-3 text-xs text-white/40">
-            This generation has no image URL.
-          </p>
+          <p className="text-sm font-bold text-white">{g.imageUnavailable}</p>
+          <p className="line-clamp-3 text-xs text-white/40">{g.noImageUrl}</p>
         </div>
       );
     }
@@ -423,10 +432,8 @@ export default function GenerationGallery({
         <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-white/[0.04] p-6 text-center">
           <ImageOff className="h-8 w-8 text-white/50" />
           <div>
-            <p className="text-sm font-bold text-white">Image could not load</p>
-            <p className="mt-2 line-clamp-3 text-xs text-white/40">
-              The file exists, but the gallery could not render it.
-            </p>
+            <p className="text-sm font-bold text-white">{g.imageCouldNotLoad}</p>
+            <p className="mt-2 line-clamp-3 text-xs text-white/40">{g.renderFailed}</p>
           </div>
 
           <a
@@ -436,7 +443,7 @@ export default function GenerationGallery({
             className="rounded-full bg-white px-4 py-2 text-xs font-black text-black"
             onClick={(event) => event.stopPropagation()}
           >
-            Open image directly
+            {g.openImageDirectly}
           </a>
         </div>
       );
@@ -464,17 +471,17 @@ export default function GenerationGallery({
           <input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search prompts..."
-            className="w-full rounded-full border border-white/10 bg-black/25 px-5 py-3 text-sm font-medium text-white outline-none placeholder:text-white/35 focus:border-white/25"
+            placeholder={g.searchPlaceholder}
+            className="w-full rounded-full border border-white/10 bg-black/25 px-5 py-3 text-sm font-medium text-white outline-none placeholder:text-white/35 focus:border-[#d8ad5f]/40"
           />
 
           <select
             value={selectedCharacterId}
             onChange={(event) => setSelectedCharacterId(event.target.value)}
-            className="w-full rounded-full border border-white/10 bg-black/25 px-4 py-2.5 text-sm font-bold text-white outline-none focus:border-white/25 sm:px-5 sm:py-3"
+            className="w-full rounded-full border border-white/10 bg-black/25 px-4 py-2.5 text-sm font-bold text-white outline-none focus:border-[#d8ad5f]/40 sm:px-5 sm:py-3"
           >
-            <option value="all">All style profiles</option>
-            <option value="free">No style profile</option>
+            <option value="all">{g.allStyleProfiles}</option>
+            <option value="free">{g.noStyleProfile}</option>
 
             {characterOptions.map((character) => (
               <option key={character.id} value={character.id}>
@@ -487,10 +494,10 @@ export default function GenerationGallery({
         <div className="flex flex-wrap gap-2 sm:gap-3">
           {(
             [
-              { key: "all", label: "All" },
-              { key: "completed", label: "Completed" },
-              { key: "processing", label: "Processing" },
-              { key: "failed", label: "Failed" },
+              { key: "all", label: g.filterAll },
+              { key: "completed", label: g.completed },
+              { key: "processing", label: g.processing },
+              { key: "failed", label: g.failed },
             ] as const
           ).map((status) => (
             <button
@@ -520,7 +527,7 @@ export default function GenerationGallery({
                 : "border border-white/10 bg-black/25 text-white"
             }`}
           >
-            Favorites
+            {g.favorites}
           </button>
         </div>
       </div>
@@ -530,7 +537,7 @@ export default function GenerationGallery({
   if (loading) {
     return (
       <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] py-20 text-center text-white/60">
-        Loading gallery...
+        {g.loading}
       </div>
     );
   }
@@ -542,7 +549,7 @@ export default function GenerationGallery({
 
         {generations.length === 0 ? (
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] py-20 text-center text-white/60">
-            No matching generations.
+            {g.empty}
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3 2xl:grid-cols-4">
@@ -597,11 +604,15 @@ export default function GenerationGallery({
                         generation.status
                       )}`}
                     >
-                      {generation.status}
+                      {getStatusLabel(generation.status, {
+                        completed: g.completed,
+                        processing: g.processing,
+                        failed: g.failed,
+                      })}
                     </span>
 
                     <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/45">
-                      {getWorkflowLabel(generation.workflow)}
+                      {getWorkflowLabel(generation.workflow, g.standard)}
                     </span>
 
                     {(generation.output_format ||
@@ -618,9 +629,17 @@ export default function GenerationGallery({
                   </p>
 
                   <div className="flex items-center justify-between gap-3 text-xs text-white/35">
-                    <span>{generation.provider ?? generation.model ?? "model"}</span>
+                    <span>
+                      {generation.credits_used != null
+                        ? generation.credits_used === 1
+                          ? g.creditOne
+                          : formatCopy(g.creditsCount, {
+                              count: generation.credits_used,
+                            })
+                        : g.creditOne}
+                    </span>
                     <span className="truncate">
-                      {generation.ai_characters?.name ?? "no style profile"}
+                      {generation.ai_characters?.name ?? g.noStyleProfileShort}
                     </span>
                   </div>
                 </div>
@@ -637,7 +656,7 @@ export default function GenerationGallery({
               onClick={() => loadGenerations(generations.length)}
               className="rounded-full bg-white px-6 py-3 text-sm font-bold text-black transition hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loadingMore ? "Loading..." : "Load more"}
+              {loadingMore ? g.loadingMore : g.loadMore}
             </button>
           </div>
         )}
@@ -666,21 +685,20 @@ export default function GenerationGallery({
                 <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-4 bg-white/[0.04] p-8 text-center lg:min-h-[92vh]">
                   <Loader2 className="h-12 w-12 animate-spin text-[#d8ad5f]" />
                   <h3 className="text-2xl font-black text-white">
-                    Generation in progress
+                    {g.inProgressTitle}
                   </h3>
                   <p className="max-w-lg text-sm leading-7 text-white/50">
-                    The gallery refreshes automatically while your image is
-                    being created.
+                    {g.inProgressBody}
                   </p>
                 </div>
               ) : selectedGeneration.status === "failed" ? (
                 <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-4 bg-red-500/10 p-8 text-center lg:min-h-[92vh]">
                   <AlertCircle className="h-12 w-12 text-red-200" />
                   <h3 className="text-2xl font-black text-red-100">
-                    Generation failed
+                    {g.generationFailed}
                   </h3>
                   <p className="max-w-lg text-sm leading-7 text-red-100/60">
-                    {selectedGeneration.error_message ?? "Unknown error"}
+                    {selectedGeneration.error_message ?? g.unknownError}
                   </p>
                 </div>
               ) : selectedGeneration.image_url &&
@@ -697,11 +715,10 @@ export default function GenerationGallery({
                 <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-4 bg-white/[0.04] p-8 text-center lg:min-h-[92vh]">
                   <ImageOff className="h-12 w-12 text-white/50" />
                   <h3 className="text-2xl font-black text-white">
-                    Image unavailable
+                    {g.modalUnavailableTitle}
                   </h3>
                   <p className="max-w-lg text-sm leading-7 text-white/50">
-                    This generation has no valid image URL or could not be
-                    rendered in the gallery.
+                    {g.modalUnavailableBody}
                   </p>
 
                   {selectedGeneration.image_url && (
@@ -711,7 +728,7 @@ export default function GenerationGallery({
                       rel="noreferrer"
                       className="rounded-full bg-white px-5 py-3 text-sm font-black text-black"
                     >
-                      Open image directly
+                      {g.openImageDirectly}
                     </a>
                   )}
                 </div>
@@ -726,11 +743,15 @@ export default function GenerationGallery({
                       selectedGeneration.status
                     )}`}
                   >
-                    {selectedGeneration.status}
+                    {getStatusLabel(selectedGeneration.status, {
+                      completed: g.completed,
+                      processing: g.processing,
+                      failed: g.failed,
+                    })}
                   </span>
 
                   <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/45">
-                    {getWorkflowLabel(selectedGeneration.workflow)}
+                    {getWorkflowLabel(selectedGeneration.workflow, g.standard)}
                   </span>
 
                   {selectedGeneration.output_format && (
@@ -742,7 +763,7 @@ export default function GenerationGallery({
 
                 <div>
                   <h3 className="text-sm font-bold uppercase tracking-[0.28em] text-white/40">
-                    Prompt
+                    {g.prompt}
                   </h3>
 
                   <p className="mt-4 text-sm leading-7 text-white/75">
@@ -753,7 +774,7 @@ export default function GenerationGallery({
                 {selectedGeneration.error_message && (
                   <div>
                     <h3 className="text-sm font-bold uppercase tracking-[0.28em] text-red-200/70">
-                      Error
+                      {g.error}
                     </h3>
 
                     <p className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-xs leading-6 text-red-100/70">
@@ -765,7 +786,7 @@ export default function GenerationGallery({
                 {selectedGeneration.final_prompt && (
                   <div>
                     <h3 className="text-sm font-bold uppercase tracking-[0.28em] text-white/40">
-                      Final Prompt
+                      {g.finalPrompt}
                     </h3>
 
                     <p className="mt-4 max-h-64 overflow-y-auto rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-xs leading-6 text-white/55">
@@ -783,7 +804,7 @@ export default function GenerationGallery({
                     className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-black transition hover:bg-white/80"
                   >
                     <RefreshCw className="mr-2 h-4 w-4" />
-                    Regenerate
+                    {g.regenerate}
                   </button>
                 )}
 
@@ -806,20 +827,20 @@ export default function GenerationGallery({
                       }`}
                     />
                     {selectedGeneration.is_favorite
-                      ? "Remove favorite"
-                      : "Add favorite"}
+                      ? g.removeFavorite
+                      : g.addFavorite}
                   </button>
                 )}
 
                 <button
                   type="button"
                   onClick={() =>
-                    copyPrompt(selectedGeneration.prompt, "Prompt")
+                    copyPrompt(selectedGeneration.prompt, g.prompt)
                   }
                   className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-bold text-white transition hover:border-white/25"
                 >
                   <Copy className="mr-2 h-4 w-4" />
-                  Copy prompt
+                  {g.copyPrompt}
                 </button>
 
                 {selectedGeneration.final_prompt && (
@@ -828,13 +849,13 @@ export default function GenerationGallery({
                     onClick={() =>
                       copyPrompt(
                         selectedGeneration.final_prompt ?? "",
-                        "Final prompt"
+                        g.finalPrompt
                       )
                     }
                     className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-bold text-white transition hover:border-white/25"
                   >
                     <Copy className="mr-2 h-4 w-4" />
-                    Copy final prompt
+                    {g.copyFinalPrompt}
                   </button>
                 )}
 
@@ -847,7 +868,7 @@ export default function GenerationGallery({
                     className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-bold text-white transition hover:border-white/25"
                   >
                     <Download className="mr-2 h-4 w-4" />
-                    Open / download image
+                    {g.openDownloadImage}
                   </a>
                 )}
 
@@ -857,7 +878,7 @@ export default function GenerationGallery({
                   className="inline-flex items-center justify-center rounded-full border border-red-500/30 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-200 transition hover:bg-red-500/20"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Delete generation
+                  {g.deleteGeneration}
                 </button>
               </div>
             </aside>

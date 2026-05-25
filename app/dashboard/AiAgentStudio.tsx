@@ -12,16 +12,22 @@ import {
   ImageIcon,
   ImageOff,
   Loader2,
+  Lock,
   Megaphone,
   MonitorPlay,
+  PenLine,
   Plus,
   Search,
   Send,
+  Sparkles,
   Square,
   UserRound,
   Wand2,
+  Zap,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useDashboardLanguage } from "./DashboardLanguageProvider";
+import { formatCopy } from "./i18n";
 
 type Character = {
   id: string;
@@ -37,6 +43,8 @@ type RegenerateDraft = {
 
 type Workflow = "standard";
 type AgentMode = "auto" | "portrait" | "product" | "campaign";
+type ImageModeKey = "standard" | "fast_draft" | "premium" | "reference_edit";
+type ImageModeStatus = "live" | "planned";
 
 type OutputFormatKey =
   | "square"
@@ -242,7 +250,54 @@ export default function AiAgentStudio({
   onClearRegenerateDraft,
   onOpenGallery,
 }: AiAgentStudioProps) {
+  const { copy, format } = useDashboardLanguage();
+  const a = copy.agent;
   const supabase = createClient();
+
+  const imageModes = useMemo(
+    () => [
+      {
+        key: "standard" as const,
+        label: a.imageModes.standard.label,
+        description: a.imageModes.standard.description,
+        status: "live" as const,
+        icon: ImageIcon,
+      },
+      {
+        key: "fast_draft" as const,
+        label: a.imageModes.fastDraft.label,
+        description: a.imageModes.fastDraft.description,
+        status: "planned" as const,
+        icon: Zap,
+      },
+      {
+        key: "premium" as const,
+        label: a.imageModes.premium.label,
+        description: a.imageModes.premium.description,
+        status: "planned" as const,
+        icon: Sparkles,
+      },
+      {
+        key: "reference_edit" as const,
+        label: a.imageModes.referenceEdit.label,
+        description: a.imageModes.referenceEdit.description,
+        status: "planned" as const,
+        icon: PenLine,
+      },
+    ],
+    [a]
+  );
+
+  const localizedOutputFormats = useMemo(
+    () =>
+      outputFormats.map((formatOption) => ({
+        ...formatOption,
+        label: a.formats[formatOption.key].label,
+        platform: a.formats[formatOption.key].platform,
+        description: a.formats[formatOption.key].description,
+      })),
+    [a]
+  );
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const resultRef = useRef<HTMLDivElement | null>(null);
@@ -251,6 +306,7 @@ export default function AiAgentStudio({
   const [characters, setCharacters] = useState<Character[]>([]);
   const [selectedCharacterId, setSelectedCharacterId] = useState("");
   const [workflow] = useState<Workflow>("standard");
+  const [imageMode, setImageMode] = useState<ImageModeKey>("standard");
   const [agentMode, setAgentMode] = useState<AgentMode>("auto");
   const [outputFormatKey, setOutputFormatKey] =
     useState<OutputFormatKey>("square");
@@ -276,28 +332,28 @@ export default function AiAgentStudio({
 
   const selectedOutputFormat = useMemo(() => {
     return (
-      outputFormats.find((format) => format.key === outputFormatKey) ??
-      outputFormats[0]
+      localizedOutputFormats.find((format) => format.key === outputFormatKey) ??
+      localizedOutputFormats[0]
     );
-  }, [outputFormatKey]);
+  }, [outputFormatKey, localizedOutputFormats]);
 
   const resultStatusLabel =
     agentResult?.status === "processing"
-      ? "Processing"
+      ? copy.gallery.processing
       : agentResult?.status === "completed"
-        ? "Completed"
+        ? copy.gallery.completed
         : agentResult?.status === "failed"
-          ? "Failed"
-          : "Waiting";
+          ? copy.gallery.failed
+          : "—";
 
   const resultStatusDescription =
     agentResult?.status === "processing"
-      ? "Your image is being generated. This can take a short moment."
+      ? a.processingHint
       : agentResult?.status === "completed"
-        ? "Your image is ready."
+        ? a.completed
         : agentResult?.status === "failed"
-          ? "The generation failed."
-          : "Start a generation to see the result here.";
+          ? a.failed
+          : "";
 
   useEffect(() => {
     loadCharacters();
@@ -311,7 +367,7 @@ export default function AiAgentStudio({
     setQueuedGenerationId(null);
     setAgentResult(null);
     setErrorMessage(null);
-    setStatusMessage("Prompt loaded for regeneration.");
+    setStatusMessage(a.promptLoadedRegeneration);
   }, [regenerateDraft]);
 
   useEffect(() => {
@@ -472,12 +528,12 @@ export default function AiAgentStudio({
   }
 
   function getSafeErrorMessage(status: number, apiError?: string) {
-    if (status === 401) return "Please sign in again.";
-    if (status === 402) return "Not enough credits. Please buy more credits.";
-    if (status === 404) return "Selected style profile was not found.";
-    if (status === 400) return apiError || "Please check your prompt.";
+    if (status === 401) return a.signInAgain;
+    if (status === 402) return a.notEnoughCredits;
+    if (status === 404) return a.profileNotFound;
+    if (status === 400) return apiError || a.describePrompt;
 
-    return apiError || "Failed to queue generation. Please try again.";
+    return apiError || a.queueFailed;
   }
 
   async function queueGeneration(event: React.FormEvent<HTMLFormElement>) {
@@ -486,7 +542,7 @@ export default function AiAgentStudio({
     const cleanPrompt = prompt.trim();
 
     if (!cleanPrompt) {
-      setErrorMessage("Please describe what you want to create.");
+      setErrorMessage(a.describePrompt);
       return;
     }
 
@@ -498,8 +554,11 @@ export default function AiAgentStudio({
       setErrorMessage(null);
       setStatusMessage(
         selectedCharacter
-          ? `Preparing generation using ${selectedCharacter.name} as style profile.`
-          : `Preparing generation for ${selectedOutputFormat.label} (${selectedOutputFormat.ratio}).`
+          ? format(a.preparingWithProfile, { name: selectedCharacter.name })
+          : format(a.preparingFormat, {
+              format: selectedOutputFormat.label,
+              ratio: selectedOutputFormat.ratio,
+            })
       );
 
       setAgentResult({
@@ -527,7 +586,7 @@ export default function AiAgentStudio({
           image_size: "",
         });
 
-        setErrorMessage("Please sign in again.");
+        setErrorMessage(a.signInAgain);
         return;
       }
 
@@ -580,7 +639,7 @@ export default function AiAgentStudio({
           image_size: "",
         });
 
-        setErrorMessage("Generation was queued, but no generation ID returned.");
+        setErrorMessage(a.noGenerationId);
         return;
       }
 
@@ -598,8 +657,11 @@ export default function AiAgentStudio({
 
       setStatusMessage(
         selectedCharacter
-          ? `Generation queued using ${selectedCharacter.name} as style profile.`
-          : `Generation queued for ${selectedOutputFormat.label} (${selectedOutputFormat.ratio}).`
+          ? format(a.queuedWithProfile, { name: selectedCharacter.name })
+          : format(a.preparingFormat, {
+              format: selectedOutputFormat.label,
+              ratio: selectedOutputFormat.ratio,
+            })
       );
 
       setPrompt("");
@@ -620,7 +682,7 @@ export default function AiAgentStudio({
         image_size: "",
       });
 
-      setErrorMessage("Network error. Please try again.");
+      setErrorMessage(a.networkError);
     } finally {
       setQueuing(false);
     }
@@ -698,7 +760,7 @@ export default function AiAgentStudio({
           transition={{ duration: 0.5, delay: 0.05 }}
           className="mt-3 text-center text-2xl font-black tracking-[-0.055em] text-white sm:text-3xl lg:text-5xl"
         >
-          Create campaign-ready visuals
+          {a.title}
         </motion.h2>
 
         <motion.p
@@ -707,8 +769,7 @@ export default function AiAgentStudio({
           transition={{ duration: 0.5, delay: 0.1 }}
           className="mx-auto mt-4 max-w-2xl text-center text-xs leading-6 text-white/50 sm:text-sm"
         >
-          Generate premium creator visuals, product shots and social media
-          campaign assets. Use style profiles for reusable creative direction.
+          {a.subtitle}
         </motion.p>
 
         {statusMessage && (
@@ -741,21 +802,107 @@ export default function AiAgentStudio({
               onChange={(event) => setPrompt(event.target.value)}
               onKeyDown={submitFromTextarea}
               placeholder={
-                typedExample || "Describe the visual you want to create"
+                typedExample || a.promptPlaceholder
               }
               className="min-h-[104px] w-full resize-y bg-transparent px-4 py-4 text-base leading-relaxed text-white outline-none placeholder:text-white/32 sm:min-h-[78px] sm:resize-none sm:px-6 sm:py-5 sm:text-lg"
             />
 
             <p className="border-t border-white/10 px-4 py-2 text-[11px] font-medium text-white/35 sm:px-6">
-              Enter to generate · Shift+Enter for a new line
+              {a.enterHint}
             </p>
 
             <div className="border-t border-white/10 px-3 py-3 sm:px-4 sm:py-4">
               <div className="flex flex-col gap-3">
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-2.5 sm:p-3">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-0.5">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/40">
+                      {a.imageMode}
+                    </p>
+                    <p
+                      className="text-[10px] font-medium text-white/30"
+                      title={a.plannedExpansion}
+                    >
+                      {a.plannedExpansion}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {imageModes.map((mode) => {
+                      const Icon = mode.icon;
+                      const isLive = mode.status === "live";
+                      const isSelected = imageMode === mode.key;
+
+                      return (
+                        <button
+                          key={mode.key}
+                          type="button"
+                          disabled={!isLive}
+                          onClick={() => {
+                            if (isLive) setImageMode(mode.key);
+                          }}
+                          title={
+                            isLive
+                              ? mode.description
+                              : `${mode.description} ${a.imageModes.plannedTooltip}`
+                          }
+                          className={`relative flex flex-col rounded-xl border p-2.5 text-left transition sm:p-3 ${
+                            isLive
+                              ? isSelected
+                                ? "border-[#d8ad5f]/50 bg-[#d8ad5f]/12 ring-1 ring-[#d8ad5f]/30"
+                                : "border-white/10 bg-white/[0.04] hover:border-[#d8ad5f]/30 hover:bg-white/[0.06]"
+                              : "cursor-not-allowed border-white/[0.06] bg-white/[0.02] opacity-60"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div
+                              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                                isSelected && isLive
+                                  ? "bg-[#d8ad5f] text-black"
+                                  : "bg-white/[0.06] text-white/55"
+                              }`}
+                            >
+                              <Icon className="h-3.5 w-3.5" />
+                            </div>
+
+                            <span
+                              className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] ${
+                                isLive
+                                  ? "bg-emerald-500/15 text-emerald-200"
+                                  : "border border-white/10 bg-white/[0.04] text-white/35"
+                              }`}
+                            >
+                              {isLive ? a.imageModes.live : a.imageModes.planned}
+                            </span>
+                          </div>
+
+                          <p
+                            className={`mt-2 text-xs font-black leading-tight ${
+                              isLive ? "text-white" : "text-white/55"
+                            }`}
+                          >
+                            {mode.label}
+                          </p>
+
+                          <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-white/40">
+                            {mode.description}
+                          </p>
+
+                          {!isLive && (
+                            <span className="mt-2 inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.12em] text-white/25">
+                              <Lock className="h-2.5 w-2.5" />
+                              {a.imageModes.comingSoon}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-3 py-2 text-xs font-bold text-white/65">
                     <Plus className="h-3.5 w-3.5 shrink-0" />
-                    <span>Agent</span>
+                    <span>{a.agent}</span>
                   </div>
 
                   <select
@@ -763,12 +910,13 @@ export default function AiAgentStudio({
                     onChange={(event) => {
                       setSelectedCharacterId(event.target.value);
                     }}
-                    className="max-w-full rounded-full border border-white/10 bg-black/35 px-3 py-2 text-xs font-bold text-white outline-none sm:max-w-[260px]"
+                    aria-label={a.styleProfileAria}
+                    className="max-w-full rounded-full border border-white/10 bg-black/35 px-3 py-2 text-xs font-bold text-white outline-none sm:max-w-[280px]"
                   >
                     <option value="">
                       {loadingCharacters
-                        ? "Loading style profiles..."
-                        : "No style profile"}
+                        ? a.loadingStyleProfiles
+                        : a.styleProfileNone}
                     </option>
 
                     {characters.map((character) => (
@@ -785,7 +933,7 @@ export default function AiAgentStudio({
                       className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-xs font-bold text-white transition hover:border-white/20"
                     >
                       <FormatIcon className="h-3.5 w-3.5 shrink-0" />
-                      <span>Social Format</span>
+                      <span>{a.socialFormat}</span>
                       <span className="shrink-0 text-white/40">
                         {selectedOutputFormat.ratio}
                       </span>
@@ -794,7 +942,7 @@ export default function AiAgentStudio({
                     {formatMenuOpen && (
                       <div className="absolute left-0 right-0 top-12 z-50 max-h-[min(60vh,320px)] overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-[#101014] p-1.5 shadow-2xl sm:right-auto sm:w-64">
                         <div className="space-y-1">
-                          {outputFormats.map((format) => {
+                          {localizedOutputFormats.map((format) => {
                             const Icon = format.icon;
                             const active = outputFormatKey === format.key;
 
@@ -849,7 +997,7 @@ export default function AiAgentStudio({
                   </div>
 
                   <div className="rounded-full bg-[#d8ad5f] px-3 py-2 text-xs font-black text-black">
-                    {selectedCharacter ? "Style Profile" : "Standard"}
+                    {selectedCharacter ? a.styleProfile : a.standard}
                   </div>
                 </div>
 
@@ -865,9 +1013,9 @@ export default function AiAgentStudio({
                             ? "bg-white text-black"
                             : "border border-white/10 bg-black/25 text-white/55"
                         }`}
-                        title={mode.description}
+                        title={a.modes[mode.key].description}
                       >
-                        {mode.label}
+                        {a.modes[mode.key].label}
                       </button>
                     ))}
                   </div>
@@ -902,15 +1050,15 @@ export default function AiAgentStudio({
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d8ad5f]">
-                      Latest result
+                      {a.latestResult}
                     </p>
 
                     <h3 className="mt-2 text-xl font-black text-white sm:text-2xl">
                       {agentResult.status === "processing"
-                        ? "Generating your image…"
+                        ? a.generating
                         : agentResult.status === "completed"
-                          ? "Generation completed"
-                          : "Generation failed"}
+                          ? a.completed
+                          : a.failed}
                     </h3>
 
                     <p className="mt-2 text-sm text-white/45">
@@ -967,8 +1115,7 @@ export default function AiAgentStudio({
                     <div className="mt-3 flex items-start gap-2 text-xs font-bold leading-5 text-white/40">
                       <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       <span>
-                        Processing in the background. The image will appear here
-                        automatically.
+                        {a.processingHint}
                       </span>
                     </div>
                   </div>
@@ -989,19 +1136,17 @@ export default function AiAgentStudio({
 
                       <div>
                         <p className="text-lg font-black text-white">
-                          Generating your image…
+                          {a.generating}
                         </p>
 
                         <p className="mt-3 text-sm leading-6 text-white/45">
-                          Please wait while InfluExAi generates and saves your
-                          image. Stay on this page — the result appears here
-                          automatically.
+                          {a.processingStay}
                         </p>
                       </div>
 
                       <div className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left">
                         <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/30">
-                          Current job
+                          {a.currentJob}
                         </p>
 
                         <p className="mt-2 line-clamp-2 text-xs leading-5 text-white/55">
@@ -1016,11 +1161,11 @@ export default function AiAgentStudio({
                       <AlertCircle className="h-12 w-12 text-red-200" />
 
                       <p className="text-sm font-bold text-red-100">
-                        Generation failed
+                        {a.failed}
                       </p>
 
                       <p className="max-w-md text-xs leading-6 text-red-100/60">
-                        {agentResult.error_message ?? "Unknown error"}
+                        {agentResult.error_message ?? copy.gallery.unknownError}
                       </p>
                     </div>
                   )}
@@ -1041,16 +1186,16 @@ export default function AiAgentStudio({
                         <ImageOff className="h-12 w-12 text-white/45" />
 
                         <p className="text-sm font-bold text-white">
-                          Image URL missing
+                          {a.imageUrlMissing}
                         </p>
                       </div>
                     )}
                 </div>
 
-                <aside className="flex flex-col justify-between gap-5 border-t border-white/10 p-4 sm:gap-6 sm:p-5 lg:border-l lg:border-t-0">
+                <aside className="flex flex-col justify-between gap-5 border-t border-white/10 p-4 sm:gap-6 sm:p-5 lg:border-l lg:border-t-0 lg:min-h-[280px]">
                   <div>
                     <p className="text-xs font-black uppercase tracking-[0.24em] text-white/35">
-                      Prompt
+                      {copy.gallery.prompt}
                     </p>
 
                     <p className="mt-3 line-clamp-6 text-sm leading-6 text-white/65">
@@ -1058,7 +1203,7 @@ export default function AiAgentStudio({
                     </p>
                   </div>
 
-                  <div className="grid gap-3">
+                  <div className="grid gap-3 sm:grid-cols-1">
                     {agentResult.image_url && (
                       <a
                         href={agentResult.image_url}
@@ -1067,7 +1212,7 @@ export default function AiAgentStudio({
                         className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-black text-black transition hover:bg-white/85"
                       >
                         <ExternalLink className="mr-2 h-4 w-4" />
-                        Open image
+                        {a.openImage}
                       </a>
                     )}
 
@@ -1078,7 +1223,7 @@ export default function AiAgentStudio({
                         className="inline-flex items-center justify-center rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-5 py-3 text-sm font-bold text-[#d8ad5f] transition hover:bg-[#d8ad5f]/15"
                       >
                         <GalleryVerticalEnd className="mr-2 h-4 w-4" />
-                        View in Gallery
+                        {a.viewInGallery}
                       </button>
                     )}
 
@@ -1097,7 +1242,7 @@ export default function AiAgentStudio({
                       }}
                       className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-bold text-white/70 transition hover:border-white/20 hover:text-white"
                     >
-                      Create another
+                      {a.createAnother}
                     </button>
                   </div>
                 </aside>
@@ -1124,7 +1269,7 @@ export default function AiAgentStudio({
                 onClick={() =>
                   insertQuickPrompt(quickPrompt.prompt, quickPrompt.format)
                 }
-                className="inline-flex max-w-full items-center gap-2 rounded-xl border border-white/12 bg-white/[0.07] px-3 py-2 text-xs font-bold text-white/68 transition hover:border-white/22 hover:text-white sm:px-4 sm:py-2.5"
+                className="inline-flex max-w-full items-center gap-2 rounded-xl border border-white/12 bg-white/[0.07] px-3 py-2 text-xs font-bold text-white/68 transition hover:border-[#d8ad5f]/35 hover:text-[#d8ad5f] sm:px-4 sm:py-2.5"
               >
                 <Icon className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">{quickPrompt.label}</span>
@@ -1141,7 +1286,7 @@ export default function AiAgentStudio({
         >
           <Wand2 className="h-3.5 w-3.5 shrink-0" />
           <span>
-            Style profiles guide the look, mood and creative direction.
+            {a.styleProfilesFooter}
           </span>
         </motion.div>
       </div>

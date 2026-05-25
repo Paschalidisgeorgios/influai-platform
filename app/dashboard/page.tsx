@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   Bot,
   Boxes,
+  Clapperboard,
   CreditCard,
   Film,
   GalleryVerticalEnd,
@@ -17,15 +18,17 @@ import {
   Sparkles,
   UserRound,
   Wand2,
+  Workflow,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-
 import AiAgentStudio from "./AiAgentStudio";
 import CharacterManager from "./CharacterManager";
 import CompactCredits from "./CompactCredits";
+import { DashboardLanguageProvider, useDashboardLanguage } from "./DashboardLanguageProvider";
 import CreditsCard from "./CreditsCard";
 import GenerationGallery from "./GenerationGallery";
+import LanguageSelector from "./LanguageSelector";
 import { createClient } from "@/lib/supabase/client";
 
 type RegenerateDraft = {
@@ -43,67 +46,27 @@ type LiveSidebarItem = {
   badge?: string;
 };
 
-type ComingSoonItem = {
+type ExpansionStatus = "coming_soon" | "planned" | "roadmap";
+
+type ExpansionModule = {
+  id: string;
   label: string;
   description: string;
+  status: ExpansionStatus;
   icon: LucideIcon;
-  badge?: string;
 };
 
-const liveItems: LiveSidebarItem[] = [
-  {
-    id: "agent",
-    label: "AI Agent",
-    description: "Generate campaign visuals",
-    icon: Bot,
-    badge: "Live",
-  },
-  {
-    id: "gallery",
-    label: "Asset Gallery",
-    description: "Manage generated assets",
-    icon: GalleryVerticalEnd,
-  },
-  {
-    id: "characters",
-    label: "Style Profiles",
-    description: "Reusable creative direction",
-    icon: UserRound,
-  },
-  {
-    id: "credits",
-    label: "Credits",
-    description: "Balance and packages",
-    icon: CreditCard,
-  },
-];
+function getExpansionStatusBadgeClass(status: ExpansionStatus) {
+  if (status === "coming_soon") {
+    return "border-[#d8ad5f]/35 bg-[#d8ad5f]/12 text-[#d8ad5f]";
+  }
 
-const comingSoonItems: ComingSoonItem[] = [
-  {
-    label: "Video Studio",
-    description: "Short-form video and motion campaign workflows",
-    icon: Film,
-    badge: "Soon",
-  },
-  {
-    label: "Lip Sync Studio",
-    description: "Voice, avatar and talking-content workflows",
-    icon: Mic2,
-    badge: "Soon",
-  },
-  {
-    label: "Brand Assets",
-    description: "Brand kits, reusable campaign rules and assets",
-    icon: Boxes,
-    badge: "Soon",
-  },
-  {
-    label: "Automation",
-    description: "Batch generation and scheduled campaign systems",
-    icon: Wand2,
-    badge: "Soon",
-  },
-];
+  if (status === "planned") {
+    return "border-white/12 bg-white/[0.06] text-white/55";
+  }
+
+  return "border-violet-500/25 bg-violet-500/10 text-violet-200";
+}
 
 function ViewShell({
   eyebrow,
@@ -144,7 +107,101 @@ function ViewShell({
 }
 
 export default function DashboardPage() {
+  return (
+    <DashboardLanguageProvider>
+      <DashboardPageInner />
+    </DashboardLanguageProvider>
+  );
+}
+
+function DashboardPageInner() {
+  const { copy } = useDashboardLanguage();
   const supabase = createClient();
+
+  const liveItems: LiveSidebarItem[] = useMemo(
+    () => [
+      {
+        id: "agent",
+        label: copy.sidebar.nav.agent.label,
+        description: copy.sidebar.nav.agent.description,
+        icon: Bot,
+        badge: copy.sidebar.live,
+      },
+      {
+        id: "gallery",
+        label: copy.sidebar.nav.gallery.label,
+        description: copy.sidebar.nav.gallery.description,
+        icon: GalleryVerticalEnd,
+      },
+      {
+        id: "characters",
+        label: copy.sidebar.nav.characters.label,
+        description: copy.sidebar.nav.characters.description,
+        icon: UserRound,
+      },
+      {
+        id: "credits",
+        label: copy.sidebar.nav.credits.label,
+        description: copy.sidebar.nav.credits.description,
+        icon: CreditCard,
+      },
+    ],
+    [copy]
+  );
+
+  const expansionModules: ExpansionModule[] = useMemo(
+    () => [
+      {
+        id: "video-studio",
+        label: copy.sidebar.expansion.videoStudio.label,
+        description: copy.sidebar.expansion.videoStudio.description,
+        status: "coming_soon",
+        icon: Film,
+      },
+      {
+        id: "lip-sync-studio",
+        label: copy.sidebar.expansion.lipSyncStudio.label,
+        description: copy.sidebar.expansion.lipSyncStudio.description,
+        status: "coming_soon",
+        icon: Mic2,
+      },
+      {
+        id: "brand-assets",
+        label: copy.sidebar.expansion.brandAssets.label,
+        description: copy.sidebar.expansion.brandAssets.description,
+        status: "planned",
+        icon: Boxes,
+      },
+      {
+        id: "automation",
+        label: copy.sidebar.expansion.automation.label,
+        description: copy.sidebar.expansion.automation.description,
+        status: "planned",
+        icon: Workflow,
+      },
+      {
+        id: "cinema-agent",
+        label: copy.sidebar.expansion.cinemaAgent.label,
+        description: copy.sidebar.expansion.cinemaAgent.description,
+        status: "roadmap",
+        icon: Clapperboard,
+      },
+      {
+        id: "omni-campaign-agent",
+        label: copy.sidebar.expansion.omniCampaignAgent.label,
+        description: copy.sidebar.expansion.omniCampaignAgent.description,
+        status: "roadmap",
+        icon: Wand2,
+      },
+    ],
+    [copy]
+  );
+
+  function getExpansionStatusLabel(status: ExpansionStatus) {
+    if (status === "coming_soon") return copy.sidebar.comingSoon;
+    if (status === "planned") return copy.sidebar.planned;
+    return copy.sidebar.roadmapBadge;
+  }
 
   const [activeView, setActiveView] = useState<DashboardView>("agent");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -162,24 +219,27 @@ export default function DashboardPage() {
     const checkout = params.get("checkout");
 
     if (checkout === "success") {
-      setStatusMessage("Credits purchased successfully.");
+      setStatusMessage(copy.page.checkoutSuccess);
       setCreditsRefreshKey((current) => current + 1);
       setActiveView("credits");
     }
 
     if (checkout === "cancelled") {
-      setStatusMessage("Checkout cancelled.");
+      setStatusMessage(copy.page.checkoutCancelled);
       setActiveView("credits");
     }
 
     if (checkout) {
       window.history.replaceState({}, "", "/dashboard");
     }
-  }, []);
+  }, [copy]);
 
   const activeLabel = useMemo(() => {
-    return liveItems.find((item) => item.id === activeView)?.label ?? "AI Agent";
-  }, [activeView]);
+    return (
+      liveItems.find((item) => item.id === activeView)?.label ??
+      copy.sidebar.nav.agent.label
+    );
+  }, [activeView, liveItems, copy]);
 
   function showStatus(message: string) {
     setStatusMessage(message);
@@ -198,7 +258,7 @@ export default function DashboardPage() {
     setGalleryRefreshKey((current) => current + 1);
     setCreditsRefreshKey((current) => current + 1);
     setRegenerateDraft(null);
-    showStatus("Generation queued successfully.");
+    showStatus(copy.page.generationQueued);
   }
 
   function handleRegenerate(prompt: string, characterId: string | null) {
@@ -208,7 +268,7 @@ export default function DashboardPage() {
     });
 
     setActiveView("agent");
-    showStatus("Prompt loaded back into the AI Agent.");
+    showStatus(copy.page.promptLoaded);
   }
 
   function handleClearRegenerateDraft() {
@@ -236,9 +296,9 @@ export default function DashboardPage() {
     if (activeView === "gallery") {
       return (
         <ViewShell
-          eyebrow="Creator Assets"
-          title="Asset Gallery"
-          description="Review generated visuals, manage processing jobs, save favorites, regenerate prompts and download your best campaign assets."
+          eyebrow={copy.page.gallery.eyebrow}
+          title={copy.page.gallery.title}
+          description={copy.page.gallery.description}
         >
           <GenerationGallery
             refreshKey={galleryRefreshKey}
@@ -251,14 +311,14 @@ export default function DashboardPage() {
     if (activeView === "characters") {
       return (
         <ViewShell
-          eyebrow="Reusable Creative Direction"
-          title="Style Profiles"
-          description="Create reusable visual profiles that guide appearance, styling, mood and brand direction for consistent creative output."
+          eyebrow={copy.page.characters.eyebrow}
+          title={copy.page.characters.title}
+          description={copy.page.characters.description}
         >
           <CharacterManager
             onCharactersChange={() => {
               setCharactersRefreshKey((current) => current + 1);
-              showStatus("Style profiles updated.");
+              showStatus(copy.page.styleProfilesUpdated);
             }}
           />
         </ViewShell>
@@ -267,9 +327,9 @@ export default function DashboardPage() {
 
     return (
       <ViewShell
-        eyebrow="Billing"
-        title="Credits & Plans"
-        description="Manage your available credits and purchase the right package for your creator workflow."
+        eyebrow={copy.page.credits.eyebrow}
+        title={copy.page.credits.title}
+        description={copy.page.credits.description}
       >
         <CreditsCard refreshKey={creditsRefreshKey} />
       </ViewShell>
@@ -293,7 +353,7 @@ export default function DashboardPage() {
                 Influ<span className="text-[#d8ad5f]">ExAi</span>
               </p>
               <p className="text-xs font-semibold text-white/35">
-                Enterprise Creator Studio
+                {copy.sidebar.creatorStudio}
               </p>
             </div>
           </Link>
@@ -304,20 +364,24 @@ export default function DashboardPage() {
                 G
               </div>
 
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-black text-white">
                   Georgios Paschalidis
                 </p>
                 <p className="text-xs font-medium text-white/35">
-                  Workspace Owner
+                  {copy.sidebar.workspaceOwner}
                 </p>
               </div>
+            </div>
+
+            <div className="mt-3">
+              <LanguageSelector compact />
             </div>
           </div>
 
           <div className="mt-7">
             <p className="mb-3 px-3 text-[10px] font-black uppercase tracking-[0.3em] text-white/25">
-              Live Studio
+              {copy.sidebar.liveStudio}
             </p>
 
             <nav className="space-y-2">
@@ -370,46 +434,70 @@ export default function DashboardPage() {
           </div>
 
           <div className="mt-7">
-            <p className="mb-3 px-3 text-[10px] font-black uppercase tracking-[0.3em] text-white/25">
-              Expansion Modules
-            </p>
+            <div className="mb-3 px-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/25">
+                {copy.sidebar.expansionModules}
+              </p>
+              <p className="mt-2 text-[11px] leading-5 text-white/35">
+                {copy.sidebar.expansionIntro}
+              </p>
+            </div>
 
-            <div className="space-y-2">
-              {comingSoonItems.map((item) => {
-                const Icon = item.icon;
+            <div
+              className="space-y-2"
+              role="list"
+              aria-label={copy.sidebar.expansionModules}
+            >
+              {expansionModules.map((module) => {
+                const Icon = module.icon;
+                const statusLabel = getExpansionStatusLabel(module.status);
 
                 return (
-                  <button
-                    key={item.label}
-                    type="button"
-                    disabled
-                    className="group flex w-full cursor-not-allowed items-center gap-3 rounded-[1.3rem] border border-white/5 bg-white/[0.02] px-3 py-3 text-left text-white/30"
+                  <div
+                    key={module.id}
+                    role="listitem"
+                    aria-disabled="true"
+                    title={`${module.label} — ${statusLabel}. ${copy.sidebar.moduleUnavailable}`}
+                    className="relative flex w-full cursor-not-allowed items-start gap-3 rounded-[1.3rem] border border-white/[0.06] bg-white/[0.02] px-3 py-3 text-left"
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/[0.035] text-white/30">
+                    <div className="pointer-events-none absolute inset-0 rounded-[1.3rem] bg-gradient-to-r from-transparent via-white/[0.02] to-transparent" />
+
+                    <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/[0.06] bg-black/30 text-white/35">
                       <Icon className="h-4 w-4" />
                     </div>
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="truncate text-sm font-bold">
-                          {item.label}
+                    <div className="relative min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <p className="text-sm font-bold text-white/45">
+                          {module.label}
                         </p>
 
-                        <span className="rounded-full bg-white/[0.04] px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-white/30">
-                          {item.badge ?? "Soon"}
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] ${getExpansionStatusBadgeClass(
+                            module.status
+                          )}`}
+                        >
+                          {statusLabel}
                         </span>
                       </div>
 
-                      <p className="truncate text-xs text-white/25">
-                        {item.description}
+                      <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-white/28">
+                        {module.description}
                       </p>
                     </div>
 
-                    <Lock className="h-3.5 w-3.5 text-white/20" />
-                  </button>
+                    <Lock
+                      className="relative mt-0.5 h-3.5 w-3.5 shrink-0 text-white/18"
+                      aria-hidden
+                    />
+                  </div>
                 );
               })}
             </div>
+
+            <p className="mt-3 px-3 text-[10px] leading-4 text-white/25">
+              {copy.sidebar.expansionFootnote}
+            </p>
           </div>
         </div>
 
@@ -418,13 +506,12 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2 text-[#d8ad5f]">
               <Rocket className="h-4 w-4" />
               <p className="text-xs font-black uppercase tracking-[0.18em]">
-                Roadmap
+                {copy.sidebar.roadmap}
               </p>
             </div>
 
             <p className="mt-2 text-xs leading-5 text-white/40">
-              Video, lip sync and automation modules are planned after the image
-              studio is fully polished.
+              {copy.sidebar.roadmapBody}
             </p>
           </div>
 
@@ -433,7 +520,7 @@ export default function DashboardPage() {
             className="flex items-center gap-3 rounded-[1.3rem] border border-white/10 bg-white/[0.035] px-4 py-3 text-sm font-bold text-white/65 transition hover:border-white/20 hover:text-white"
           >
             <Home className="h-4 w-4" />
-            Home
+            {copy.sidebar.home}
           </Link>
 
           <button
@@ -442,7 +529,7 @@ export default function DashboardPage() {
             className="flex w-full items-center gap-3 rounded-[1.3rem] border border-white/10 bg-white/[0.035] px-4 py-3 text-sm font-bold text-white/65 transition hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-100"
           >
             <LogOut className="h-4 w-4" />
-            Logout
+            {copy.sidebar.logout}
           </button>
         </div>
       </div>
@@ -475,7 +562,7 @@ export default function DashboardPage() {
               onClick={(event) => event.stopPropagation()}
             >
               <div className="mb-4 flex items-center justify-between">
-                <p className="text-sm font-black text-white">Studio Menu</p>
+                <p className="text-sm font-black text-white">{copy.sidebar.studioMenu}</p>
 
                 <button
                   type="button"
@@ -494,7 +581,8 @@ export default function DashboardPage() {
         )}
 
         <section className="relative min-w-0 flex-1">
-          <div className="fixed right-5 top-5 z-50 hidden lg:block">
+          <div className="fixed right-5 top-5 z-50 hidden items-center gap-2 lg:flex">
+            <LanguageSelector />
             <CompactCredits refreshKey={creditsRefreshKey} />
           </div>
 
@@ -519,7 +607,8 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="shrink-0">
+              <div className="flex shrink-0 items-center gap-2">
+                <LanguageSelector compact />
                 <CompactCredits refreshKey={creditsRefreshKey} />
               </div>
             </div>

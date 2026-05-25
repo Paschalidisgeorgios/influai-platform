@@ -5,8 +5,8 @@ import {
   AlertCircle,
   CheckCircle2,
   ImagePlus,
+  Layers,
   Loader2,
-  Lock,
   Sparkles,
   Star,
   Trash2,
@@ -14,6 +14,8 @@ import {
   UserRound,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useDashboardLanguage } from "./DashboardLanguageProvider";
+import { formatCopy } from "./i18n";
 
 type Character = {
   id: string;
@@ -70,6 +72,8 @@ const initialForm: CharacterForm = {
 export default function CharacterManager({
   onCharactersChange,
 }: CharacterManagerProps) {
+  const { copy, format } = useDashboardLanguage();
+  const sp = copy.styleProfiles;
   const supabase = createClient();
 
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -153,7 +157,7 @@ export default function CharacterManager({
       const data = await response.json();
 
       if (!response.ok) {
-        showError(data.error || "Failed to load style profiles.");
+        showError(data.error || sp.loadFailed);
         return;
       }
 
@@ -167,7 +171,7 @@ export default function CharacterManager({
       );
     } catch (error) {
       console.error("Load characters error:", error);
-      showError("Failed to load style profiles.");
+      showError(sp.loadFailed);
     } finally {
       setLoading(false);
     }
@@ -228,14 +232,14 @@ export default function CharacterManager({
       const token = await getAccessToken();
 
       if (!token) {
-        showError("Please sign in again.");
+        showError(sp.signInAgain);
         return;
       }
 
       const cleanName = form.name.trim();
 
       if (!cleanName) {
-        showError("Style profile name is required.");
+        showError(sp.nameRequired);
         return;
       }
 
@@ -261,17 +265,17 @@ export default function CharacterManager({
       const data = await response.json();
 
       if (!response.ok) {
-        showError(data.error || "Failed to create style profile.");
+        showError(data.error || sp.createFailed);
         return;
       }
 
       setForm(initialForm);
-      showStatus("Style profile created.");
+      showStatus(sp.created);
       await loadCharacters();
       onCharactersChange?.();
     } catch (error) {
       console.error("Create character error:", error);
-      showError("Failed to create style profile.");
+      showError(sp.createFailed);
     } finally {
       setCreating(false);
     }
@@ -280,7 +284,7 @@ export default function CharacterManager({
   async function deleteCharacter(characterId: string) {
     try {
       const confirmed = window.confirm(
-        "Delete this style profile and all its visual references?"
+        sp.deleteProfileConfirm
       );
 
       if (!confirmed) return;
@@ -291,7 +295,7 @@ export default function CharacterManager({
       const token = await getAccessToken();
 
       if (!token) {
-        showError("Please sign in again.");
+        showError(sp.signInAgain);
         return;
       }
 
@@ -309,7 +313,7 @@ export default function CharacterManager({
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        showError(data.error || "Failed to delete style profile.");
+        showError(data.error || sp.deleteFailed);
         return;
       }
 
@@ -323,11 +327,11 @@ export default function CharacterManager({
         return copy;
       });
 
-      showStatus("Style profile deleted.");
+      showStatus(sp.deleted);
       onCharactersChange?.();
     } catch (error) {
       console.error("Delete character error:", error);
-      showError("Failed to delete style profile.");
+      showError(sp.deleteFailed);
     } finally {
       setDeletingCharacterId(null);
     }
@@ -341,7 +345,7 @@ export default function CharacterManager({
       const token = await getAccessToken();
 
       if (!token) {
-        showError("Please sign in again.");
+        showError(sp.signInAgain);
         return;
       }
 
@@ -363,16 +367,16 @@ export default function CharacterManager({
       const data = await response.json();
 
       if (!response.ok) {
-        showError(data.error || "Failed to upload visual reference.");
+        showError(data.error || sp.uploadFailed);
         return;
       }
 
-      showStatus("Visual reference uploaded.");
+      showStatus(sp.referenceUploaded);
       await loadCharacters();
       onCharactersChange?.();
     } catch (error) {
       console.error("Reference upload error:", error);
-      showError("Failed to upload visual reference.");
+      showError(sp.uploadFailed);
     } finally {
       setUploadingCharacterId(null);
     }
@@ -386,7 +390,7 @@ export default function CharacterManager({
       const token = await getAccessToken();
 
       if (!token) {
-        showError("Please sign in again.");
+        showError(sp.signInAgain);
         return;
       }
 
@@ -404,16 +408,16 @@ export default function CharacterManager({
       const data = await response.json();
 
       if (!response.ok) {
-        showError(data.error || "Failed to set cover reference.");
+        showError(data.error || sp.coverFailed);
         return;
       }
 
-      showStatus("Cover reference updated.");
+      showStatus(sp.coverUpdated);
       await loadCharacters();
       onCharactersChange?.();
     } catch (error) {
       console.error("Set primary reference error:", error);
-      showError("Failed to set cover reference.");
+      showError(sp.coverFailed);
     } finally {
       setUpdatingReferenceId(null);
     }
@@ -421,7 +425,7 @@ export default function CharacterManager({
 
   async function deleteReferenceImage(referenceImageId: string) {
     try {
-      const confirmed = window.confirm("Delete this visual reference?");
+      const confirmed = window.confirm(sp.deleteReferenceConfirm);
       if (!confirmed) return;
 
       setDeletingReferenceId(referenceImageId);
@@ -430,7 +434,7 @@ export default function CharacterManager({
       const token = await getAccessToken();
 
       if (!token) {
-        showError("Please sign in again.");
+        showError(sp.signInAgain);
         return;
       }
 
@@ -448,16 +452,16 @@ export default function CharacterManager({
       const data = await response.json();
 
       if (!response.ok) {
-        showError(data.error || "Failed to delete visual reference.");
+        showError(data.error || sp.referenceDeleteFailed);
         return;
       }
 
-      showStatus("Visual reference deleted.");
+      showStatus(sp.referenceDeleted);
       await loadCharacters();
       onCharactersChange?.();
     } catch (error) {
       console.error("Delete reference image error:", error);
-      showError("Failed to delete visual reference.");
+      showError(sp.referenceDeleteFailed);
     } finally {
       setDeletingReferenceId(null);
     }
@@ -466,7 +470,7 @@ export default function CharacterManager({
   if (loading) {
     return (
       <section className="rounded-[1.5rem] border border-white/10 bg-white/[0.035] p-8 text-center text-white/50 sm:rounded-[2rem] sm:p-10">
-        Loading style profiles...
+        {sp.loading}
       </section>
     );
   }
@@ -487,11 +491,18 @@ export default function CharacterManager({
         </div>
       )}
 
-      <div className="rounded-[2rem] border border-[#d8ad5f]/15 bg-[#d8ad5f]/[0.04] px-5 py-4 sm:px-6">
-        <p className="text-sm leading-6 text-white/55 sm:leading-6">
-          Style profiles guide look, mood, styling and brand direction. They do
-          not act as fixed identity models.
-        </p>
+      <div className="rounded-[2rem] border border-[#d8ad5f]/20 bg-gradient-to-r from-[#d8ad5f]/[0.07] to-transparent px-5 py-4 sm:px-6">
+        <div className="flex gap-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#d8ad5f]/15 text-[#d8ad5f]">
+            <Layers className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d8ad5f]">
+              {sp.brandDirection}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-white/55">{sp.disclaimer}</p>
+          </div>
+        </div>
       </div>
 
       <form
@@ -500,57 +511,89 @@ export default function CharacterManager({
       >
         <div className="mb-6">
           <p className="text-[10px] font-black uppercase tracking-[0.32em] text-[#d8ad5f]">
-            New style profile
+            {sp.newProfile}
           </p>
 
           <h3 className="mt-3 text-xl font-black tracking-tight text-white sm:text-2xl">
-            Build creative direction
+            {sp.buildDirection}
           </h3>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-white/45">
-            Define reusable appearance and styling direction for campaign
-            visuals, portraits and product shots.
+            {sp.buildDescription}
           </p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <input
-            value={form.name}
-            onChange={(event) => updateForm("name", event.target.value)}
-            placeholder="Profile name"
-            className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
-          />
+          <div>
+            <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
+              {sp.profileName}
+            </label>
+            <input
+              value={form.name}
+              onChange={(event) => updateForm("name", event.target.value)}
+              placeholder={sp.profileNamePlaceholder}
+              className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
+            />
+          </div>
 
-          <input
-            value={form.gender}
-            onChange={(event) => updateForm("gender", event.target.value)}
-            placeholder="Creative tag (optional)"
-            className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
+          <div>
+            <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
+              {sp.creativeTag}
+            </label>
+            <input
+              value={form.gender}
+              onChange={(event) => updateForm("gender", event.target.value)}
+              placeholder={sp.creativeTagPlaceholder}
+              className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
+            />
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
+            {sp.profileSummary}
+          </label>
+          <textarea
+            value={form.description}
+            onChange={(event) => updateForm("description", event.target.value)}
+            placeholder={sp.profileSummaryPlaceholder}
+            className="min-h-[80px] w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
           />
         </div>
 
-        <textarea
-          value={form.description}
-          onChange={(event) => updateForm("description", event.target.value)}
-          placeholder="Short profile description"
-          className="mt-4 min-h-[86px] w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
-        />
+        <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-4 sm:p-5">
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d8ad5f]">
+            {sp.creativeDirection}
+          </p>
 
-        <textarea
-          value={form.appearancePrompt}
-          onChange={(event) =>
-            updateForm("appearancePrompt", event.target.value)
-          }
-          placeholder="Appearance direction: hair, age range, wardrobe, signature look, subject framing..."
-          className="mt-4 min-h-[96px] w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
-        />
+          <div className="mt-4 space-y-4">
+            <div>
+              <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
+                {sp.appearanceDirection}
+              </label>
+              <textarea
+                value={form.appearancePrompt}
+                onChange={(event) =>
+                  updateForm("appearancePrompt", event.target.value)
+                }
+                placeholder={sp.appearancePlaceholder}
+                className="min-h-[88px] w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
+              />
+            </div>
 
-        <textarea
-          value={form.stylePrompt}
-          onChange={(event) => updateForm("stylePrompt", event.target.value)}
-          placeholder="Style direction: lighting, lens, color grading, mood, brand aesthetic..."
-          className="mt-4 min-h-[96px] w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
-        />
+            <div>
+              <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
+                {sp.styleDirection}
+              </label>
+              <textarea
+                value={form.stylePrompt}
+                onChange={(event) => updateForm("stylePrompt", event.target.value)}
+                placeholder={sp.stylePlaceholder}
+                className="min-h-[88px] w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
+              />
+            </div>
+          </div>
+        </div>
 
         <button
           type="submit"
@@ -560,30 +603,31 @@ export default function CharacterManager({
           {creating ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating...
+              {sp.creating}
             </>
           ) : (
             <>
               <Sparkles className="mr-2 h-4 w-4" />
-              Create style profile
+              {sp.createProfile}
             </>
           )}
         </button>
       </form>
 
       {sortedCharacters.length === 0 ? (
-        <div className="rounded-[2rem] border border-dashed border-white/10 bg-white/[0.02] py-16 text-center">
-          <UserRound className="mx-auto h-10 w-10 text-white/25" />
-          <p className="mt-4 text-sm font-bold text-white/45">
-            No style profiles yet.
+        <div className="rounded-[2rem] border border-dashed border-[#d8ad5f]/20 bg-[#d8ad5f]/[0.03] px-6 py-16 text-center sm:py-20">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#d8ad5f]/15 text-[#d8ad5f]">
+            <UserRound className="h-7 w-7" />
+          </div>
+          <p className="mt-5 text-lg font-black text-white">
+            {sp.emptyTitle}
           </p>
-          <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-white/30">
-            Create your first profile, then add visual references to guide
-            future generations.
+          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/40">
+            {sp.emptyBody}
           </p>
         </div>
       ) : (
-        <div className="grid gap-5 xl:grid-cols-2">
+        <div className="grid gap-6 xl:grid-cols-2">
           {sortedCharacters.map((character) => {
             const references = referenceImagesByCharacter[character.id] ?? [];
             const primaryReference = references.find(
@@ -597,112 +641,131 @@ export default function CharacterManager({
                 key={character.id}
                 className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.035] shadow-[0_20px_70px_rgba(0,0,0,0.22)]"
               >
-                <div className="relative aspect-[16/10] overflow-hidden bg-black/35">
+                <div className="relative aspect-[2/1] overflow-hidden bg-black/40 sm:aspect-[21/9]">
                   {displayImage ? (
                     <img
                       src={displayImage}
-                      alt={character.name}
-                      className="h-full w-full object-cover"
+                      alt={`${character.name} cover`}
+                      className="h-full w-full object-cover object-[center_25%]"
                     />
                   ) : (
-                    <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-b from-white/[0.03] to-black/40 text-white/35">
-                      <ImagePlus className="h-9 w-9" />
-                      <p className="text-xs font-black uppercase tracking-[0.3em]">
-                        Add cover reference
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-b from-white/[0.04] via-black/30 to-black/50 px-6 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-dashed border-[#d8ad5f]/30 bg-[#d8ad5f]/10 text-[#d8ad5f]">
+                        <ImagePlus className="h-6 w-6" />
+                      </div>
+                      <p className="text-xs font-black uppercase tracking-[0.28em] text-white/45">
+                        {sp.noCoverYet}
+                      </p>
+                      <p className="max-w-xs text-[11px] leading-5 text-white/30">
+                        {sp.noCoverHint}
                       </p>
                     </div>
                   )}
 
-                  <div className="absolute left-4 top-4 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-white/10 bg-black/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white backdrop-blur-xl">
-                      Style Profile
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+
+                  <div className="absolute left-4 top-4 z-10 flex flex-wrap gap-2">
+                    <span className="rounded-full border border-white/10 bg-black/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white backdrop-blur-xl">
+                      {sp.styleProfileBadge}
                     </span>
 
                     {primaryReference && (
-                      <span className="rounded-full border border-[#d8ad5f]/40 bg-[#d8ad5f]/20 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#d8ad5f] backdrop-blur-xl">
-                        Cover Reference
+                      <span className="rounded-full border border-[#d8ad5f]/45 bg-[#d8ad5f]/25 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#efc777] backdrop-blur-xl">
+                        {sp.coverReference}
                       </span>
                     )}
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => deleteCharacter(character.id)}
-                    disabled={deletingCharacterId === character.id}
-                    className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-xl transition hover:scale-105 disabled:opacity-50"
-                  >
-                    {deletingCharacterId === character.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
-                  </button>
                 </div>
 
-                <div className="space-y-5 p-5">
-                  <div>
-                    <h3 className="text-xl font-black tracking-tight text-white">
-                      {character.name}
-                    </h3>
+                <div className="space-y-5 p-5 sm:p-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
+                        {character.name}
+                      </h3>
 
-                    {(character.gender_identity || character.gender) && (
-                      <p className="mt-1 text-xs font-bold uppercase tracking-[0.22em] text-[#d8ad5f]">
-                        {character.gender_identity ?? character.gender}
-                      </p>
-                    )}
+                      {(character.gender_identity || character.gender) && (
+                        <p className="mt-2 text-[10px] font-black uppercase tracking-[0.22em] text-[#d8ad5f]">
+                          {character.gender_identity ?? character.gender}
+                        </p>
+                      )}
 
-                    {character.description && (
-                      <p className="mt-3 line-clamp-3 text-sm leading-6 text-white/55">
-                        {character.description}
-                      </p>
-                    )}
+                        {character.description ? (
+                        <p className="mt-3 text-sm leading-6 text-white/55">
+                          {character.description}
+                        </p>
+                      ) : (
+                        <p className="mt-3 text-sm italic text-white/30">
+                          {sp.noSummary}
+                        </p>
+                      )}
+                    </div>
 
-                    {character.appearance_prompt && (
-                      <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/30">
-                          Appearance Direction
-                        </p>
-                        <p className="mt-2 line-clamp-4 text-sm leading-6 text-white/55">
-                          {character.appearance_prompt}
-                        </p>
-                      </div>
-                    )}
-
-                    {character.style_prompt && (
-                      <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-4">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/30">
-                          Style Direction
-                        </p>
-                        <p className="mt-2 line-clamp-4 text-sm leading-6 text-white/55">
-                          {character.style_prompt}
-                        </p>
-                      </div>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => deleteCharacter(character.id)}
+                      disabled={deletingCharacterId === character.id}
+                      className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs font-bold text-white/40 transition hover:border-red-500/25 hover:bg-red-500/10 hover:text-red-100 disabled:opacity-50"
+                    >
+                      {deletingCharacterId === character.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5" />
+                      )}
+                      {sp.removeProfile}
+                    </button>
                   </div>
 
-                  <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-sm font-black text-white">
-                          Visual References
-                        </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
+                        {sp.appearanceDirection}
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-white/55">
+                        {character.appearance_prompt?.trim() || sp.notDefined}
+                      </p>
+                    </div>
 
-                        <p className="mt-1 text-xs leading-5 text-white/35">
-                          {references.length} reference
-                          {references.length === 1 ? "" : "s"} for this profile.
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
+                        {sp.styleDirection}
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-white/55">
+                        {character.style_prompt?.trim() || sp.notDefined}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-black/20 p-4 sm:p-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#d8ad5f]">
+                          {sp.visualReferences}
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-white/45">
+                          {sp.uploadHint}
+                        </p>
+                        <p className="mt-1 text-xs text-white/30">
+                          {references.length === 1
+                            ? formatCopy(sp.referenceCount, {
+                                count: references.length,
+                              })
+                            : formatCopy(sp.referenceCountPlural, {
+                                count: references.length,
+                              })}
                         </p>
                       </div>
 
-                      <label className="inline-flex w-full cursor-pointer items-center justify-center rounded-full bg-white px-4 py-2.5 text-xs font-black text-black shadow-[0_8px_24px_rgba(255,255,255,0.12)] transition hover:bg-white/85 sm:w-auto">
+                      <label className="inline-flex w-full shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#d8ad5f]/35 bg-[#d8ad5f] px-4 py-2.5 text-xs font-black text-black shadow-[0_8px_24px_rgba(216,173,95,0.25)] transition hover:bg-[#efc777] sm:w-auto">
                         {uploadingCharacterId === character.id ? (
                           <>
                             <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                            Uploading
+                            {sp.uploading}
                           </>
                         ) : (
                           <>
                             <Upload className="mr-2 h-3.5 w-3.5" />
-                            Upload
+                            {sp.uploadReference}
                           </>
                         )}
 
@@ -725,17 +788,18 @@ export default function CharacterManager({
                     </div>
 
                     {references.length === 0 ? (
-                      <label className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[#d8ad5f]/25 bg-[#d8ad5f]/[0.03] px-6 py-12 text-center transition hover:border-[#d8ad5f]/40 hover:bg-[#d8ad5f]/[0.06]">
-                        <Upload className="h-8 w-8 text-[#d8ad5f]" />
-                        <p className="mt-4 text-sm font-bold text-white">
-                          Upload visual references
+                      <label className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[#d8ad5f]/25 bg-gradient-to-b from-[#d8ad5f]/[0.04] to-transparent px-5 py-10 text-center transition hover:border-[#d8ad5f]/40 sm:py-12">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#d8ad5f]/15 text-[#d8ad5f]">
+                          <Upload className="h-5 w-5" />
+                        </div>
+                        <p className="mt-4 text-sm font-black text-white">
+                          {sp.addReferences}
                         </p>
-                        <p className="mt-2 max-w-xs text-xs leading-5 text-white/40">
-                          Upload mood frames or product shots. The first file
-                          becomes the cover reference.
+                        <p className="mx-auto mt-2 max-w-sm text-xs leading-5 text-white/40">
+                          {sp.addReferencesHint}
                         </p>
                         <span className="mt-5 rounded-full bg-white px-4 py-2 text-xs font-black text-black">
-                          Choose files
+                          {sp.chooseImage}
                         </span>
                         <input
                           type="file"
@@ -754,29 +818,29 @@ export default function CharacterManager({
                         />
                       </label>
                     ) : (
-                      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
+                      <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
                         {references.map((reference) => (
                           <div
                             key={reference.id}
-                            className={`group relative aspect-square overflow-hidden rounded-2xl border ${
+                            className={`group relative aspect-square overflow-hidden rounded-xl border sm:rounded-2xl ${
                               reference.is_primary
-                                ? "border-[#d8ad5f]/70"
+                                ? "border-[#d8ad5f]/60 ring-1 ring-[#d8ad5f]/25"
                                 : "border-white/10"
                             } bg-black/40`}
                           >
                             <img
                               src={reference.image_url}
-                              alt={`${character.name} reference`}
+                              alt={`${character.name} visual reference`}
                               className="h-full w-full object-cover"
                             />
 
                             {reference.is_primary && (
-                              <div className="absolute left-2 top-2 rounded-full bg-[#d8ad5f] px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-black">
-                                Cover Reference
+                              <div className="absolute left-2 top-2 rounded-full bg-[#d8ad5f] px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-black shadow-sm">
+                                {sp.coverReference}
                               </div>
                             )}
 
-                            <div className="absolute inset-x-2 bottom-2 flex gap-2 opacity-0 transition group-hover:opacity-100">
+                            <div className="absolute inset-x-2 bottom-2 flex gap-1.5 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
                               <button
                                 type="button"
                                 disabled={
@@ -784,8 +848,9 @@ export default function CharacterManager({
                                   updatingReferenceId === reference.id
                                 }
                                 onClick={() => setPrimaryReference(reference.id)}
-                                className="flex h-8 flex-1 items-center justify-center rounded-full bg-white text-black transition hover:bg-white/85 disabled:cursor-not-allowed disabled:opacity-50"
-                                title="Set as cover reference"
+                                className="flex h-8 flex-1 items-center justify-center rounded-full bg-white text-black transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-40"
+                                title={sp.setCoverReference}
+                                aria-label={sp.setCoverReference}
                               >
                                 {updatingReferenceId === reference.id ? (
                                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -800,8 +865,9 @@ export default function CharacterManager({
                                 onClick={() =>
                                   deleteReferenceImage(reference.id)
                                 }
-                                className="flex h-8 flex-1 items-center justify-center rounded-full bg-red-500/90 text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
-                                title="Delete reference"
+                                className="flex h-8 w-9 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white/80 transition hover:border-red-500/30 hover:bg-red-500/20 hover:text-red-100 disabled:opacity-40"
+                                title={sp.removeReference}
+                                aria-label={sp.removeReference}
                               >
                                 {deletingReferenceId === reference.id ? (
                                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -814,26 +880,6 @@ export default function CharacterManager({
                         ))}
                       </div>
                     )}
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/[0.06] text-white/50">
-                        <Lock className="h-4 w-4" />
-                      </div>
-
-                      <div>
-                        <p className="text-xs font-black uppercase tracking-[0.24em] text-[#d8ad5f]">
-                          Advanced consistency
-                        </p>
-
-                        <p className="mt-2 text-sm leading-6 text-white/55">
-                          Coming later. Advanced consistency modules are not
-                          active in this release. Profiles currently guide
-                          standard OpenAI image generation only.
-                        </p>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </article>

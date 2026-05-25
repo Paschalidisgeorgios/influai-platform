@@ -3,12 +3,15 @@
 import { useEffect, useState } from "react";
 import { CreditCard, Loader2, RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useDashboardLanguage } from "./DashboardLanguageProvider";
+import { formatCopy } from "./i18n";
 
 type CompactCreditsProps = {
   refreshKey?: number;
 };
 
 export default function CompactCredits({ refreshKey = 0 }: CompactCreditsProps) {
+  const { copy } = useDashboardLanguage();
   const supabase = createClient();
 
   const [credits, setCredits] = useState<number>(0);
@@ -59,19 +62,30 @@ export default function CompactCredits({ refreshKey = 0 }: CompactCreditsProps) 
     }
   }
 
+  const displayCredits = loading ? "…" : String(credits);
+
   return (
-    <div className="flex max-w-[9.5rem] shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-black/70 px-2 py-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl sm:max-w-none sm:gap-2 sm:px-3 sm:py-2">
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#d8ad5f] text-black sm:h-8 sm:w-8">
-        <CreditCard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+    <div
+      className="flex max-w-[8.75rem] shrink-0 items-center gap-1 rounded-full border border-white/10 bg-black/75 py-1 pl-1 pr-1 shadow-[0_10px_32px_rgba(0,0,0,0.4)] backdrop-blur-2xl sm:max-w-none sm:gap-1.5 sm:py-1.5 sm:pl-1.5 sm:pr-1.5"
+      title={
+        loading
+          ? copy.compactCredits.loadingCredits
+          : formatCopy(copy.compactCredits.creditsAvailable, { count: credits })
+      }
+    >
+      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#d8ad5f] text-black sm:h-7 sm:w-7">
+        <CreditCard className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden />
       </div>
 
-      <div className="min-w-0">
-        <p className="hidden text-[10px] font-black uppercase tracking-[0.18em] text-white/35 sm:block">
-          Credits
+      <div className="min-w-0 pr-0.5">
+        <p className="hidden text-[9px] font-black uppercase leading-none tracking-[0.16em] text-white/35 md:block">
+          {copy.compactCredits.credits}
         </p>
-
-        <p className="text-xs font-black leading-none text-white sm:text-sm">
-          {loading ? "…" : credits}
+        <p
+          className="text-[11px] font-black tabular-nums leading-none text-white sm:text-xs"
+          aria-live="polite"
+        >
+          {displayCredits}
         </p>
       </div>
 
@@ -79,13 +93,14 @@ export default function CompactCredits({ refreshKey = 0 }: CompactCreditsProps) 
         type="button"
         onClick={loadCredits}
         disabled={loading}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/55 transition hover:border-white/20 hover:text-white disabled:opacity-40 sm:h-8 sm:w-8"
-        title="Refresh credits"
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/55 transition hover:border-[#d8ad5f]/30 hover:text-[#d8ad5f] disabled:opacity-40 sm:h-7 sm:w-7"
+        title={copy.compactCredits.refreshCredits}
+        aria-label={copy.compactCredits.refreshCredits}
       >
         {loading ? (
-          <Loader2 className="h-3 w-3 animate-spin sm:h-3.5 sm:w-3.5" />
+          <Loader2 className="h-2.5 w-2.5 animate-spin sm:h-3 sm:w-3" />
         ) : (
-          <RefreshCw className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+          <RefreshCw className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
         )}
       </button>
     </div>

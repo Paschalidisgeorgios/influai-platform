@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -21,7 +22,7 @@ export default function LoginPage() {
     try {
       setLoading(true);
       setLoginSuccess(false);
-      setStatusMessage("Signing in to your studio...");
+      setStatusMessage("Signing in to InfluExAi Studio…");
       setErrorMessage(null);
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -42,14 +43,14 @@ export default function LoginPage() {
       }
 
       setLoginSuccess(true);
-      setStatusMessage("Sign-in successful. Opening InfluExAi Studio...");
+      setStatusMessage("Signed in successfully. Opening your studio…");
 
       window.setTimeout(() => {
         window.location.replace("/dashboard");
       }, 600);
     } catch (error) {
       console.error("Login error:", error);
-      setErrorMessage("Sign-in failed. Please try again.");
+      setErrorMessage("Sign-in failed. Please check your details and try again.");
       setStatusMessage(null);
     } finally {
       setLoading(false);
@@ -65,38 +66,62 @@ export default function LoginPage() {
 
       <Link
         href="/"
-        className="absolute left-5 top-5 z-20 inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white/80 transition hover:border-[#d8ad5f]/40 hover:text-white"
+        className="absolute left-4 top-4 z-20 inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white/80 transition hover:border-[#d8ad5f]/40 hover:text-[#d8ad5f] sm:left-5 sm:top-5"
       >
-        Back to Home
+        Back to home
       </Link>
 
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-5 py-16">
-        <div className="w-full max-w-md rounded-[2rem] border border-white/10 bg-black/60 p-7 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-10">
-          <p className="text-[10px] font-black uppercase tracking-[0.38em] text-[#d8ad5f]">
-            InfluExAi
-          </p>
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-16 sm:px-5">
+        <div className="w-full max-w-md rounded-[1.75rem] border border-white/10 bg-black/60 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:rounded-[2rem] sm:p-10">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#d8ad5f] text-black">
+              <Sparkles className="h-5 w-5" />
+            </div>
 
-          <p className="mt-2 text-xs font-semibold uppercase tracking-[0.22em] text-white/35">
-            AI Creator Studio
-          </p>
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.32em] text-[#d8ad5f]">
+                InfluExAi
+              </p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+                AI Creator Studio
+              </p>
+            </div>
+          </div>
 
-          <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl">
-            Sign in
+          <h1 className="mt-6 text-3xl font-black tracking-tight sm:text-4xl">
+            Sign in to Studio
           </h1>
 
           <p className="mt-4 text-sm leading-6 text-white/55">
-            Access your studio for the AI Visual Agent, Style Profiles, Social
-            Formats, Asset Gallery and Credits.
+            Access the AI Agent, Social Formats, Style Profiles, Asset Gallery
+            and Credits — your workspace for campaign-ready visuals.
           </p>
 
+          <ul className="mt-5 flex flex-wrap gap-2">
+            {[
+              "AI Agent",
+              "Social Formats",
+              "Style Profiles",
+              "Asset Gallery",
+              "Credits",
+            ].map((item) => (
+              <li
+                key={item}
+                className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-bold text-white/50"
+              >
+                {item}
+              </li>
+            ))}
+          </ul>
+
           {statusMessage && (
-            <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-bold text-white">
+            <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-medium text-white">
               {statusMessage}
             </div>
           )}
 
           {errorMessage && (
-            <div className="mt-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-100">
+            <div className="mt-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-100">
               {errorMessage}
             </div>
           )}
@@ -104,7 +129,7 @@ export default function LoginPage() {
           {loginSuccess && (
             <Link
               href="/dashboard"
-              className="mt-6 inline-flex h-14 w-full items-center justify-center rounded-2xl bg-white text-sm font-black text-black transition hover:bg-white/80"
+              className="mt-6 inline-flex h-14 w-full items-center justify-center rounded-2xl bg-[#d8ad5f] text-sm font-black text-black transition hover:bg-[#efc777]"
             >
               Open Studio
             </Link>
@@ -113,7 +138,7 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="mt-8 space-y-5">
             <div>
               <label className="mb-2 block text-sm font-medium text-white/70">
-                Email
+                Work email
               </label>
 
               <input
@@ -122,6 +147,7 @@ export default function LoginPage() {
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="you@company.com"
                 required
+                autoComplete="email"
                 className="h-14 w-full rounded-2xl border border-white/10 bg-white/[0.06] px-5 text-sm outline-none transition focus:border-[#d8ad5f]/60"
               />
             </div>
@@ -138,6 +164,7 @@ export default function LoginPage() {
                 placeholder="Enter your password"
                 required
                 minLength={6}
+                autoComplete="current-password"
                 className="h-14 w-full rounded-2xl border border-white/10 bg-white/[0.06] px-5 text-sm outline-none transition focus:border-[#d8ad5f]/60"
               />
             </div>
@@ -147,15 +174,23 @@ export default function LoginPage() {
               disabled={loading}
               className="mt-2 inline-flex h-14 w-full items-center justify-center rounded-2xl bg-[#d8ad5f] text-sm font-black text-black transition hover:bg-[#f0c979] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? "Signing in..." : "Sign in to Studio"}
+              {loading ? "Signing in…" : "Sign in"}
             </button>
           </form>
 
           <p className="mt-8 text-center text-sm text-white/45">
             No account yet?{" "}
-            <Link href="/signup" className="font-bold text-[#d8ad5f]">
+            <Link
+              href="/signup"
+              className="font-bold text-[#d8ad5f] transition hover:text-[#efc777]"
+            >
               Create account
             </Link>
+          </p>
+
+          <p className="mt-6 text-center text-xs leading-5 text-white/30">
+            Secure sign-in for the InfluExAi Creator Studio. One standard image
+            = one credit.
           </p>
         </div>
       </div>

@@ -23,16 +23,16 @@ export default function Navbar({
         </Link>
 
         <nav className="hidden items-center gap-10 text-sm font-semibold text-white/65 lg:flex">
-          <a href="#studio" className="transition hover:text-white">
+          <a href="#studio" className="transition hover:text-[#d8ad5f]">
             {t.product}
           </a>
-          <a href="#tools" className="transition hover:text-white">
+          <a href="#tools" className="transition hover:text-[#d8ad5f]">
             {t.tools}
           </a>
-          <a href="#pricing" className="transition hover:text-white">
+          <a href="#pricing" className="transition hover:text-[#d8ad5f]">
             {t.pricing}
           </a>
-          <a href="#examples" className="transition hover:text-white">
+          <a href="#examples" className="transition hover:text-[#d8ad5f]">
             {t.creators}
           </a>
         </nav>
@@ -45,7 +45,7 @@ export default function Navbar({
               className={`rounded-full px-3 py-2 text-xs font-bold transition ${
                 language === "en"
                   ? "bg-[#d8ad5f] text-black"
-                  : "text-white/60 hover:text-white"
+                  : "text-white/60 hover:text-[#d8ad5f]"
               }`}
             >
               EN
@@ -57,7 +57,7 @@ export default function Navbar({
               className={`rounded-full px-3 py-2 text-xs font-bold transition ${
                 language === "de"
                   ? "bg-[#d8ad5f] text-black"
-                  : "text-white/60 hover:text-white"
+                  : "text-white/60 hover:text-[#d8ad5f]"
               }`}
             >
               DE
@@ -66,14 +66,14 @@ export default function Navbar({
 
           <Link
             href="/login"
-            className="hidden text-sm font-semibold text-white/65 transition hover:text-white sm:block"
+            className="hidden text-sm font-semibold text-white/65 transition hover:text-[#d8ad5f] sm:block"
           >
             {t.signIn}
           </Link>
 
           <Link
             href="/dashboard"
-            className="hidden rounded-full bg-[#d8ad5f] px-5 py-3 text-xs font-extrabold text-black transition hover:bg-[#f0c979] sm:inline-flex sm:px-7 sm:text-sm"
+            className="hidden rounded-full bg-[#d8ad5f] px-5 py-3 text-xs font-extrabold text-black transition hover:bg-[#efc777] sm:inline-flex sm:px-7 sm:text-sm"
           >
             {t.openApp}
           </Link>

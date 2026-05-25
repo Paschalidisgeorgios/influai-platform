@@ -96,79 +96,580 @@ function getOutputFormat(formatKey: unknown): OutputFormat {
   return OUTPUT_FORMATS[formatKey] ?? OUTPUT_FORMATS.square;
 }
 
-function buildFormatRules(outputFormat: OutputFormat) {
+type EffectivePlatform =
+  | "youtube_thumbnail"
+  | "tiktok"
+  | "instagram_post"
+  | "instagram_story"
+  | "youtube_shorts"
+  | "square";
+
+type ContentType =
+  | "automotive"
+  | "fitness"
+  | "beauty"
+  | "fashion"
+  | "product"
+  | "food"
+  | "crypto"
+  | "creator"
+  | "general";
+
+type DetectedLocation = {
+  key: string;
+  label: string;
+};
+
+type CreativeBrief = {
+  normalizedText: string;
+  isShort: boolean;
+  platform: EffectivePlatform;
+  contentTypes: ContentType[];
+  subjectHints: string[];
+  location: DetectedLocation | null;
+  sceneDirection: string;
+  formatBlock: string;
+  brandSafetyBlock: string;
+};
+
+const CONTENT_DETECTORS: { type: ContentType; pattern: RegExp }[] = [
+  {
+    type: "automotive",
+    pattern:
+      /\b(cars?|autos?|sportwagen|luxusauto|fahrzeug|vehicles?|automotive|supercar|sports?\s*car|luxury\s*cars?)\b/i,
+  },
+  {
+    type: "fitness",
+    pattern:
+      /\b(fitness|gym|workout|leggings|athlete|sport|training|muskel|fitnessstudio)\b/i,
+  },
+  {
+    type: "beauty",
+    pattern:
+      /\b(beauty|skincare|makeup|cosmetics|perfume|parfum|schönheit|kosmetik|skincare)\b/i,
+  },
+  {
+    type: "fashion",
+    pattern:
+      /\b(fashion|outfit|streetwear|dress|mode|model|creator|editorial)\b/i,
+  },
+  {
+    type: "product",
+    pattern:
+      /\b(product|produkt|bottle|watch|sneaker|supplement|werbung|kampagne|ad\b|commercial)\b/i,
+  },
+  {
+    type: "food",
+    pattern:
+      /\b(food|restaurant|burger|pizza|coffee|essen|gastronomie)\b/i,
+  },
+  {
+    type: "crypto",
+    pattern: /\b(crypto|bitcoin|ethereum|trading|crash|chart|blockchain)\b/i,
+  },
+  {
+    type: "creator",
+    pattern:
+      /\b(creator|influencer|girl|woman|man|portrait|model|mädchen|frau)\b/i,
+  },
+];
+
+const LOCATION_DETECTORS: {
+  key: string;
+  label: string;
+  pattern: RegExp;
+  hints: string[];
+}[] = [
+  {
+    key: "new_york",
+    label: "New York City",
+    pattern: /\b(new\s*york|nyc|manhattan|times\s*square)\b/i,
+    hints: [
+      "recognizable Manhattan / New York City atmosphere",
+      "Times Square lights or cinematic city street if suitable",
+      "wet asphalt reflections and neon glow for night/cinematic mood",
+    ],
+  },
+  {
+    key: "dubai",
+    label: "Dubai",
+    pattern: /\bdubai\b/i,
+    hints: [
+      "luxury skyline and modern architecture",
+      "premium Gulf city atmosphere with dramatic lighting",
+    ],
+  },
+  {
+    key: "paris",
+    label: "Paris",
+    pattern: /\bparis|pariser\b/i,
+    hints: [
+      "elegant Parisian street or boulevard",
+      "fashion/editorial European atmosphere",
+    ],
+  },
+  {
+    key: "gym",
+    label: "Luxury gym",
+    pattern: /\b(gym|fitnessstudio|fitness\s*studio)\b/i,
+    hints: [
+      "modern luxury gym interior",
+      "cinematic fitness environment with premium equipment",
+    ],
+  },
+  {
+    key: "studio",
+    label: "Premium studio",
+    pattern: /\b(studio|studiolicht|clean\s*background)\b/i,
+    hints: ["clean premium studio lighting", "controlled commercial backdrop"],
+  },
+  {
+    key: "los_angeles",
+    label: "Los Angeles",
+    pattern: /\blos\s*angeles\b/i,
+    hints: ["sunlit LA urban or coastal creator aesthetic"],
+  },
+  {
+    key: "london",
+    label: "London",
+    pattern: /\blondon\b/i,
+    hints: ["recognizable London urban atmosphere"],
+  },
+  {
+    key: "berlin",
+    label: "Berlin",
+    pattern: /\bberlin\b/i,
+    hints: ["modern Berlin street or urban creative energy"],
+  },
+  {
+    key: "miami",
+    label: "Miami",
+    pattern: /\bmiami\b/i,
+    hints: ["vibrant Miami coastal or nightlife energy"],
+  },
+  {
+    key: "tokyo",
+    label: "Tokyo",
+    pattern: /\btokyo\b/i,
+    hints: ["Tokyo urban neon or street atmosphere"],
+  },
+];
+
+function normalizePromptText(prompt: string) {
+  const trimmed = prompt.trim();
+
+  const wrappedMatch = trimmed.match(
+    /based on this request:\s*([\s\S]+?)(?:\n\nFocus on|\s*$)/i
+  );
+
+  const core = (wrappedMatch?.[1] ?? trimmed)
+    .replace(/\s+/g, " ")
+    .replace(/^[:\-–—]+\s*/, "")
+    .trim();
+
+  const withoutCreatePrefix = core
+    .replace(
+      /^(erstelle(\s+mir)?|create|generate|mach(\s+mir)?|bitte)\s+(ein(en)?|a|an|mir)?\s*/i,
+      ""
+    )
+    .replace(
+      /^(thumbnail|vorschaubild)\s+(für|for)\s+(youtube|tiktok|instagram)\s*/i,
+      ""
+    )
+    .trim();
+
+  return withoutCreatePrefix || core;
+}
+
+function detectPlatform(
+  prompt: string,
+  outputFormat: OutputFormat
+): EffectivePlatform {
+  const text = normalizePromptText(prompt).toLowerCase();
+
+  const promptSaysThumbnail =
+    /\b(youtube|yt)\b/.test(text) &&
+    /\b(thumbnail|thumb|vorschaubild|video\s*thumbnail)\b/.test(text);
+  const promptSaysThumbnailOnly =
+    /\b(thumbnail|thumb|vorschaubild)\b/.test(text) &&
+    /\b(youtube|video)\b/.test(text);
+
+  if (
+    outputFormat.key === "youtube_thumbnail" ||
+    promptSaysThumbnail ||
+    promptSaysThumbnailOnly
+  ) {
+    return "youtube_thumbnail";
+  }
+
   if (
     outputFormat.key === "tiktok" ||
-    outputFormat.key === "instagram_story" ||
-    outputFormat.key === "youtube_shorts"
+    /\b(tiktok|reels?|reel)\b/.test(text)
   ) {
+    return "tiktok";
+  }
+
+  if (
+    outputFormat.key === "instagram_story" ||
+    /\b(story|hochformat|instagram\s*story)\b/.test(text)
+  ) {
+    return "instagram_story";
+  }
+
+  if (
+    outputFormat.key === "youtube_shorts" ||
+    /\b(youtube\s*shorts?|shorts)\b/.test(text)
+  ) {
+    return "youtube_shorts";
+  }
+
+  if (
+    outputFormat.key === "instagram_post" ||
+    /\b(instagram\s*post|feed\s*post|instagram)\b/.test(text)
+  ) {
+    return "instagram_post";
+  }
+
+  if (outputFormat.key === "square" || /\b(square|quadrat|1:1)\b/.test(text)) {
+    return "square";
+  }
+
+  return (outputFormat.key as EffectivePlatform) || "square";
+}
+
+function detectContentType(prompt: string): ContentType[] {
+  const text = normalizePromptText(prompt);
+  const found = CONTENT_DETECTORS.filter(({ pattern }) => pattern.test(text)).map(
+    ({ type }) => type
+  );
+
+  return found.length > 0 ? found : ["general"];
+}
+
+function detectSubject(prompt: string): string[] {
+  const types = detectContentType(prompt);
+  const hints: string[] = [];
+
+  if (types.includes("automotive")) {
+    hints.push(
+      "multiple luxury cars or supercars when context allows — not a single tiny car",
+      "cinematic automotive scene with dynamic street perspective",
+      "reflections, headlights, motion energy, premium automotive campaign style"
+    );
+  }
+
+  if (types.includes("fitness")) {
+    hints.push(
+      "premium fitness creator campaign visual",
+      "luxury gym or athletic environment, confident pose, athletic styling"
+    );
+  }
+
+  if (types.includes("beauty")) {
+    hints.push(
+      "luxury beauty campaign aesthetic",
+      "clean studio or glossy premium lighting, refined skincare/cosmetics mood"
+    );
+  }
+
+  if (types.includes("fashion")) {
+    hints.push(
+      "editorial fashion campaign with premium styling",
+      "magazine-quality composition and confident creator/model presence"
+    );
+  }
+
+  if (types.includes("product")) {
+    hints.push(
+      "clear hero product focus with commercial lighting",
+      "clean background or premium ad photography layout"
+    );
+  }
+
+  if (types.includes("food")) {
+    hints.push(
+      "appetizing commercial food photography",
+      "high detail textures, premium restaurant/ad lighting"
+    );
+  }
+
+  if (types.includes("crypto")) {
+    hints.push(
+      "dramatic finance/crypto campaign mood",
+      "bold charts, coins, screens or crash energy — readable at thumbnail size, high contrast"
+    );
+  }
+
+  if (types.includes("creator") && !types.includes("fashion")) {
+    hints.push(
+      "creator-forward composition with expressive subject readable on mobile"
+    );
+  }
+
+  return hints;
+}
+
+function detectLocation(prompt: string): DetectedLocation | null {
+  const text = normalizePromptText(prompt);
+
+  for (const location of LOCATION_DETECTORS) {
+    if (location.pattern.test(text)) {
+      return { key: location.key, label: location.label };
+    }
+  }
+
+  if (/\b(city|stadt|urban|street|straße)\b/i.test(text)) {
+    return { key: "urban", label: "Urban city" };
+  }
+
+  return null;
+}
+
+function buildPlatformFormatBlock(
+  platform: EffectivePlatform,
+  outputFormat: OutputFormat
+) {
+  if (platform === "youtube_thumbnail") {
     return `
-Output format:
-${outputFormat.label}
+Platform: YouTube Thumbnail (${outputFormat.label})
+Aspect ratio: ${outputFormat.aspectRatio} wide
 
-Aspect ratio:
-${outputFormat.aspectRatio}
-
-Composition rules:
-Create a vertical social-media-ready image. Keep the main subject centered but not too close to the edges. Leave clean negative space near the top and bottom for platform UI, captions, buttons, and overlays. Make it feel like a premium mobile campaign visual.
+Format requirements:
+- high-impact YouTube thumbnail concept (not a generic snapshot)
+- wide 16:9 composition, bold visual hierarchy, strong focal point
+- high contrast, dramatic lighting, dynamic composition
+- clear subject separation, creator-style viral thumbnail aesthetic
+- thumbnail optimized for clicks; readable at small preview size
+- empty space for future title text (typically left or right third — do not render text)
+- no actual text, no logo, no watermark in the image
     `.trim();
   }
 
-  if (outputFormat.key === "youtube_thumbnail") {
+  if (
+    platform === "tiktok" ||
+    platform === "instagram_story" ||
+    platform === "youtube_shorts"
+  ) {
+    const label =
+      platform === "tiktok"
+        ? "TikTok / Reels"
+        : platform === "instagram_story"
+          ? "Instagram Story"
+          : "YouTube Shorts";
+
     return `
-Output format:
-${outputFormat.label}
+Platform: ${label}
+Aspect ratio: ${outputFormat.aspectRatio} vertical 9:16
 
-Aspect ratio:
-${outputFormat.aspectRatio}
-
-Composition rules:
-Create a wide cinematic thumbnail composition. Use a strong focal subject, clear visual hierarchy, high contrast, readable framing, and enough negative space for future title text. Make the image attention-grabbing without adding actual text.
+Format requirements:
+- mobile-first vertical composition, centered hero subject
+- space for captions, stickers and platform UI (headroom + lower third)
+- strong hook visual, premium social ad / creator campaign look
+- no actual text, no logo, no watermark in the image
     `.trim();
   }
 
-  if (outputFormat.key === "instagram_post") {
+  if (platform === "instagram_post") {
     return `
-Output format:
-${outputFormat.label}
+Platform: Instagram Post
+Aspect ratio: ${outputFormat.aspectRatio} portrait feed
 
-Aspect ratio:
-${outputFormat.aspectRatio}
-
-Composition rules:
-Create a premium portrait-feed composition. Keep the subject well-framed for Instagram, with clean spacing, strong visual focus, and a polished editorial look.
+Format requirements:
+- polished Instagram feed composition with editorial framing
+- premium creator campaign look, clean subject focus
+- no actual text, no logo, no watermark in the image
     `.trim();
   }
 
   return `
-Output format:
-${outputFormat.label}
+Platform: Square social asset
+Aspect ratio: ${outputFormat.aspectRatio}
 
-Aspect ratio:
-${outputFormat.aspectRatio}
-
-Composition rules:
-Create a clean square composition with strong subject focus, balanced spacing, premium lighting, and a polished social-media-ready layout.
+Format requirements:
+- balanced square composition with clean subject focus
+- premium social asset layout, campaign-ready polish
+- no actual text, no logo, no watermark in the image
   `.trim();
+}
+
+function buildLocationHints(location: DetectedLocation | null, platform: EffectivePlatform) {
+  if (!location) return [];
+
+  const detector = LOCATION_DETECTORS.find((entry) => entry.key === location.key);
+  const hints = detector?.hints ?? [`recognizable ${location.label} atmosphere`];
+
+  if (platform === "youtube_thumbnail" && location.key === "new_york") {
+    return [
+      ...hints,
+      "recognizable Manhattan / New York City atmosphere",
+      "Times Square lights or cinematic city street if suitable",
+      "wet asphalt reflections and neon glow for night/cinematic mood",
+      "cinematic NYC street scene with depth — skyline, traffic, urban scale",
+    ];
+  }
+
+  return hints;
+}
+
+function buildSceneDirection({
+  normalizedText,
+  platform,
+  contentTypes,
+  subjectHints,
+  location,
+  isShort,
+}: {
+  normalizedText: string;
+  platform: EffectivePlatform;
+  contentTypes: ContentType[];
+  subjectHints: string[];
+  location: DetectedLocation | null;
+  isShort: boolean;
+}) {
+  const parts: string[] = [
+    "Creative interpretation (expand the user request — do not replace their wording):",
+    `User intent: "${normalizedText}"`,
+  ];
+
+  if (isShort || platform === "youtube_thumbnail") {
+    if (platform === "youtube_thumbnail") {
+      parts.push(
+        "Deliver a click-worthy YouTube thumbnail concept with story-in-one-frame clarity."
+      );
+
+      if (
+        contentTypes.includes("automotive") &&
+        location?.key === "new_york"
+      ) {
+        parts.push(
+          "Scene: high-impact YouTube thumbnail about multiple luxury cars or supercars in New York City — Manhattan atmosphere, Times Square lights if suitable, cinematic automotive street scene, not a single isolated car."
+        );
+      } else if (contentTypes.includes("automotive")) {
+        parts.push(
+          "Scene: high-impact automotive thumbnail — multiple luxury cars or supercars, cinematic road or city context, reflections and headlights, strong scale and motion."
+        );
+      } else if (contentTypes.includes("crypto")) {
+        parts.push(
+          "Scene: dramatic crypto/finance thumbnail — bold visual metaphor for crash or market tension, extreme contrast."
+        );
+      }
+    } else if (
+      platform === "tiktok" ||
+      platform === "instagram_story" ||
+      platform === "youtube_shorts"
+    ) {
+      parts.push(
+        "Scene: vertical creator ad with one clear hero moment and immediate visual hook."
+      );
+    } else if (platform === "instagram_post") {
+      parts.push(
+        "Scene: premium Instagram feed campaign frame with editorial polish."
+      );
+    } else if (isShort) {
+      parts.push(
+        "Scene: expand this short brief into a complete professional campaign visual."
+      );
+    }
+  }
+
+  if (subjectHints.length > 0) {
+    parts.push("Subject direction:");
+    subjectHints.forEach((hint) => parts.push(`- ${hint}`));
+  }
+
+  const locationHints = buildLocationHints(location, platform);
+
+  if (locationHints.length > 0) {
+    parts.push(`Location direction (${location?.label ?? "environment"}):`);
+    locationHints.forEach((hint) => parts.push(`- ${hint}`));
+  }
+
+  return parts.join("\n");
+}
+
+function buildBrandSafetyBlock(platform: EffectivePlatform) {
+  const needsOverlaySpace =
+    platform === "youtube_thumbnail" ||
+    platform === "tiktok" ||
+    platform === "instagram_story" ||
+    platform === "instagram_post" ||
+    platform === "youtube_shorts";
+
+  if (!needsOverlaySpace) {
+    return `
+Brand safety:
+- no actual text, no logo, no watermark in the image
+    `.trim();
+  }
+
+  return `
+Brand safety (mandatory):
+- no actual text rendered in the image
+- no logo, no watermark, no UI mockup typography
+- leave clean negative space for future title or caption overlay where relevant
+- composition must stay readable after post-production text is added
+  `.trim();
+}
+
+function buildCreativeBrief({
+  prompt,
+  outputFormat,
+  character,
+}: {
+  prompt: string;
+  outputFormat: OutputFormat;
+  character?: CharacterRecord | null;
+}): CreativeBrief {
+  const normalizedText = normalizePromptText(prompt);
+  const wordCount = normalizedText.split(/\s+/).filter(Boolean).length;
+  const isShort = wordCount <= 20 || normalizedText.length <= 160;
+  const platform = detectPlatform(prompt, outputFormat);
+  const contentTypes = detectContentType(prompt);
+  const subjectHints = detectSubject(prompt);
+  const location = detectLocation(prompt);
+
+  const sceneDirection = buildSceneDirection({
+    normalizedText,
+    platform,
+    contentTypes,
+    subjectHints,
+    location,
+    isShort,
+  });
+
+  let formatBlock = buildPlatformFormatBlock(platform, outputFormat);
+
+  if (character) {
+    formatBlock += `\n\nStyle profile active: apply profile look/mood while respecting all format rules above.`;
+  }
+
+  return {
+    normalizedText,
+    isShort,
+    platform,
+    contentTypes,
+    subjectHints,
+    location,
+    sceneDirection,
+    formatBlock,
+    brandSafetyBlock: buildBrandSafetyBlock(platform),
+  };
 }
 
 function buildQualityRules() {
   return `
-Quality rules:
-- premium editorial photography
-- realistic skin texture
-- natural anatomy
-- sharp facial detail
-- professional lighting
-- clean background
-- high-end commercial visual quality
-- no text, no watermark, no logo
-- no distorted face
-- no plastic skin
-- no extra fingers
-- no deformed hands
+Quality standards:
+- premium editorial / commercial photography
+- realistic materials, textures and lighting
+- sharp detail on the main subject
+- high-end social campaign finish
+- no distorted anatomy, no plastic skin, no deformed hands
 - no blurry low-quality output
   `.trim();
+}
+
+function assembleFinalPrompt(sections: string[]) {
+  return sections.filter((section) => section.trim().length > 0).join("\n\n");
 }
 
 function buildStandardFinalPrompt({
@@ -178,19 +679,19 @@ function buildStandardFinalPrompt({
   prompt: string;
   outputFormat: OutputFormat;
 }) {
-  return `
-Create a premium AI-generated visual based on this request:
+  const brief = buildCreativeBrief({ prompt, outputFormat });
 
-User request:
-${prompt}
+  return assembleFinalPrompt([
+    `Create a premium AI-generated campaign visual.
 
-${buildFormatRules(outputFormat)}
-
-${buildQualityRules()}
-
-Style direction:
-Make the image feel like a professional campaign asset for a modern creator brand. Prioritize realism, composition, lighting, elegance, and strong social-media impact.
-  `.trim();
+User request (preserve exactly — do not replace or contradict):
+${prompt}`,
+    brief.sceneDirection,
+    brief.formatBlock,
+    brief.brandSafetyBlock,
+    buildQualityRules(),
+    `Output target: ${outputFormat.label} · professional creator-brand campaign asset.`,
+  ]);
 }
 
 function buildCharacterStylePrompt({
@@ -202,34 +703,25 @@ function buildCharacterStylePrompt({
   prompt: string;
   outputFormat: OutputFormat;
 }) {
-  return `
-Create a premium AI-generated visual inspired by this saved character profile.
+  const brief = buildCreativeBrief({ prompt, outputFormat, character });
 
-Important:
-Use this character as creative direction for look, styling, personality, hair, outfit direction, and overall brand identity. Do not promise exact face identity. This is Character Style mode, not strict face consistency.
+  return assembleFinalPrompt([
+    `Create a premium AI-generated campaign visual using a saved style profile.
 
-Character name:
-${character.name}
+Style profile (creative direction only — not exact identity lock):
+Name: ${character.name}
+Description: ${character.description ?? "—"}
+Appearance: ${character.appearance_prompt ?? "—"}
+Style: ${character.style_prompt ?? "—"}
 
-Character description:
-${character.description ?? "No additional description."}
-
-Character appearance direction:
-${character.appearance_prompt ?? "No specific appearance prompt."}
-
-Character style direction:
-${character.style_prompt ?? "No specific style prompt."}
-
-User scene request:
-${prompt}
-
-${buildFormatRules(outputFormat)}
-
-${buildQualityRules()}
-
-Style direction:
-Create a polished creator-campaign visual that feels consistent with the character's brand and aesthetic. Prioritize professional composition, realistic detail, strong lighting, and commercial usability.
-  `.trim();
+User request (preserve exactly — do not replace or contradict):
+${prompt}`,
+    brief.sceneDirection,
+    brief.formatBlock,
+    brief.brandSafetyBlock,
+    buildQualityRules(),
+    `Blend the style profile aesthetic with the format and scene direction above.`,
+  ]);
 }
 
 async function refundCredits(userId: string) {

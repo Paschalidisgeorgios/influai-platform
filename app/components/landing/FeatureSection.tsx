@@ -14,11 +14,11 @@ import {
 const features = [
 
   {
-    title: "Image Generator",
+    title: "AI Visual Agent",
     description:
-      "Generate premium campaign visuals through the studio image workflow.",
+      "Generate premium campaign visuals from natural-language briefs with social format presets.",
     icon: ImageIcon,
-    href: "/dashboard/image-generator",
+    href: "/dashboard",
     glow: "from-[#c7a36a]/20 to-orange-500/10",
   },
 
@@ -34,27 +34,28 @@ const features = [
   {
     title: "Prompt Intelligence",
     description:
-      "OpenAI enhances your prompts for luxury editorial quality, with automatic fallback when unavailable.",
+      "Built-in prompt assistance helps refine briefs for luxury editorial quality before generation.",
     icon: Wand2,
-    href: "/dashboard/image-generator",
+    href: "/dashboard",
     glow: "from-emerald-500/20 to-green-500/10",
   },
 
   {
-    title: "Generation Gallery",
+    title: "Asset Gallery",
     description:
       "Browse, favorite, and manage every image you create — owned by your account only.",
     icon: ImageIcon,
-    href: "/dashboard/gallery",
+    href: "/dashboard",
     glow: "from-purple-500/20 to-pink-500/10",
   },
 ];
 
 const stack = [
-  "AI Visual Agent",
+  "AI Agent",
   "Style Profiles",
   "Social Formats",
   "Asset Gallery",
+  "Credits",
 ];
 
 export default function FeatureSection() {
@@ -88,17 +89,17 @@ export default function FeatureSection() {
 
           <h2 className="text-4xl md:text-7xl font-black tracking-[-0.05em] leading-[0.95] mb-8">
 
-            Everything You Need
+            Explore studio
             <br />
 
-            For Your Demo
+            capabilities
 
           </h2>
 
           <p className="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
 
-            A focused creator workflow: characters, generation, gallery, and
-            prompt intelligence — ready for your Monday presentation.
+            AI Agent, Style Profiles, Social Formats, Asset Gallery and Credits —
+            the core workflow for campaign-ready visuals.
 
           </p>
 
@@ -116,7 +117,7 @@ export default function FeatureSection() {
                 key={feature.title}
                 href={feature.href}
 
-                className="group relative overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] backdrop-blur-xl p-8 md:p-10 hover:scale-[1.02] transition duration-500"
+                className="group relative overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl transition duration-500 hover:scale-[1.02] hover:border-[#d8ad5f]"
               >
 
                 <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-500 bg-gradient-to-br ${feature.glow}`} />
@@ -139,7 +140,7 @@ export default function FeatureSection() {
                     </h3>
 
                     <ArrowUpRight
-                      className="text-gray-500 group-hover:text-white transition"
+                      className="text-gray-500 transition group-hover:text-[#d8ad5f]"
                       size={24}
                     />
 
@@ -188,7 +189,7 @@ export default function FeatureSection() {
 
             <Video size={16} className="text-[#c7a36a]" />
 
-            Video &amp; upscale integrations planned
+            Video Studio &amp; Lip Sync — coming soon
 
           </div>
 
