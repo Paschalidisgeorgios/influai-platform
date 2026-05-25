@@ -169,6 +169,21 @@ const en = {
           "Upload or select an image and guide precise edits.",
         hoverHint:
           "Reference Edit will support source images, edit instructions and guided campaign refinements.",
+        panel: {
+          status: "Planned · Coming soon",
+          intro:
+            "Reference Edit is being prepared for guided image transformations.",
+          sourceLabel: "Source image",
+          sourcePlaceholder: "Upload or select an image",
+          sourceHint: "From device or gallery — not active yet",
+          instructionLabel: "Edit instructions",
+          instructionPlaceholder:
+            "Describe what to change: background, lighting, product details, framing…",
+          previewLabel: "Result preview",
+          previewPlaceholder: "Edited result will appear here",
+          plannedNote:
+            "Guided image editing is planned. This preview does not use credits or generation.",
+        },
       },
       live: "Live",
       beta: "Beta",
@@ -625,6 +640,21 @@ const de: DeepString<typeof en> = {
           "Bild hochladen oder auswählen und präzise Bearbeitungen anleiten.",
         hoverHint:
           "Reference Edit wird Quellbilder, Bearbeitungsanweisungen und geführte Kampagnen-Verfeinerungen unterstützen.",
+        panel: {
+          status: "Geplant · Demnächst",
+          intro:
+            "Reference Edit wird für geführte Bildtransformationen vorbereitet.",
+          sourceLabel: "Quellbild",
+          sourcePlaceholder: "Bild hochladen oder auswählen",
+          sourceHint: "Vom Gerät oder aus der Galerie — noch nicht aktiv",
+          instructionLabel: "Bearbeitungsanweisung",
+          instructionPlaceholder:
+            "Beschreibe die Änderung: Hintergrund, Licht, Produktdetails, Bildausschnitt…",
+          previewLabel: "Ergebnis-Vorschau",
+          previewPlaceholder: "Das bearbeitete Ergebnis erscheint hier",
+          plannedNote:
+            "Geführte Bildbearbeitung ist geplant. Diese Vorschau verbraucht keine Credits und startet keine Generierung.",
+        },
       },
       live: "Live",
       beta: "Beta",

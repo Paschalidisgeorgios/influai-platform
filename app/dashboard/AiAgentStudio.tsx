@@ -21,6 +21,7 @@ import {
   Send,
   Sparkles,
   Square,
+  Upload,
   UserRound,
   Wand2,
   Zap,
@@ -354,6 +355,88 @@ function ModeCardBody({
   );
 }
 
+function ReferenceEditPlannedPanel({
+  label,
+  copy,
+  panelRef,
+}: {
+  label: string;
+  copy: {
+    status: string;
+    intro: string;
+    sourceLabel: string;
+    sourcePlaceholder: string;
+    sourceHint: string;
+    instructionLabel: string;
+    instructionPlaceholder: string;
+    previewLabel: string;
+    previewPlaceholder: string;
+    plannedNote: string;
+  };
+  panelRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <div
+      ref={panelRef}
+      id="reference-edit-preview"
+      aria-label={copy.sourceLabel}
+      className="mt-2.5 rounded-xl border border-[#d8ad5f]/15 bg-[linear-gradient(165deg,rgba(216,173,95,0.07)_0%,rgba(0,0,0,0.35)_45%)] p-2.5 sm:p-3"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[11px] font-black text-white/85 sm:text-xs">{label}</p>
+          <p className="mt-0.5 text-[9px] leading-4 text-white/38">{copy.intro}</p>
+        </div>
+        <span className="shrink-0 rounded-full border border-[#d8ad5f]/25 bg-[#d8ad5f]/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.1em] text-[#d8ad5f]/90">
+          {copy.status}
+        </span>
+      </div>
+
+      <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-2.5">
+        <div className="flex min-h-[5.5rem] flex-col rounded-lg border border-dashed border-white/12 bg-black/30 p-2 sm:min-h-[6.5rem]">
+          <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
+            {copy.sourceLabel}
+          </p>
+          <div className="mt-2 flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-white/35">
+              <Upload className="h-4 w-4" aria-hidden />
+            </div>
+            <p className="text-[10px] font-semibold text-white/50">
+              {copy.sourcePlaceholder}
+            </p>
+            <p className="text-[9px] text-white/28">{copy.sourceHint}</p>
+          </div>
+        </div>
+
+        <div className="flex min-h-[5.5rem] flex-col sm:min-h-[6.5rem]">
+          <label className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
+            {copy.instructionLabel}
+          </label>
+          <textarea
+            disabled
+            readOnly
+            rows={3}
+            placeholder={copy.instructionPlaceholder}
+            className="mt-1.5 min-h-[4.25rem] flex-1 resize-none rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] leading-4 text-white/45 placeholder:text-white/22 disabled:cursor-not-allowed sm:min-h-[4.75rem]"
+          />
+        </div>
+
+        <div className="flex min-h-[5.5rem] flex-col sm:min-h-[6.5rem]">
+          <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
+            {copy.previewLabel}
+          </p>
+          <div className="mt-1.5 flex flex-1 flex-col items-center justify-center rounded-lg border border-white/[0.08] bg-black/35 px-2 py-3 text-center">
+            <ImageOff className="h-5 w-5 text-white/20" aria-hidden />
+            <p className="mt-2 text-[10px] text-white/32">{copy.previewPlaceholder}</p>
+          </div>
+        </div>
+      </div>
+
+      <p className="mt-2 text-[9px] leading-3.5 text-white/30">{copy.plannedNote}</p>
+    </div>
+  );
+}
+
 export default function AiAgentStudio({
   charactersRefreshKey = 0,
   regenerateDraft = null,
@@ -423,6 +506,7 @@ export default function AiAgentStudio({
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const resultRef = useRef<HTMLDivElement | null>(null);
+  const referenceEditPanelRef = useRef<HTMLDivElement | null>(null);
 
   const [prompt, setPrompt] = useState("");
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -1036,6 +1120,33 @@ export default function AiAgentStudio({
                                 creditNote={mode.creditNote}
                               />
                             </button>
+                          ) : isReferenceEditPlanned ? (
+                            <button
+                              type="button"
+                              title={plannedTitle}
+                              onClick={() => {
+                                referenceEditPanelRef.current?.scrollIntoView({
+                                  behavior: "smooth",
+                                  block: "nearest",
+                                });
+                              }}
+                              className="flex h-full w-full flex-col text-left outline-none focus-visible:ring-2 focus-visible:ring-[#d8ad5f]/35 rounded-lg"
+                            >
+                              <ModeCardBody
+                                Icon={Icon}
+                                isLive={false}
+                                isSelected={false}
+                                label={mode.label}
+                                description={mode.description}
+                                statusLabel={statusLabel}
+                                statusTone="planned"
+                                comingSoonNote={
+                                  "comingSoonNote" in mode
+                                    ? mode.comingSoonNote
+                                    : undefined
+                                }
+                              />
+                            </button>
                           ) : (
                             <div
                               role="presentation"
@@ -1056,7 +1167,7 @@ export default function AiAgentStudio({
                                     ? mode.comingSoonNote
                                     : undefined
                                 }
-                                showLock={!isReferenceEditPlanned}
+                                showLock
                               />
                             </div>
                           )}
@@ -1064,6 +1175,12 @@ export default function AiAgentStudio({
                       );
                     })}
                   </div>
+
+                  <ReferenceEditPlannedPanel
+                    label={a.imageModes.referenceEdit.label}
+                    copy={a.imageModes.referenceEdit.panel}
+                    panelRef={referenceEditPanelRef}
+                  />
 
                   <div className="mt-3 rounded-xl border border-white/[0.06] bg-black/25 px-2.5 py-2.5 sm:px-3">
                     <p className="text-[9px] font-black uppercase tracking-[0.14em] text-white/35">
