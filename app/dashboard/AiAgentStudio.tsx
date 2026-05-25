@@ -44,6 +44,10 @@ type RegenerateDraft = {
 type Workflow = "standard";
 type AgentMode = "auto" | "portrait" | "product" | "campaign";
 type ImageModeKey = "standard" | "fast_draft" | "premium" | "reference_edit";
+type ImageModeCardStatus = "live" | "beta" | "planned";
+
+const FAST_DRAFT_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_FAL_FAST_DRAFT === "true";
 type ImageModeStatus = "live" | "planned";
 
 type OutputFormatKey =
@@ -250,6 +254,8 @@ function ModeCardBody({
   label,
   description,
   statusLabel,
+  creditNote,
+  statusTone = "live",
   showLock = false,
 }: {
   Icon: typeof ImageIcon;
@@ -258,6 +264,8 @@ function ModeCardBody({
   label: string;
   description: string;
   statusLabel: string;
+  creditNote?: string;
+  statusTone?: "live" | "beta" | "planned";
   showLock?: boolean;
 }) {
   return (
@@ -284,9 +292,11 @@ function ModeCardBody({
 
         <span
           className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.08em] sm:px-2 sm:text-[9px] ${
-            isLive
+            statusTone === "live"
               ? "bg-emerald-500/15 text-emerald-200"
-              : "border border-[#d8ad5f]/20 bg-[#d8ad5f]/8 text-[#d8ad5f]/80"
+              : statusTone === "beta"
+                ? "border border-amber-400/30 bg-amber-500/12 text-amber-100"
+                : "border border-[#d8ad5f]/20 bg-[#d8ad5f]/8 text-[#d8ad5f]/80"
           }`}
         >
           {statusLabel}
@@ -304,6 +314,12 @@ function ModeCardBody({
       <p className="relative mt-0.5 line-clamp-2 flex-1 text-[9px] leading-3.5 text-white/36 sm:line-clamp-3 sm:text-[10px] sm:leading-4">
         {description}
       </p>
+
+      {creditNote ? (
+        <p className="relative mt-1 text-[9px] font-bold uppercase tracking-[0.08em] text-white/45">
+          {creditNote}
+        </p>
+      ) : null}
 
       {showLock && (
         <Lock className="relative mt-1 h-2.5 w-2.5 text-white/25 sm:h-3 sm:w-3" aria-hidden />
@@ -329,28 +345,32 @@ export default function AiAgentStudio({
         key: "standard" as const,
         label: a.imageModes.standard.label,
         description: a.imageModes.standard.description,
-        status: "live" as const,
+        status: "live" as ImageModeCardStatus,
+        creditNote: a.imageModes.oneCredit,
         icon: ImageIcon,
       },
       {
         key: "fast_draft" as const,
         label: a.imageModes.fastDraft.label,
         description: a.imageModes.fastDraft.description,
-        status: "planned" as const,
+        status: (FAST_DRAFT_PUBLIC_ENABLED
+          ? "beta"
+          : "planned") as ImageModeCardStatus,
+        creditNote: FAST_DRAFT_PUBLIC_ENABLED ? a.imageModes.oneCredit : undefined,
         icon: Zap,
       },
       {
         key: "premium" as const,
         label: a.imageModes.premium.label,
         description: a.imageModes.premium.description,
-        status: "planned" as const,
+        status: "planned" as ImageModeCardStatus,
         icon: Sparkles,
       },
       {
         key: "reference_edit" as const,
         label: a.imageModes.referenceEdit.label,
         description: a.imageModes.referenceEdit.description,
-        status: "planned" as const,
+        status: "planned" as ImageModeCardStatus,
         icon: PenLine,
       },
     ],
@@ -375,8 +395,14 @@ export default function AiAgentStudio({
   const [characters, setCharacters] = useState<Character[]>([]);
   const [selectedCharacterId, setSelectedCharacterId] = useState("");
   const [workflow] = useState<Workflow>("standard");
-  /** UI-only architecture prep — not sent to /api/generate (workflow stays standard). */
   const [imageMode, setImageMode] = useState<ImageModeKey>("standard");
+  const imageModeActiveNote = useMemo(() => {
+    if (imageMode === "fast_draft" && FAST_DRAFT_PUBLIC_ENABLED) {
+      return a.imageModeFastDraftActiveNote;
+    }
+
+    return a.imageModeStandardActiveNote;
+  }, [a, imageMode]);
   const [agentMode, setAgentMode] = useState<AgentMode>("auto");
   const [outputFormatKey, setOutputFormatKey] =
     useState<OutputFormatKey>("square");
@@ -430,7 +456,7 @@ export default function AiAgentStudio({
   }, [charactersRefreshKey]);
 
   useEffect(() => {
-    if (imageMode !== "standard") {
+    if (imageMode === "fast_draft" && !FAST_DRAFT_PUBLIC_ENABLED) {
       setImageMode("standard");
     }
   }, [imageMode]);
@@ -678,6 +704,10 @@ export default function AiAgentStudio({
           prompt: agentPrompt,
           characterId: selectedCharacterId || null,
           workflow,
+          imageMode:
+            imageMode === "fast_draft" && FAST_DRAFT_PUBLIC_ENABLED
+              ? "fast_draft"
+              : "standard",
           outputFormat: outputFormatKey,
         }),
       });
@@ -894,8 +924,14 @@ export default function AiAgentStudio({
                     <legend className="text-[10px] font-black uppercase tracking-[0.22em] text-white/40">
                       {a.imageMode}
                     </legend>
-                    <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-emerald-200">
-                      {a.imageModeActiveNote}
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] ${
+                        imageMode === "fast_draft" && FAST_DRAFT_PUBLIC_ENABLED
+                          ? "border border-amber-400/25 bg-amber-500/10 text-amber-100"
+                          : "border border-emerald-500/25 bg-emerald-500/10 text-emerald-200"
+                      }`}
+                    >
+                      {imageModeActiveNote}
                     </span>
                   </div>
 
@@ -906,35 +942,44 @@ export default function AiAgentStudio({
                   <div className="grid grid-cols-2 gap-2 sm:gap-2.5 lg:grid-cols-4">
                     {imageModes.map((mode) => {
                       const Icon = mode.icon;
-                      const isLive = mode.status === "live";
-                      const isSelected = isLive && imageMode === mode.key;
+                      const isSelectable =
+                        mode.status === "live" || mode.status === "beta";
+                      const isSelected = isSelectable && imageMode === mode.key;
+                      const statusLabel =
+                        mode.status === "live"
+                          ? a.imageModes.live
+                          : mode.status === "beta"
+                            ? a.imageModes.beta
+                            : a.imageModes.planned;
 
                       return (
                         <div
                           key={mode.key}
                           className={`relative flex min-h-[5rem] flex-col rounded-xl border p-2 text-left sm:min-h-[5.75rem] sm:p-2.5 ${
-                            isLive
+                            isSelectable
                               ? isSelected
                                 ? "border-[#d8ad5f]/50 bg-[#d8ad5f]/12 ring-1 ring-[#d8ad5f]/25"
                                 : "border-white/10 bg-white/[0.04]"
                               : "border-white/[0.08] bg-white/[0.025]"
                           }`}
                         >
-                          {isLive ? (
+                          {isSelectable ? (
                             <button
                               type="button"
                               aria-pressed={isSelected}
-                              onClick={() => setImageMode("standard")}
+                              onClick={() => setImageMode(mode.key)}
                               title={mode.description}
                               className="flex h-full w-full flex-col text-left outline-none focus-visible:ring-2 focus-visible:ring-[#d8ad5f]/40 rounded-lg"
                             >
                               <ModeCardBody
                                 Icon={Icon}
-                                isLive={isLive}
+                                isLive={isSelectable}
                                 isSelected={isSelected}
                                 label={mode.label}
                                 description={mode.description}
-                                statusLabel={a.imageModes.live}
+                                statusLabel={statusLabel}
+                                statusTone={mode.status}
+                                creditNote={mode.creditNote}
                               />
                             </button>
                           ) : (
@@ -949,7 +994,8 @@ export default function AiAgentStudio({
                                 isSelected={false}
                                 label={mode.label}
                                 description={mode.description}
-                                statusLabel={a.imageModes.planned}
+                                statusLabel={statusLabel}
+                                statusTone="planned"
                                 showLock
                               />
                             </div>

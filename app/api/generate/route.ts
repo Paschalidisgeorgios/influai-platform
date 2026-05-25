@@ -10,6 +10,55 @@ const supabaseAdmin = createClient(
 
 const IMAGE_GENERATION_COST = 1;
 
+type ImageMode = "standard" | "fast_draft";
+
+function parseImageMode(value: unknown): ImageMode {
+  return value === "fast_draft" ? "fast_draft" : "standard";
+}
+
+type GenerationJobConfig = {
+  provider: string;
+  model: string;
+  workflow: string;
+  creditsUsed: number;
+  transactionSource: string;
+};
+
+function resolveGenerationJobConfig(imageMode: ImageMode):
+  | { ok: true; config: GenerationJobConfig }
+  | { ok: false; error: string } {
+  if (imageMode === "fast_draft") {
+    if (process.env.ENABLE_FAL_FAST_DRAFT !== "true") {
+      return {
+        ok: false,
+        error: "Fast Draft is not enabled. Set ENABLE_FAL_FAST_DRAFT=true on the server.",
+      };
+    }
+
+    return {
+      ok: true,
+      config: {
+        provider: "fal",
+        model: "fal-ai/flux/schnell",
+        workflow: "fast_draft",
+        creditsUsed: IMAGE_GENERATION_COST,
+        transactionSource: "fast_draft_generation_job",
+      },
+    };
+  }
+
+  return {
+    ok: true,
+    config: {
+      provider: "openai",
+      model: "gpt-image-1",
+      workflow: "standard",
+      creditsUsed: IMAGE_GENERATION_COST,
+      transactionSource: "standard_generation_job",
+    },
+  };
+}
+
 type ImageSize = "1024x1024" | "1024x1536" | "1536x1024";
 
 type OutputFormat = {
@@ -795,7 +844,16 @@ export async function POST(req: Request) {
 
     const prompt = body.prompt;
     const characterId = body.characterId ?? null;
+    const imageMode = parseImageMode(body.imageMode);
     const outputFormat = getOutputFormat(body.outputFormat);
+
+    const jobConfigResult = resolveGenerationJobConfig(imageMode);
+
+    if (!jobConfigResult.ok) {
+      return NextResponse.json({ error: jobConfigResult.error }, { status: 400 });
+    }
+
+    const jobConfig = jobConfigResult.config;
 
     if (!prompt || typeof prompt !== "string") {
       return NextResponse.json(
@@ -849,7 +907,7 @@ export async function POST(req: Request) {
     const { data: creditSuccess, error: creditError } =
       await supabaseAdmin.rpc("consume_user_credits", {
         target_user_id: user.id,
-        credits_to_consume: IMAGE_GENERATION_COST,
+        credits_to_consume: jobConfig.creditsUsed,
       });
 
     if (creditError) {
@@ -877,16 +935,16 @@ export async function POST(req: Request) {
           final_prompt: finalPrompt,
           image_url: null,
           status: "processing",
-          provider: "openai",
-          model: "gpt-image-1",
-          workflow: "standard",
+          provider: jobConfig.provider,
+          model: jobConfig.model,
+          workflow: jobConfig.workflow,
           reference_image_url: referenceImageUrl,
           social_platform: outputFormat.platform,
           output_format: outputFormat.label,
           image_size: outputFormat.imageSize,
           output_width: outputFormat.width,
           output_height: outputFormat.height,
-          credits_used: IMAGE_GENERATION_COST,
+          credits_used: jobConfig.creditsUsed,
           character_id: usedCharacterId,
           error_message: null,
           started_at: new Date().toISOString(),
@@ -912,11 +970,9 @@ export async function POST(req: Request) {
       .from("credit_transactions")
       .insert({
         user_id: user.id,
-        amount: -IMAGE_GENERATION_COST,
+        amount: -jobConfig.creditsUsed,
         type: "usage",
-        source: usedCharacterId
-          ? `${outputFormat.platform}_character_style_generation_job`
-          : `${outputFormat.platform}_standard_generation_job`,
+        source: jobConfig.transactionSource,
       });
 
     if (transactionError) {
@@ -938,9 +994,12 @@ export async function POST(req: Request) {
       success: true,
       queued: true,
       generationId: generation.id,
-      creditsUsed: IMAGE_GENERATION_COST,
+      creditsUsed: jobConfig.creditsUsed,
       characterId: usedCharacterId,
-      workflow: "standard",
+      imageMode,
+      workflow: jobConfig.workflow,
+      provider: jobConfig.provider,
+      model: jobConfig.model,
       referenceImageUrl,
       outputFormat,
     });

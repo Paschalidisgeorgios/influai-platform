@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { fal } from "@fal-ai/client";
 import OpenAI from "openai";
 
 export const runtime = "nodejs";
@@ -14,11 +15,55 @@ const supabaseAdmin = createClient(
 );
 
 const STORAGE_BUCKET = "generations";
+const FAL_FLUX_SCHNELL_MODEL = "fal-ai/flux/schnell";
+const FAL_REQUEST_TIMEOUT_MS = 120_000;
 
 type ImageSize = "1024x1024" | "1024x1536" | "1536x1024";
 
+type FalImageSizeInput =
+  | "square_hd"
+  | "square"
+  | "portrait_4_3"
+  | "portrait_16_9"
+  | "landscape_4_3"
+  | "landscape_16_9"
+  | { width: number; height: number };
+
 function base64ToBuffer(base64: string) {
   return Buffer.from(base64, "base64");
+}
+
+function resolveFalImageSize({
+  imageSize,
+  outputWidth,
+  outputHeight,
+}: {
+  imageSize: unknown;
+  outputWidth: unknown;
+  outputHeight: unknown;
+}): FalImageSizeInput {
+  const width =
+    typeof outputWidth === "number" && outputWidth > 0 ? outputWidth : null;
+  const height =
+    typeof outputHeight === "number" && outputHeight > 0 ? outputHeight : null;
+
+  if (width && height) {
+    return { width, height };
+  }
+
+  if (imageSize === "1024x1024") {
+    return "square_hd";
+  }
+
+  if (imageSize === "1024x1536") {
+    return "portrait_16_9";
+  }
+
+  if (imageSize === "1536x1024") {
+    return "landscape_16_9";
+  }
+
+  return "square_hd";
 }
 
 function normalizeImageSize(value: unknown): ImageSize {
@@ -138,6 +183,169 @@ async function completeGeneration({
   }
 }
 
+function getFalResultImageUrl(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+
+  const images = (data as { images?: unknown }).images;
+
+  if (!Array.isArray(images) || images.length === 0) return null;
+
+  const first = images[0];
+
+  if (typeof first === "string") return first;
+
+  if (
+    first &&
+    typeof first === "object" &&
+    "url" in first &&
+    typeof first.url === "string"
+  ) {
+    return first.url;
+  }
+
+  return null;
+}
+
+async function downloadImageFromUrl(imageUrl: string) {
+  const response = await fetch(imageUrl);
+
+  if (!response.ok) {
+    throw new Error(`Failed to download generated image (${response.status}).`);
+  }
+
+  const contentType = response.headers.get("content-type") || "image/png";
+  const imageBuffer = Buffer.from(await response.arrayBuffer());
+
+  return { imageBuffer, contentType };
+}
+
+async function processFastDraftImage({
+  generationId,
+  userId,
+  finalPrompt,
+  creditsUsed,
+  imageSize,
+  outputWidth,
+  outputHeight,
+}: {
+  generationId: string;
+  userId: string;
+  finalPrompt: string;
+  creditsUsed: number;
+  imageSize: unknown;
+  outputWidth: unknown;
+  outputHeight: unknown;
+}) {
+  if (process.env.ENABLE_FAL_FAST_DRAFT !== "true") {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "Fast Draft is not enabled on the server.",
+    });
+
+    return NextResponse.json(
+      { error: "Fast Draft is not enabled. Credits refunded." },
+      { status: 400 }
+    );
+  }
+
+  if (!process.env.FAL_KEY) {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "FAL_KEY is not configured.",
+    });
+
+    return NextResponse.json(
+      { error: "Fast Draft provider is not configured. Credits refunded." },
+      { status: 500 }
+    );
+  }
+
+  fal.config({
+    credentials: process.env.FAL_KEY,
+  });
+
+  const falImageSize = resolveFalImageSize({
+    imageSize,
+    outputWidth,
+    outputHeight,
+  });
+
+  try {
+    const result = await Promise.race([
+      fal.subscribe(FAL_FLUX_SCHNELL_MODEL, {
+        input: {
+          prompt: finalPrompt,
+          image_size: falImageSize,
+          num_images: 1,
+          num_inference_steps: 4,
+          output_format: "png",
+        },
+        logs: false,
+      }),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Fast Draft provider timed out."));
+        }, FAL_REQUEST_TIMEOUT_MS);
+      }),
+    ]);
+
+    const remoteImageUrl = getFalResultImageUrl(result.data);
+
+    if (!remoteImageUrl) {
+      await markFailedAndRefund({
+        generationId,
+        userId,
+        creditsUsed,
+        errorMessage: "Fast Draft did not return image data.",
+      });
+
+      return NextResponse.json(
+        { error: "Image generation failed. Credits refunded." },
+        { status: 500 }
+      );
+    }
+
+    const { imageBuffer, contentType } = await downloadImageFromUrl(remoteImageUrl);
+
+    const publicUrl = await uploadImageBuffer({
+      userId,
+      imageBuffer,
+      contentType,
+    });
+
+    await completeGeneration({
+      generationId,
+      publicUrl,
+    });
+
+    return NextResponse.json({
+      success: true,
+      generationId,
+      image: publicUrl,
+      workflow: "fast_draft",
+    });
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Fast Draft generation failed.";
+
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage,
+    });
+
+    return NextResponse.json(
+      { error: "Image generation failed. Credits refunded." },
+      { status: 500 }
+    );
+  }
+}
+
 async function processOpenAIImage({
   generationId,
   userId,
@@ -244,7 +452,9 @@ export async function POST(req: Request) {
         model,
         workflow,
         credits_used,
-        image_size
+        image_size,
+        output_width,
+        output_height
       `
       )
       .eq("id", generationId)
@@ -273,35 +483,47 @@ export async function POST(req: Request) {
     const workflow = generation.workflow || "standard";
     const provider = generation.provider || "openai";
 
-    if (workflow !== "standard" || provider !== "openai") {
-      await markFailedAndRefund({
+    const finalPrompt = generation.final_prompt || generation.prompt;
+
+    if (workflow === "standard" && provider === "openai") {
+      const imageSize = normalizeImageSize(generation.image_size);
+
+      return processOpenAIImage({
         generationId,
         userId: generation.user_id,
+        finalPrompt,
+        model: generation.model || "gpt-image-1",
         creditsUsed,
-        errorMessage:
-          "This workflow is currently disabled in the MVP. Credits refunded.",
+        imageSize,
       });
-
-      return NextResponse.json(
-        {
-          error:
-            "This workflow is currently disabled in the MVP. Credits refunded.",
-        },
-        { status: 400 }
-      );
     }
 
-    const finalPrompt = generation.final_prompt || generation.prompt;
-    const imageSize = normalizeImageSize(generation.image_size);
+    if (workflow === "fast_draft" && provider === "fal") {
+      return processFastDraftImage({
+        generationId,
+        userId: generation.user_id,
+        finalPrompt,
+        creditsUsed,
+        imageSize: generation.image_size,
+        outputWidth: generation.output_width,
+        outputHeight: generation.output_height,
+      });
+    }
 
-    return processOpenAIImage({
+    await markFailedAndRefund({
       generationId,
       userId: generation.user_id,
-      finalPrompt,
-      model: generation.model || "gpt-image-1",
       creditsUsed,
-      imageSize,
+      errorMessage:
+        "This workflow is not supported. Credits refunded.",
     });
+
+    return NextResponse.json(
+      {
+        error: "This workflow is not supported. Credits refunded.",
+      },
+      { status: 400 }
+    );
   } catch (error) {
     console.error("Generation worker error:", error);
 
