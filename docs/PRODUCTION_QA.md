@@ -165,6 +165,47 @@ See `docs/OPERATIONS_RUNBOOK.md` §10 for SQL queries.
 
 ---
 
+## 14. MVP stability acceptance
+
+Run on a test account with sufficient credits. Record starting balance: ________
+
+### Image modes (one smoke each if flags enabled)
+
+| Mode | Credits | Step | Expected | Pass |
+|------|---------|------|----------|------|
+| Standard Image | 1 | Submit short prompt via Enter | Processing → completed; image in Agent + Gallery | ☐ |
+| Fast Draft | 1 | Select Fast Draft (Beta), generate | Completes; credits −1 | ☐ |
+| Premium Image | 3 | Select Premium (Beta), generate | Completes; credits −3 | ☐ |
+| Reference Edit | 5 | Upload source + instruction, generate | Completes; credits −5 | ☐ |
+| Brand Assets | 4 | Select Brand Assets (Beta), product prompt | Completes; credits −4; minimal fake text on packaging | ☐ |
+
+### Insufficient credits
+
+| Step | Action | Expected | Pass |
+|------|--------|----------|------|
+| 14.1 | Reduce balance below mode cost (or use account with 0 credits) | — | ☐ |
+| 14.2 | Submit generation | Agent shows **Not enough credits**; mode cost shown; **Buy Credits** / **Open Credits** visible | ☐ |
+| 14.3 | API response | HTTP **402**, `reason: insufficient_credits`, correct `requiredCredits` | ☐ |
+| 14.4 | Credits badge | No debit occurred | ☐ |
+
+### Active generation limit
+
+| Step | Action | Expected | Pass |
+|------|--------|----------|------|
+| 14.5 | Start 2 generations without waiting for completion | Both enter `processing` | ☐ |
+| 14.6 | Start a 3rd generation | HTTP **429**, `reason: active_generation_limit`; Agent shows wait message; **no credit debit** | ☐ |
+| 14.7 | Rapid double-click / Enter spam on single job | Only one job queued | ☐ |
+
+### Refund / failure check
+
+| Step | Action | Expected | Pass |
+|------|--------|----------|------|
+| 14.8 | Force provider failure (optional, test env) | `generations.status = failed`, `credits_used = 0` | ☐ |
+| 14.9 | Supabase `credit_transactions` | One refund with `source = generation_worker_failure` | ☐ |
+| 14.10 | Gallery failed card | Error message + credits refunded hint | ☐ |
+
+---
+
 ## Failure log
 
 | Step | What failed | Screenshot / log | Ticket |

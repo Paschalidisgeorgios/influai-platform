@@ -105,7 +105,7 @@ type AgentResult = {
   id: string;
   prompt: string;
   image_url: string | null;
-  status: "processing" | "completed" | "failed" | "insufficient_credits";
+  status: "processing" | "completed" | "failed" | "insufficient_credits" | "active_generation_limit";
   error_message: string | null;
   requiredCredits?: number | null;
   output_format?: string | null;
@@ -796,6 +796,7 @@ export default function AiAgentStudio({
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const resultRef = useRef<HTMLDivElement | null>(null);
+  const submitInFlightRef = useRef(false);
   const referenceEditPanelRef = useRef<HTMLDivElement | null>(null);
 
   const [prompt, setPrompt] = useState("");
@@ -873,6 +874,11 @@ export default function AiAgentStudio({
     );
   }, [outputFormatKey, localizedOutputFormats]);
 
+  const isSubmitBlocked =
+    submitInFlightRef.current ||
+    queuing ||
+    agentResult?.status === "processing";
+
   const resultStatusLabel =
     agentResult?.status === "processing"
       ? copy.gallery.processing
@@ -880,9 +886,11 @@ export default function AiAgentStudio({
         ? copy.gallery.completed
         : agentResult?.status === "insufficient_credits"
           ? a.insufficientCreditsTitle
-          : agentResult?.status === "failed"
-            ? copy.gallery.failed
-            : "—";
+          : agentResult?.status === "active_generation_limit"
+            ? a.activeGenerationLimitTitle
+            : agentResult?.status === "failed"
+              ? copy.gallery.failed
+              : "—";
 
   const resultStatusDescription =
     agentResult?.status === "processing"
@@ -891,9 +899,11 @@ export default function AiAgentStudio({
         ? a.completed
         : agentResult?.status === "insufficient_credits"
           ? a.insufficientCreditsIntro
-          : agentResult?.status === "failed"
-            ? a.failed
-            : "";
+          : agentResult?.status === "active_generation_limit"
+            ? a.activeGenerationLimitIntro
+            : agentResult?.status === "failed"
+              ? a.failed
+              : "";
 
   useEffect(() => {
     loadCharacters();
@@ -1072,9 +1082,12 @@ export default function AiAgentStudio({
 
     event.preventDefault();
 
-    if (!queuing) {
-      formRef.current?.requestSubmit();
+    if (isSubmitBlocked) {
+      setErrorMessage(a.generationAlreadyProcessing);
+      return;
     }
+
+    formRef.current?.requestSubmit();
   }
 
   function getSafeErrorMessage(status: number, apiError?: string) {
@@ -1088,6 +1101,11 @@ export default function AiAgentStudio({
 
   async function queueGeneration(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (submitInFlightRef.current || queuing || agentResult?.status === "processing") {
+      setErrorMessage(a.generationAlreadyProcessing);
+      return;
+    }
 
     const cleanPrompt = prompt.trim();
     const isReferenceEditMode =
@@ -1113,6 +1131,8 @@ export default function AiAgentStudio({
       : cleanPrompt;
 
     const temporaryGenerationId = `temp-${Date.now()}`;
+
+    submitInFlightRef.current = true;
 
     try {
       setQueuing(true);
@@ -1209,6 +1229,26 @@ export default function AiAgentStudio({
           return;
         }
 
+        if (
+          response.status === 429 &&
+          data.reason === "active_generation_limit"
+        ) {
+          setAgentResult({
+            id: temporaryGenerationId,
+            prompt: effectivePrompt,
+            image_url: null,
+            status: "active_generation_limit",
+            error_message: null,
+            output_format: selectedOutputFormat.label,
+            image_size: "",
+          });
+
+          setErrorMessage(null);
+          setStatusMessage(null);
+          scrollToResult();
+          return;
+        }
+
         const safeMessage = getSafeErrorMessage(response.status, data.error);
 
         setAgentResult({
@@ -1284,6 +1324,7 @@ export default function AiAgentStudio({
 
       setErrorMessage(a.networkError);
     } finally {
+      submitInFlightRef.current = false;
       setQueuing(false);
     }
   }
@@ -1703,10 +1744,10 @@ export default function AiAgentStudio({
                     whileHover={{ scale: 1.06 }}
                     whileTap={{ scale: 0.96 }}
                     type="submit"
-                    disabled={queuing || referenceEditSubmitBlocked}
+                    disabled={isSubmitBlocked || referenceEditSubmitBlocked}
                     className="inline-flex h-12 w-12 shrink-0 items-center justify-center self-end rounded-full bg-white text-black shadow-xl transition hover:bg-white/85 disabled:opacity-50 sm:self-auto"
                   >
-                    {queuing ? (
+                    {isSubmitBlocked ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Send className="h-4 w-4" />
@@ -1739,7 +1780,9 @@ export default function AiAgentStudio({
                           ? a.completed
                           : agentResult.status === "insufficient_credits"
                             ? a.insufficientCreditsTitle
-                            : a.failed}
+                            : agentResult.status === "active_generation_limit"
+                              ? a.activeGenerationLimitTitle
+                              : a.failed}
                     </h3>
 
                     <p className="mt-2 text-sm text-white/45">
@@ -1758,6 +1801,8 @@ export default function AiAgentStudio({
                           ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-200"
                           : agentResult.status === "insufficient_credits"
                             ? "border-amber-500/25 bg-amber-500/10 text-amber-100"
+                            : agentResult.status === "active_generation_limit"
+                              ? "border-sky-500/25 bg-sky-500/10 text-sky-100"
                             : agentResult.status === "failed"
                               ? "border-red-500/20 bg-red-500/10 text-red-200"
                               : "border-[#d8ad5f]/25 bg-[#d8ad5f]/10 text-[#d8ad5f]"
@@ -1773,6 +1818,10 @@ export default function AiAgentStudio({
 
                       {agentResult.status === "insufficient_credits" && (
                         <CreditCard className="h-3.5 w-3.5" />
+                      )}
+
+                      {agentResult.status === "active_generation_limit" && (
+                        <Clock className="h-3.5 w-3.5" />
                       )}
 
                       {agentResult.status === "failed" && (
@@ -1878,6 +1927,23 @@ export default function AiAgentStudio({
                         </button>
                       ) : null}
                     </motion.div>
+                  )}
+
+                  {agentResult.status === "active_generation_limit" && (
+                    <div className="flex flex-col items-center justify-center gap-4 p-8 text-center sm:p-10">
+                      <motion.div className="flex h-16 w-16 items-center justify-center rounded-full border border-sky-500/25 bg-sky-500/10 text-sky-100">
+                        <Clock className="h-8 w-8" aria-hidden />
+                      </motion.div>
+
+                      <motion.div className="max-w-md space-y-2">
+                        <p className="text-base font-black text-white">
+                          {a.activeGenerationLimitTitle}
+                        </p>
+                        <p className="text-sm leading-6 text-white/55">
+                          {a.activeGenerationLimitIntro}
+                        </p>
+                      </motion.div>
+                    </div>
                   )}
 
                   {agentResult.status === "failed" && (

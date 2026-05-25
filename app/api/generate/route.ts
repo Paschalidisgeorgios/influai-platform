@@ -18,6 +18,8 @@ type ImageMode =
 /** Brand Assets — FLUX Dev via fal.ai (stable; Recraft endpoint returned 422) */
 const FAL_BRAND_ASSETS_MODEL = "fal-ai/flux/dev";
 
+const ACTIVE_GENERATION_LIMIT = 2;
+
 const PLANNED_IMAGE_MODES = new Set([
   "video",
   "lip_sync",
@@ -861,13 +863,12 @@ function userRequestsBrandedTextOrLogo(prompt: string) {
 }
 
 function buildBrandAssetsSafetyBlock(userPrompt: string) {
-  const { requestsText, requestsLogo } =
-    userRequestsBrandedTextOrLogo(userPrompt);
+  const { requestsText } = userRequestsBrandedTextOrLogo(userPrompt);
 
   const sections = [
     `Brand Assets — mandatory (always apply):
 - Create a premium brand-ready advertising visual.
-- If no real brand assets or brand name are provided, use unbranded packaging.
+- If no real brand assets or exact brand name are provided, use unbranded packaging.
 - Product labels should be blank or minimal.
 - No readable text.
 - No fake logo.
@@ -876,30 +877,13 @@ function buildBrandAssetsSafetyBlock(userPrompt: string) {
 - Leave clean negative space for future real branding, headline or campaign copy.
 - Clean commercial composition.
 - Product must be sharp, polished and usable as an ad creative.
-- High-end lighting, premium material detail, realistic reflections.
-- No watermark.`,
-    `Product and ad layout direction:
-- prioritize packaging cleanliness, blank or minimal labels, and clear product hero focus
-- strong product clarity with commercial ad layout and readable visual hierarchy without typography
-- avoid cluttered label mockups, gibberish packaging text, invented brand marks, or pseudo-brand packaging
-- surfaces should look ready for real branding in post-production`,
+- High-end lighting, premium material detail, realistic reflections.`,
   ];
 
-  if (requestsText || requestsLogo) {
+  if (requestsText) {
     sections.push(
-      `User mentioned text or logo — apply conservatively:
-- avoid fake unreadable typography and invented brand names
-- keep text areas clean unless exact wording was provided in the user brief
-- do not generate random logos, pseudo-brand marks, or illegible label text
-- prefer unbranded or blank label zones when exact copy or logo assets are not provided${
-        requestsText
-          ? "\n- only render text if exact words were given; otherwise leave headline and copy zones empty"
-          : ""
-      }${
-        requestsLogo
-          ? "\n- only render a logo if a real logo asset was provided; otherwise use unbranded packaging"
-          : ""
-      }`
+      `User requested text — apply conservatively:
+- Only include exact user-provided text. Avoid fake unreadable typography.`
     );
   }
 
@@ -1197,6 +1181,33 @@ export async function POST(req: Request) {
               prompt: effectivePrompt,
               outputFormat,
             });
+    }
+
+    const { count: activeGenerationCount, error: activeCountError } =
+      await supabaseAdmin
+        .from("generations")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("status", "processing");
+
+    if (activeCountError) {
+      console.error("Active generation count error:", activeCountError);
+
+      return NextResponse.json(
+        { error: "Could not verify active generations" },
+        { status: 500 }
+      );
+    }
+
+    if ((activeGenerationCount ?? 0) >= ACTIVE_GENERATION_LIMIT) {
+      return NextResponse.json(
+        {
+          error: "Too many active generations",
+          reason: "active_generation_limit",
+          limit: ACTIVE_GENERATION_LIMIT,
+        },
+        { status: 429 }
+      );
     }
 
     const { data: creditSuccess, error: creditError } =

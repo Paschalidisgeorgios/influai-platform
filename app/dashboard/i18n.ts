@@ -304,6 +304,11 @@ const en = {
     queueFailed: "Failed to queue generation. Please try again.",
     noGenerationId: "Generation was queued, but no generation ID returned.",
     networkError: "Network error. Please try again.",
+    generationAlreadyProcessing:
+      "A generation is already processing. Please wait until it finishes.",
+    activeGenerationLimitTitle: "You already have active generations running.",
+    activeGenerationLimitIntro:
+      "Please wait until one finishes before starting another.",
     creditsRefundedHint: "Credits were refunded.",
     promptLoadedRegeneration: "Prompt loaded for regeneration.",
   },
@@ -832,6 +837,11 @@ const de: DeepString<typeof en> = {
     noGenerationId:
       "Generierung eingereiht, aber keine Generierungs-ID erhalten.",
     networkError: "Netzwerkfehler. Bitte erneut versuchen.",
+    generationAlreadyProcessing:
+      "Eine Generierung läuft bereits. Bitte warte, bis sie abgeschlossen ist.",
+    activeGenerationLimitTitle: "Du hast bereits aktive Generierungen.",
+    activeGenerationLimitIntro:
+      "Bitte warte, bis eine davon abgeschlossen ist.",
     creditsRefundedHint: "Credits wurden erstattet.",
     promptLoadedRegeneration: "Prompt für Regenerierung geladen.",
   },

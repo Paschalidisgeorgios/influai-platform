@@ -228,6 +228,26 @@ Or Vercel Dashboard → Deployments → Redeploy production.
 
 ## 10. Failed generations — cleanup SQL
 
+### Active generation limit
+
+The API enforces a maximum of **2 parallel `processing` jobs** per user (`ACTIVE_GENERATION_LIMIT = 2` in `app/api/generate/route.ts`).
+
+| HTTP | `reason` | Credits debited? | User action |
+|------|----------|------------------|-------------|
+| **429** | `active_generation_limit` | **No** — check runs before `consume_user_credits` | Wait for an in-flight job to complete or fail |
+
+Completed and failed generations do not count toward the limit.
+
+Verify active jobs for a user:
+
+```sql
+select id, status, workflow, created_at, started_at
+from generations
+where user_id = '<user-uuid>'
+  and status = 'processing'
+order by created_at desc;
+```
+
 Run in **Supabase SQL Editor** only after understanding impact. Prefer refunds via application RPC when possible.
 
 ### List stuck processing jobs (older than 30 minutes)

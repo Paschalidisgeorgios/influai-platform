@@ -50,13 +50,13 @@ export default function CompactCredits({ refreshKey = 0 }: CompactCreditsProps) 
       const data = await response.json();
 
       if (!response.ok) {
-        console.error("Compact credits load error:", data.error);
+        console.warn("Compact credits load error:", data.error);
         return;
       }
 
       setCredits(typeof data.credits === "number" ? data.credits : 0);
     } catch (error) {
-      console.error("Compact credits error:", error);
+      console.warn("Compact credits error:", error);
     } finally {
       setLoading(false);
     }
