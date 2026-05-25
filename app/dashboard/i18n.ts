@@ -166,7 +166,9 @@ const en = {
       referenceEdit: {
         label: "Reference Edit",
         description:
-          "Guided image editing and reference-based workflows.",
+          "Upload or select an image and guide precise edits.",
+        hoverHint:
+          "Reference Edit will support source images, edit instructions and guided campaign refinements.",
       },
       live: "Live",
       beta: "Beta",
@@ -620,7 +622,9 @@ const de: DeepString<typeof en> = {
       referenceEdit: {
         label: "Reference Edit",
         description:
-          "Geführte Bildbearbeitung und referenzbasierte Workflows.",
+          "Bild hochladen oder auswählen und präzise Bearbeitungen anleiten.",
+        hoverHint:
+          "Reference Edit wird Quellbilder, Bearbeitungsanweisungen und geführte Kampagnen-Verfeinerungen unterstützen.",
       },
       live: "Live",
       beta: "Beta",

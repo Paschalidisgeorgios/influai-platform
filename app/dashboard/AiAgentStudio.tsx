@@ -273,6 +273,7 @@ function ModeCardBody({
   description,
   statusLabel,
   creditNote,
+  comingSoonNote,
   statusTone = "live",
   showLock = false,
 }: {
@@ -283,6 +284,7 @@ function ModeCardBody({
   description: string;
   statusLabel: string;
   creditNote?: string;
+  comingSoonNote?: string;
   statusTone?: "live" | "beta" | "planned";
   showLock?: boolean;
 }) {
@@ -336,6 +338,12 @@ function ModeCardBody({
       {creditNote ? (
         <p className="relative mt-1 text-[9px] font-bold uppercase tracking-[0.08em] text-white/45">
           {creditNote}
+        </p>
+      ) : null}
+
+      {comingSoonNote && !isLive ? (
+        <p className="relative mt-1 text-[8px] font-bold uppercase tracking-[0.1em] text-[#d8ad5f]/60">
+          {comingSoonNote}
         </p>
       ) : null}
 
@@ -393,6 +401,8 @@ export default function AiAgentStudio({
         key: "reference_edit" as const,
         label: a.imageModes.referenceEdit.label,
         description: a.imageModes.referenceEdit.description,
+        hoverHint: a.imageModes.referenceEdit.hoverHint,
+        comingSoonNote: a.imageModes.comingSoon,
         status: "planned" as ImageModeCardStatus,
         icon: PenLine,
       },
@@ -984,15 +994,27 @@ export default function AiAgentStudio({
                             ? a.imageModes.beta
                             : a.imageModes.planned;
 
+                      const isReferenceEditPlanned = mode.key === "reference_edit";
+                      const plannedTitle =
+                        "hoverHint" in mode && mode.hoverHint
+                          ? `${mode.description} — ${mode.hoverHint}`
+                          : `${mode.description} — ${a.imageModes.plannedTooltip}`;
+
                       return (
                         <div
                           key={mode.key}
-                          className={`relative flex min-h-[5rem] flex-col rounded-xl border p-2 text-left sm:min-h-[5.75rem] sm:p-2.5 ${
+                          className={`relative flex flex-col rounded-xl border p-2 text-left sm:p-2.5 ${
+                            isReferenceEditPlanned
+                              ? "min-h-[4.75rem] sm:min-h-[5.25rem]"
+                              : "min-h-[5rem] sm:min-h-[5.75rem]"
+                          } ${
                             isSelectable
                               ? isSelected
                                 ? "border-[#d8ad5f]/50 bg-[#d8ad5f]/12 ring-1 ring-[#d8ad5f]/25"
                                 : "border-white/10 bg-white/[0.04]"
-                              : "border-white/[0.08] bg-white/[0.025]"
+                              : isReferenceEditPlanned
+                                ? "border-[#d8ad5f]/15 bg-[linear-gradient(160deg,rgba(216,173,95,0.06)_0%,rgba(255,255,255,0.02)_55%)]"
+                                : "border-white/[0.08] bg-white/[0.025]"
                           }`}
                         >
                           {isSelectable ? (
@@ -1016,9 +1038,10 @@ export default function AiAgentStudio({
                             </button>
                           ) : (
                             <div
+                              role="presentation"
                               aria-disabled="true"
-                              title={`${mode.description} — ${a.imageModes.plannedTooltip}`}
-                              className="flex h-full flex-col"
+                              title={plannedTitle}
+                              className="flex h-full cursor-not-allowed flex-col"
                             >
                               <ModeCardBody
                                 Icon={Icon}
@@ -1028,7 +1051,12 @@ export default function AiAgentStudio({
                                 description={mode.description}
                                 statusLabel={statusLabel}
                                 statusTone="planned"
-                                showLock
+                                comingSoonNote={
+                                  "comingSoonNote" in mode
+                                    ? mode.comingSoonNote
+                                    : undefined
+                                }
+                                showLock={!isReferenceEditPlanned}
                               />
                             </div>
                           )}
