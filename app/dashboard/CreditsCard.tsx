@@ -10,6 +10,7 @@ import {
   Loader2,
   Lock,
   Sparkles,
+  Tag,
   UserRound,
   Zap,
 } from "lucide-react";
@@ -386,6 +387,46 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
               </div>
             );
           })}
+        </div>
+
+        <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-dashed border-white/12 bg-white/[0.02] p-5 sm:rounded-[2rem] sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 items-start gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-[#d8ad5f]/10 text-[#d8ad5f]">
+                <Tag className="h-5 w-5" aria-hidden />
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/35">
+                  {copy.credits.watermarkedPromo.eyebrow}
+                </p>
+
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <h4 className="text-lg font-black text-white sm:text-xl">
+                    {copy.credits.watermarkedPromo.title}
+                  </h4>
+                  <span className="rounded-full border border-white/12 bg-white/[0.04] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/45">
+                    {copy.credits.watermarkedPromo.badge}
+                  </span>
+                </div>
+
+                <p className="mt-2 text-sm leading-6 text-white/50">
+                  {copy.credits.watermarkedPromo.description}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-white/40">
+                  {copy.credits.watermarkedPromo.upgradeNote}
+                </p>
+                <p className="mt-3 text-xs leading-5 text-white/30">
+                  {copy.credits.watermarkedPromo.notAvailable}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2 self-start rounded-full border border-white/10 bg-black/30 px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-white/40">
+              <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {copy.sidebar.planned}
+            </div>
+          </div>
         </div>
 
         <p className="mt-5 text-center text-xs leading-5 text-white/35">

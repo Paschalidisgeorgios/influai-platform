@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CreditCard, Sparkles, Zap } from "lucide-react";
+import { CreditCard, Lock, Sparkles, Tag, Zap } from "lucide-react";
 
 import {
   formatCredits,
@@ -165,6 +165,53 @@ export function PricingSection({
             </div>
           );
         })}
+      </div>
+
+      <div
+        className="mt-8 overflow-hidden rounded-[1.5rem] border border-dashed border-white/15 bg-white/[0.02] p-5 sm:rounded-[2rem] sm:p-6"
+        aria-label={
+          language === "en"
+            ? "Watermarked promo package planned"
+            : "Watermarked Promo-Paket geplant"
+        }
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 items-start gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-[#d8ad5f]/10 text-[#d8ad5f]">
+              <Tag className="h-5 w-5" />
+            </div>
+
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-lg font-black text-white sm:text-xl">
+                  {language === "en"
+                    ? "Watermarked Promo Package"
+                    : "Watermarked Promo-Paket"}
+                </h3>
+                <span className="rounded-full border border-white/12 bg-white/[0.04] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/45">
+                  {language === "en" ? "Planned" : "Geplant"}
+                </span>
+              </div>
+
+              <p className="mt-2 text-sm leading-7 text-white/50">
+                {language === "en"
+                  ? "Watermarked promo exports — planned. Low-cost watermarked exports for early testing and brand discovery. Upgrade later to export without watermark."
+                  : "Watermarked Promo-Exporte — geplant. Günstige Exporte mit sichtbarem InfluExAi-Wasserzeichen zum Testen und für Brand Discovery. Später Upgrade für Export ohne Wasserzeichen."}
+              </p>
+
+              <p className="mt-2 text-xs font-semibold text-white/35">
+                {language === "en"
+                  ? "Planned monetization module · not available for purchase in this release"
+                  : "Geplantes Monetarisierungsmodul · in diesem Release nicht kaufbar"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-white/40">
+            <Lock className="h-3.5 w-3.5" aria-hidden />
+            {language === "en" ? "Coming later" : "Später verfügbar"}
+          </div>
+        </div>
       </div>
     </section>
   );

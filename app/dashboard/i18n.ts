@@ -21,12 +21,16 @@ const en = {
     liveStudio: "Live Studio",
     expansionModules: "Expansion modules",
     expansionIntro:
-      "Expansion modules are planned as the studio grows. No additional provider APIs are active in this MVP.",
+      "Video Studio and Lip Sync Studio are coming soon. Cinema Agent and Omni Campaign Agent are on the roadmap. Not live in this release.",
     expansionFootnote:
       "Includes Premium Image Modes and advanced studio workflows — preview only, not billable.",
     roadmap: "Roadmap",
     roadmapBody:
-      "Video Studio, Lip Sync Studio, Brand Assets, Automation and campaign agents are on the roadmap. They are disabled here — no routing, API calls or credit usage in this MVP.",
+      "Video Studio and Lip Sync Studio are coming soon. Cinema Agent and Omni Campaign Agent are on the roadmap. All expansion modules are disabled here — no routing, API calls or credit usage in this MVP.",
+    watermarkedPromoTitle: "Watermarked Promo Package",
+    watermarkedPromoBadge: "Planned",
+    watermarkedPromoBody:
+      "Low-cost watermarked exports for early testing and brand discovery — planned monetization module, not live yet. Upgrade later to export without watermark.",
     home: "Home",
     logout: "Logout",
     studioMenu: "Studio Menu",
@@ -48,12 +52,12 @@ const en = {
       videoStudio: {
         label: "Video Studio",
         description:
-          "Image-to-video and text-to-video workflows for campaign-ready clips.",
+          "Create short-form video campaigns, product clips and creator motion assets from prompts and images.",
       },
       lipSyncStudio: {
         label: "Lip Sync Studio",
         description:
-          "Voice-driven talking clips for creator-style social content.",
+          "Generate talking creator clips from scripts, voice and visual assets.",
       },
       brandAssets: {
         label: "Brand Assets",
@@ -68,12 +72,12 @@ const en = {
       cinemaAgent: {
         label: "Cinema Agent",
         description:
-          "Storyboard, shot planning and structured multi-scene campaigns.",
+          "Plan campaign scenes, shot lists and visual sequences before generation.",
       },
       omniCampaignAgent: {
         label: "Omni Campaign Agent",
         description:
-          "Brief-to-visuals orchestration across formats in one studio flow.",
+          "Turn a campaign idea into visuals, video concepts, captions and export-ready assets.",
       },
     },
   },
@@ -123,7 +127,9 @@ const en = {
     standard: "Standard",
     styleProfile: "Style Profile",
     imageMode: "Image Mode",
-    plannedExpansion: "Planned model expansion",
+    imageModeIntro:
+      "Generation mode for the AI Agent. Only Standard Image is active in this release.",
+    plannedExpansion: "Additional modes on the roadmap",
     imageModes: {
       standard: {
         label: "Standard Image",
@@ -363,6 +369,16 @@ const en = {
       "Checkout could not be started. No payment link was returned.",
     checkoutConnection:
       "Checkout could not be started. Check your connection and try again.",
+    watermarkedPromo: {
+      eyebrow: "Planned monetization",
+      title: "Watermarked Promo Package",
+      badge: "Planned",
+      description:
+        "Watermarked promo exports — planned. Low-cost watermarked exports for early testing and brand discovery.",
+      upgradeNote: "Upgrade later to export without watermark.",
+      notAvailable:
+        "Not available for purchase in this release. Starter, Professional and Ultimate remain the active packages.",
+    },
     features: {
       aiAgent: "AI Agent",
       socialFormats: "Social Formats",
@@ -430,12 +446,16 @@ const de: DeepString<typeof en> = {
     liveStudio: "Live Studio",
     expansionModules: "Erweiterungsmodule",
     expansionIntro:
-      "Erweiterungsmodule sind geplant, während das Studio wächst. In diesem MVP sind keine zusätzlichen Provider-APIs aktiv.",
+      "Video Studio und Lip Sync Studio sind demnächst verfügbar. Cinema Agent und Omni Campaign Agent sind auf der Roadmap. In diesem Release nicht live.",
     expansionFootnote:
       "Umfasst Premium Image Modes und erweiterte Studio-Workflows — nur Vorschau, nicht abrechenbar.",
     roadmap: "Roadmap",
     roadmapBody:
-      "Video Studio, Lip Sync Studio, Brand Assets, Automation und Kampagnen-Agenten sind auf der Roadmap. Hier deaktiviert — kein Routing, keine API-Aufrufe und kein Credit-Verbrauch in diesem MVP.",
+      "Video Studio und Lip Sync Studio sind demnächst verfügbar. Cinema Agent und Omni Campaign Agent sind auf der Roadmap. Alle Erweiterungsmodule sind hier deaktiviert — kein Routing, keine API-Aufrufe und kein Credit-Verbrauch in diesem MVP.",
+    watermarkedPromoTitle: "Watermarked Promo-Paket",
+    watermarkedPromoBadge: "Geplant",
+    watermarkedPromoBody:
+      "Günstige Exporte mit sichtbarem InfluExAi-Wasserzeichen zum Testen und für Brand Discovery — geplantes Monetarisierungsmodul, noch nicht live. Später Upgrade für Export ohne Wasserzeichen.",
     home: "Startseite",
     logout: "Abmelden",
     studioMenu: "Studio-Menü",
@@ -463,12 +483,12 @@ const de: DeepString<typeof en> = {
       videoStudio: {
         label: "Video Studio",
         description:
-          "Image-to-Video- und Text-to-Video-Workflows für kampagnenfertige Clips.",
+          "Erstelle Short-Form-Video-Kampagnen, Produktclips und Creator-Motion-Assets aus Prompts und Bildern.",
       },
       lipSyncStudio: {
         label: "Lip Sync Studio",
         description:
-          "Voice-gestützte Talking Clips für Creator-Content.",
+          "Generiere sprechende Creator-Clips aus Skripten, Voice und Visual Assets.",
       },
       brandAssets: {
         label: "Brand Assets",
@@ -483,12 +503,12 @@ const de: DeepString<typeof en> = {
       cinemaAgent: {
         label: "Cinema Agent",
         description:
-          "Storyboard, Shot Planning und strukturierte Multi-Szenen-Kampagnen.",
+          "Plane Kampagnen-Szenen, Shot Lists und Visual Sequences vor der Generierung.",
       },
       omniCampaignAgent: {
         label: "Omni Campaign Agent",
         description:
-          "Briefing-zu-Visuals-Orchestrierung über Formate in einem Studio-Flow.",
+          "Wandle eine Kampagnen-Idee in Visuals, Video-Konzepte, Captions und exportfertige Assets um.",
       },
     },
   },
@@ -538,8 +558,10 @@ const de: DeepString<typeof en> = {
     socialFormat: "Social Format",
     standard: "Standard",
     styleProfile: "Style Profile",
-    imageMode: "Image Mode",
-    plannedExpansion: "Geplante Modell-Erweiterung",
+    imageMode: "Bildmodus",
+    imageModeIntro:
+      "Generierungsmodus für den AI Agent. In diesem Release ist nur Standard Image aktiv.",
+    plannedExpansion: "Weitere Modi auf der Roadmap",
     imageModes: {
       standard: {
         label: "Standard Image",
@@ -791,6 +813,17 @@ const de: DeepString<typeof en> = {
       "Checkout konnte nicht gestartet werden. Kein Zahlungslink erhalten.",
     checkoutConnection:
       "Checkout konnte nicht gestartet werden. Verbindung prüfen und erneut versuchen.",
+    watermarkedPromo: {
+      eyebrow: "Geplante Monetarisierung",
+      title: "Watermarked Promo-Paket",
+      badge: "Geplant",
+      description:
+        "Watermarked Promo-Exporte — geplant. Günstige Exporte mit sichtbarem InfluExAi-Wasserzeichen zum Testen und für Brand Discovery.",
+      upgradeNote:
+        "Später Upgrade für Export ohne Wasserzeichen.",
+      notAvailable:
+        "In diesem Release nicht kaufbar. Starter, Professional und Ultimate bleiben die aktiven Pakete.",
+    },
     features: {
       aiAgent: "AI Agent",
       socialFormats: "Social Formats",

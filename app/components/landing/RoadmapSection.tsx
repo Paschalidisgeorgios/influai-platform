@@ -10,13 +10,15 @@ import {
   Layers,
   Mic2,
   Sparkles,
+  Tag,
   UserRound,
   Wand2,
   Zap,
 } from "lucide-react";
 
 import {
-  EXPANDING_STUDIO_MODULES,
+  getComingSoonStudioModules,
+  getOtherExpandingStudioModules,
   getStatusBadgeClass,
   getStatusLabel,
   LIVE_STUDIO_MODULES,
@@ -40,6 +42,7 @@ export const MODULE_ICONS: Record<string, LucideIcon> = {
   "lip-sync-studio": Mic2,
   "cinema-agent": Clapperboard,
   "omni-campaign-agent": Wand2,
+  "watermarked-promo-package": Tag,
 };
 
 function RoadmapCard({
@@ -105,18 +108,27 @@ export function RoadmapSection({
           eyebrow: "Roadmap",
           title: "Expanding studio modules",
           intro:
-            "InfluExAi is starting with a reliable image creation workflow. Video, lip sync and advanced campaign automation modules are planned as the studio expands.",
+            "InfluExAi ships image creation today. Video Studio, Lip Sync Studio, Cinema Agent and Omni Campaign Agent are previewed below — not live, not billable, and not connected to generation APIs in this release.",
           liveTitle: "Available now",
-          plannedTitle: "Planned modules",
+          comingSoonTitle: "Coming soon & roadmap",
+          comingSoonNote:
+            "These modules are visible for planning only. No checkout, routing or credit usage yet.",
+          plannedTitle: "More planned modules",
         }
       : {
           eyebrow: "Roadmap",
           title: "Erweiterbare Studio-Module",
           intro:
-            "InfluExAi startet mit einem zuverlässigen Bild-Workflow. Video, Lip Sync und erweiterte Kampagnen-Automation sind für den Ausbau des Studios geplant.",
+            "InfluExAi liefert heute Bild-Workflows. Video Studio, Lip Sync Studio, Cinema Agent und Omni Campaign Agent sind unten als Vorschau sichtbar — nicht live, nicht abrechenbar und in diesem Release nicht an Generierungs-APIs angebunden.",
           liveTitle: "Jetzt verfügbar",
-          plannedTitle: "Geplante Module",
+          comingSoonTitle: "Demnächst & Roadmap",
+          comingSoonNote:
+            "Diese Module sind nur zur Planung sichtbar. Noch kein Checkout, Routing oder Credit-Verbrauch.",
+          plannedTitle: "Weitere geplante Module",
         };
+
+  const comingSoonModules = getComingSoonStudioModules();
+  const otherPlannedModules = getOtherExpandingStudioModules();
 
   return (
     <section id="roadmap" className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
@@ -147,16 +159,33 @@ export function RoadmapSection({
       </div>
 
       <div className="mt-12">
-        <p className="mb-4 text-[10px] font-black uppercase tracking-[0.28em] text-white/35">
-          {copy.plannedTitle}
+        <p className="mb-2 text-[10px] font-black uppercase tracking-[0.28em] text-[#d8ad5f]/90">
+          {copy.comingSoonTitle}
+        </p>
+        <p className="mb-4 max-w-3xl text-xs leading-5 text-white/40">
+          {copy.comingSoonNote}
         </p>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {EXPANDING_STUDIO_MODULES.map((module) => (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
+          {comingSoonModules.map((module) => (
             <RoadmapCard key={module.id} module={module} language={language} />
           ))}
         </div>
       </div>
+
+      {otherPlannedModules.length > 0 && (
+        <div className="mt-12">
+          <p className="mb-4 text-[10px] font-black uppercase tracking-[0.28em] text-white/35">
+            {copy.plannedTitle}
+          </p>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {otherPlannedModules.map((module) => (
+              <RoadmapCard key={module.id} module={module} language={language} />
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

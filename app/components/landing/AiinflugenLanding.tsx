@@ -14,6 +14,7 @@ import {
   Check,
   Layers,
   Film,
+  Lock,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -125,6 +126,10 @@ export default function AiinflugenLanding({
         "Credits are used when you generate images. 1 standard image = 1 credit.",
       secure: "Secure checkout via Stripe",
       powered: "Core platform capabilities",
+      badgeLive: "Live",
+      badgeComingSoon: "Coming soon",
+      badgePlanned: "Planned",
+      badgeRoadmap: "Roadmap",
     },
     de: {
       product: "Produkt",
@@ -153,10 +158,29 @@ export default function AiinflugenLanding({
         "Credits werden beim Generieren von Bildern verwendet. 1 Standard-Bild = 1 Credit.",
       secure: "Sichere Zahlung über Stripe",
       powered: "Kernfunktionen der Plattform",
+      badgeLive: "Live",
+      badgeComingSoon: "Demnächst",
+      badgePlanned: "Geplant",
+      badgeRoadmap: "Roadmap",
     },
   };
 
   const t = text[language];
+
+  const studioCapabilities = useMemo(
+    () => [
+      { label: "AI Visual Agent", status: "live" as const },
+      { label: "Style Profiles", status: "live" as const },
+      { label: "Social Formats", status: "live" as const },
+      { label: "Asset Gallery", status: "live" as const },
+      { label: "Credits", status: "live" as const },
+      { label: "Video Studio", status: "coming_soon" as const },
+      { label: "Lip Sync Studio", status: "coming_soon" as const },
+      { label: "Cinema Agent", status: "planned" as const },
+      { label: "Omni Campaign Agent", status: "roadmap" as const },
+    ],
+    []
+  );
 
   const tools = [
     {
@@ -443,23 +467,58 @@ export default function AiinflugenLanding({
         </Reveal>
 
         <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            "AI Visual Agent",
-            "Style Profiles",
-            "Social Formats",
-            "Asset Gallery",
-            "Credits",
-            "Planned: Video Studio",
-          ].map((item, index) => (
-            <Reveal key={item} delay={index * 80}>
-              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-5 py-4 transition hover:border-[#d8ad5f]/35">
-                <Check className="h-4 w-4 text-[#d8ad5f]" />
-                <span className="text-sm font-semibold text-white/75">
-                  {item}
-                </span>
-              </div>
-            </Reveal>
-          ))}
+          {studioCapabilities.map((item, index) => {
+            const isLive = item.status === "live";
+            const badgeLabel =
+              item.status === "coming_soon"
+                ? t.badgeComingSoon
+                : item.status === "planned"
+                  ? t.badgePlanned
+                  : item.status === "roadmap"
+                    ? t.badgeRoadmap
+                    : t.badgeLive;
+
+            return (
+              <Reveal key={item.label} delay={index * 80}>
+                <div
+                  className={`flex items-center justify-between gap-3 rounded-2xl border px-5 py-4 transition ${
+                    isLive
+                      ? "border-white/10 bg-white/[0.035] hover:border-[#d8ad5f]/35"
+                      : "border-white/[0.08] bg-white/[0.02] opacity-90"
+                  }`}
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    {isLive ? (
+                      <Check className="h-4 w-4 shrink-0 text-[#d8ad5f]" />
+                    ) : (
+                      <Lock className="h-4 w-4 shrink-0 text-white/30" />
+                    )}
+                    <span
+                      className={`truncate text-sm font-semibold ${
+                        isLive ? "text-white/75" : "text-white/50"
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                  </div>
+
+                  {!isLive && (
+                    <span
+                      className={`shrink-0 rounded-full border px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.1em] ${
+                        item.status === "coming_soon"
+                          ? "border-[#d8ad5f]/30 bg-[#d8ad5f]/10 text-[#d8ad5f]"
+                          : item.status === "roadmap"
+                            ? "border-violet-500/25 bg-violet-500/10 text-violet-200"
+                            : "border-white/10 bg-white/[0.04] text-white/40"
+                      }`}
+                    >
+                      {badgeLabel}
+                    </span>
+                  )}
+                </div>
+              </Reveal>
+            );
+          })}
         </div>
       </section>
 

@@ -306,6 +306,7 @@ export default function AiAgentStudio({
   const [characters, setCharacters] = useState<Character[]>([]);
   const [selectedCharacterId, setSelectedCharacterId] = useState("");
   const [workflow] = useState<Workflow>("standard");
+  /** UI-only architecture prep — not sent to /api/generate (workflow stays standard). */
   const [imageMode, setImageMode] = useState<ImageModeKey>("standard");
   const [agentMode, setAgentMode] = useState<AgentMode>("auto");
   const [outputFormatKey, setOutputFormatKey] =
@@ -813,30 +814,37 @@ export default function AiAgentStudio({
 
             <div className="border-t border-white/10 px-3 py-3 sm:px-4 sm:py-4">
               <div className="flex flex-col gap-3">
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-2.5 sm:p-3">
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-0.5">
-                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/40">
-                      {a.imageMode}
+                <fieldset className="rounded-2xl border border-white/10 bg-black/20 p-2.5 sm:p-3">
+                  <legend className="px-0.5 text-[10px] font-black uppercase tracking-[0.22em] text-white/40">
+                    {a.imageMode}
+                  </legend>
+
+                  <div className="mb-2.5 flex flex-wrap items-start justify-between gap-2 px-0.5">
+                    <p className="min-w-0 max-w-md text-[10px] leading-4 text-white/30">
+                      {a.imageModeIntro}
                     </p>
                     <p
-                      className="text-[10px] font-medium text-white/30"
+                      className="shrink-0 text-[9px] font-bold uppercase tracking-[0.12em] text-white/25"
                       title={a.plannedExpansion}
                     >
                       {a.plannedExpansion}
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
                     {imageModes.map((mode) => {
                       const Icon = mode.icon;
                       const isLive = mode.status === "live";
-                      const isSelected = imageMode === mode.key;
+                      const isSelected = isLive && imageMode === mode.key;
 
                       return (
                         <button
                           key={mode.key}
                           type="button"
                           disabled={!isLive}
+                          aria-pressed={isSelected}
+                          aria-disabled={!isLive}
+                          tabIndex={isLive ? 0 : -1}
                           onClick={() => {
                             if (isLive) setImageMode(mode.key);
                           }}
@@ -845,18 +853,25 @@ export default function AiAgentStudio({
                               ? mode.description
                               : `${mode.description} ${a.imageModes.plannedTooltip}`
                           }
-                          className={`relative flex flex-col rounded-xl border p-2.5 text-left transition sm:p-3 ${
+                          className={`relative flex min-h-[5.5rem] flex-col rounded-xl border p-2.5 text-left transition sm:min-h-[6rem] sm:p-3 ${
                             isLive
                               ? isSelected
                                 ? "border-[#d8ad5f]/50 bg-[#d8ad5f]/12 ring-1 ring-[#d8ad5f]/30"
                                 : "border-white/10 bg-white/[0.04] hover:border-[#d8ad5f]/30 hover:bg-white/[0.06]"
-                              : "cursor-not-allowed border-white/[0.06] bg-white/[0.02] opacity-60"
+                              : "pointer-events-none cursor-not-allowed border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-transparent opacity-70"
                           }`}
                         >
-                          <div className="flex items-start justify-between gap-2">
+                          {!isLive && (
+                            <div
+                              className="pointer-events-none absolute inset-0 rounded-xl bg-[repeating-linear-gradient(-45deg,transparent,transparent_6px,rgba(255,255,255,0.02)_6px,rgba(255,255,255,0.02)_12px)]"
+                              aria-hidden
+                            />
+                          )}
+
+                          <div className="relative flex items-start justify-between gap-2">
                             <div
                               className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                                isSelected && isLive
+                                isSelected
                                   ? "bg-[#d8ad5f] text-black"
                                   : "bg-white/[0.06] text-white/55"
                               }`}
@@ -868,7 +883,7 @@ export default function AiAgentStudio({
                               className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] ${
                                 isLive
                                   ? "bg-emerald-500/15 text-emerald-200"
-                                  : "border border-white/10 bg-white/[0.04] text-white/35"
+                                  : "border border-white/10 bg-white/[0.04] text-white/40"
                               }`}
                             >
                               {isLive ? a.imageModes.live : a.imageModes.planned}
@@ -876,28 +891,28 @@ export default function AiAgentStudio({
                           </div>
 
                           <p
-                            className={`mt-2 text-xs font-black leading-tight ${
-                              isLive ? "text-white" : "text-white/55"
+                            className={`relative mt-2 text-xs font-black leading-tight ${
+                              isLive ? "text-white" : "text-white/50"
                             }`}
                           >
                             {mode.label}
                           </p>
 
-                          <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-white/40">
+                          <p className="relative mt-1 line-clamp-3 flex-1 text-[10px] leading-4 text-white/38">
                             {mode.description}
                           </p>
 
                           {!isLive && (
-                            <span className="mt-2 inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.12em] text-white/25">
-                              <Lock className="h-2.5 w-2.5" />
-                              {a.imageModes.comingSoon}
-                            </span>
+                            <Lock
+                              className="relative mt-1.5 h-3 w-3 text-white/20"
+                              aria-hidden
+                            />
                           )}
                         </button>
                       );
                     })}
                   </div>
-                </div>
+                </fieldset>
 
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-3 py-2 text-xs font-bold text-white/65">

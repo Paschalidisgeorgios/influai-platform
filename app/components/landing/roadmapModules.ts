@@ -60,7 +60,55 @@ export const LIVE_STUDIO_MODULES: RoadmapModule[] = [
   },
 ];
 
+/** Video, lip sync, cinema and omni — visible first in roadmap; not live. */
+export const COMING_SOON_STUDIO_MODULE_IDS = [
+  "video-studio",
+  "lip-sync-studio",
+  "cinema-agent",
+  "omni-campaign-agent",
+] as const;
+
 export const EXPANDING_STUDIO_MODULES: RoadmapModule[] = [
+  {
+    id: "video-studio",
+    titleEn: "Video Studio",
+    titleDe: "Video Studio",
+    descriptionEn:
+      "Create short-form video campaigns, product clips and creator motion assets from prompts and images.",
+    descriptionDe:
+      "Erstelle Short-Form-Video-Kampagnen, Produktclips und Creator-Motion-Assets aus Prompts und Bildern.",
+    status: "coming_soon",
+  },
+  {
+    id: "lip-sync-studio",
+    titleEn: "Lip Sync Studio",
+    titleDe: "Lip Sync Studio",
+    descriptionEn:
+      "Generate talking creator clips from scripts, voice and visual assets.",
+    descriptionDe:
+      "Generiere sprechende Creator-Clips aus Skripten, Voice und Visual Assets.",
+    status: "coming_soon",
+  },
+  {
+    id: "cinema-agent",
+    titleEn: "Cinema Agent",
+    titleDe: "Cinema Agent",
+    descriptionEn:
+      "Plan campaign scenes, shot lists and visual sequences before generation.",
+    descriptionDe:
+      "Plane Kampagnen-Szenen, Shot Lists und Visual Sequences vor der Generierung.",
+    status: "planned",
+  },
+  {
+    id: "omni-campaign-agent",
+    titleEn: "Omni Campaign Agent",
+    titleDe: "Omni Campaign Agent",
+    descriptionEn:
+      "Turn a campaign idea into visuals, video concepts, captions and export-ready assets.",
+    descriptionDe:
+      "Wandle eine Kampagnen-Idee in Visuals, Video-Konzepte, Captions und exportfertige Assets um.",
+    status: "in_roadmap",
+  },
   {
     id: "fast-image-mode",
     titleEn: "Fast Image Mode",
@@ -94,36 +142,14 @@ export const EXPANDING_STUDIO_MODULES: RoadmapModule[] = [
     status: "planned",
   },
   {
-    id: "video-studio",
-    titleEn: "Video Studio",
-    titleDe: "Video Studio",
-    descriptionEn: "Image-to-video and text-to-video campaign workflows.",
-    descriptionDe: "Image-to-Video- und Text-to-Video-Kampagnen-Workflows.",
-    status: "coming_soon",
-  },
-  {
-    id: "lip-sync-studio",
-    titleEn: "Lip Sync Studio",
-    titleDe: "Lip Sync Studio",
-    descriptionEn: "Voice-driven talking clips for creator-style content.",
-    descriptionDe: "Voice-gestützte Talking Clips für Creator-Content.",
-    status: "coming_soon",
-  },
-  {
-    id: "cinema-agent",
-    titleEn: "Cinema Agent",
-    titleDe: "Cinema Agent",
-    descriptionEn: "Storyboard, shot planning and structured campaign scenes.",
-    descriptionDe: "Storyboard, Shot Planning und strukturierte Kampagnen-Szenen.",
+    id: "watermarked-promo-package",
+    titleEn: "Watermarked Promo Package",
+    titleDe: "Watermarked Promo-Paket",
+    descriptionEn:
+      "Planned monetization module: low-cost watermarked exports for early testing and brand discovery. Upgrade later to export without watermark.",
+    descriptionDe:
+      "Geplantes Monetarisierungsmodul: günstige Exporte mit sichtbarem InfluExAi-Wasserzeichen zum Testen und für Brand Discovery. Später Upgrade für Export ohne Wasserzeichen.",
     status: "planned",
-  },
-  {
-    id: "omni-campaign-agent",
-    titleEn: "Omni Campaign Agent",
-    titleDe: "Omni Campaign Agent",
-    descriptionEn: "Brief to visuals, video, captions and export in one flow.",
-    descriptionDe: "Briefing zu Visuals, Video, Captions und Export in einem Flow.",
-    status: "in_roadmap",
   },
 ];
 
@@ -140,6 +166,19 @@ export const DASHBOARD_SIDEBAR_PLANNED_IDS = [
 
 export function getRoadmapModulesByIds(ids: readonly string[]) {
   return EXPANDING_STUDIO_MODULES.filter((module) => ids.includes(module.id));
+}
+
+export function getComingSoonStudioModules() {
+  return EXPANDING_STUDIO_MODULES.filter((module) =>
+    (COMING_SOON_STUDIO_MODULE_IDS as readonly string[]).includes(module.id)
+  );
+}
+
+export function getOtherExpandingStudioModules() {
+  return EXPANDING_STUDIO_MODULES.filter(
+    (module) =>
+      !(COMING_SOON_STUDIO_MODULE_IDS as readonly string[]).includes(module.id)
+  );
 }
 
 const STATUS_LABELS = {

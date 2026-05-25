@@ -166,6 +166,20 @@ function DashboardPageInner() {
         icon: Mic2,
       },
       {
+        id: "cinema-agent",
+        label: copy.sidebar.expansion.cinemaAgent.label,
+        description: copy.sidebar.expansion.cinemaAgent.description,
+        status: "planned",
+        icon: Clapperboard,
+      },
+      {
+        id: "omni-campaign-agent",
+        label: copy.sidebar.expansion.omniCampaignAgent.label,
+        description: copy.sidebar.expansion.omniCampaignAgent.description,
+        status: "roadmap",
+        icon: Wand2,
+      },
+      {
         id: "brand-assets",
         label: copy.sidebar.expansion.brandAssets.label,
         description: copy.sidebar.expansion.brandAssets.description,
@@ -178,20 +192,6 @@ function DashboardPageInner() {
         description: copy.sidebar.expansion.automation.description,
         status: "planned",
         icon: Workflow,
-      },
-      {
-        id: "cinema-agent",
-        label: copy.sidebar.expansion.cinemaAgent.label,
-        description: copy.sidebar.expansion.cinemaAgent.description,
-        status: "roadmap",
-        icon: Clapperboard,
-      },
-      {
-        id: "omni-campaign-agent",
-        label: copy.sidebar.expansion.omniCampaignAgent.label,
-        description: copy.sidebar.expansion.omniCampaignAgent.description,
-        status: "roadmap",
-        icon: Wand2,
       },
     ],
     [copy]
@@ -513,6 +513,20 @@ function DashboardPageInner() {
             <p className="mt-2 text-xs leading-5 text-white/40">
               {copy.sidebar.roadmapBody}
             </p>
+
+            <div className="mt-4 rounded-xl border border-dashed border-white/10 bg-black/20 p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/50">
+                  {copy.sidebar.watermarkedPromoTitle}
+                </p>
+                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.1em] text-white/40">
+                  {copy.sidebar.watermarkedPromoBadge}
+                </span>
+              </div>
+              <p className="mt-2 text-[11px] leading-4 text-white/35">
+                {copy.sidebar.watermarkedPromoBody}
+              </p>
+            </div>
           </div>
 
           <Link
