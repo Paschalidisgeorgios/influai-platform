@@ -4,8 +4,11 @@
 **Audience:** Engineering, product, operations  
 **Status:** Planning reference — not user-facing  
 **Last updated:** 2026-05-22  
+**Related:** [CREDIT_AND_MODE_STRATEGY.md](./CREDIT_AND_MODE_STRATEGY.md) — credit costs, rollout order, safety rules
 
 This document describes planned provider and mode expansions for InfluExAi. It does **not** authorize activation of any mode listed as Planned. Nothing in this file changes runtime behavior.
+
+For authoritative **credit pricing** and **phase rollout order**, see [CREDIT_AND_MODE_STRATEGY.md](./CREDIT_AND_MODE_STRATEGY.md).
 
 ---
 
@@ -42,9 +45,11 @@ These modes are prepared in the **UI** (Image Mode selector) as disabled / Plann
 | **Mode key (proposed)** | `fast_draft` |
 | **Future provider candidate** | FLUX Schnell (e.g. via inference host — evaluate vendor at implementation time) |
 | **Intended use** | Low-cost drafts, rapid prompt exploration, iteration before final render |
-| **Suggested credit cost** | 1 credit, or less if unit economics allow |
+| **Suggested credit cost** | 1 credit (see [CREDIT_AND_MODE_STRATEGY.md](./CREDIT_AND_MODE_STRATEGY.md) §2) |
 | **Status** | Planned |
 | **User-visible status** | Planned (not Live) |
+
+**Constraint:** Fast Draft must not replace Standard Image as the default until production-tested end-to-end.
 
 ### 2.2 Premium Image
 
@@ -92,7 +97,7 @@ Video capabilities are **not live**. UI modules (Video Studio, Cinema Agent) are
 | **Module** | Video Studio |
 | **Future provider candidates** | Seedance, Kling, Runway-class providers (evaluate ToS, latency, cost, regional compliance) |
 | **Intended use** | Text-to-video, image-to-video, short-form creator ads, product clips |
-| **Suggested credit cost** | Separate tier — higher than 1 credit/image (define per second or per clip) |
+| **Suggested credit cost** | Short clip: **15–30 credits**; longer/premium clip: **40–80 credits** ([strategy doc](./CREDIT_AND_MODE_STRATEGY.md) §6) |
 | **Status** | Planned |
 | **User-visible status** | Coming soon / Planned |
 
@@ -118,7 +123,7 @@ Video capabilities are **not live**. UI modules (Video Studio, Cinema Agent) are
 | **Module** | Lip Sync Studio |
 | **Future provider candidates** | Lip-sync / talking-avatar providers (evaluate quality, language support, latency) |
 | **Intended use** | Talking creator clips, UGC-style ads, voice-to-video |
-| **Suggested credit cost** | Separate higher credit cost (per clip or per second) |
+| **Suggested credit cost** | **10–30 credits** depending on length (per clip or per duration) — [strategy doc](./CREDIT_AND_MODE_STRATEGY.md) §7 |
 | **Status** | Planned |
 | **User-visible status** | Coming soon / Planned |
 
@@ -172,6 +177,10 @@ Every new mode must document and implement:
 - Existing Stripe packages (`starter`, `professional`, `ultimate`) and credit grants unchanged unless explicitly migrated.
 - Worker secret and queue semantics must not break in-flight Standard jobs.
 - Image Mode UI: disabled cards become active **only** after backend + pricing ship together.
+
+### 6.4 UI activation rule
+
+Do not mark a mode **Live** in the UI until backend support, credit cost, failure handling, and refunds are implemented and tested. See [CREDIT_AND_MODE_STRATEGY.md](./CREDIT_AND_MODE_STRATEGY.md) §9–§11.
 
 ---
 
@@ -270,10 +279,12 @@ Use this checklist before marking a mode **Live** in production.
 | **P2** | Premium Image | 2–3 credits, quality bar for campaigns |
 | **P3** | Reference Edit | Source image upload + edit pipeline |
 | **P4** | Brand Assets / Recraft | Layout/brand kits |
-| **P5** | Video Studio | Video URL storage, higher credit tier |
-| **P6** | Lip Sync Studio | Voice + video pipeline |
-| **P7** | Cinema / Omni agents | Orchestration only after P5–P6 stable |
-| **P8** | Watermarked Promo | Server watermark + package SKU |
+| **P5** | Video Studio | Video URL storage; 15–30 / 40–80 credit tiers |
+| **P6** | Lip Sync Studio | 10–30 credit band; voice + video pipeline |
+| **P7** | Omni Campaign Agent | Orchestration across formats; after P5–P6 stable |
+| **P8** | Watermarked Promo | Server watermark + package SKU (may parallel P1–P3) |
+
+Aligned with [CREDIT_AND_MODE_STRATEGY.md](./CREDIT_AND_MODE_STRATEGY.md) §10 (Phases 1–8).
 
 ---
 
@@ -284,4 +295,5 @@ Use this checklist before marking a mode **Live** in production.
 - Do not copy provider trademark names into user-facing marketing until implementation is complete.
 
 **Owner:** Platform engineering  
-**Related user-facing modules:** AI Agent (Image Mode), Expansion sidebar, Landing roadmap, Credits (Watermarked Promo — planned).
+**Related user-facing modules:** AI Agent (Image Mode), Expansion sidebar, Landing roadmap, Credits (Watermarked Promo — planned).  
+**Strategy companion:** [CREDIT_AND_MODE_STRATEGY.md](./CREDIT_AND_MODE_STRATEGY.md)
