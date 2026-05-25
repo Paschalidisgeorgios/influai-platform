@@ -191,6 +191,29 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                 {copy.credits.oneCreditRule}
               </div>
 
+              <div className="mt-5 rounded-2xl border border-white/10 bg-black/25 p-4 sm:p-5">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
+                  {copy.credits.modeUsageIntro}
+                </p>
+                <ul className="mt-3 space-y-2">
+                  {[
+                    copy.credits.modeCosts.standard,
+                    copy.credits.modeCosts.fastDraft,
+                    copy.credits.modeCosts.premium,
+                    copy.credits.modeCosts.referenceEdit,
+                    copy.credits.modeCosts.brandAssets,
+                  ].map((item) => (
+                    <li
+                      key={item}
+                      className="flex items-start gap-2 text-sm leading-5 text-white/60"
+                    >
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#d8ad5f]" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
               <div className="mt-5 flex flex-wrap gap-2">
                 {studioFeatures.map((feature) => {
                   const Icon = feature.icon;

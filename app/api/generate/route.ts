@@ -1216,7 +1216,11 @@ export async function POST(req: Request) {
 
     if (!creditSuccess) {
       return NextResponse.json(
-        { error: "Not enough credits" },
+        {
+          error: "Not enough credits",
+          requiredCredits: jobConfig.creditsUsed,
+          reason: "insufficient_credits",
+        },
         { status: 402 }
       );
     }

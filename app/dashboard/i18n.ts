@@ -112,6 +112,7 @@ const en = {
     loadingCredits: "Loading credits",
     creditsAvailable: "{count} credits available",
     refreshCredits: "Refresh credits",
+    zeroCreditsHint: "No credits left — open Credits to buy a package",
   },
   agent: {
     title: "Create campaign-ready visuals",
@@ -292,6 +293,13 @@ const en = {
     describePrompt: "Please describe what you want to create.",
     signInAgain: "Please sign in again.",
     notEnoughCredits: "Not enough credits. Please buy more credits.",
+    insufficientCreditsTitle: "Not enough credits",
+    insufficientCreditsIntro:
+      "Not enough credits for this generation.",
+    insufficientCreditsModeRequires: "This mode requires {count} credits.",
+    insufficientCreditsBuyMore: "Buy more credits to continue.",
+    buyCredits: "Buy Credits",
+    openCredits: "Open Credits",
     profileNotFound: "Selected style profile was not found.",
     queueFailed: "Failed to queue generation. Please try again.",
     noGenerationId: "Generation was queued, but no generation ID returned.",
@@ -411,6 +419,14 @@ const en = {
     creditsTitle: "Credits",
     balanceDescription:
       "Credits are used when you generate images in the AI Agent. Each standard image uses one credit.",
+    modeUsageIntro: "Credits are used depending on the selected mode.",
+    modeCosts: {
+      standard: "Standard Image: 1 Credit",
+      fastDraft: "Fast Draft: 1 Credit",
+      premium: "Premium Image: 3 Credits",
+      referenceEdit: "Reference Edit: 5 Credits",
+      brandAssets: "Brand Assets: 4 Credits",
+    },
     oneCreditRule: "1 standard image = 1 credit",
     availableCredits: "Available credits",
     refreshing: "Refreshing balance…",
@@ -612,6 +628,8 @@ const de: DeepString<typeof en> = {
     loadingCredits: "Credits werden geladen",
     creditsAvailable: "{count} Credits verfügbar",
     refreshCredits: "Credits aktualisieren",
+    zeroCreditsHint:
+      "Keine Credits mehr — öffne Credits, um ein Paket zu kaufen",
   },
   agent: {
     title: "Kampagnenfertige Visuals erstellen",
@@ -798,6 +816,14 @@ const de: DeepString<typeof en> = {
     signInAgain: "Bitte erneut anmelden.",
     notEnoughCredits:
       "Nicht genug Credits. Bitte mehr Credits kaufen.",
+    insufficientCreditsTitle: "Nicht genug Credits",
+    insufficientCreditsIntro:
+      "Nicht genug Credits für diese Generierung.",
+    insufficientCreditsModeRequires: "Dieser Modus benötigt {count} Credits.",
+    insufficientCreditsBuyMore:
+      "Kaufe mehr Credits, um fortzufahren.",
+    buyCredits: "Credits kaufen",
+    openCredits: "Credits öffnen",
     profileNotFound: "Ausgewähltes Style Profile wurde nicht gefunden.",
     queueFailed:
       "Generierung konnte nicht gestartet werden. Bitte erneut versuchen.",
@@ -922,6 +948,15 @@ const de: DeepString<typeof en> = {
     creditsTitle: "Credits",
     balanceDescription:
       "Credits werden beim Generieren von Bildern im AI Agent verwendet. Jedes Standard-Bild verbraucht einen Credit.",
+    modeUsageIntro:
+      "Credits werden je nach gewähltem Modus verbraucht.",
+    modeCosts: {
+      standard: "Standard Image: 1 Credit",
+      fastDraft: "Fast Draft: 1 Credit",
+      premium: "Premium Image: 3 Credits",
+      referenceEdit: "Reference Edit: 5 Credits",
+      brandAssets: "Brand Assets: 4 Credits",
+    },
     oneCreditRule: "1 Standard-Bild = 1 Credit",
     availableCredits: "Verfügbare Credits",
     refreshing: "Guthaben wird aktualisiert…",

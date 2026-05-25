@@ -289,6 +289,7 @@ function DashboardPageInner() {
           onClearRegenerateDraft={handleClearRegenerateDraft}
           onGenerationQueued={handleGenerationQueued}
           onOpenGallery={() => setActiveView("gallery")}
+          onOpenCredits={() => setActiveView("credits")}
         />
       );
     }

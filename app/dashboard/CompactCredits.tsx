@@ -63,17 +63,28 @@ export default function CompactCredits({ refreshKey = 0 }: CompactCreditsProps) 
   }
 
   const displayCredits = loading ? "…" : String(credits);
+  const isZeroBalance = !loading && credits === 0;
 
   return (
     <div
-      className="flex max-w-[8.75rem] shrink-0 items-center gap-1 rounded-full border border-white/10 bg-black/75 py-1 pl-1 pr-1 shadow-[0_10px_32px_rgba(0,0,0,0.4)] backdrop-blur-2xl sm:max-w-none sm:gap-1.5 sm:py-1.5 sm:pl-1.5 sm:pr-1.5"
+      className={`flex max-w-[8.75rem] shrink-0 items-center gap-1 rounded-full border py-1 pl-1 pr-1 shadow-[0_10px_32px_rgba(0,0,0,0.4)] backdrop-blur-2xl sm:max-w-none sm:gap-1.5 sm:py-1.5 sm:pl-1.5 sm:pr-1.5 ${
+        isZeroBalance
+          ? "border-amber-500/30 bg-amber-500/[0.08]"
+          : "border-white/10 bg-black/75"
+      }`}
       title={
         loading
           ? copy.compactCredits.loadingCredits
-          : formatCopy(copy.compactCredits.creditsAvailable, { count: credits })
+          : isZeroBalance
+            ? copy.compactCredits.zeroCreditsHint
+            : formatCopy(copy.compactCredits.creditsAvailable, { count: credits })
       }
     >
-      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#d8ad5f] text-black sm:h-7 sm:w-7">
+      <div
+        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full sm:h-7 sm:w-7 ${
+          isZeroBalance ? "bg-amber-400 text-black" : "bg-[#d8ad5f] text-black"
+        }`}
+      >
         <CreditCard className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden />
       </div>
 
@@ -82,7 +93,9 @@ export default function CompactCredits({ refreshKey = 0 }: CompactCreditsProps) 
           {copy.compactCredits.credits}
         </p>
         <p
-          className="text-[11px] font-black tabular-nums leading-none text-white sm:text-xs"
+          className={`text-[11px] font-black tabular-nums leading-none sm:text-xs ${
+            isZeroBalance ? "text-amber-100" : "text-white"
+          }`}
           aria-live="polite"
         >
           {displayCredits}
