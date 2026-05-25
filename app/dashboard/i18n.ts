@@ -170,24 +170,28 @@ const en = {
         hoverHint:
           "Reference Edit will support source images, edit instructions and guided campaign refinements.",
         panel: {
-          status: "Planned · Coming soon",
+          status: "Coming soon · Planned",
           intro:
-            "Reference Edit will allow source images and precise edit instructions.",
+            "Reference Edit is being prepared for guided image transformations.",
           sourceLabel: "Source image",
-          sourcePlaceholder: "Upload or select an image",
-          sourceHint: "Local preview only — nothing is uploaded",
-          chooseImage: "Choose image",
-          clearImage: "Clear",
+          sourcePlaceholder: "Upload a source image to preview your workflow",
+          sourceHint: "PNG, JPEG, or WebP · max 12 MB · no credits charged",
+          uploadSourceImage: "Upload source image",
+          uploading: "Uploading…",
+          clearImage: "Clear image",
           invalidFile: "Please choose a JPEG, PNG, or WebP image.",
-          fileTooLarge: "Image is too large for local preview (max 15 MB).",
+          fileTooLarge: "Image is too large (max 12 MB).",
+          uploadFailed: "Upload failed. Please try again.",
           instructionLabel: "Edit instructions",
           instructionPlaceholder:
             "Describe what to change: background, lighting, product details, framing…",
           previewLabel: "Result preview",
           previewPlaceholder: "Edited result will appear here",
           generateDisabled: "Generate — coming soon",
+          generationNotActive:
+            "Generation is not active yet. Use Standard, Fast Draft, or Premium Image below.",
           plannedNote:
-            "Phase 1 preview. Use Standard, Fast Draft, or Premium Image below to generate now. No credits are used here.",
+            "Reference Edit is being prepared for guided image transformations. Upload and instructions are available for workflow preview. Generation is not active yet.",
         },
       },
       live: "Live",
@@ -647,24 +651,28 @@ const de: DeepString<typeof en> = {
         hoverHint:
           "Reference Edit wird Quellbilder, Bearbeitungsanweisungen und geführte Kampagnen-Verfeinerungen unterstützen.",
         panel: {
-          status: "Geplant · Demnächst",
+          status: "Demnächst · Geplant",
           intro:
-            "Reference Edit ermöglicht später Quellbilder und präzise Bearbeitungsanweisungen.",
+            "Reference Edit wird für geführte Bildtransformationen vorbereitet.",
           sourceLabel: "Quellbild",
-          sourcePlaceholder: "Bild hochladen oder auswählen",
-          sourceHint: "Nur lokale Vorschau — nichts wird hochgeladen",
-          chooseImage: "Bild wählen",
-          clearImage: "Entfernen",
+          sourcePlaceholder: "Quellbild hochladen, um den Workflow zu prüfen",
+          sourceHint: "PNG, JPEG oder WebP · max. 12 MB · keine Credits",
+          uploadSourceImage: "Quellbild hochladen",
+          uploading: "Wird hochgeladen…",
+          clearImage: "Bild entfernen",
           invalidFile: "Bitte JPEG, PNG oder WebP wählen.",
-          fileTooLarge: "Bild zu groß für lokale Vorschau (max. 15 MB).",
+          fileTooLarge: "Bild zu groß (max. 12 MB).",
+          uploadFailed: "Upload fehlgeschlagen. Bitte erneut versuchen.",
           instructionLabel: "Bearbeitungsanweisung",
           instructionPlaceholder:
             "Beschreibe die Änderung: Hintergrund, Licht, Produktdetails, Bildausschnitt…",
           previewLabel: "Ergebnis-Vorschau",
           previewPlaceholder: "Das bearbeitete Ergebnis erscheint hier",
           generateDisabled: "Generieren — demnächst",
+          generationNotActive:
+            "Generierung noch nicht aktiv. Nutze unten Standard, Fast Draft oder Premium Image.",
           plannedNote:
-            "Phase-1-Vorschau. Nutze unten Standard, Fast Draft oder Premium Image zum Generieren. Hier keine Credits.",
+            "Reference Edit wird für geführte Bildtransformationen vorbereitet. Upload und Anweisungen sind als Workflow-Vorschau verfügbar. Die Generierung ist noch nicht aktiv.",
         },
       },
       live: "Live",

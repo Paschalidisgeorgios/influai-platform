@@ -356,12 +356,13 @@ function ModeCardBody({
   );
 }
 
-const REFERENCE_EDIT_LOCAL_MAX_BYTES = 15 * 1024 * 1024;
+const REFERENCE_EDIT_MAX_BYTES = 12 * 1024 * 1024;
 
 function ReferenceEditPlannedPanel({
   label,
   copy,
   panelRef,
+  getAccessToken,
 }: {
   label: string;
   copy: {
@@ -370,36 +371,47 @@ function ReferenceEditPlannedPanel({
     sourceLabel: string;
     sourcePlaceholder: string;
     sourceHint: string;
-    chooseImage: string;
+    uploadSourceImage: string;
+    uploading: string;
     clearImage: string;
     invalidFile: string;
     fileTooLarge: string;
+    uploadFailed: string;
     instructionLabel: string;
     instructionPlaceholder: string;
     previewLabel: string;
     previewPlaceholder: string;
     generateDisabled: string;
+    generationNotActive: string;
     plannedNote: string;
   };
   panelRef: React.RefObject<HTMLDivElement | null>;
+  getAccessToken: () => Promise<string | null>;
 }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const blobPreviewRef = useRef<string | null>(null);
   const [sourcePreviewUrl, setSourcePreviewUrl] = useState<string | null>(null);
   const [editInstruction, setEditInstruction] = useState("");
   const [localFileError, setLocalFileError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     return () => {
-      if (sourcePreviewUrl) {
-        URL.revokeObjectURL(sourcePreviewUrl);
+      if (blobPreviewRef.current) {
+        URL.revokeObjectURL(blobPreviewRef.current);
       }
     };
-  }, [sourcePreviewUrl]);
+  }, []);
 
-  function clearLocalSource() {
-    if (sourcePreviewUrl) {
-      URL.revokeObjectURL(sourcePreviewUrl);
+  function revokeBlobPreview() {
+    if (blobPreviewRef.current) {
+      URL.revokeObjectURL(blobPreviewRef.current);
+      blobPreviewRef.current = null;
     }
+  }
+
+  function clearSourceImage() {
+    revokeBlobPreview();
     setSourcePreviewUrl(null);
     setLocalFileError(null);
     if (fileInputRef.current) {
@@ -407,27 +419,78 @@ function ReferenceEditPlannedPanel({
     }
   }
 
-  function handleLocalFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleSourceFileChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
+    const mime = file.type.toLowerCase();
+    const allowedMime = new Set([
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/webp",
+    ]);
+    const allowedByName = /\.(png|jpe?g|webp)$/i.test(file.name);
+
+    if (!(allowedMime.has(mime) || (allowedByName && file.type.startsWith("image/")))) {
       setLocalFileError(copy.invalidFile);
       return;
     }
 
-    if (file.size > REFERENCE_EDIT_LOCAL_MAX_BYTES) {
+    if (file.size > REFERENCE_EDIT_MAX_BYTES) {
       setLocalFileError(copy.fileTooLarge);
       return;
     }
 
     setLocalFileError(null);
+    revokeBlobPreview();
 
-    if (sourcePreviewUrl) {
-      URL.revokeObjectURL(sourcePreviewUrl);
+    const blobUrl = URL.createObjectURL(file);
+    blobPreviewRef.current = blobUrl;
+    setSourcePreviewUrl(blobUrl);
+    setUploading(true);
+
+    try {
+      const token = await getAccessToken();
+
+      if (!token) {
+        setLocalFileError(copy.uploadFailed);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/reference-sources/upload", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = (await response.json()) as {
+        imageUrl?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !data.imageUrl) {
+        setLocalFileError(data.error ?? copy.uploadFailed);
+        return;
+      }
+
+      revokeBlobPreview();
+      setSourcePreviewUrl(data.imageUrl);
+    } catch {
+      setLocalFileError(copy.uploadFailed);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
-
-    setSourcePreviewUrl(URL.createObjectURL(file));
   }
 
   return (
@@ -444,7 +507,7 @@ function ReferenceEditPlannedPanel({
         className="sr-only"
         tabIndex={-1}
         aria-hidden
-        onChange={handleLocalFileChange}
+        onChange={handleSourceFileChange}
       />
 
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -466,8 +529,9 @@ function ReferenceEditPlannedPanel({
             {sourcePreviewUrl ? (
               <button
                 type="button"
-                onClick={clearLocalSource}
-                className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white/45 transition hover:bg-white/[0.06] hover:text-white/70"
+                onClick={clearSourceImage}
+                disabled={uploading}
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white/45 transition hover:bg-white/[0.06] hover:text-white/70 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <X className="h-3 w-3" aria-hidden />
                 {copy.clearImage}
@@ -494,9 +558,20 @@ function ReferenceEditPlannedPanel({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="mt-0.5 rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.08em] text-[#d8ad5f]/90 transition hover:bg-[#d8ad5f]/18"
+                disabled={uploading}
+                className="mt-0.5 inline-flex items-center justify-center gap-1.5 rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.08em] text-[#d8ad5f]/90 transition hover:bg-[#d8ad5f]/18 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {copy.chooseImage}
+                {uploading ? (
+                  <>
+                    <Loader2
+                      className="h-3 w-3 animate-spin"
+                      aria-hidden
+                    />
+                    {copy.uploading}
+                  </>
+                ) : (
+                  copy.uploadSourceImage
+                )}
               </button>
             </div>
           )}
@@ -552,6 +627,8 @@ function ReferenceEditPlannedPanel({
           {copy.plannedNote}
         </p>
       </div>
+
+      <p className="mt-2 text-[9px] leading-4 text-white/32">{copy.generationNotActive}</p>
     </div>
   );
 }
@@ -1299,6 +1376,7 @@ export default function AiAgentStudio({
                     label={a.imageModes.referenceEdit.label}
                     copy={a.imageModes.referenceEdit.panel}
                     panelRef={referenceEditPanelRef}
+                    getAccessToken={getAccessToken}
                   />
 
                   <div className="mt-3 rounded-xl border border-white/[0.06] bg-black/25 px-2.5 py-2.5 sm:px-3">
