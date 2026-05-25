@@ -77,7 +77,7 @@ These modes are prepared in the **UI** (Image Mode selector) as disabled / Plann
 | **Status** | Planned |
 | **User-visible status** | Planned |
 
-**Implementation spec:** [REFERENCE_EDIT_IMPLEMENTATION_PLAN.md](./REFERENCE_EDIT_IMPLEMENTATION_PLAN.md) — 2–4 credits, upload/storage, gallery metadata (not active).
+**Implementation spec:** [REFERENCE_EDIT_IMPLEMENTATION_PLAN.md](./REFERENCE_EDIT_IMPLEMENTATION_PLAN.md) — UI/product. **Backend:** [REFERENCE_EDIT_BACKEND_PLAN.md](./REFERENCE_EDIT_BACKEND_PLAN.md) — 2–4 credits (start at 2), upload/storage, gallery (not active).
 
 ### 2.4 Brand Assets
 

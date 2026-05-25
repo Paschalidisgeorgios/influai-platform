@@ -4,9 +4,11 @@
 **Audience:** Engineering, product, operations  
 **Status:** Planning only — **no provider activated**, **no code changes authorized by this document**  
 **Last updated:** 2026-05-22  
-**Related:** [CREDIT_AND_MODE_STRATEGY.md](./CREDIT_AND_MODE_STRATEGY.md), [ROADMAP_IMAGE_VIDEO_MODES.md](./ROADMAP_IMAGE_VIDEO_MODES.md), [PREMIUM_IMAGE_IMPLEMENTATION_PLAN.md](./PREMIUM_IMAGE_IMPLEMENTATION_PLAN.md)
+**Related:** [CREDIT_AND_MODE_STRATEGY.md](./CREDIT_AND_MODE_STRATEGY.md), [ROADMAP_IMAGE_VIDEO_MODES.md](./ROADMAP_IMAGE_VIDEO_MODES.md), [PREMIUM_IMAGE_IMPLEMENTATION_PLAN.md](./PREMIUM_IMAGE_IMPLEMENTATION_PLAN.md), [REFERENCE_EDIT_BACKEND_PLAN.md](./REFERENCE_EDIT_BACKEND_PLAN.md)
 
 This specification describes how **Reference Edit** (reference-guided image editing) should be integrated. It does not enable Reference Edit in production.
+
+**Backend / storage / API plan:** [REFERENCE_EDIT_BACKEND_PLAN.md](./REFERENCE_EDIT_BACKEND_PLAN.md) — upload flow, DB fields, worker changes, phases, test checklist.
 
 ---
 
@@ -221,7 +223,7 @@ sequenceDiagram
 
 | Step | Scope | Deliverable |
 |------|--------|-------------|
-| **1** | Documentation only | This file (**current step**) |
+| **1** | UI mockup / disabled state | Agent planned panel — **done**; see [REFERENCE_EDIT_BACKEND_PLAN.md](./REFERENCE_EDIT_BACKEND_PLAN.md) Phase 1 |
 | **2** | Storage + upload API | Validated upload limits; no public edit yet |
 | **3** | Backend behind flag | `REFERENCE_EDIT_ENABLED=false`; worker branch |
 | **4** | Manual internal test | §10 checklist |

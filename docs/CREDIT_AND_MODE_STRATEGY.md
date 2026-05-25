@@ -68,7 +68,7 @@ Premium is positioned above Standard for hero assets and high-stakes creativesâ€
 
 Requires `source_image_url` (or equivalent) in the data model before activation. Credit cost should scale with edit type once COGS are known.
 
-**Implementation spec:** [REFERENCE_EDIT_IMPLEMENTATION_PLAN.md](./REFERENCE_EDIT_IMPLEMENTATION_PLAN.md) (planning only, not active). No activation without storage test, backend, and cost monitoring.
+**Implementation spec:** [REFERENCE_EDIT_IMPLEMENTATION_PLAN.md](./REFERENCE_EDIT_IMPLEMENTATION_PLAN.md) (UI/product). **Backend plan:** [REFERENCE_EDIT_BACKEND_PLAN.md](./REFERENCE_EDIT_BACKEND_PLAN.md) (storage, API, worker, DB). Not active â€” no activation without storage test, backend, and cost monitoring. First test tier: **2 credits**.
 
 ---
 
