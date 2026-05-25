@@ -47,13 +47,14 @@ Standard Image is the production default and fallback. All planned modes must be
 | Field | Value |
 |-------|--------|
 | **Future provider candidates** | FLUX Dev, FLUX Pro, Nano Banana Pro |
-| **Suggested credit cost** | 2–3 credits per image |
+| **Credit cost (live)** | **3 credits** per image |
+| **Suggested range (planning)** | Was 2–3; locked at **3** for MVP Premium |
 | **Purpose** | Higher-end visuals, advanced campaign quality, stronger prompt following |
-| **Status** | Planned |
+| **Status** | Live when `ENABLE_FAL_PREMIUM_IMAGE` + public flag set |
 
 Premium is positioned above Standard for hero assets and high-stakes creatives—not for every draft.
 
-**Implementation spec:** [PREMIUM_IMAGE_IMPLEMENTATION_PLAN.md](./PREMIUM_IMAGE_IMPLEMENTATION_PLAN.md) (planning only, not active). Final credit price after provider cost test.
+**Implementation spec:** [PREMIUM_IMAGE_IMPLEMENTATION_PLAN.md](./PREMIUM_IMAGE_IMPLEMENTATION_PLAN.md). Billing uses **`getCreditCostForImageMode`** → **3 credits**.
 
 ---
 
@@ -62,13 +63,13 @@ Premium is positioned above Standard for hero assets and high-stakes creatives�
 | Field | Value |
 |-------|--------|
 | **Future provider candidates** | Nano Banana, FLUX Kontext |
-| **Suggested credit cost** | 2–4 credits per job (complexity-dependent) |
+| **Suggested credit cost** | **3–5 credits** per job (planned, not active) |
 | **Purpose** | Image editing, reference-guided workflows, product/creator refinements |
 | **Status** | Planned |
 
 Requires `source_image_url` (or equivalent) in the data model before activation. Credit cost should scale with edit type once COGS are known.
 
-**Implementation spec:** [REFERENCE_EDIT_IMPLEMENTATION_PLAN.md](./REFERENCE_EDIT_IMPLEMENTATION_PLAN.md) (UI/product). **Backend plan:** [REFERENCE_EDIT_BACKEND_PLAN.md](./REFERENCE_EDIT_BACKEND_PLAN.md) (storage, API, worker, DB). Not active — no activation without storage test, backend, and cost monitoring. First test tier: **2 credits**.
+**Implementation spec:** [REFERENCE_EDIT_IMPLEMENTATION_PLAN.md](./REFERENCE_EDIT_IMPLEMENTATION_PLAN.md) (UI/product). **Backend plan:** [REFERENCE_EDIT_BACKEND_PLAN.md](./REFERENCE_EDIT_BACKEND_PLAN.md) (storage, API, worker, DB). Not active — no activation without storage test, backend, and cost monitoring. Planned tier: **3–5 credits**.
 
 ---
 
@@ -107,7 +108,7 @@ Billing unit (per clip vs per second) must be fixed before UI goes Live. Store `
 | Field | Value |
 |-------|--------|
 | **Future provider candidates** | Lip-sync / talking-avatar providers |
-| **Suggested cost model** | Short clip: **10–30 credits**; longer/premium: **30–60 credits** (duration, provider, quality) |
+| **Suggested cost model** | Short clip: **10–30 credits**; longer/premium: **30–60 credits** (duration, provider, quality) — variable, not active |
 | **Purpose** | Talking creator clips, UGC ads, avatar content |
 | **Status** | Planned — **not Live** |
 
@@ -176,7 +177,7 @@ Violating any gate blocks marking the mode **Live** in UI or API.
 |-------|--------|--------|
 | **Phase 1** | Keep OpenAI Standard stable | Default path; all smoke tests green |
 | **Phase 2** | Add Fast Draft (optional) | Same or lower credit; must not replace Standard as default until tested |
-| **Phase 3** | Add Premium Image | 2–3 credits; quality bar for campaigns |
+| **Phase 3** | Add Premium Image | **3 credits**; quality bar for campaigns |
 | **Phase 4** | Add Reference Edit | Source image + edit pipeline |
 | **Phase 5** | Add Brand Assets | Recraft / layout-oriented outputs |
 | **Phase 6** | Add Video Studio | Video storage, 15–80 credit tiers |
@@ -225,8 +226,8 @@ Existing columns (`provider`, `model`, `workflow`) remain required for Standard 
 |---------------|--------|-------------------|
 | Standard Image | Live | 1 |
 | Fast Draft | Planned | 1 |
-| Premium Image | Planned | 2–3 |
-| Reference Edit | Planned | 2–4 |
+| Premium Image | Live (flagged) | **3** |
+| Reference Edit | Planned | 3–5 (not active) |
 | Brand Assets | Planned | 2–4 |
 | Video Studio (short) | Planned | 15–30 |
 | Video Studio (long/premium) | Planned | 40–80 |

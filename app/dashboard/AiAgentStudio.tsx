@@ -476,7 +476,7 @@ export default function AiAgentStudio({
           ? "beta"
           : "planned") as ImageModeCardStatus,
         creditNote: PREMIUM_IMAGE_PUBLIC_ENABLED
-          ? a.imageModes.twoCredits
+          ? a.imageModes.threeCredits
           : undefined,
         icon: Sparkles,
       },

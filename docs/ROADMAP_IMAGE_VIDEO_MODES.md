@@ -60,7 +60,7 @@ These modes are prepared in the **UI** (Image Mode selector) as disabled / Plann
 | **Mode key (proposed)** | `premium` |
 | **Future provider candidates** | FLUX Dev, FLUX Pro, Nano Banana Pro (evaluate quality/cost/latency per campaign type) |
 | **Intended use** | High-quality campaign visuals, hero assets, feed posts requiring extra fidelity |
-| **Suggested credit cost** | 2–3 credits per image |
+| **Credit cost (live)** | **3 credits** per image |
 | **Status** | Planned |
 | **User-visible status** | Planned |
 
@@ -73,7 +73,7 @@ These modes are prepared in the **UI** (Image Mode selector) as disabled / Plann
 | **Mode key (proposed)** | `reference_edit` |
 | **Future provider candidates** | Nano Banana, FLUX Kontext (reference-guided edit workflows) |
 | **Intended use** | Image editing, reference-guided edits, inpaint/outpaint-style campaign adjustments |
-| **Suggested credit cost** | 2–4 credits per job (depends on edit complexity) |
+| **Suggested credit cost** | **3–5 credits** per job (planned, not active) |
 | **Status** | Planned |
 | **User-visible status** | Planned |
 
@@ -288,7 +288,7 @@ Use this checklist before marking a mode **Live** in production.
 |-------|--------|----------------|
 | **P0** | Standard Image hardening | Baseline checklist green in prod |
 | **P1** | Fast Draft + credit model | 1-credit draft path, internal COGS tracked |
-| **P2** | Premium Image | 2–3 credits, quality bar for campaigns |
+| **P2** | Premium Image | **3 credits**, quality bar for campaigns |
 | **P3** | Reference Edit | Source image upload + edit pipeline |
 | **P4** | Brand Assets / Recraft | Layout/brand kits |
 | **P5** | Video Studio | Video URL storage; 15–30 / 40–80 credit tiers |

@@ -8,16 +8,50 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const STANDARD_IMAGE_CREDIT_COST = 1;
-const FAST_DRAFT_CREDIT_COST = 1;
-const PREMIUM_IMAGE_CREDIT_COST = 2;
-
 type ImageMode = "standard" | "fast_draft" | "premium_image";
+
+/** Planned modes — documented costs only; not billable until explicitly enabled. */
+const PLANNED_IMAGE_MODE_CREDIT_COSTS = {
+  reference_edit: { min: 3, max: 5 },
+  video: "variable_by_duration_and_quality",
+  lip_sync: "variable_by_duration",
+} as const;
+
+const PLANNED_IMAGE_MODES = new Set([
+  "reference_edit",
+  "video",
+  "lip_sync",
+  "video_studio",
+  "lip_sync_studio",
+]);
+
+function getCreditCostForImageMode(imageMode: ImageMode): number {
+  switch (imageMode) {
+    case "premium_image":
+      return 3;
+    case "fast_draft":
+      return 1;
+    case "standard":
+    default:
+      return 1;
+  }
+}
 
 function parseImageMode(value: unknown): ImageMode {
   if (value === "fast_draft") return "fast_draft";
   if (value === "premium_image") return "premium_image";
   return "standard";
+}
+
+function getPlannedModeRejection(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  if (!PLANNED_IMAGE_MODES.has(value)) return null;
+
+  if (value === "reference_edit") {
+    return "Reference Edit is not enabled.";
+  }
+
+  return "This image mode is not enabled.";
 }
 
 type GenerationJobConfig = {
@@ -45,7 +79,7 @@ function resolveGenerationJobConfig(imageMode: ImageMode):
         provider: "fal",
         model: "fal-ai/flux/schnell",
         workflow: "fast_draft",
-        creditsUsed: FAST_DRAFT_CREDIT_COST,
+        creditsUsed: getCreditCostForImageMode("fast_draft"),
         transactionSource: "fast_draft_generation_job",
       },
     };
@@ -66,7 +100,7 @@ function resolveGenerationJobConfig(imageMode: ImageMode):
         provider: "fal",
         model: "fal-ai/flux/dev",
         workflow: "premium_image",
-        creditsUsed: PREMIUM_IMAGE_CREDIT_COST,
+        creditsUsed: getCreditCostForImageMode("premium_image"),
         transactionSource: "premium_image_generation_job",
       },
     };
@@ -78,7 +112,7 @@ function resolveGenerationJobConfig(imageMode: ImageMode):
       provider: "openai",
       model: "gpt-image-1",
       workflow: "standard",
-      creditsUsed: STANDARD_IMAGE_CREDIT_COST,
+      creditsUsed: getCreditCostForImageMode("standard"),
       transactionSource: "standard_generation_job",
     },
   };
@@ -800,7 +834,7 @@ ${prompt}`,
 
 async function refundCredits(
   userId: string,
-  creditsToRefund: number = STANDARD_IMAGE_CREDIT_COST
+  creditsToRefund: number = getCreditCostForImageMode("standard")
 ) {
   if (creditsToRefund <= 0) return;
 
@@ -874,6 +908,12 @@ export async function POST(req: Request) {
 
     const prompt = body.prompt;
     const characterId = body.characterId ?? null;
+    const plannedModeError = getPlannedModeRejection(body.imageMode);
+
+    if (plannedModeError) {
+      return NextResponse.json({ error: plannedModeError }, { status: 400 });
+    }
+
     const imageMode = parseImageMode(body.imageMode);
     const outputFormat = getOutputFormat(body.outputFormat);
 
