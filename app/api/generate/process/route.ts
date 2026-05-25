@@ -16,7 +16,9 @@ const supabaseAdmin = createClient(
 
 const STORAGE_BUCKET = "generations";
 const FAL_FLUX_SCHNELL_MODEL = "fal-ai/flux/schnell";
+const FAL_FLUX_DEV_MODEL = "fal-ai/flux/dev";
 const FAL_REQUEST_TIMEOUT_MS = 120_000;
+const FAL_PREMIUM_REQUEST_TIMEOUT_MS = 180_000;
 
 type ImageSize = "1024x1024" | "1024x1536" | "1536x1024";
 
@@ -219,15 +221,7 @@ async function downloadImageFromUrl(imageUrl: string) {
   return { imageBuffer, contentType };
 }
 
-async function processFastDraftImage({
-  generationId,
-  userId,
-  finalPrompt,
-  creditsUsed,
-  imageSize,
-  outputWidth,
-  outputHeight,
-}: {
+type FalFluxJobOptions = {
   generationId: string;
   userId: string;
   finalPrompt: string;
@@ -235,17 +229,39 @@ async function processFastDraftImage({
   imageSize: unknown;
   outputWidth: unknown;
   outputHeight: unknown;
-}) {
-  if (process.env.ENABLE_FAL_FAST_DRAFT !== "true") {
+  falModel: string;
+  numInferenceSteps: number;
+  timeoutMs: number;
+  workflow: string;
+  modeLabel: string;
+  serverFlagEnv: string;
+};
+
+async function processFalFluxImage({
+  generationId,
+  userId,
+  finalPrompt,
+  creditsUsed,
+  imageSize,
+  outputWidth,
+  outputHeight,
+  falModel,
+  numInferenceSteps,
+  timeoutMs,
+  workflow,
+  modeLabel,
+  serverFlagEnv,
+}: FalFluxJobOptions) {
+  if (process.env[serverFlagEnv] !== "true") {
     await markFailedAndRefund({
       generationId,
       userId,
       creditsUsed,
-      errorMessage: "Fast Draft is not enabled on the server.",
+      errorMessage: `${modeLabel} is not enabled on the server.`,
     });
 
     return NextResponse.json(
-      { error: "Fast Draft is not enabled. Credits refunded." },
+      { error: `${modeLabel} is not enabled. Credits refunded.` },
       { status: 400 }
     );
   }
@@ -259,7 +275,7 @@ async function processFastDraftImage({
     });
 
     return NextResponse.json(
-      { error: "Fast Draft provider is not configured. Credits refunded." },
+      { error: "Image provider is not configured. Credits refunded." },
       { status: 500 }
     );
   }
@@ -276,20 +292,20 @@ async function processFastDraftImage({
 
   try {
     const result = await Promise.race([
-      fal.subscribe(FAL_FLUX_SCHNELL_MODEL, {
+      fal.subscribe(falModel, {
         input: {
           prompt: finalPrompt,
           image_size: falImageSize,
           num_images: 1,
-          num_inference_steps: 4,
+          num_inference_steps: numInferenceSteps,
           output_format: "png",
         },
         logs: false,
       }),
       new Promise<never>((_, reject) => {
         setTimeout(() => {
-          reject(new Error("Fast Draft provider timed out."));
-        }, FAL_REQUEST_TIMEOUT_MS);
+          reject(new Error(`${modeLabel} provider timed out.`));
+        }, timeoutMs);
       }),
     ]);
 
@@ -300,7 +316,7 @@ async function processFastDraftImage({
         generationId,
         userId,
         creditsUsed,
-        errorMessage: "Fast Draft did not return image data.",
+        errorMessage: `${modeLabel} did not return image data.`,
       });
 
       return NextResponse.json(
@@ -326,11 +342,13 @@ async function processFastDraftImage({
       success: true,
       generationId,
       image: publicUrl,
-      workflow: "fast_draft",
+      workflow,
     });
   } catch (error) {
     const errorMessage =
-      error instanceof Error ? error.message : "Fast Draft generation failed.";
+      error instanceof Error
+        ? error.message
+        : `${modeLabel} generation failed.`;
 
     await markFailedAndRefund({
       generationId,
@@ -344,6 +362,46 @@ async function processFastDraftImage({
       { status: 500 }
     );
   }
+}
+
+async function processFastDraftImage(args: {
+  generationId: string;
+  userId: string;
+  finalPrompt: string;
+  creditsUsed: number;
+  imageSize: unknown;
+  outputWidth: unknown;
+  outputHeight: unknown;
+}) {
+  return processFalFluxImage({
+    ...args,
+    falModel: FAL_FLUX_SCHNELL_MODEL,
+    numInferenceSteps: 4,
+    timeoutMs: FAL_REQUEST_TIMEOUT_MS,
+    workflow: "fast_draft",
+    modeLabel: "Fast Draft",
+    serverFlagEnv: "ENABLE_FAL_FAST_DRAFT",
+  });
+}
+
+async function processPremiumImage(args: {
+  generationId: string;
+  userId: string;
+  finalPrompt: string;
+  creditsUsed: number;
+  imageSize: unknown;
+  outputWidth: unknown;
+  outputHeight: unknown;
+}) {
+  return processFalFluxImage({
+    ...args,
+    falModel: FAL_FLUX_DEV_MODEL,
+    numInferenceSteps: 28,
+    timeoutMs: FAL_PREMIUM_REQUEST_TIMEOUT_MS,
+    workflow: "premium_image",
+    modeLabel: "Premium Image",
+    serverFlagEnv: "ENABLE_FAL_PREMIUM_IMAGE",
+  });
 }
 
 async function processOpenAIImage({
@@ -500,6 +558,18 @@ export async function POST(req: Request) {
 
     if (workflow === "fast_draft" && provider === "fal") {
       return processFastDraftImage({
+        generationId,
+        userId: generation.user_id,
+        finalPrompt,
+        creditsUsed,
+        imageSize: generation.image_size,
+        outputWidth: generation.output_width,
+        outputHeight: generation.output_height,
+      });
+    }
+
+    if (workflow === "premium_image" && provider === "fal") {
+      return processPremiumImage({
         generationId,
         userId: generation.user_id,
         finalPrompt,

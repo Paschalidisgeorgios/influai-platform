@@ -43,11 +43,29 @@ type RegenerateDraft = {
 
 type Workflow = "standard";
 type AgentMode = "auto" | "portrait" | "product" | "campaign";
-type ImageModeKey = "standard" | "fast_draft" | "premium" | "reference_edit";
+type ImageModeKey =
+  | "standard"
+  | "fast_draft"
+  | "premium_image"
+  | "reference_edit";
 type ImageModeCardStatus = "live" | "beta" | "planned";
 
 const FAST_DRAFT_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_FAST_DRAFT === "true";
+const PREMIUM_IMAGE_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_FAL_PREMIUM_IMAGE === "true";
+
+function resolveSubmitImageMode(imageMode: ImageModeKey): ImageModeKey {
+  if (imageMode === "fast_draft" && FAST_DRAFT_PUBLIC_ENABLED) {
+    return "fast_draft";
+  }
+
+  if (imageMode === "premium_image" && PREMIUM_IMAGE_PUBLIC_ENABLED) {
+    return "premium_image";
+  }
+
+  return "standard";
+}
 type ImageModeStatus = "live" | "planned";
 
 type OutputFormatKey =
@@ -360,10 +378,15 @@ export default function AiAgentStudio({
         icon: Zap,
       },
       {
-        key: "premium" as const,
+        key: "premium_image" as const,
         label: a.imageModes.premium.label,
         description: a.imageModes.premium.description,
-        status: "planned" as ImageModeCardStatus,
+        status: (PREMIUM_IMAGE_PUBLIC_ENABLED
+          ? "beta"
+          : "planned") as ImageModeCardStatus,
+        creditNote: PREMIUM_IMAGE_PUBLIC_ENABLED
+          ? a.imageModes.twoCredits
+          : undefined,
         icon: Sparkles,
       },
       {
@@ -401,8 +424,16 @@ export default function AiAgentStudio({
       return a.imageModeFastDraftActiveNote;
     }
 
+    if (imageMode === "premium_image" && PREMIUM_IMAGE_PUBLIC_ENABLED) {
+      return a.imageModePremiumActiveNote;
+    }
+
     return a.imageModeStandardActiveNote;
   }, [a, imageMode]);
+
+  const imageModeUsesBetaBadge =
+    (imageMode === "fast_draft" && FAST_DRAFT_PUBLIC_ENABLED) ||
+    (imageMode === "premium_image" && PREMIUM_IMAGE_PUBLIC_ENABLED);
   const [agentMode, setAgentMode] = useState<AgentMode>("auto");
   const [outputFormatKey, setOutputFormatKey] =
     useState<OutputFormatKey>("square");
@@ -457,6 +488,10 @@ export default function AiAgentStudio({
 
   useEffect(() => {
     if (imageMode === "fast_draft" && !FAST_DRAFT_PUBLIC_ENABLED) {
+      setImageMode("standard");
+    }
+
+    if (imageMode === "premium_image" && !PREMIUM_IMAGE_PUBLIC_ENABLED) {
       setImageMode("standard");
     }
   }, [imageMode]);
@@ -704,10 +739,7 @@ export default function AiAgentStudio({
           prompt: agentPrompt,
           characterId: selectedCharacterId || null,
           workflow,
-          imageMode:
-            imageMode === "fast_draft" && FAST_DRAFT_PUBLIC_ENABLED
-              ? "fast_draft"
-              : "standard",
+          imageMode: resolveSubmitImageMode(imageMode),
           outputFormat: outputFormatKey,
         }),
       });
@@ -926,7 +958,7 @@ export default function AiAgentStudio({
                     </legend>
                     <span
                       className={`rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] ${
-                        imageMode === "fast_draft" && FAST_DRAFT_PUBLIC_ENABLED
+                        imageModeUsesBetaBadge
                           ? "border border-amber-400/25 bg-amber-500/10 text-amber-100"
                           : "border border-emerald-500/25 bg-emerald-500/10 text-emerald-200"
                       }`}

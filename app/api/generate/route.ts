@@ -8,12 +8,16 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const IMAGE_GENERATION_COST = 1;
+const STANDARD_IMAGE_CREDIT_COST = 1;
+const FAST_DRAFT_CREDIT_COST = 1;
+const PREMIUM_IMAGE_CREDIT_COST = 2;
 
-type ImageMode = "standard" | "fast_draft";
+type ImageMode = "standard" | "fast_draft" | "premium_image";
 
 function parseImageMode(value: unknown): ImageMode {
-  return value === "fast_draft" ? "fast_draft" : "standard";
+  if (value === "fast_draft") return "fast_draft";
+  if (value === "premium_image") return "premium_image";
+  return "standard";
 }
 
 type GenerationJobConfig = {
@@ -41,8 +45,29 @@ function resolveGenerationJobConfig(imageMode: ImageMode):
         provider: "fal",
         model: "fal-ai/flux/schnell",
         workflow: "fast_draft",
-        creditsUsed: IMAGE_GENERATION_COST,
+        creditsUsed: FAST_DRAFT_CREDIT_COST,
         transactionSource: "fast_draft_generation_job",
+      },
+    };
+  }
+
+  if (imageMode === "premium_image") {
+    if (process.env.ENABLE_FAL_PREMIUM_IMAGE !== "true") {
+      return {
+        ok: false,
+        error:
+          "Premium Image is not enabled. Set ENABLE_FAL_PREMIUM_IMAGE=true on the server.",
+      };
+    }
+
+    return {
+      ok: true,
+      config: {
+        provider: "fal",
+        model: "fal-ai/flux/dev",
+        workflow: "premium_image",
+        creditsUsed: PREMIUM_IMAGE_CREDIT_COST,
+        transactionSource: "premium_image_generation_job",
       },
     };
   }
@@ -53,7 +78,7 @@ function resolveGenerationJobConfig(imageMode: ImageMode):
       provider: "openai",
       model: "gpt-image-1",
       workflow: "standard",
-      creditsUsed: IMAGE_GENERATION_COST,
+      creditsUsed: STANDARD_IMAGE_CREDIT_COST,
       transactionSource: "standard_generation_job",
     },
   };
@@ -773,10 +798,15 @@ ${prompt}`,
   ]);
 }
 
-async function refundCredits(userId: string) {
+async function refundCredits(
+  userId: string,
+  creditsToRefund: number = STANDARD_IMAGE_CREDIT_COST
+) {
+  if (creditsToRefund <= 0) return;
+
   const { error } = await supabaseAdmin.rpc("refund_user_credits", {
     target_user_id: userId,
-    credits_to_refund: IMAGE_GENERATION_COST,
+    credits_to_refund: creditsToRefund,
   });
 
   if (error) {
@@ -787,7 +817,7 @@ async function refundCredits(userId: string) {
     .from("credit_transactions")
     .insert({
       user_id: userId,
-      amount: IMAGE_GENERATION_COST,
+      amount: creditsToRefund,
       type: "refund",
       source: "generation_job_create_failure",
     });
@@ -958,7 +988,7 @@ export async function POST(req: Request) {
         JSON.stringify(generationCreateError, null, 2)
       );
 
-      await refundCredits(user.id);
+      await refundCredits(user.id, jobConfig.creditsUsed);
 
       return NextResponse.json(
         { error: "Failed to create generation job. Credits refunded." },

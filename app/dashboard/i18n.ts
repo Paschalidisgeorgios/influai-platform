@@ -131,6 +131,7 @@ const en = {
       "Choose how the AI Agent generates visuals. Standard Image is the production default. Fast Draft is optional when enabled for your environment.",
     imageModeStandardActiveNote: "Standard Image · Live · 1 Credit",
     imageModeFastDraftActiveNote: "Fast Draft · Beta · 1 Credit",
+    imageModePremiumActiveNote: "Premium Image · Beta · 2 Credits",
     plannedExpansion: "Studio roadmap",
     imageModeActiveNote: "Standard Image · Live · 1 Credit",
     imageModeRoadmapLabel: "Also on the studio roadmap",
@@ -160,7 +161,7 @@ const en = {
       premium: {
         label: "Premium Image",
         description:
-          "Higher-quality image generation for advanced creator campaigns.",
+          "Higher-quality campaign visuals for advanced creator assets.",
       },
       referenceEdit: {
         label: "Reference Edit",
@@ -170,6 +171,7 @@ const en = {
       live: "Live",
       beta: "Beta",
       oneCredit: "1 Credit",
+      twoCredits: "2 Credits",
       planned: "Planned",
       comingSoon: "Coming soon",
       plannedTooltip: "Planned — not available in this release",
@@ -583,6 +585,7 @@ const de: DeepString<typeof en> = {
       "Wähle, wie der AI Agent Visuals erzeugt. Standard Image ist der Produktions-Default. Fast Draft ist optional, wenn es in deiner Umgebung aktiviert ist.",
     imageModeStandardActiveNote: "Standard Image · Live · 1 Credit",
     imageModeFastDraftActiveNote: "Fast Draft · Beta · 1 Credit",
+    imageModePremiumActiveNote: "Premium Image · Beta · 2 Credits",
     plannedExpansion: "Studio-Roadmap",
     imageModeActiveNote: "Standard Image · Live · 1 Credit",
     imageModeRoadmapLabel: "Ebenfalls auf der Studio-Roadmap",
@@ -612,7 +615,7 @@ const de: DeepString<typeof en> = {
       premium: {
         label: "Premium Image",
         description:
-          "Höherwertige Bildgenerierung für anspruchsvolle Creator-Kampagnen.",
+          "Höherwertige Kampagnenvisuals für anspruchsvolle Creator-Assets.",
       },
       referenceEdit: {
         label: "Reference Edit",
@@ -622,6 +625,7 @@ const de: DeepString<typeof en> = {
       live: "Live",
       beta: "Beta",
       oneCredit: "1 Credit",
+      twoCredits: "2 Credits",
       planned: "Geplant",
       comingSoon: "Demnächst",
       plannedTooltip: "Geplant — in diesem Release nicht verfügbar",
