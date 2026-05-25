@@ -51,6 +51,8 @@ These modes are prepared in the **UI** (Image Mode selector) as disabled / Plann
 
 **Constraint:** Fast Draft must not replace Standard Image as the default until production-tested end-to-end.
 
+**Implementation spec:** [FAST_DRAFT_IMPLEMENTATION_PLAN.md](./FAST_DRAFT_IMPLEMENTATION_PLAN.md) — API/worker/UI rollout, DB fields, test and safety checklist.
+
 ### 2.2 Premium Image
 
 | Field | Value |

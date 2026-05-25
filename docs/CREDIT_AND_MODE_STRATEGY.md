@@ -38,6 +38,8 @@ Standard Image is the production default and fallback. All planned modes must be
 
 **Important:** Fast Draft must **not** replace Standard Image as the default until it passes the full provider checklist (timeouts, refunds, storage, gallery, production COGS). Standard remains the quality baseline for paid campaigns.
 
+**Implementation spec:** [FAST_DRAFT_IMPLEMENTATION_PLAN.md](./FAST_DRAFT_IMPLEMENTATION_PLAN.md) (FLUX Schnell / fal.ai — planning only, not active).
+
 ---
 
 ## 3. Planned Premium Image mode
