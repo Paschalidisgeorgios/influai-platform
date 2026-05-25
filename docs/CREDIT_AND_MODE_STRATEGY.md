@@ -8,7 +8,7 @@
 
 This document defines how InfluExAi should price and roll out image, video, lip-sync, and promotional modes. It is the authoritative reference for **credit costs**, **rollout order**, and **safety rules** before any new provider is activated.
 
-Nothing in this file enables a mode in production. Live behavior today remains **Standard Image only** (OpenAI `gpt-image-1`, 1 credit).
+Nothing in this file enables a mode in production. Live behavior today remains **Standard Image only** (OpenAI `gpt-image-1`, **1 credit**). Fast Draft, Premium Image, and Reference Edit are **planned** — no UI or API activation without backend implementation and cost monitoring ([§11](#11-important-implementation-rule)).
 
 ---
 
@@ -53,6 +53,8 @@ Standard Image is the production default and fallback. All planned modes must be
 
 Premium is positioned above Standard for hero assets and high-stakes creatives—not for every draft.
 
+**Implementation spec:** [PREMIUM_IMAGE_IMPLEMENTATION_PLAN.md](./PREMIUM_IMAGE_IMPLEMENTATION_PLAN.md) (planning only, not active). Final credit price after provider cost test.
+
 ---
 
 ## 4. Planned Reference Edit mode
@@ -65,6 +67,8 @@ Premium is positioned above Standard for hero assets and high-stakes creatives�
 | **Status** | Planned |
 
 Requires `source_image_url` (or equivalent) in the data model before activation. Credit cost should scale with edit type once COGS are known.
+
+**Implementation spec:** [REFERENCE_EDIT_IMPLEMENTATION_PLAN.md](./REFERENCE_EDIT_IMPLEMENTATION_PLAN.md) (planning only, not active). No activation without storage test, backend, and cost monitoring.
 
 ---
 

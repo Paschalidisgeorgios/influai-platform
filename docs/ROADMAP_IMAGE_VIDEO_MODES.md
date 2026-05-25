@@ -64,6 +64,8 @@ These modes are prepared in the **UI** (Image Mode selector) as disabled / Plann
 | **Status** | Planned |
 | **User-visible status** | Planned |
 
+**Implementation spec:** [PREMIUM_IMAGE_IMPLEMENTATION_PLAN.md](./PREMIUM_IMAGE_IMPLEMENTATION_PLAN.md) — 2–3 credits, worker/UI rollout (not active).
+
 ### 2.3 Reference Edit
 
 | Field | Value |
@@ -74,6 +76,8 @@ These modes are prepared in the **UI** (Image Mode selector) as disabled / Plann
 | **Suggested credit cost** | 2–4 credits per job (depends on edit complexity) |
 | **Status** | Planned |
 | **User-visible status** | Planned |
+
+**Implementation spec:** [REFERENCE_EDIT_IMPLEMENTATION_PLAN.md](./REFERENCE_EDIT_IMPLEMENTATION_PLAN.md) — 2–4 credits, upload/storage, gallery metadata (not active).
 
 ### 2.4 Brand Assets
 
