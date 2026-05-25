@@ -15,8 +15,8 @@ type ImageMode =
   | "reference_edit"
   | "brand_assets";
 
-/** Brand Assets — Recraft V3 text-to-image on fal.ai */
-const FAL_RECRAFT_V3_MODEL = "fal-ai/recraft-v3";
+/** Brand Assets — FLUX Dev via fal.ai (stable; Recraft endpoint returned 422) */
+const FAL_BRAND_ASSETS_MODEL = "fal-ai/flux/dev";
 
 const PLANNED_IMAGE_MODES = new Set([
   "video",
@@ -151,7 +151,7 @@ function resolveGenerationJobConfig(imageMode: ImageMode):
       ok: true,
       config: {
         provider: "fal",
-        model: FAL_RECRAFT_V3_MODEL,
+        model: FAL_BRAND_ASSETS_MODEL,
         workflow: "brand_assets",
         creditsUsed: getCreditCostForImageMode("brand_assets"),
         transactionSource: "brand_assets_generation_job",

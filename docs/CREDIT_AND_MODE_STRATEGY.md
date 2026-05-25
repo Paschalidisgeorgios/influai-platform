@@ -78,8 +78,8 @@ Requires `source_image_url` (or equivalent) in the data model before activation.
 | Field | Value |
 |-------|--------|
 | **Mode key** | `brand_assets` |
-| **Provider** | fal.ai / Recraft V3 |
-| **Model endpoint** | `fal-ai/recraft-v3` (text-to-image) |
+| **Provider** | fal.ai / FLUX Dev (`fal-ai/flux/dev`) — brand-focused prompts; Recraft deferred (422 on v3 input) |
+| **Model endpoint** | `fal-ai/flux/dev` |
 | **Credit cost** | **4 credits** per job |
 | **Workflow** | `brand_assets` |
 | **Purpose** | Brand-ready ad creatives, product campaign assets, brand visuals, thumbnails, social layouts |

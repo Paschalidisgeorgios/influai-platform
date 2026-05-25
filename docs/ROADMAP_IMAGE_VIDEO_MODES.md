@@ -84,8 +84,8 @@ These modes are prepared in the **UI** (Image Mode selector) as disabled / Plann
 | Field | Value |
 |-------|--------|
 | **Mode key** | `brand_assets` |
-| **Provider** | fal.ai / Recraft V3 |
-| **Model endpoint** | `fal-ai/recraft-v3` |
+| **Provider** | fal.ai / FLUX Dev (`fal-ai/flux/dev`) |
+| **Model endpoint** | `fal-ai/flux/dev` |
 | **Intended use** | Brand systems, product layouts, ad creatives, thumbnails, social campaign assets |
 | **Credit cost** | **4 credits** per asset |
 | **Status** | **Beta** (feature-flagged) |
