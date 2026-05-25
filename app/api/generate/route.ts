@@ -10,6 +10,228 @@ const supabaseAdmin = createClient(
 
 const IMAGE_GENERATION_COST = 1;
 
+type ImageSize = "1024x1024" | "1024x1536" | "1536x1024";
+
+type OutputFormat = {
+  key: string;
+  platform: string;
+  label: string;
+  aspectRatio: string;
+  imageSize: ImageSize;
+  width: number;
+  height: number;
+};
+
+type CharacterRecord = {
+  id: string;
+  name: string;
+  description: string | null;
+  appearance_prompt: string | null;
+  style_prompt: string | null;
+  reference_image_url: string | null;
+};
+
+const OUTPUT_FORMATS: Record<string, OutputFormat> = {
+  square: {
+    key: "square",
+    platform: "general",
+    label: "Square",
+    aspectRatio: "1:1",
+    imageSize: "1024x1024",
+    width: 1024,
+    height: 1024,
+  },
+  tiktok: {
+    key: "tiktok",
+    platform: "tiktok",
+    label: "TikTok / Reels",
+    aspectRatio: "9:16",
+    imageSize: "1024x1536",
+    width: 1024,
+    height: 1536,
+  },
+  instagram_post: {
+    key: "instagram_post",
+    platform: "instagram",
+    label: "Instagram Post",
+    aspectRatio: "4:5",
+    imageSize: "1024x1536",
+    width: 1024,
+    height: 1536,
+  },
+  instagram_story: {
+    key: "instagram_story",
+    platform: "instagram",
+    label: "Instagram Story",
+    aspectRatio: "9:16",
+    imageSize: "1024x1536",
+    width: 1024,
+    height: 1536,
+  },
+  youtube_thumbnail: {
+    key: "youtube_thumbnail",
+    platform: "youtube",
+    label: "YouTube Thumbnail",
+    aspectRatio: "16:9",
+    imageSize: "1536x1024",
+    width: 1536,
+    height: 1024,
+  },
+  youtube_shorts: {
+    key: "youtube_shorts",
+    platform: "youtube",
+    label: "YouTube Shorts",
+    aspectRatio: "9:16",
+    imageSize: "1024x1536",
+    width: 1024,
+    height: 1536,
+  },
+};
+
+function getOutputFormat(formatKey: unknown): OutputFormat {
+  if (typeof formatKey !== "string") {
+    return OUTPUT_FORMATS.square;
+  }
+
+  return OUTPUT_FORMATS[formatKey] ?? OUTPUT_FORMATS.square;
+}
+
+function buildFormatRules(outputFormat: OutputFormat) {
+  if (
+    outputFormat.key === "tiktok" ||
+    outputFormat.key === "instagram_story" ||
+    outputFormat.key === "youtube_shorts"
+  ) {
+    return `
+Output format:
+${outputFormat.label}
+
+Aspect ratio:
+${outputFormat.aspectRatio}
+
+Composition rules:
+Create a vertical social-media-ready image. Keep the main subject centered but not too close to the edges. Leave clean negative space near the top and bottom for platform UI, captions, buttons, and overlays. Make it feel like a premium mobile campaign visual.
+    `.trim();
+  }
+
+  if (outputFormat.key === "youtube_thumbnail") {
+    return `
+Output format:
+${outputFormat.label}
+
+Aspect ratio:
+${outputFormat.aspectRatio}
+
+Composition rules:
+Create a wide cinematic thumbnail composition. Use a strong focal subject, clear visual hierarchy, high contrast, readable framing, and enough negative space for future title text. Make the image attention-grabbing without adding actual text.
+    `.trim();
+  }
+
+  if (outputFormat.key === "instagram_post") {
+    return `
+Output format:
+${outputFormat.label}
+
+Aspect ratio:
+${outputFormat.aspectRatio}
+
+Composition rules:
+Create a premium portrait-feed composition. Keep the subject well-framed for Instagram, with clean spacing, strong visual focus, and a polished editorial look.
+    `.trim();
+  }
+
+  return `
+Output format:
+${outputFormat.label}
+
+Aspect ratio:
+${outputFormat.aspectRatio}
+
+Composition rules:
+Create a clean square composition with strong subject focus, balanced spacing, premium lighting, and a polished social-media-ready layout.
+  `.trim();
+}
+
+function buildQualityRules() {
+  return `
+Quality rules:
+- premium editorial photography
+- realistic skin texture
+- natural anatomy
+- sharp facial detail
+- professional lighting
+- clean background
+- high-end commercial visual quality
+- no text, no watermark, no logo
+- no distorted face
+- no plastic skin
+- no extra fingers
+- no deformed hands
+- no blurry low-quality output
+  `.trim();
+}
+
+function buildStandardFinalPrompt({
+  prompt,
+  outputFormat,
+}: {
+  prompt: string;
+  outputFormat: OutputFormat;
+}) {
+  return `
+Create a premium AI-generated visual based on this request:
+
+User request:
+${prompt}
+
+${buildFormatRules(outputFormat)}
+
+${buildQualityRules()}
+
+Style direction:
+Make the image feel like a professional campaign asset for a modern creator brand. Prioritize realism, composition, lighting, elegance, and strong social-media impact.
+  `.trim();
+}
+
+function buildCharacterStylePrompt({
+  character,
+  prompt,
+  outputFormat,
+}: {
+  character: CharacterRecord;
+  prompt: string;
+  outputFormat: OutputFormat;
+}) {
+  return `
+Create a premium AI-generated visual inspired by this saved character profile.
+
+Important:
+Use this character as creative direction for look, styling, personality, hair, outfit direction, and overall brand identity. Do not promise exact face identity. This is Character Style mode, not strict face consistency.
+
+Character name:
+${character.name}
+
+Character description:
+${character.description ?? "No additional description."}
+
+Character appearance direction:
+${character.appearance_prompt ?? "No specific appearance prompt."}
+
+Character style direction:
+${character.style_prompt ?? "No specific style prompt."}
+
+User scene request:
+${prompt}
+
+${buildFormatRules(outputFormat)}
+
+${buildQualityRules()}
+
+Style direction:
+Create a polished creator-campaign visual that feels consistent with the character's brand and aesthetic. Prioritize professional composition, realistic detail, strong lighting, and commercial usability.
+  `.trim();
+}
+
 async function refundCredits(userId: string) {
   const { error } = await supabaseAdmin.rpc("refund_user_credits", {
     target_user_id: userId,
@@ -35,19 +257,23 @@ async function refundCredits(userId: string) {
 }
 
 async function triggerWorker(generationId: string, origin: string) {
-  try {
-    await fetch(`${origin}/api/generate/process`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-worker-secret": process.env.GENERATION_WORKER_SECRET!,
-      },
-      body: JSON.stringify({
-        generationId,
-      }),
+  const response = await fetch(`${origin}/api/generate/process`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-worker-secret": process.env.GENERATION_WORKER_SECRET!,
+    },
+    body: JSON.stringify({
+      generationId,
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    console.error("Worker trigger failed:", {
+      status: response.status,
+      body: text,
     });
-  } catch (error) {
-    console.error("Worker trigger error:", error);
   }
 }
 
@@ -77,7 +303,7 @@ export async function POST(req: Request) {
 
     const prompt = body.prompt;
     const characterId = body.characterId ?? null;
-    const requestedWorkflow = body.workflow ?? "standard";
+    const outputFormat = getOutputFormat(body.outputFormat);
 
     if (!prompt || typeof prompt !== "string") {
       return NextResponse.json(
@@ -86,9 +312,12 @@ export async function POST(req: Request) {
       );
     }
 
-    let finalPrompt = prompt;
+    let finalPrompt = buildStandardFinalPrompt({
+      prompt,
+      outputFormat,
+    });
+
     let usedCharacterId: string | null = null;
-    let workflow = "standard";
     let referenceImageUrl: string | null = null;
 
     if (characterId && typeof characterId === "string") {
@@ -101,8 +330,7 @@ export async function POST(req: Request) {
           description,
           appearance_prompt,
           style_prompt,
-          reference_image_url,
-          face_workflow
+          reference_image_url
         `
         )
         .eq("id", characterId)
@@ -119,48 +347,11 @@ export async function POST(req: Request) {
       usedCharacterId = character.id;
       referenceImageUrl = character.reference_image_url ?? null;
 
-      workflow =
-        requestedWorkflow === "face_consistent"
-          ? "face_consistent"
-          : character.face_workflow ?? "standard";
-
-      if (workflow === "openai") {
-        workflow = "standard";
-      }
-
-      finalPrompt = `
-Create an image of this saved AI character.
-
-Character name:
-${character.name}
-
-Character description:
-${character.description ?? "No additional description."}
-
-Character appearance:
-${character.appearance_prompt ?? "No specific appearance prompt."}
-
-Character style:
-${character.style_prompt ?? "No specific style prompt."}
-
-Scene prompt:
-${prompt}
-
-Keep the character visually consistent. Preserve face, age, body type, hair, styling direction, and overall identity across generations.
-      `.trim();
-    } else {
-      workflow =
-        requestedWorkflow === "face_consistent" ? "standard" : requestedWorkflow;
-    }
-
-    if (workflow === "face_consistent" && !referenceImageUrl) {
-      return NextResponse.json(
-        {
-          error:
-            "Face-consistent generation requires a character reference image.",
-        },
-        { status: 400 }
-      );
+      finalPrompt = buildCharacterStylePrompt({
+        character,
+        prompt,
+        outputFormat,
+      });
     }
 
     const { data: creditSuccess, error: creditError } =
@@ -194,13 +385,15 @@ Keep the character visually consistent. Preserve face, age, body type, hair, sty
           final_prompt: finalPrompt,
           image_url: null,
           status: "processing",
-          provider: workflow === "face_consistent" ? "replicate" : "openai",
-          model:
-            workflow === "face_consistent"
-              ? "face-consistency-workflow"
-              : "gpt-image-1",
-          workflow,
+          provider: "openai",
+          model: "gpt-image-1",
+          workflow: "standard",
           reference_image_url: referenceImageUrl,
+          social_platform: outputFormat.platform,
+          output_format: outputFormat.label,
+          image_size: outputFormat.imageSize,
+          output_width: outputFormat.width,
+          output_height: outputFormat.height,
           credits_used: IMAGE_GENERATION_COST,
           character_id: usedCharacterId,
           error_message: null,
@@ -210,7 +403,10 @@ Keep the character visually consistent. Preserve face, age, body type, hair, sty
         .single();
 
     if (generationCreateError || !generation) {
-      console.error("Generation create error:", generationCreateError);
+      console.error(
+        "Generation create error:",
+        JSON.stringify(generationCreateError, null, 2)
+      );
 
       await refundCredits(user.id);
 
@@ -227,8 +423,8 @@ Keep the character visually consistent. Preserve face, age, body type, hair, sty
         amount: -IMAGE_GENERATION_COST,
         type: "usage",
         source: usedCharacterId
-          ? `${workflow}_character_generation_job`
-          : `${workflow}_generation_job`,
+          ? `${outputFormat.platform}_character_style_generation_job`
+          : `${outputFormat.platform}_standard_generation_job`,
       });
 
     if (transactionError) {
@@ -236,10 +432,14 @@ Keep the character visually consistent. Preserve face, age, body type, hair, sty
     }
 
     const origin =
-      req.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL;
+      req.headers.get("origin") ??
+      process.env.NEXT_PUBLIC_APP_URL ??
+      new URL(req.url).origin;
 
-    if (origin) {
-      triggerWorker(generation.id, origin);
+    try {
+      await triggerWorker(generation.id, origin);
+    } catch (error) {
+      console.error("Worker trigger exception:", error);
     }
 
     return NextResponse.json({
@@ -248,11 +448,15 @@ Keep the character visually consistent. Preserve face, age, body type, hair, sty
       generationId: generation.id,
       creditsUsed: IMAGE_GENERATION_COST,
       characterId: usedCharacterId,
-      workflow,
+      workflow: "standard",
       referenceImageUrl,
+      outputFormat,
     });
   } catch (error) {
-    console.error("Generate route error:", error);
+    console.error(
+      "Generate route error:",
+      error instanceof Error ? error.message : JSON.stringify(error, null, 2)
+    );
 
     return NextResponse.json(
       { error: "Failed to create generation job." },

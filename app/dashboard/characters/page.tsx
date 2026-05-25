@@ -73,7 +73,7 @@ export default function CharactersPage() {
           <div>
 
             <p className="text-[#c7a36a] uppercase tracking-[0.3em] text-xs md:text-sm mb-4">
-              InfluAI
+              InfluExAi
             </p>
 
             <h1 className="text-4xl md:text-6xl font-bold">

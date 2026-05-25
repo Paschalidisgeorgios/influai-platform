@@ -97,7 +97,7 @@ export default function FaceStudioPage() {
         {/* HEADER */}
         <div className="mb-12">
           <p className="text-yellow-600 tracking-[0.3em] text-xs mb-3">
-            INFLUAI STUDIO
+            InfluExAi STUDIO
           </p>
 
           <h1 className="text-6xl font-bold mb-4">

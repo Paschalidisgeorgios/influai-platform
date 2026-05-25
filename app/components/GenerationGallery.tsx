@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import Masonry from "react-masonry-css";
 import {
   AlertCircle,
@@ -35,6 +34,12 @@ type Generation = {
   error_message: string | null;
   is_favorite: boolean;
   character_id: string | null;
+  workflow?: string | null;
+  social_platform?: string | null;
+  output_format?: string | null;
+  image_size?: string | null;
+  output_width?: number | null;
+  output_height?: number | null;
   ai_characters: GenerationCharacter;
 };
 
@@ -50,13 +55,15 @@ const masonryBreakpoints = {
   1280: 4,
   1024: 3,
   768: 2,
-  0: 2,
+  0: 1,
 };
 
 export default function GenerationGallery({
   refreshKey = 0,
   onRegenerate,
 }: GenerationGalleryProps) {
+  const supabase = createClient();
+
   const [generations, setGenerations] = useState<Generation[]>([]);
   const [selectedGeneration, setSelectedGeneration] =
     useState<Generation | null>(null);
@@ -66,7 +73,7 @@ export default function GenerationGallery({
   );
   const [statusFilter, setStatusFilter] = useState<
     "all" | "completed" | "failed" | "processing"
-  >("completed");
+  >("all");
   const [selectedCharacterId, setSelectedCharacterId] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -76,7 +83,7 @@ export default function GenerationGallery({
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
 
-  const supabase = createClient();
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
 
   const characterOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -187,7 +194,14 @@ export default function GenerationGallery({
       const token = await getAccessToken();
 
       if (!token) {
-        throw new Error("No active session");
+        console.error("Gallery load error: No active session");
+
+        if (offset === 0) {
+          setGenerations([]);
+        }
+
+        setHasMore(false);
+        return;
       }
 
       const response = await fetch(buildGenerationsUrl(offset), {
@@ -199,7 +213,17 @@ export default function GenerationGallery({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to load gallery");
+        console.error("Generations API error:", {
+          status: response.status,
+          error: data.error,
+        });
+
+        if (offset === 0) {
+          setGenerations([]);
+        }
+
+        setHasMore(false);
+        return;
       }
 
       const nextItems: Generation[] = data.generations || [];
@@ -211,6 +235,12 @@ export default function GenerationGallery({
       setHasMore(Boolean(data.pagination?.hasMore));
     } catch (error) {
       console.error("Gallery load error:", error);
+
+      if (offset === 0) {
+        setGenerations([]);
+      }
+
+      setHasMore(false);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -235,7 +265,8 @@ export default function GenerationGallery({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update favorite");
+        console.error("Favorite update failed:", response.status);
+        return;
       }
 
       setGenerations((prev) =>
@@ -274,7 +305,8 @@ export default function GenerationGallery({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete generation");
+        console.error("Delete generation failed:", response.status);
+        return;
       }
 
       setGenerations((prev) =>
@@ -308,6 +340,13 @@ export default function GenerationGallery({
     });
   }
 
+  function markImageBroken(generationId: string) {
+    setBrokenImages((current) => ({
+      ...current,
+      [generationId]: true,
+    }));
+  }
+
   function Toolbar() {
     return (
       <div className="space-y-4">
@@ -336,7 +375,7 @@ export default function GenerationGallery({
         </div>
 
         <div className="flex flex-wrap gap-3">
-          {(["completed", "processing", "failed", "all"] as const).map(
+          {(["all", "completed", "processing", "failed"] as const).map(
             (status) => (
               <button
                 key={status}
@@ -394,13 +433,11 @@ export default function GenerationGallery({
       );
     }
 
-    if (generation.status === "failed" || !generation.image_url) {
+    if (generation.status === "failed") {
       return (
         <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-red-500/10 p-6 text-center">
           <AlertCircle className="h-8 w-8 text-red-200" />
-          <p className="text-sm font-bold text-red-100">
-            Generation failed
-          </p>
+          <p className="text-sm font-bold text-red-100">Generation failed</p>
           <p className="line-clamp-3 text-xs text-red-100/60">
             {generation.error_message ?? "Unknown error"}
           </p>
@@ -408,13 +445,25 @@ export default function GenerationGallery({
       );
     }
 
+    if (!generation.image_url || brokenImages[generation.id]) {
+      return (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-white/[0.04] p-6 text-center">
+          <AlertCircle className="h-8 w-8 text-white/50" />
+          <p className="text-sm font-bold text-white">Image not available</p>
+          <p className="line-clamp-3 text-xs text-white/40">
+            The image URL could not be loaded.
+          </p>
+        </div>
+      );
+    }
+
     return (
-      <Image
+      <img
         src={generation.image_url}
         alt={generation.prompt}
-        fill
-        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-        className="object-cover transition duration-500 group-hover:scale-105"
+        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+        loading="lazy"
+        onError={() => markImageBroken(generation.id)}
       />
     );
   }
@@ -433,7 +482,7 @@ export default function GenerationGallery({
         <Toolbar />
 
         {generations.length === 0 ? (
-          <div className="py-20 text-center text-white/60">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] py-20 text-center text-white/60">
             No matching generations.
           </div>
         ) : (
@@ -496,11 +545,17 @@ export default function GenerationGallery({
                   </p>
 
                   <div className="flex items-center justify-between gap-3 text-xs text-white/35">
-                    <span>{generation.status}</span>
+                    <span>{generation.model ?? "model"}</span>
                     <span className="truncate">
                       {generation.ai_characters?.name ?? "free prompt"}
                     </span>
                   </div>
+
+                  {generation.output_format && (
+                    <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-bold text-white/40">
+                      {generation.output_format}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -547,11 +602,11 @@ export default function GenerationGallery({
                     Generation in progress
                   </h3>
                   <p className="max-w-lg text-sm leading-7 text-white/50">
-                    Your image is still being generated. The gallery will refresh automatically.
+                    Your image is still being generated. The gallery will
+                    refresh automatically.
                   </p>
                 </div>
-              ) : selectedGeneration.status === "failed" ||
-                !selectedGeneration.image_url ? (
+              ) : selectedGeneration.status === "failed" ? (
                 <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-4 bg-red-500/10 p-8 text-center lg:min-h-[92vh]">
                   <AlertCircle className="h-12 w-12 text-red-200" />
                   <h3 className="text-2xl font-black text-red-100">
@@ -561,15 +616,24 @@ export default function GenerationGallery({
                     {selectedGeneration.error_message ?? "Unknown error"}
                   </p>
                 </div>
-              ) : (
-                <Image
+              ) : selectedGeneration.image_url &&
+                !brokenImages[selectedGeneration.id] ? (
+                <img
                   src={selectedGeneration.image_url}
                   alt={selectedGeneration.prompt}
-                  fill
-                  sizes="80vw"
-                  className="object-contain"
-                  priority
+                  className="h-full max-h-[92vh] w-full object-contain"
+                  onError={() => markImageBroken(selectedGeneration.id)}
                 />
+              ) : (
+                <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-4 bg-white/[0.04] p-8 text-center lg:min-h-[92vh]">
+                  <AlertCircle className="h-12 w-12 text-white/50" />
+                  <h3 className="text-2xl font-black text-white">
+                    Image not available
+                  </h3>
+                  <p className="max-w-lg text-sm leading-7 text-white/50">
+                    The image URL could not be loaded.
+                  </p>
+                </div>
               )}
             </div>
 
@@ -693,7 +757,7 @@ export default function GenerationGallery({
                     className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-bold text-white transition hover:border-white/25"
                   >
                     <Download className="mr-2 h-4 w-4" />
-                    Download image
+                    Open / download image
                   </a>
                 )}
 

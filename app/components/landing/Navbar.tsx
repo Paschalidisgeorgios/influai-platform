@@ -19,7 +19,7 @@ export default function Navbar({
           href="/"
           className="text-xs font-black uppercase tracking-[0.55em] text-white sm:text-sm"
         >
-          AIINFLU<span className="text-[#d8ad5f]">GEN</span>
+          Influ<span className="text-[#d8ad5f]">ExAi</span>
         </Link>
 
         <nav className="hidden items-center gap-10 text-sm font-semibold text-white/65 lg:flex">

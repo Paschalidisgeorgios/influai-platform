@@ -54,7 +54,7 @@ export default function SignupPage() {
         {/* HEADER */}
 
         <p className="text-[#c7a36a] uppercase tracking-[0.3em] text-sm mb-4">
-          InfluAI
+          InfluExAi
         </p>
 
         <h1 className="text-5xl font-bold mb-4">

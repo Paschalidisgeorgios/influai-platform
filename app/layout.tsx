@@ -1,11 +1,20 @@
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-import { Toaster } from "react-hot-toast";
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
 
-export const metadata = {
-  title: "InfluAI",
-  description:
-    "AI creator platform for cinematic influencer content.",
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "InfluExAi",
+  description: "AI Creator Platform",
 };
 
 export default function RootLayout({
@@ -13,49 +22,13 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-
   return (
-
-    <html lang="en">
-
-      <body className="bg-black text-white">
-
-        <Toaster
-          position="top-right"
-
-          toastOptions={{
-
-            style: {
-              background: "#080808",
-              color: "#ffffff",
-              border:
-                "1px solid #1a1a1a",
-            },
-
-            success: {
-              iconTheme: {
-                primary:
-                  "#c7a36a",
-                secondary:
-                  "#000000",
-              },
-            },
-
-            error: {
-              iconTheme: {
-                primary:
-                  "#ef4444",
-                secondary:
-                  "#ffffff",
-              },
-            },
-          }}
-        />
-
+    <html lang="en" data-scroll-behavior="smooth">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
+      >
         {children}
-
       </body>
-
     </html>
   );
 }

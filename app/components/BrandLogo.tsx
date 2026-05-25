@@ -9,7 +9,7 @@ export default function BrandLogo() {
 
       <div className="flex flex-col leading-none">
         <span className="text-[0.72rem] font-black uppercase tracking-[0.38em] text-white">
-          AIINFLU<span className="text-[#d8ad5f]">GEN</span>
+          Influ<span className="text-[#d8ad5f]">ExAi</span>
         </span>
 
         <span className="mt-1 text-[0.58rem] font-medium uppercase tracking-[0.32em] text-white/35">

@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
-import Masonry from "react-masonry-css";
 import {
+  AlertCircle,
   Check,
   Copy,
   Download,
   Heart,
+  ImageOff,
+  Loader2,
   RefreshCw,
   Trash2,
   X,
@@ -19,16 +20,27 @@ type GenerationCharacter = {
   name: string;
 } | null;
 
+type GenerationStatus = "processing" | "completed" | "failed";
+
 type Generation = {
   id: string;
   prompt: string;
   final_prompt: string | null;
-  image_url: string;
+  image_url: string | null;
   created_at: string;
   provider: string | null;
   model: string | null;
+  status: GenerationStatus;
+  error_message: string | null;
   is_favorite: boolean;
   character_id: string | null;
+  workflow?: string | null;
+  social_platform?: string | null;
+  output_format?: string | null;
+  image_size?: string | null;
+  output_width?: number | null;
+  output_height?: number | null;
+  credits_used?: number | null;
   ai_characters: GenerationCharacter;
 };
 
@@ -39,23 +51,53 @@ type GenerationGalleryProps = {
 
 const PAGE_SIZE = 24;
 
-const masonryBreakpoints = {
-  default: 4,
-  1280: 4,
-  1024: 3,
-  768: 2,
-  0: 2,
-};
+function getStatusClass(status: GenerationStatus) {
+  if (status === "completed") {
+    return "border-emerald-500/20 bg-emerald-500/10 text-emerald-200";
+  }
+
+  if (status === "processing") {
+    return "border-[#d8ad5f]/20 bg-[#d8ad5f]/10 text-[#d8ad5f]";
+  }
+
+  return "border-red-500/20 bg-red-500/10 text-red-200";
+}
+
+function getWorkflowLabel(workflow?: string | null) {
+  if (workflow === "character_pro") return "Legacy Pro";
+  if (workflow === "face_consistent_pulid") return "Legacy";
+  if (workflow === "face_consistent") return "Legacy";
+  return "Standard";
+}
+
+function getImageAspectClass(generation: Generation) {
+  if (generation.image_size === "1024x1536") {
+    return "aspect-[2/3]";
+  }
+
+  if (generation.image_size === "1536x1024") {
+    return "aspect-[3/2]";
+  }
+
+  return "aspect-square";
+}
 
 export default function GenerationGallery({
   refreshKey = 0,
   onRegenerate,
 }: GenerationGalleryProps) {
+  const supabase = createClient();
+
   const [generations, setGenerations] = useState<Generation[]>([]);
   const [selectedGeneration, setSelectedGeneration] =
     useState<Generation | null>(null);
 
-  const [filter, setFilter] = useState<"all" | "favorites">("all");
+  const [favoriteFilter, setFavoriteFilter] = useState<"all" | "favorites">(
+    "all"
+  );
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "completed" | "failed" | "processing"
+  >("all");
   const [selectedCharacterId, setSelectedCharacterId] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -64,8 +106,7 @@ export default function GenerationGallery({
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
-
-  const supabase = createClient();
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
   const characterOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -82,6 +123,10 @@ export default function GenerationGallery({
     }));
   }, [generations]);
 
+  const hasProcessingItems = generations.some(
+    (generation) => generation.status === "processing"
+  );
+
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
@@ -92,7 +137,23 @@ export default function GenerationGallery({
 
   useEffect(() => {
     loadGenerations(0);
-  }, [refreshKey, filter, selectedCharacterId, debouncedSearchQuery]);
+  }, [
+    refreshKey,
+    favoriteFilter,
+    statusFilter,
+    selectedCharacterId,
+    debouncedSearchQuery,
+  ]);
+
+  useEffect(() => {
+    if (!hasProcessingItems) return;
+
+    const interval = window.setInterval(() => {
+      loadGenerations(0);
+    }, 5000);
+
+    return () => window.clearInterval(interval);
+  }, [hasProcessingItems, refreshKey, favoriteFilter, statusFilter]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -129,8 +190,12 @@ export default function GenerationGallery({
     params.set("limit", String(PAGE_SIZE));
     params.set("offset", String(offset));
 
-    if (filter === "favorites") {
+    if (favoriteFilter === "favorites") {
       params.set("favorite", "true");
+    }
+
+    if (statusFilter !== "all") {
+      params.set("status", statusFilter);
     }
 
     if (selectedCharacterId !== "all") {
@@ -148,6 +213,7 @@ export default function GenerationGallery({
     try {
       if (offset === 0) {
         setLoading(true);
+        setImageErrors({});
       } else {
         setLoadingMore(true);
       }
@@ -155,30 +221,49 @@ export default function GenerationGallery({
       const token = await getAccessToken();
 
       if (!token) {
-        throw new Error("No active session");
+        setGenerations([]);
+        setHasMore(false);
+        return;
       }
 
       const response = await fetch(buildGenerationsUrl(offset), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        cache: "no-store",
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to load gallery");
+        console.error("Generations API error:", {
+          status: response.status,
+          error: data.error,
+        });
+
+        if (offset === 0) {
+          setGenerations([]);
+        }
+
+        setHasMore(false);
+        return;
       }
 
       const nextItems: Generation[] = data.generations || [];
 
-      setGenerations((prev) =>
-        offset === 0 ? nextItems : [...prev, ...nextItems]
+      setGenerations((current) =>
+        offset === 0 ? nextItems : [...current, ...nextItems]
       );
 
       setHasMore(Boolean(data.pagination?.hasMore));
     } catch (error) {
       console.error("Gallery load error:", error);
+
+      if (offset === 0) {
+        setGenerations([]);
+      }
+
+      setHasMore(false);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -203,11 +288,12 @@ export default function GenerationGallery({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update favorite");
+        console.error("Favorite update failed:", response.status);
+        return;
       }
 
-      setGenerations((prev) =>
-        prev.map((item) =>
+      setGenerations((current) =>
+        current.map((item) =>
           item.id === generationId
             ? { ...item, is_favorite: !currentValue }
             : item
@@ -242,11 +328,12 @@ export default function GenerationGallery({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete generation");
+        console.error("Delete generation failed:", response.status);
+        return;
       }
 
-      setGenerations((prev) =>
-        prev.filter((item) => item.id !== generationId)
+      setGenerations((current) =>
+        current.filter((item) => item.id !== generationId)
       );
 
       setSelectedGeneration((current) =>
@@ -276,39 +363,151 @@ export default function GenerationGallery({
     });
   }
 
+  function markImageError(generationId: string) {
+    setImageErrors((current) => ({
+      ...current,
+      [generationId]: true,
+    }));
+  }
+
+  function clearImageError(generationId: string) {
+    setImageErrors((current) => {
+      if (!current[generationId]) return current;
+
+      const copy = { ...current };
+      delete copy[generationId];
+      return copy;
+    });
+  }
+
+  function GenerationVisual({ generation }: { generation: Generation }) {
+    if (generation.status === "processing") {
+      return (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-white/[0.04] p-6 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[#d8ad5f]" />
+          <p className="text-sm font-bold text-white">Processing</p>
+          <p className="line-clamp-3 text-xs text-white/45">
+            Your image is being generated. The gallery refreshes automatically.
+          </p>
+        </div>
+      );
+    }
+
+    if (generation.status === "failed") {
+      return (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-red-500/10 p-6 text-center">
+          <AlertCircle className="h-8 w-8 text-red-200" />
+          <p className="text-sm font-bold text-red-100">Generation failed</p>
+          <p className="line-clamp-3 text-xs text-red-100/60">
+            {generation.error_message ?? "Unknown error"}
+          </p>
+        </div>
+      );
+    }
+
+    if (!generation.image_url) {
+      return (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-white/[0.04] p-6 text-center">
+          <ImageOff className="h-8 w-8 text-white/50" />
+          <p className="text-sm font-bold text-white">Image unavailable</p>
+          <p className="line-clamp-3 text-xs text-white/40">
+            This generation has no image URL.
+          </p>
+        </div>
+      );
+    }
+
+    if (imageErrors[generation.id]) {
+      return (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-white/[0.04] p-6 text-center">
+          <ImageOff className="h-8 w-8 text-white/50" />
+          <div>
+            <p className="text-sm font-bold text-white">Image could not load</p>
+            <p className="mt-2 line-clamp-3 text-xs text-white/40">
+              The file exists, but the gallery could not render it.
+            </p>
+          </div>
+
+          <a
+            href={generation.image_url}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-full bg-white px-4 py-2 text-xs font-black text-black"
+            onClick={(event) => event.stopPropagation()}
+          >
+            Open image
+          </a>
+        </div>
+      );
+    }
+
+    return (
+      <img
+        key={generation.image_url}
+        src={generation.image_url}
+        alt={generation.prompt}
+        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        onLoad={() => clearImageError(generation.id)}
+        onError={() => markImageError(generation.id)}
+      />
+    );
+  }
+
   function Toolbar() {
     return (
-      <div className="grid gap-4 lg:grid-cols-[1fr_auto_auto] lg:items-center">
-        <input
-          value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder="Search prompts..."
-          className="w-full rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-medium text-white outline-none placeholder:text-white/35 focus:border-white/25"
-        />
+      <div className="space-y-4 rounded-[2rem] border border-white/10 bg-white/[0.035] p-4">
+        <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+          <input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search prompts..."
+            className="w-full rounded-full border border-white/10 bg-black/25 px-5 py-3 text-sm font-medium text-white outline-none placeholder:text-white/35 focus:border-white/25"
+          />
 
-        <select
-          value={selectedCharacterId}
-          onChange={(event) => setSelectedCharacterId(event.target.value)}
-          className="rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-bold text-white outline-none focus:border-white/25"
-        >
-          <option value="all">All characters</option>
-          <option value="free">Free prompts</option>
+          <select
+            value={selectedCharacterId}
+            onChange={(event) => setSelectedCharacterId(event.target.value)}
+            className="rounded-full border border-white/10 bg-black/25 px-5 py-3 text-sm font-bold text-white outline-none focus:border-white/25"
+          >
+            <option value="all">All style profiles</option>
+            <option value="free">No style profile</option>
 
-          {characterOptions.map((character) => (
-            <option key={character.id} value={character.id}>
-              {character.name}
-            </option>
-          ))}
-        </select>
+            {characterOptions.map((character) => (
+              <option key={character.id} value={character.id}>
+                {character.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          {(["all", "completed", "processing", "failed"] as const).map(
+            (status) => (
+              <button
+                key={status}
+                type="button"
+                onClick={() => setStatusFilter(status)}
+                className={`rounded-full px-5 py-3 text-sm font-bold capitalize transition ${
+                  statusFilter === status
+                    ? "bg-white text-black"
+                    : "border border-white/10 bg-black/25 text-white"
+                }`}
+              >
+                {status === "all" ? "All status" : status}
+              </button>
+            )
+          )}
+
           <button
             type="button"
-            onClick={() => setFilter("all")}
+            onClick={() => setFavoriteFilter("all")}
             className={`rounded-full px-5 py-3 text-sm font-bold transition ${
-              filter === "all"
+              favoriteFilter === "all"
                 ? "bg-white text-black"
-                : "border border-white/10 bg-white/[0.06] text-white"
+                : "border border-white/10 bg-black/25 text-white"
             }`}
           >
             All
@@ -316,11 +515,11 @@ export default function GenerationGallery({
 
           <button
             type="button"
-            onClick={() => setFilter("favorites")}
+            onClick={() => setFavoriteFilter("favorites")}
             className={`rounded-full px-5 py-3 text-sm font-bold transition ${
-              filter === "favorites"
+              favoriteFilter === "favorites"
                 ? "bg-white text-black"
-                : "border border-white/10 bg-white/[0.06] text-white"
+                : "border border-white/10 bg-black/25 text-white"
             }`}
           >
             Favorites
@@ -332,7 +531,7 @@ export default function GenerationGallery({
 
   if (loading) {
     return (
-      <div className="py-20 text-center text-white/60">
+      <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] py-20 text-center text-white/60">
         Loading gallery...
       </div>
     );
@@ -344,35 +543,28 @@ export default function GenerationGallery({
         <Toolbar />
 
         {generations.length === 0 ? (
-          <div className="py-20 text-center text-white/60">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] py-20 text-center text-white/60">
             No matching generations.
           </div>
         ) : (
-          <Masonry
-            breakpointCols={masonryBreakpoints}
-            className="flex gap-4"
-            columnClassName="flex flex-col gap-4"
-          >
-            {generations.map((generation, index) => (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {generations.map((generation) => (
               <div
                 key={generation.id}
-                className="group overflow-hidden rounded-3xl border border-white/10 bg-[#0a0a0a]"
+                className="group overflow-hidden rounded-3xl border border-white/10 bg-[#0a0a0a] shadow-[0_16px_50px_rgba(0,0,0,0.28)]"
               >
                 <div
-                  className={`relative overflow-hidden ${
-                    index % 5 === 0
-                      ? "aspect-[3/4]"
-                      : index % 3 === 0
-                        ? "aspect-square"
-                        : "aspect-[4/5]"
-                  }`}
+                  className={`relative overflow-hidden ${getImageAspectClass(
+                    generation
+                  )}`}
                 >
                   <button
                     type="button"
                     onClick={() =>
                       toggleFavorite(generation.id, generation.is_favorite)
                     }
-                    className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 backdrop-blur-xl transition hover:scale-105"
+                    className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 backdrop-blur-xl transition hover:scale-105 disabled:opacity-40"
+                    disabled={generation.status !== "completed"}
                   >
                     <Heart
                       className={`h-5 w-5 transition ${
@@ -386,7 +578,7 @@ export default function GenerationGallery({
                   <button
                     type="button"
                     onClick={() => deleteGeneration(generation.id)}
-                    className="absolute left-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 backdrop-blur-xl transition hover:scale-105"
+                    className="absolute left-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 backdrop-blur-xl transition hover:scale-105"
                   >
                     <Trash2 className="h-5 w-5 text-white" />
                   </button>
@@ -396,31 +588,45 @@ export default function GenerationGallery({
                     onClick={() => setSelectedGeneration(generation)}
                     className="relative block h-full w-full"
                   >
-                    <Image
-                      src={generation.image_url}
-                      alt={generation.prompt}
-                      fill
-                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      className="object-cover transition duration-500 group-hover:scale-105"
-                    />
+                    <GenerationVisual generation={generation} />
                   </button>
                 </div>
 
                 <div className="space-y-3 p-4">
+                  <div className="flex flex-wrap gap-2">
+                    <span
+                      className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${getStatusClass(
+                        generation.status
+                      )}`}
+                    >
+                      {generation.status}
+                    </span>
+
+                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/45">
+                      {getWorkflowLabel(generation.workflow)}
+                    </span>
+
+                    {generation.output_format && (
+                      <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/45">
+                        {generation.output_format}
+                      </span>
+                    )}
+                  </div>
+
                   <p className="line-clamp-2 text-sm text-white/70">
                     {generation.prompt}
                   </p>
 
                   <div className="flex items-center justify-between gap-3 text-xs text-white/35">
-                    <span>{generation.provider ?? "ai"}</span>
+                    <span>{generation.provider ?? generation.model ?? "model"}</span>
                     <span className="truncate">
-                      {generation.ai_characters?.name ?? "free prompt"}
+                      {generation.ai_characters?.name ?? "no style profile"}
                     </span>
                   </div>
                 </div>
               </div>
             ))}
-          </Masonry>
+          </div>
         )}
 
         {hasMore && (
@@ -456,28 +662,81 @@ export default function GenerationGallery({
 
           <div className="grid max-h-[92vh] w-full max-w-7xl overflow-hidden rounded-[2rem] border border-white/10 bg-[#070707] shadow-2xl lg:grid-cols-[1fr_420px]">
             <div className="relative min-h-[60vh] bg-black lg:min-h-[92vh]">
-              <Image
-                src={selectedGeneration.image_url}
-                alt={selectedGeneration.prompt}
-                fill
-                sizes="80vw"
-                className="object-contain"
-                priority
-              />
+              {selectedGeneration.status === "processing" ? (
+                <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-4 bg-white/[0.04] p-8 text-center lg:min-h-[92vh]">
+                  <Loader2 className="h-12 w-12 animate-spin text-[#d8ad5f]" />
+                  <h3 className="text-2xl font-black text-white">
+                    Generation in progress
+                  </h3>
+                  <p className="max-w-lg text-sm leading-7 text-white/50">
+                    The gallery refreshes automatically while your image is
+                    being created.
+                  </p>
+                </div>
+              ) : selectedGeneration.status === "failed" ? (
+                <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-4 bg-red-500/10 p-8 text-center lg:min-h-[92vh]">
+                  <AlertCircle className="h-12 w-12 text-red-200" />
+                  <h3 className="text-2xl font-black text-red-100">
+                    Generation failed
+                  </h3>
+                  <p className="max-w-lg text-sm leading-7 text-red-100/60">
+                    {selectedGeneration.error_message ?? "Unknown error"}
+                  </p>
+                </div>
+              ) : selectedGeneration.image_url &&
+                !imageErrors[selectedGeneration.id] ? (
+                <img
+                  src={selectedGeneration.image_url}
+                  alt={selectedGeneration.prompt}
+                  className="h-full max-h-[92vh] w-full object-contain"
+                  referrerPolicy="no-referrer"
+                  onLoad={() => clearImageError(selectedGeneration.id)}
+                  onError={() => markImageError(selectedGeneration.id)}
+                />
+              ) : (
+                <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-4 bg-white/[0.04] p-8 text-center lg:min-h-[92vh]">
+                  <ImageOff className="h-12 w-12 text-white/50" />
+                  <h3 className="text-2xl font-black text-white">
+                    Image unavailable
+                  </h3>
+                  <p className="max-w-lg text-sm leading-7 text-white/50">
+                    This generation has no valid image URL or could not be
+                    rendered in the gallery.
+                  </p>
+
+                  {selectedGeneration.image_url && (
+                    <a
+                      href={selectedGeneration.image_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-full bg-white px-5 py-3 text-sm font-black text-black"
+                    >
+                      Open image directly
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
 
             <aside className="flex flex-col justify-between gap-8 overflow-y-auto border-t border-white/10 p-6 lg:border-l lg:border-t-0">
               <div className="space-y-7">
-                <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.28em] text-white/35">
-                  <span>{selectedGeneration.provider ?? "ai"}</span>
-                  <span>•</span>
-                  <span>{selectedGeneration.model ?? "model"}</span>
+                <div className="flex flex-wrap gap-2">
+                  <span
+                    className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${getStatusClass(
+                      selectedGeneration.status
+                    )}`}
+                  >
+                    {selectedGeneration.status}
+                  </span>
 
-                  {selectedGeneration.ai_characters?.name && (
-                    <>
-                      <span>•</span>
-                      <span>{selectedGeneration.ai_characters.name}</span>
-                    </>
+                  <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/45">
+                    {getWorkflowLabel(selectedGeneration.workflow)}
+                  </span>
+
+                  {selectedGeneration.output_format && (
+                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/45">
+                      {selectedGeneration.output_format}
+                    </span>
                   )}
                 </div>
 
@@ -490,6 +749,18 @@ export default function GenerationGallery({
                     {selectedGeneration.prompt}
                   </p>
                 </div>
+
+                {selectedGeneration.error_message && (
+                  <div>
+                    <h3 className="text-sm font-bold uppercase tracking-[0.28em] text-red-200/70">
+                      Error
+                    </h3>
+
+                    <p className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-xs leading-6 text-red-100/70">
+                      {selectedGeneration.error_message}
+                    </p>
+                  </div>
+                )}
 
                 {selectedGeneration.final_prompt && (
                   <div>
@@ -505,40 +776,46 @@ export default function GenerationGallery({
               </div>
 
               <div className="grid gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleRegenerate(selectedGeneration)}
-                  className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-black transition hover:bg-white/80"
-                >
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Regenerate
-                </button>
+                {selectedGeneration.status !== "processing" && (
+                  <button
+                    type="button"
+                    onClick={() => handleRegenerate(selectedGeneration)}
+                    className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-black transition hover:bg-white/80"
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Regenerate
+                  </button>
+                )}
+
+                {selectedGeneration.status === "completed" && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      toggleFavorite(
+                        selectedGeneration.id,
+                        selectedGeneration.is_favorite
+                      )
+                    }
+                    className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-bold text-white transition hover:border-white/25"
+                  >
+                    <Heart
+                      className={`mr-2 h-4 w-4 ${
+                        selectedGeneration.is_favorite
+                          ? "fill-red-500 text-red-500"
+                          : ""
+                      }`}
+                    />
+                    {selectedGeneration.is_favorite
+                      ? "Remove favorite"
+                      : "Add favorite"}
+                  </button>
+                )}
 
                 <button
                   type="button"
                   onClick={() =>
-                    toggleFavorite(
-                      selectedGeneration.id,
-                      selectedGeneration.is_favorite
-                    )
+                    copyPrompt(selectedGeneration.prompt, "Prompt")
                   }
-                  className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-bold text-white transition hover:border-white/25"
-                >
-                  <Heart
-                    className={`mr-2 h-4 w-4 ${
-                      selectedGeneration.is_favorite
-                        ? "fill-red-500 text-red-500"
-                        : ""
-                    }`}
-                  />
-                  {selectedGeneration.is_favorite
-                    ? "Remove favorite"
-                    : "Add favorite"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => copyPrompt(selectedGeneration.prompt, "Prompt")}
                   className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-bold text-white transition hover:border-white/25"
                 >
                   <Copy className="mr-2 h-4 w-4" />
@@ -561,16 +838,18 @@ export default function GenerationGallery({
                   </button>
                 )}
 
-                <a
-                  href={selectedGeneration.image_url}
-                  download
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-bold text-white transition hover:border-white/25"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download image
-                </a>
+                {selectedGeneration.image_url && (
+                  <a
+                    href={selectedGeneration.image_url}
+                    download
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-bold text-white transition hover:border-white/25"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Open / download image
+                  </a>
+                )}
 
                 <button
                   type="button"

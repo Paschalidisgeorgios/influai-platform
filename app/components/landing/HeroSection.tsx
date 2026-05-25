@@ -58,7 +58,7 @@ export default function HeroSection() {
           <div>
 
             <p className="text-[#c7a36a] uppercase tracking-[0.3em] text-sm md:text-base mb-4 font-semibold">
-              InfluAI
+              InfluExAi
             </p>
 
             <h1 className="text-5xl sm:text-6xl md:text-8xl font-black leading-[0.95] tracking-[-0.05em] mb-8">

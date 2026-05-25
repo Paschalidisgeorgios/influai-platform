@@ -666,7 +666,7 @@ export default function ImageGeneratorPage() {
         <div className="mb-10 md:mb-14">
 
           <p className="text-[#c7a36a] uppercase tracking-[0.3em] text-xs md:text-sm mb-4">
-            InfluAI
+            InfluExAi
           </p>
 
           <h1 className="text-4xl md:text-6xl font-bold mb-6">

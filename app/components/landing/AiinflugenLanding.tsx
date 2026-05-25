@@ -103,7 +103,7 @@ export default function AiinflugenLanding({
       demo: "Watch Demo",
       studioTitle: "One platform for AI creator workflows.",
       studioText:
-        "AIINFLUGEN combines characters, prompt intelligence, image generation, gallery management and credit payments in one creator system.",
+        "InfluExAi combines characters, prompt intelligence, image generation, gallery management and credit payments in one creator system.",
       toolsTitle: "Built for repeatable content.",
       workflowTitle: "From idea to creator visuals.",
       examplesTitle: "Example visuals.",
@@ -128,7 +128,7 @@ export default function AiinflugenLanding({
       demo: "Demo ansehen",
       studioTitle: "Eine Plattform für AI-Creator-Workflows.",
       studioText:
-        "AIINFLUGEN verbindet Charaktere, Prompt-Intelligenz, Bildgenerierung, Gallery-Management und Credit-Zahlungen in einem Creator-System.",
+        "InfluExAi verbindet Charaktere, Prompt-Intelligenz, Bildgenerierung, Gallery-Management und Credit-Zahlungen in einem Creator-System.",
       toolsTitle: "Gebaut für wiederholbaren Content.",
       workflowTitle: "Von der Idee zum Creator-Visual.",
       examplesTitle: "Beispielbilder.",
@@ -244,16 +244,16 @@ export default function AiinflugenLanding({
 
   return (
     <main className={`${bodyFontClass} min-h-screen bg-black text-white`}>
-      <header className="fixed left-0 right-0 top-0 z-50 px-4 pt-5">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between rounded-full border border-white/15 bg-black/35 px-5 py-3 shadow-2xl backdrop-blur-2xl sm:px-7">
+      <header className="fixed left-0 right-0 top-0 z-50 px-3 pt-3 sm:px-4 sm:pt-5">
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 rounded-[1.7rem] border border-white/15 bg-black/35 px-4 py-3 shadow-2xl backdrop-blur-2xl sm:rounded-full sm:px-7">
           <Link
             href="/"
-            className="text-xs font-black uppercase tracking-[0.55em] text-white sm:text-sm"
+            className="text-[10px] font-black uppercase tracking-[0.45em] text-white sm:text-sm sm:tracking-[0.55em]"
           >
-            AIINFLU<span className="text-[#d8ad5f]">GEN</span>
+            Influ<span className="text-[#d8ad5f]">ExAi</span>
           </Link>
 
-          <nav className="hidden items-center gap-10 text-sm font-semibold text-white/65 lg:flex">
+          <nav className="order-3 flex w-full items-center justify-center gap-5 overflow-x-auto whitespace-nowrap text-[11px] font-semibold text-white/70 [scrollbar-width:none] sm:order-none sm:w-auto sm:gap-7 sm:text-sm lg:gap-10 [&::-webkit-scrollbar]:hidden">
             <a href="#studio" className="transition hover:text-white">
               {t.product}
             </a>
@@ -273,7 +273,7 @@ export default function AiinflugenLanding({
               <button
                 type="button"
                 onClick={() => setLanguage("en")}
-                className={`rounded-full px-3 py-2 text-xs font-bold transition ${
+                className={`rounded-full px-2.5 py-1.5 text-[10px] font-bold transition sm:px-3 sm:py-2 sm:text-xs ${
                   language === "en"
                     ? "bg-[#d8ad5f] text-black"
                     : "text-white/60 hover:text-white"
@@ -285,7 +285,7 @@ export default function AiinflugenLanding({
               <button
                 type="button"
                 onClick={() => setLanguage("de")}
-                className={`rounded-full px-3 py-2 text-xs font-bold transition ${
+                className={`rounded-full px-2.5 py-1.5 text-[10px] font-bold transition sm:px-3 sm:py-2 sm:text-xs ${
                   language === "de"
                     ? "bg-[#d8ad5f] text-black"
                     : "text-white/60 hover:text-white"
@@ -297,14 +297,14 @@ export default function AiinflugenLanding({
 
             <Link
               href="/login"
-              className="hidden text-sm font-semibold text-white/65 transition hover:text-white sm:block"
+              className="hidden text-sm font-semibold text-white/65 transition hover:text-white md:block"
             >
               {t.signIn}
             </Link>
 
             <Link
               href="/dashboard"
-              className="hidden rounded-full bg-[#d8ad5f] px-5 py-3 text-xs font-extrabold text-black transition hover:bg-[#f0c979] sm:inline-flex sm:px-7 sm:text-sm"
+              className="hidden rounded-full bg-[#d8ad5f] px-5 py-3 text-xs font-extrabold text-black transition hover:bg-[#f0c979] sm:inline-flex sm:px-6 sm:text-sm"
             >
               {t.openApp}
             </Link>
@@ -329,7 +329,7 @@ export default function AiinflugenLanding({
                 >
                   <Image
                     src={src}
-                    alt={`AIINFLUGEN slide ${index + 1}`}
+                    alt={`InfluExAi slide ${index + 1}`}
                     fill
                     priority={index === 0}
                     sizes="100vw"
@@ -350,14 +350,14 @@ export default function AiinflugenLanding({
         <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/65 to-black/10" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/85" />
 
-        <div className="relative z-20 flex min-h-screen items-center justify-start px-5 pt-28 sm:px-8 lg:px-16">
+        <div className="relative z-20 flex min-h-screen items-center justify-start px-5 pt-36 sm:px-8 sm:pt-28 lg:px-16">
           <div className="max-w-3xl">
-            <p className="hero-label mb-8 text-xs font-extrabold uppercase tracking-[0.42em] text-[#d8ad5f]">
+            <p className="hero-label mb-6 text-[10px] font-extrabold uppercase tracking-[0.36em] text-[#d8ad5f] sm:mb-8 sm:text-xs sm:tracking-[0.42em]">
               {t.label}
             </p>
 
             <h1
-              className={`${headingFontClass} hero-title text-[3.4rem] font-bold leading-[0.92] tracking-[-0.06em] text-white sm:text-[5.4rem] lg:text-[6.8rem]`}
+              className={`${headingFontClass} hero-title text-[3rem] font-bold leading-[0.92] tracking-[-0.06em] text-white sm:text-[5.4rem] lg:text-[6.8rem]`}
             >
               {t.title1}
               <br />
@@ -591,7 +591,7 @@ export default function AiinflugenLanding({
             >
               <Image
                 src={src}
-                alt={`AIINFLUGEN example ${index + 1}`}
+                alt={`InfluExAi example ${index + 1}`}
                 fill
                 sizes="340px"
                 quality={100}

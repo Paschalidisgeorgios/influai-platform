@@ -15,11 +15,27 @@ const supabaseAdmin = createClient(
 
 const STORAGE_BUCKET = "generations";
 
+type ImageSize = "1024x1024" | "1024x1536" | "1536x1024";
+
 function base64ToBuffer(base64: string) {
   return Buffer.from(base64, "base64");
 }
 
+function normalizeImageSize(value: unknown): ImageSize {
+  if (
+    value === "1024x1024" ||
+    value === "1024x1536" ||
+    value === "1536x1024"
+  ) {
+    return value;
+  }
+
+  return "1024x1024";
+}
+
 async function refundCredits(userId: string, creditsToRefund: number) {
+  if (creditsToRefund <= 0) return;
+
   const { error } = await supabaseAdmin.rpc("refund_user_credits", {
     target_user_id: userId,
     credits_to_refund: creditsToRefund,
@@ -71,70 +87,42 @@ async function markFailedAndRefund({
   }
 }
 
-async function processOpenAIImage({
-  generationId,
+async function uploadImageBuffer({
   userId,
-  finalPrompt,
-  model,
-  creditsUsed,
+  imageBuffer,
+  contentType = "image/png",
 }: {
-  generationId: string;
   userId: string;
-  finalPrompt: string;
-  model: string;
-  creditsUsed: number;
+  imageBuffer: Buffer;
+  contentType?: string;
 }) {
-  const result = await openai.images.generate({
-    model,
-    prompt: finalPrompt,
-    size: "1024x1024",
-    n: 1,
-  });
-
-  const imageBase64 = result.data?.[0]?.b64_json;
-
-  if (!imageBase64) {
-    await markFailedAndRefund({
-      generationId,
-      userId,
-      creditsUsed,
-      errorMessage: "OpenAI did not return image data.",
-    });
-
-    return NextResponse.json(
-      { error: "Image generation failed. Credits refunded." },
-      { status: 500 }
-    );
-  }
-
-  const imageBuffer = base64ToBuffer(imageBase64);
   const filePath = `${userId}/${crypto.randomUUID()}.png`;
 
   const { error: uploadError } = await supabaseAdmin.storage
     .from(STORAGE_BUCKET)
     .upload(filePath, imageBuffer, {
-      contentType: "image/png",
+      contentType,
       upsert: false,
     });
 
   if (uploadError) {
-    await markFailedAndRefund({
-      generationId,
-      userId,
-      creditsUsed,
-      errorMessage: uploadError.message,
-    });
-
-    return NextResponse.json(
-      { error: "Image upload failed. Credits refunded." },
-      { status: 500 }
-    );
+    throw new Error(uploadError.message);
   }
 
   const {
     data: { publicUrl },
   } = supabaseAdmin.storage.from(STORAGE_BUCKET).getPublicUrl(filePath);
 
+  return publicUrl;
+}
+
+async function completeGeneration({
+  generationId,
+  publicUrl,
+}: {
+  generationId: string;
+  publicUrl: string;
+}) {
   const { error: updateError } = await supabaseAdmin
     .from("generations")
     .update({
@@ -146,50 +134,83 @@ async function processOpenAIImage({
     .eq("id", generationId);
 
   if (updateError) {
+    throw new Error(updateError.message);
+  }
+}
+
+async function processOpenAIImage({
+  generationId,
+  userId,
+  finalPrompt,
+  model,
+  creditsUsed,
+  imageSize,
+}: {
+  generationId: string;
+  userId: string;
+  finalPrompt: string;
+  model: string;
+  creditsUsed: number;
+  imageSize: ImageSize;
+}) {
+  try {
+    const result = await openai.images.generate({
+      model,
+      prompt: finalPrompt,
+      size: imageSize,
+      n: 1,
+    });
+
+    const imageBase64 = result.data?.[0]?.b64_json;
+
+    if (!imageBase64) {
+      await markFailedAndRefund({
+        generationId,
+        userId,
+        creditsUsed,
+        errorMessage: "OpenAI did not return image data.",
+      });
+
+      return NextResponse.json(
+        { error: "Image generation failed. Credits refunded." },
+        { status: 500 }
+      );
+    }
+
+    const imageBuffer = base64ToBuffer(imageBase64);
+
+    const publicUrl = await uploadImageBuffer({
+      userId,
+      imageBuffer,
+      contentType: "image/png",
+    });
+
+    await completeGeneration({
+      generationId,
+      publicUrl,
+    });
+
+    return NextResponse.json({
+      success: true,
+      generationId,
+      image: publicUrl,
+    });
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "OpenAI generation failed.";
+
     await markFailedAndRefund({
       generationId,
       userId,
       creditsUsed,
-      errorMessage: updateError.message,
+      errorMessage,
     });
 
     return NextResponse.json(
-      { error: "Failed to update generation. Credits refunded." },
+      { error: "Image generation failed. Credits refunded." },
       { status: 500 }
     );
   }
-
-  return NextResponse.json({
-    success: true,
-    generationId,
-    image: publicUrl,
-  });
-}
-
-async function processFaceConsistentPlaceholder({
-  generationId,
-  userId,
-  creditsUsed,
-}: {
-  generationId: string;
-  userId: string;
-  creditsUsed: number;
-}) {
-  await markFailedAndRefund({
-    generationId,
-    userId,
-    creditsUsed,
-    errorMessage:
-      "Face Consistent workflow is prepared but no face-consistency provider is connected yet.",
-  });
-
-  return NextResponse.json(
-    {
-      error:
-        "Face Consistent workflow is not connected yet. Credits refunded.",
-    },
-    { status: 501 }
-  );
 }
 
 export async function POST(req: Request) {
@@ -222,8 +243,8 @@ export async function POST(req: Request) {
         provider,
         model,
         workflow,
-        reference_image_url,
-        credits_used
+        credits_used,
+        image_size
       `
       )
       .eq("id", generationId)
@@ -249,34 +270,29 @@ export async function POST(req: Request) {
         ? generation.credits_used
         : 1;
 
-    const finalPrompt = generation.final_prompt || generation.prompt;
     const workflow = generation.workflow || "standard";
+    const provider = generation.provider || "openai";
 
-    if (workflow === "face_consistent") {
-      if (!generation.reference_image_url) {
-        await markFailedAndRefund({
-          generationId,
-          userId: generation.user_id,
-          creditsUsed,
-          errorMessage:
-            "Face Consistent workflow requires a reference image.",
-        });
-
-        return NextResponse.json(
-          {
-            error:
-              "Face Consistent workflow requires a reference image. Credits refunded.",
-          },
-          { status: 400 }
-        );
-      }
-
-      return processFaceConsistentPlaceholder({
+    if (workflow !== "standard" || provider !== "openai") {
+      await markFailedAndRefund({
         generationId,
         userId: generation.user_id,
         creditsUsed,
+        errorMessage:
+          "This workflow is currently disabled in the MVP. Credits refunded.",
       });
+
+      return NextResponse.json(
+        {
+          error:
+            "This workflow is currently disabled in the MVP. Credits refunded.",
+        },
+        { status: 400 }
+      );
     }
+
+    const finalPrompt = generation.final_prompt || generation.prompt;
+    const imageSize = normalizeImageSize(generation.image_size);
 
     return processOpenAIImage({
       generationId,
@@ -284,6 +300,7 @@ export async function POST(req: Request) {
       finalPrompt,
       model: generation.model || "gpt-image-1",
       creditsUsed,
+      imageSize,
     });
   } catch (error) {
     console.error("Generation worker error:", error);

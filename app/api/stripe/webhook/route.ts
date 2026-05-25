@@ -19,6 +19,110 @@ const CREDIT_PACKAGES: Record<string, number> = {
   ultimate: 2000,
 };
 
+async function hasAlreadyCredited(stripeSessionId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("credit_transactions")
+    .select("id")
+    .eq("stripe_session_id", stripeSessionId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Credit transaction duplicate check error:", error);
+    throw new Error("Duplicate check failed");
+  }
+
+  return Boolean(data);
+}
+
+async function creditUser({
+  userId,
+  creditsToAdd,
+  packageKey,
+  stripeSessionId,
+}: {
+  userId: string;
+  creditsToAdd: number;
+  packageKey: string;
+  stripeSessionId: string;
+}) {
+  const { data: existingCredits, error: fetchCreditsError } =
+    await supabaseAdmin
+      .from("user_credits")
+      .select("credits")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+  if (fetchCreditsError) {
+    console.error("User credits fetch error:", fetchCreditsError);
+    throw new Error("User credits fetch failed");
+  }
+
+  const currentCredits = existingCredits?.credits ?? 0;
+  const nextCredits = currentCredits + creditsToAdd;
+
+  const { error: upsertCreditsError } = await supabaseAdmin
+    .from("user_credits")
+    .upsert(
+      {
+        user_id: userId,
+        credits: nextCredits,
+        updated_at: new Date().toISOString(),
+      },
+      {
+        onConflict: "user_id",
+      }
+    );
+
+  if (upsertCreditsError) {
+    console.error("User credits upsert error:", upsertCreditsError);
+    throw new Error("User credits update failed");
+  }
+
+  const { error: transactionError } = await supabaseAdmin
+    .from("credit_transactions")
+    .insert({
+      user_id: userId,
+      amount: creditsToAdd,
+      type: "purchase",
+      source: `stripe_${packageKey}`,
+      stripe_session_id: stripeSessionId,
+    });
+
+  if (transactionError) {
+    console.error("Credit transaction insert error:", transactionError);
+    throw new Error("Credit transaction insert failed");
+  }
+
+  return nextCredits;
+}
+
+async function logStripeWebhookEvent({
+  eventId,
+  eventType,
+  stripeObjectId,
+}: {
+  eventId: string;
+  eventType: string;
+  stripeObjectId: string;
+}) {
+  const { error } = await supabaseAdmin
+    .from("stripe_webhook_events")
+    .upsert(
+      {
+        id: eventId,
+        type: eventType,
+        stripe_object_id: stripeObjectId,
+      },
+      {
+        onConflict: "id",
+      }
+    );
+
+  if (error) {
+    console.error("Stripe webhook event log error:", error);
+  }
+}
+
 export async function POST(req: Request) {
   const body = await req.text();
   const signature = req.headers.get("stripe-signature");
@@ -48,47 +152,30 @@ export async function POST(req: Request) {
   }
 
   if (event.type !== "checkout.session.completed") {
-    return NextResponse.json({ received: true, ignored: true });
+    return NextResponse.json({
+      received: true,
+      ignored: true,
+      type: event.type,
+    });
   }
 
   const session = event.data.object as Stripe.Checkout.Session;
 
-  const eventId = event.id;
-  const eventType = event.type;
-  const objectId = session.id;
-
-  const { error: insertError } = await supabaseAdmin
-    .from("stripe_webhook_events")
-    .insert({
-      id: eventId,
-      type: eventType,
-      stripe_object_id: objectId,
-    });
-
-  if (insertError) {
-    if (insertError.code === "23505") {
-      return NextResponse.json({
-        received: true,
-        duplicate: true,
-      });
-    }
-
-    console.error("Webhook duplicate protection error:", insertError);
-
-    return NextResponse.json(
-      { error: "Webhook event insert failed" },
-      { status: 500 }
-    );
-  }
-
   const userId = session.metadata?.userId;
   const packageKey = session.metadata?.packageKey;
+  const stripeSessionId = session.id;
 
   if (!userId || !packageKey) {
     console.error("Missing Stripe metadata:", {
       userId,
       packageKey,
-      sessionId: session.id,
+      sessionId: stripeSessionId,
+    });
+
+    await logStripeWebhookEvent({
+      eventId: event.id,
+      eventType: event.type,
+      stripeObjectId: stripeSessionId,
     });
 
     return NextResponse.json(
@@ -100,7 +187,16 @@ export async function POST(req: Request) {
   const creditsToAdd = CREDIT_PACKAGES[packageKey];
 
   if (!creditsToAdd) {
-    console.error("Invalid credit package:", packageKey);
+    console.error("Invalid credit package:", {
+      packageKey,
+      sessionId: stripeSessionId,
+    });
+
+    await logStripeWebhookEvent({
+      eventId: event.id,
+      eventType: event.type,
+      stripeObjectId: stripeSessionId,
+    });
 
     return NextResponse.json(
       { error: "Invalid credit package" },
@@ -108,43 +204,52 @@ export async function POST(req: Request) {
     );
   }
 
-  const { data: profile, error: profileError } = await supabaseAdmin
-    .from("profiles")
-    .select("credits")
-    .eq("id", userId)
-    .single();
+  try {
+    const alreadyCredited = await hasAlreadyCredited(stripeSessionId);
 
-  if (profileError) {
-    console.error("Profile fetch error:", profileError);
+    if (alreadyCredited) {
+      await logStripeWebhookEvent({
+        eventId: event.id,
+        eventType: event.type,
+        stripeObjectId: stripeSessionId,
+      });
+
+      return NextResponse.json({
+        received: true,
+        duplicate: true,
+        alreadyCredited: true,
+        stripeSessionId,
+      });
+    }
+
+    const nextCredits = await creditUser({
+      userId,
+      creditsToAdd,
+      packageKey,
+      stripeSessionId,
+    });
+
+    await logStripeWebhookEvent({
+      eventId: event.id,
+      eventType: event.type,
+      stripeObjectId: stripeSessionId,
+    });
+
+    return NextResponse.json({
+      received: true,
+      credited: true,
+      userId,
+      packageKey,
+      creditsAdded: creditsToAdd,
+      creditsTotal: nextCredits,
+      stripeSessionId,
+    });
+  } catch (error) {
+    console.error("Credit webhook processing error:", error);
 
     return NextResponse.json(
-      { error: "Profile fetch failed" },
+      { error: "Credit webhook processing failed" },
       { status: 500 }
     );
   }
-
-  const currentCredits = profile?.credits ?? 0;
-
-  const { error: updateError } = await supabaseAdmin
-    .from("profiles")
-    .update({
-      credits: currentCredits + creditsToAdd,
-    })
-    .eq("id", userId);
-
-  if (updateError) {
-    console.error("Credit update error:", updateError);
-
-    return NextResponse.json(
-      { error: "Credit update failed" },
-      { status: 500 }
-    );
-  }
-
-  return NextResponse.json({
-    received: true,
-    credited: true,
-    userId,
-    creditsAdded: creditsToAdd,
-  });
 }

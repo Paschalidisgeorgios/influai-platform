@@ -76,7 +76,7 @@ export default function ImageCard({
       link.href = url;
 
       link.download =
-        `influai-${Date.now()}.png`;
+        `infuexai-${Date.now()}.png`;
 
       document.body.appendChild(
         link

@@ -258,7 +258,7 @@ export default function GenerationDetailPage() {
         <div className="mb-12">
 
           <p className="text-[#c7a36a] uppercase tracking-[0.3em] text-sm mb-4">
-            InfluAI Generation
+            InfluExAi Generation
           </p>
 
           <h1 className="text-6xl font-bold mb-6">

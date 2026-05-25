@@ -1,8 +1,8 @@
 {
-    "crons": [
-      {
-        "path": "/api/cron/process-generations",
-        "schedule": "*/1 * * * *"
-      }
-    ]
-  }
+  "crons": [
+    {
+      "path": "/api/cron/process-generations",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

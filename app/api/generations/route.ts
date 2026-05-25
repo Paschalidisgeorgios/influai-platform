@@ -8,84 +8,107 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+async function getUserFromRequest(req: Request) {
+  const authHeader = req.headers.get("authorization");
+
+  if (!authHeader) {
+    return {
+      user: null,
+      error: "Missing authorization header",
+    };
+  }
+
+  const token = authHeader.replace("Bearer ", "");
+
+  const {
+    data: { user },
+    error,
+  } = await supabaseAdmin.auth.getUser(token);
+
+  if (error || !user) {
+    return {
+      user: null,
+      error: "Unauthorized",
+    };
+  }
+
+  return {
+    user,
+    error: null,
+  };
+}
+
 export async function GET(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization");
+    const { user, error: authError } = await getUserFromRequest(req);
 
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: "Missing authorization header" },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseAdmin.auth.getUser(token);
-
-    if (userError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) {
+      return NextResponse.json({ error: authError }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
 
-    const limitParam = Number(searchParams.get("limit") ?? "24");
-    const offsetParam = Number(searchParams.get("offset") ?? "0");
-    const favoriteParam = searchParams.get("favorite");
+    const limit = Math.min(Number(searchParams.get("limit") ?? 24), 60);
+    const offset = Math.max(Number(searchParams.get("offset") ?? 0), 0);
+    const favorite = searchParams.get("favorite");
+    const status = searchParams.get("status");
     const characterId = searchParams.get("characterId");
     const search = searchParams.get("search");
-    const status = searchParams.get("status");
-
-    const limit = Math.min(Math.max(limitParam, 1), 50);
-    const offset = Math.max(offsetParam, 0);
 
     let query = supabaseAdmin
       .from("generations")
       .select(
         `
         id,
+        user_id,
         prompt,
         final_prompt,
         image_url,
-        status,
-        error_message,
+        created_at,
         provider,
         model,
-        credits_used,
+        status,
+        error_message,
         is_favorite,
         character_id,
-        created_at,
-        ai_characters (
-          id,
-          name
-        )
-      `
+        workflow,
+        social_platform,
+        output_format,
+        image_size,
+        output_width,
+        output_height
+      `,
+        { count: "exact" }
       )
       .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
 
-    if (favoriteParam === "true") {
+    if (favorite === "true") {
       query = query.eq("is_favorite", true);
+    }
+
+    if (
+      status === "processing" ||
+      status === "completed" ||
+      status === "failed"
+    ) {
+      query = query.eq("status", status);
+    }
+
+    if (characterId && characterId !== "all" && characterId !== "free") {
+      query = query.eq("character_id", characterId);
     }
 
     if (characterId === "free") {
       query = query.is("character_id", null);
-    } else if (characterId && characterId !== "all") {
-      query = query.eq("character_id", characterId);
     }
 
-    if (status === "completed" || status === "failed") {
-      query = query.eq("status", status);
-    }
-
-    if (search && search.trim().length > 0) {
+    if (search && search.trim()) {
       query = query.ilike("prompt", `%${search.trim()}%`);
     }
 
-    const { data, error } = await query.range(offset, offset + limit - 1);
+    const { data: generations, error, count } = await query;
 
     if (error) {
       console.error("Generations fetch error:", error);
@@ -96,18 +119,57 @@ export async function GET(req: Request) {
       );
     }
 
+    const characterIds = Array.from(
+      new Set(
+        (generations ?? [])
+          .map((generation) => generation.character_id)
+          .filter((id): id is string => Boolean(id))
+      )
+    );
+
+    let characterMap = new Map<string, { id: string; name: string }>();
+
+    if (characterIds.length > 0) {
+      const { data: characters, error: charactersError } = await supabaseAdmin
+        .from("ai_characters")
+        .select("id, name")
+        .in("id", characterIds)
+        .eq("user_id", user.id);
+
+      if (charactersError) {
+        console.error("Generation character fetch error:", charactersError);
+      } else {
+        characterMap = new Map(
+          (characters ?? []).map((character) => [
+            character.id,
+            {
+              id: character.id,
+              name: character.name,
+            },
+          ])
+        );
+      }
+    }
+
+    const formattedGenerations = (generations ?? []).map((generation) => ({
+      ...generation,
+      ai_characters: generation.character_id
+        ? characterMap.get(generation.character_id) ?? null
+        : null,
+    }));
+
     return NextResponse.json({
       success: true,
-      generations: data ?? [],
+      generations: formattedGenerations,
       pagination: {
         limit,
         offset,
-        count: data?.length ?? 0,
-        hasMore: (data?.length ?? 0) === limit,
+        count: count ?? 0,
+        hasMore: offset + limit < (count ?? 0),
       },
     });
   } catch (error) {
-    console.error("Generations route error:", error);
+    console.error("Generations GET route error:", error);
 
     return NextResponse.json(
       { error: "Internal server error" },
