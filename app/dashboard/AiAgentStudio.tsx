@@ -56,8 +56,14 @@ const FAST_DRAFT_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_FAST_DRAFT === "true";
 const PREMIUM_IMAGE_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_PREMIUM_IMAGE === "true";
+const REFERENCE_EDIT_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_FAL_REFERENCE_EDIT === "true";
 
 function resolveSubmitImageMode(imageMode: ImageModeKey): ImageModeKey {
+  if (imageMode === "reference_edit" && REFERENCE_EDIT_PUBLIC_ENABLED) {
+    return "reference_edit";
+  }
+
   if (imageMode === "fast_draft" && FAST_DRAFT_PUBLIC_ENABLED) {
     return "fast_draft";
   }
@@ -358,16 +364,23 @@ function ModeCardBody({
 
 const REFERENCE_EDIT_MAX_BYTES = 12 * 1024 * 1024;
 
-function ReferenceEditPlannedPanel({
+function ReferenceEditPanel({
   label,
   copy,
   panelRef,
   getAccessToken,
+  isEnabled,
+  sourcePreviewUrl,
+  onSourcePreviewUrlChange,
+  editInstruction,
+  onEditInstructionChange,
 }: {
   label: string;
   copy: {
-    status: string;
-    intro: string;
+    statusPlanned: string;
+    statusActive: string;
+    introPlanned: string;
+    introActive: string;
     sourceLabel: string;
     sourcePlaceholder: string;
     sourceHint: string;
@@ -384,14 +397,18 @@ function ReferenceEditPlannedPanel({
     generateDisabled: string;
     generationNotActive: string;
     plannedNote: string;
+    activeNote: string;
   };
   panelRef: React.RefObject<HTMLDivElement | null>;
   getAccessToken: () => Promise<string | null>;
+  isEnabled: boolean;
+  sourcePreviewUrl: string | null;
+  onSourcePreviewUrlChange: (url: string | null) => void;
+  editInstruction: string;
+  onEditInstructionChange: (value: string) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const blobPreviewRef = useRef<string | null>(null);
-  const [sourcePreviewUrl, setSourcePreviewUrl] = useState<string | null>(null);
-  const [editInstruction, setEditInstruction] = useState("");
   const [localFileError, setLocalFileError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -412,7 +429,7 @@ function ReferenceEditPlannedPanel({
 
   function clearSourceImage() {
     revokeBlobPreview();
-    setSourcePreviewUrl(null);
+    onSourcePreviewUrlChange(null);
     setLocalFileError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -449,7 +466,7 @@ function ReferenceEditPlannedPanel({
 
     const blobUrl = URL.createObjectURL(file);
     blobPreviewRef.current = blobUrl;
-    setSourcePreviewUrl(blobUrl);
+    onSourcePreviewUrlChange(blobUrl);
     setUploading(true);
 
     try {
@@ -482,7 +499,7 @@ function ReferenceEditPlannedPanel({
       }
 
       revokeBlobPreview();
-      setSourcePreviewUrl(data.imageUrl);
+      onSourcePreviewUrlChange(data.imageUrl);
     } catch {
       setLocalFileError(copy.uploadFailed);
     } finally {
@@ -493,11 +510,15 @@ function ReferenceEditPlannedPanel({
     }
   }
 
+  const panelStatus = isEnabled ? copy.statusActive : copy.statusPlanned;
+  const panelIntro = isEnabled ? copy.introActive : copy.introPlanned;
+
   return (
-    <div
+    <motion.div
       ref={panelRef}
       id="reference-edit-preview"
       aria-label={copy.sourceLabel}
+      initial={false}
       className="mt-2.5 rounded-xl border border-[#d8ad5f]/15 bg-[linear-gradient(165deg,rgba(216,173,95,0.07)_0%,rgba(0,0,0,0.35)_45%)] p-2.5 sm:p-3"
     >
       <input
@@ -513,10 +534,10 @@ function ReferenceEditPlannedPanel({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-black text-white/85 sm:text-xs">{label}</p>
-          <p className="mt-0.5 text-[9px] leading-4 text-white/38">{copy.intro}</p>
+          <p className="mt-0.5 text-[9px] leading-4 text-white/38">{panelIntro}</p>
         </div>
         <span className="shrink-0 rounded-full border border-[#d8ad5f]/25 bg-[#d8ad5f]/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.1em] text-[#d8ad5f]/90">
-          {copy.status}
+          {panelStatus}
         </span>
       </div>
 
@@ -594,7 +615,7 @@ function ReferenceEditPlannedPanel({
           <textarea
             id="reference-edit-instruction"
             value={editInstruction}
-            onChange={(event) => setEditInstruction(event.target.value)}
+            onChange={(event) => onEditInstructionChange(event.target.value)}
             rows={4}
             placeholder={copy.instructionPlaceholder}
             className="mt-1.5 min-h-[5rem] flex-1 resize-y rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] leading-4 text-white/70 placeholder:text-white/22 outline-none focus-visible:ring-2 focus-visible:ring-[#d8ad5f]/30 sm:min-h-[5.5rem]"
@@ -612,24 +633,32 @@ function ReferenceEditPlannedPanel({
         </div>
       </div>
 
-      <div className="mt-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          title={copy.generateDisabled}
-          className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[10px] font-black uppercase tracking-[0.1em] text-white/35"
-        >
-          <Lock className="h-3.5 w-3.5" aria-hidden />
-          {copy.generateDisabled}
-        </button>
-        <p className="text-[9px] leading-3.5 text-white/30 sm:max-w-[55%]">
-          {copy.plannedNote}
-        </p>
-      </div>
+      {!isEnabled ? (
+        <>
+          <div className="mt-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="button"
+              disabled
+              aria-disabled="true"
+              title={copy.generateDisabled}
+              className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[10px] font-black uppercase tracking-[0.1em] text-white/35"
+            >
+              <Lock className="h-3.5 w-3.5" aria-hidden />
+              {copy.generateDisabled}
+            </button>
+            <p className="text-[9px] leading-3.5 text-white/30 sm:max-w-[55%]">
+              {copy.plannedNote}
+            </p>
+          </div>
 
-      <p className="mt-2 text-[9px] leading-4 text-white/32">{copy.generationNotActive}</p>
-    </div>
+          <p className="mt-2 text-[9px] leading-4 text-white/32">
+            {copy.generationNotActive}
+          </p>
+        </>
+      ) : (
+        <p className="mt-2.5 text-[9px] leading-4 text-white/32">{copy.activeNote}</p>
+      )}
+    </motion.div>
   );
 }
 
@@ -682,7 +711,12 @@ export default function AiAgentStudio({
         description: a.imageModes.referenceEdit.description,
         hoverHint: a.imageModes.referenceEdit.hoverHint,
         comingSoonNote: a.imageModes.comingSoon,
-        status: "planned" as ImageModeCardStatus,
+        status: (REFERENCE_EDIT_PUBLIC_ENABLED
+          ? "beta"
+          : "planned") as ImageModeCardStatus,
+        creditNote: REFERENCE_EDIT_PUBLIC_ENABLED
+          ? a.imageModes.fiveCredits
+          : undefined,
         icon: PenLine,
       },
     ],
@@ -709,7 +743,15 @@ export default function AiAgentStudio({
   const [selectedCharacterId, setSelectedCharacterId] = useState("");
   const [workflow] = useState<Workflow>("standard");
   const [imageMode, setImageMode] = useState<ImageModeKey>("standard");
+  const [referenceEditSourceUrl, setReferenceEditSourceUrl] = useState<
+    string | null
+  >(null);
+  const [referenceEditInstruction, setReferenceEditInstruction] = useState("");
   const imageModeActiveNote = useMemo(() => {
+    if (imageMode === "reference_edit" && REFERENCE_EDIT_PUBLIC_ENABLED) {
+      return a.imageModeReferenceEditActiveNote;
+    }
+
     if (imageMode === "fast_draft" && FAST_DRAFT_PUBLIC_ENABLED) {
       return a.imageModeFastDraftActiveNote;
     }
@@ -722,8 +764,20 @@ export default function AiAgentStudio({
   }, [a, imageMode]);
 
   const imageModeUsesBetaBadge =
+    (imageMode === "reference_edit" && REFERENCE_EDIT_PUBLIC_ENABLED) ||
     (imageMode === "fast_draft" && FAST_DRAFT_PUBLIC_ENABLED) ||
     (imageMode === "premium_image" && PREMIUM_IMAGE_PUBLIC_ENABLED);
+
+  const isReferenceEditActive =
+    imageMode === "reference_edit" && REFERENCE_EDIT_PUBLIC_ENABLED;
+
+  const referenceEditReady =
+    isReferenceEditActive &&
+    Boolean(referenceEditSourceUrl?.trim()) &&
+    Boolean(referenceEditInstruction.trim());
+
+  const referenceEditSubmitBlocked =
+    isReferenceEditActive && !referenceEditReady;
   const [agentMode, setAgentMode] = useState<AgentMode>("auto");
   const [outputFormatKey, setOutputFormatKey] =
     useState<OutputFormatKey>("square");
@@ -967,11 +1021,27 @@ export default function AiAgentStudio({
     event.preventDefault();
 
     const cleanPrompt = prompt.trim();
+    const isReferenceEditMode =
+      imageMode === "reference_edit" && REFERENCE_EDIT_PUBLIC_ENABLED;
 
-    if (!cleanPrompt) {
+    if (isReferenceEditMode) {
+      if (!referenceEditSourceUrl?.trim()) {
+        setErrorMessage(a.referenceEditMissingSource);
+        return;
+      }
+
+      if (!referenceEditInstruction.trim()) {
+        setErrorMessage(a.referenceEditMissingInstruction);
+        return;
+      }
+    } else if (!cleanPrompt) {
       setErrorMessage(a.describePrompt);
       return;
     }
+
+    const effectivePrompt = isReferenceEditMode
+      ? referenceEditInstruction.trim()
+      : cleanPrompt;
 
     const temporaryGenerationId = `temp-${Date.now()}`;
 
@@ -990,7 +1060,7 @@ export default function AiAgentStudio({
 
       setAgentResult({
         id: temporaryGenerationId,
-        prompt: cleanPrompt,
+        prompt: effectivePrompt,
         image_url: null,
         status: "processing",
         error_message: null,
@@ -1017,7 +1087,9 @@ export default function AiAgentStudio({
         return;
       }
 
-      const agentPrompt = buildAgentPrompt(cleanPrompt, agentMode);
+      const agentPrompt = isReferenceEditMode
+        ? effectivePrompt
+        : buildAgentPrompt(cleanPrompt, agentMode);
 
       const response = await fetch("/api/generate", {
         method: "POST",
@@ -1027,10 +1099,16 @@ export default function AiAgentStudio({
         },
         body: JSON.stringify({
           prompt: agentPrompt,
-          characterId: selectedCharacterId || null,
+          characterId: isReferenceEditMode ? null : selectedCharacterId || null,
           workflow,
           imageMode: resolveSubmitImageMode(imageMode),
           outputFormat: outputFormatKey,
+          ...(isReferenceEditMode
+            ? {
+                sourceImageUrl: referenceEditSourceUrl,
+                editInstruction: referenceEditInstruction.trim(),
+              }
+            : {}),
         }),
       });
 
@@ -1274,7 +1352,9 @@ export default function AiAgentStudio({
                             ? a.imageModes.beta
                             : a.imageModes.planned;
 
-                      const isReferenceEditPlanned = mode.key === "reference_edit";
+                      const isReferenceEditPlanned =
+                        mode.key === "reference_edit" &&
+                        !REFERENCE_EDIT_PUBLIC_ENABLED;
                       const plannedTitle =
                         "hoverHint" in mode && mode.hoverHint
                           ? `${mode.description} — ${mode.hoverHint}`
@@ -1372,11 +1452,16 @@ export default function AiAgentStudio({
                     })}
                   </div>
 
-                  <ReferenceEditPlannedPanel
+                  <ReferenceEditPanel
                     label={a.imageModes.referenceEdit.label}
                     copy={a.imageModes.referenceEdit.panel}
                     panelRef={referenceEditPanelRef}
                     getAccessToken={getAccessToken}
+                    isEnabled={REFERENCE_EDIT_PUBLIC_ENABLED}
+                    sourcePreviewUrl={referenceEditSourceUrl}
+                    onSourcePreviewUrlChange={setReferenceEditSourceUrl}
+                    editInstruction={referenceEditInstruction}
+                    onEditInstructionChange={setReferenceEditInstruction}
                   />
 
                   <div className="mt-3 rounded-xl border border-white/[0.06] bg-black/25 px-2.5 py-2.5 sm:px-3">
@@ -1524,7 +1609,7 @@ export default function AiAgentStudio({
                     whileHover={{ scale: 1.06 }}
                     whileTap={{ scale: 0.96 }}
                     type="submit"
-                    disabled={queuing}
+                    disabled={queuing || referenceEditSubmitBlocked}
                     className="inline-flex h-12 w-12 shrink-0 items-center justify-center self-end rounded-full bg-white text-black shadow-xl transition hover:bg-white/85 disabled:opacity-50 sm:self-auto"
                   >
                     {queuing ? (

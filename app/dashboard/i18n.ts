@@ -132,11 +132,15 @@ const en = {
     imageModeStandardActiveNote: "Standard Image · Live · 1 Credit",
     imageModeFastDraftActiveNote: "Fast Draft · Beta · 1 Credit",
     imageModePremiumActiveNote: "Premium Image · Beta · 3 Credits",
+    imageModeReferenceEditActiveNote: "Reference Edit · Beta · 5 Credits",
     plannedExpansion: "Studio roadmap",
     imageModeActiveNote: "Standard Image · Live · 1 Credit",
     imageModeRoadmapLabel: "Also on the studio roadmap",
     imageModeRoadmapNote:
       "Preview only — not connected to generation or billing yet.",
+    referenceEditMissingSource: "Upload a source image for Reference Edit.",
+    referenceEditMissingInstruction:
+      "Add edit instructions for Reference Edit.",
     studioRoadmapChips: [
       "Fast Draft Mode",
       "Premium Image Mode",
@@ -166,16 +170,19 @@ const en = {
       referenceEdit: {
         label: "Reference Edit",
         description:
-          "Upload or select an image and guide precise edits.",
+          "Upload an image and guide precise campaign-ready edits.",
         hoverHint:
-          "Reference Edit will support source images, edit instructions and guided campaign refinements.",
+          "Reference Edit supports source images, edit instructions and guided campaign refinements.",
         panel: {
-          status: "Coming soon · Planned",
-          intro:
+          statusPlanned: "Coming soon · Planned",
+          statusActive: "Beta",
+          introPlanned:
             "Reference Edit is being prepared for guided image transformations.",
+          introActive:
+            "Upload a source image and describe the changes you want. Results appear in the agent and gallery.",
           sourceLabel: "Source image",
-          sourcePlaceholder: "Upload a source image to preview your workflow",
-          sourceHint: "PNG, JPEG, or WebP · max 12 MB · no credits charged",
+          sourcePlaceholder: "Upload a source image to begin",
+          sourceHint: "PNG, JPEG, or WebP · max 12 MB",
           uploadSourceImage: "Upload source image",
           uploading: "Uploading…",
           clearImage: "Clear image",
@@ -186,12 +193,14 @@ const en = {
           instructionPlaceholder:
             "Describe what to change: background, lighting, product details, framing…",
           previewLabel: "Result preview",
-          previewPlaceholder: "Edited result will appear here",
+          previewPlaceholder: "Edited result will appear here after generation",
           generateDisabled: "Generate — coming soon",
           generationNotActive:
             "Generation is not active yet. Use Standard, Fast Draft, or Premium Image below.",
           plannedNote:
             "Reference Edit is being prepared for guided image transformations. Upload and instructions are available for workflow preview. Generation is not active yet.",
+          activeNote:
+            "Reference Edit uses your source image and instructions to create a new campaign-ready visual.",
         },
       },
       live: "Live",
@@ -199,6 +208,7 @@ const en = {
       oneCredit: "1 Credit",
       twoCredits: "2 Credits",
       threeCredits: "3 Credits",
+      fiveCredits: "5 Credits",
       planned: "Planned",
       comingSoon: "Coming soon",
       plannedTooltip: "Planned — not available in this release",
@@ -613,11 +623,16 @@ const de: DeepString<typeof en> = {
     imageModeStandardActiveNote: "Standard Image · Live · 1 Credit",
     imageModeFastDraftActiveNote: "Fast Draft · Beta · 1 Credit",
     imageModePremiumActiveNote: "Premium Image · Beta · 3 Credits",
+    imageModeReferenceEditActiveNote: "Reference Edit · Beta · 5 Credits",
     plannedExpansion: "Studio-Roadmap",
     imageModeActiveNote: "Standard Image · Live · 1 Credit",
     imageModeRoadmapLabel: "Ebenfalls auf der Studio-Roadmap",
     imageModeRoadmapNote:
       "Nur Vorschau — noch nicht an Generierung oder Abrechnung angebunden.",
+    referenceEditMissingSource:
+      "Lade ein Quellbild für Reference Edit hoch.",
+    referenceEditMissingInstruction:
+      "Füge Bearbeitungsanweisungen für Reference Edit hinzu.",
     studioRoadmapChips: [
       "Fast Draft Mode",
       "Premium Image Mode",
@@ -647,16 +662,19 @@ const de: DeepString<typeof en> = {
       referenceEdit: {
         label: "Reference Edit",
         description:
-          "Bild hochladen oder auswählen und präzise Bearbeitungen anleiten.",
+          "Bild hochladen und präzise kampagnenfertige Bearbeitungen anleiten.",
         hoverHint:
-          "Reference Edit wird Quellbilder, Bearbeitungsanweisungen und geführte Kampagnen-Verfeinerungen unterstützen.",
+          "Reference Edit unterstützt Quellbilder, Bearbeitungsanweisungen und geführte Kampagnen-Verfeinerungen.",
         panel: {
-          status: "Demnächst · Geplant",
-          intro:
+          statusPlanned: "Demnächst · Geplant",
+          statusActive: "Beta",
+          introPlanned:
             "Reference Edit wird für geführte Bildtransformationen vorbereitet.",
+          introActive:
+            "Lade ein Quellbild hoch und beschreibe die gewünschten Änderungen. Ergebnisse erscheinen im Agent und in der Galerie.",
           sourceLabel: "Quellbild",
-          sourcePlaceholder: "Quellbild hochladen, um den Workflow zu prüfen",
-          sourceHint: "PNG, JPEG oder WebP · max. 12 MB · keine Credits",
+          sourcePlaceholder: "Quellbild hochladen, um zu starten",
+          sourceHint: "PNG, JPEG oder WebP · max. 12 MB",
           uploadSourceImage: "Quellbild hochladen",
           uploading: "Wird hochgeladen…",
           clearImage: "Bild entfernen",
@@ -667,12 +685,15 @@ const de: DeepString<typeof en> = {
           instructionPlaceholder:
             "Beschreibe die Änderung: Hintergrund, Licht, Produktdetails, Bildausschnitt…",
           previewLabel: "Ergebnis-Vorschau",
-          previewPlaceholder: "Das bearbeitete Ergebnis erscheint hier",
+          previewPlaceholder:
+            "Das bearbeitete Ergebnis erscheint hier nach der Generierung",
           generateDisabled: "Generieren — demnächst",
           generationNotActive:
             "Generierung noch nicht aktiv. Nutze unten Standard, Fast Draft oder Premium Image.",
           plannedNote:
             "Reference Edit wird für geführte Bildtransformationen vorbereitet. Upload und Anweisungen sind als Workflow-Vorschau verfügbar. Die Generierung ist noch nicht aktiv.",
+          activeNote:
+            "Reference Edit nutzt dein Quellbild und deine Anweisungen, um ein neues kampagnenfertiges Visual zu erstellen.",
         },
       },
       live: "Live",
@@ -680,6 +701,7 @@ const de: DeepString<typeof en> = {
       oneCredit: "1 Credit",
       twoCredits: "2 Credits",
       threeCredits: "3 Credits",
+      fiveCredits: "5 Credits",
       planned: "Geplant",
       comingSoon: "Demnächst",
       plannedTooltip: "Geplant — in diesem Release nicht verfügbar",

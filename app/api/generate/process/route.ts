@@ -17,8 +17,10 @@ const supabaseAdmin = createClient(
 const STORAGE_BUCKET = "generations";
 const FAL_FLUX_SCHNELL_MODEL = "fal-ai/flux/schnell";
 const FAL_FLUX_DEV_MODEL = "fal-ai/flux/dev";
+const FAL_NANO_BANANA_PRO_EDIT_MODEL = "fal-ai/nano-banana-pro/edit";
 const FAL_REQUEST_TIMEOUT_MS = 120_000;
 const FAL_PREMIUM_REQUEST_TIMEOUT_MS = 180_000;
+const FAL_REFERENCE_EDIT_TIMEOUT_MS = 180_000;
 
 type ImageSize = "1024x1024" | "1024x1536" | "1536x1024";
 
@@ -404,6 +406,140 @@ async function processPremiumImage(args: {
   });
 }
 
+async function processReferenceEditImage({
+  generationId,
+  userId,
+  finalPrompt,
+  creditsUsed,
+  sourceImageUrl,
+}: {
+  generationId: string;
+  userId: string;
+  finalPrompt: string;
+  creditsUsed: number;
+  sourceImageUrl: string | null;
+}) {
+  if (process.env.ENABLE_FAL_REFERENCE_EDIT !== "true") {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "Reference Edit is not enabled on the server.",
+    });
+
+    return NextResponse.json(
+      { error: "Reference Edit is not enabled. Credits refunded." },
+      { status: 400 }
+    );
+  }
+
+  if (!process.env.FAL_KEY) {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "FAL_KEY is not configured.",
+    });
+
+    return NextResponse.json(
+      { error: "Image provider is not configured. Credits refunded." },
+      { status: 500 }
+    );
+  }
+
+  if (!sourceImageUrl) {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "Reference Edit source image is missing.",
+    });
+
+    return NextResponse.json(
+      { error: "Reference Edit source image is missing. Credits refunded." },
+      { status: 400 }
+    );
+  }
+
+  fal.config({
+    credentials: process.env.FAL_KEY,
+  });
+
+  try {
+    const result = await Promise.race([
+      fal.subscribe(FAL_NANO_BANANA_PRO_EDIT_MODEL, {
+        input: {
+          prompt: finalPrompt,
+          image_urls: [sourceImageUrl],
+          num_images: 1,
+          output_format: "png",
+          resolution: "1K",
+        },
+        logs: false,
+      }),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Reference Edit provider timed out."));
+        }, FAL_REFERENCE_EDIT_TIMEOUT_MS);
+      }),
+    ]);
+
+    const remoteImageUrl = getFalResultImageUrl(result.data);
+
+    if (!remoteImageUrl) {
+      await markFailedAndRefund({
+        generationId,
+        userId,
+        creditsUsed,
+        errorMessage: "Reference Edit did not return image data.",
+      });
+
+      return NextResponse.json(
+        { error: "Image generation failed. Credits refunded." },
+        { status: 500 }
+      );
+    }
+
+    const { imageBuffer, contentType } =
+      await downloadImageFromUrl(remoteImageUrl);
+
+    const publicUrl = await uploadImageBuffer({
+      userId,
+      imageBuffer,
+      contentType,
+    });
+
+    await completeGeneration({
+      generationId,
+      publicUrl,
+    });
+
+    return NextResponse.json({
+      success: true,
+      generationId,
+      image: publicUrl,
+      workflow: "reference_edit",
+    });
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Reference Edit generation failed.";
+
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage,
+    });
+
+    return NextResponse.json(
+      { error: "Image generation failed. Credits refunded." },
+      { status: 500 }
+    );
+  }
+}
+
 async function processOpenAIImage({
   generationId,
   userId,
@@ -512,7 +648,8 @@ export async function POST(req: Request) {
         credits_used,
         image_size,
         output_width,
-        output_height
+        output_height,
+        reference_image_url
       `
       )
       .eq("id", generationId)
@@ -577,6 +714,22 @@ export async function POST(req: Request) {
         imageSize: generation.image_size,
         outputWidth: generation.output_width,
         outputHeight: generation.output_height,
+      });
+    }
+
+    if (workflow === "reference_edit" && provider === "fal") {
+      const sourceImageUrl =
+        typeof generation.reference_image_url === "string" &&
+        generation.reference_image_url.trim().length > 0
+          ? generation.reference_image_url.trim()
+          : null;
+
+      return processReferenceEditImage({
+        generationId,
+        userId: generation.user_id,
+        finalPrompt,
+        creditsUsed,
+        sourceImageUrl,
       });
     }
 

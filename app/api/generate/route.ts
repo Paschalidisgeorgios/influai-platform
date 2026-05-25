@@ -8,17 +8,13 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-type ImageMode = "standard" | "fast_draft" | "premium_image";
-
-/** Planned modes — documented costs only; not billable until explicitly enabled. */
-const PLANNED_IMAGE_MODE_CREDIT_COSTS = {
-  reference_edit: { min: 3, max: 5 },
-  video: "variable_by_duration_and_quality",
-  lip_sync: "variable_by_duration",
-} as const;
+type ImageMode =
+  | "standard"
+  | "fast_draft"
+  | "premium_image"
+  | "reference_edit";
 
 const PLANNED_IMAGE_MODES = new Set([
-  "reference_edit",
   "video",
   "lip_sync",
   "video_studio",
@@ -27,6 +23,8 @@ const PLANNED_IMAGE_MODES = new Set([
 
 function getCreditCostForImageMode(imageMode: ImageMode): number {
   switch (imageMode) {
+    case "reference_edit":
+      return 5;
     case "premium_image":
       return 3;
     case "fast_draft":
@@ -40,6 +38,7 @@ function getCreditCostForImageMode(imageMode: ImageMode): number {
 function parseImageMode(value: unknown): ImageMode {
   if (value === "fast_draft") return "fast_draft";
   if (value === "premium_image") return "premium_image";
+  if (value === "reference_edit") return "reference_edit";
   return "standard";
 }
 
@@ -47,11 +46,16 @@ function getPlannedModeRejection(value: unknown): string | null {
   if (typeof value !== "string") return null;
   if (!PLANNED_IMAGE_MODES.has(value)) return null;
 
-  if (value === "reference_edit") {
-    return "Reference Edit is not enabled.";
-  }
-
   return "This image mode is not enabled.";
+}
+
+function isMissingColumnError(error: { message?: string; code?: string } | null) {
+  if (!error?.message) return false;
+
+  return (
+    error.code === "PGRST204" ||
+    /column.*does not exist|Could not find the .* column/i.test(error.message)
+  );
 }
 
 type GenerationJobConfig = {
@@ -102,6 +106,27 @@ function resolveGenerationJobConfig(imageMode: ImageMode):
         workflow: "premium_image",
         creditsUsed: getCreditCostForImageMode("premium_image"),
         transactionSource: "premium_image_generation_job",
+      },
+    };
+  }
+
+  if (imageMode === "reference_edit") {
+    if (process.env.ENABLE_FAL_REFERENCE_EDIT !== "true") {
+      return {
+        ok: false,
+        error:
+          "Reference Edit is not enabled. Set ENABLE_FAL_REFERENCE_EDIT=true on the server.",
+      };
+    }
+
+    return {
+      ok: true,
+      config: {
+        provider: "fal",
+        model: "fal-ai/nano-banana-pro/edit",
+        workflow: "reference_edit",
+        creditsUsed: getCreditCostForImageMode("reference_edit"),
+        transactionSource: "reference_edit_generation_job",
       },
     };
   }
@@ -780,6 +805,19 @@ function assembleFinalPrompt(sections: string[]) {
   return sections.filter((section) => section.trim().length > 0).join("\n\n");
 }
 
+function buildReferenceEditFinalPrompt(editInstruction: string) {
+  return assembleFinalPrompt([
+    `Edit the provided source image according to the instructions below.
+
+User edit instructions:
+${editInstruction.trim()}`,
+    `Preserve important subject details unless the instruction says otherwise.`,
+    `Create a production-ready campaign asset.`,
+    `No text, no logo, no watermark unless explicitly requested.`,
+    buildQualityRules(),
+  ]);
+}
+
 function buildStandardFinalPrompt({
   prompt,
   outputFormat,
@@ -916,6 +954,14 @@ export async function POST(req: Request) {
 
     const imageMode = parseImageMode(body.imageMode);
     const outputFormat = getOutputFormat(body.outputFormat);
+    const sourceImageUrl =
+      typeof body.sourceImageUrl === "string"
+        ? body.sourceImageUrl.trim()
+        : "";
+    const editInstruction =
+      typeof body.editInstruction === "string"
+        ? body.editInstruction.trim()
+        : "";
 
     const jobConfigResult = resolveGenerationJobConfig(imageMode);
 
@@ -925,22 +971,49 @@ export async function POST(req: Request) {
 
     const jobConfig = jobConfigResult.config;
 
-    if (!prompt || typeof prompt !== "string") {
+    if (imageMode === "reference_edit") {
+      if (!sourceImageUrl) {
+        return NextResponse.json(
+          { error: "Source image is required for Reference Edit." },
+          { status: 400 }
+        );
+      }
+
+      if (!editInstruction) {
+        return NextResponse.json(
+          { error: "Edit instructions are required for Reference Edit." },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (imageMode !== "reference_edit" && (!prompt || typeof prompt !== "string")) {
       return NextResponse.json(
         { error: "Prompt is required" },
         { status: 400 }
       );
     }
 
-    let finalPrompt = buildStandardFinalPrompt({
-      prompt,
-      outputFormat,
-    });
+    const effectivePrompt =
+      imageMode === "reference_edit"
+        ? editInstruction
+        : typeof prompt === "string"
+          ? prompt
+          : "";
+
+    let finalPrompt =
+      imageMode === "reference_edit"
+        ? buildReferenceEditFinalPrompt(editInstruction)
+        : buildStandardFinalPrompt({
+            prompt: effectivePrompt,
+            outputFormat,
+          });
 
     let usedCharacterId: string | null = null;
-    let referenceImageUrl: string | null = null;
+    let referenceImageUrl: string | null =
+      imageMode === "reference_edit" ? sourceImageUrl : null;
 
-    if (characterId && typeof characterId === "string") {
+    if (imageMode !== "reference_edit" && characterId && typeof characterId === "string") {
       const { data: character, error: characterError } = await supabaseAdmin
         .from("ai_characters")
         .select(
@@ -969,7 +1042,7 @@ export async function POST(req: Request) {
 
       finalPrompt = buildCharacterStylePrompt({
         character,
-        prompt,
+        prompt: effectivePrompt,
         outputFormat,
       });
     }
@@ -996,31 +1069,59 @@ export async function POST(req: Request) {
       );
     }
 
-    const { data: generation, error: generationCreateError } =
-      await supabaseAdmin
+    const generationInsertBase = {
+      user_id: user.id,
+      prompt: effectivePrompt,
+      final_prompt: finalPrompt,
+      image_url: null,
+      status: "processing",
+      provider: jobConfig.provider,
+      model: jobConfig.model,
+      workflow: jobConfig.workflow,
+      reference_image_url: referenceImageUrl,
+      social_platform: outputFormat.platform,
+      output_format: outputFormat.label,
+      image_size: outputFormat.imageSize,
+      output_width: outputFormat.width,
+      output_height: outputFormat.height,
+      credits_used: jobConfig.creditsUsed,
+      character_id: usedCharacterId,
+      error_message: null,
+      started_at: new Date().toISOString(),
+    };
+
+    const generationInsertExtended =
+      imageMode === "reference_edit"
+        ? {
+            ...generationInsertBase,
+            source_image_url: sourceImageUrl,
+            edit_instruction: editInstruction,
+          }
+        : generationInsertBase;
+
+    let generationCreateError: { message?: string; code?: string } | null =
+      null;
+    let generation: { id: string } | null = null;
+
+    const extendedInsert = await supabaseAdmin
+      .from("generations")
+      .insert(generationInsertExtended)
+      .select("id")
+      .single();
+
+    if (extendedInsert.error && isMissingColumnError(extendedInsert.error)) {
+      const fallbackInsert = await supabaseAdmin
         .from("generations")
-        .insert({
-          user_id: user.id,
-          prompt,
-          final_prompt: finalPrompt,
-          image_url: null,
-          status: "processing",
-          provider: jobConfig.provider,
-          model: jobConfig.model,
-          workflow: jobConfig.workflow,
-          reference_image_url: referenceImageUrl,
-          social_platform: outputFormat.platform,
-          output_format: outputFormat.label,
-          image_size: outputFormat.imageSize,
-          output_width: outputFormat.width,
-          output_height: outputFormat.height,
-          credits_used: jobConfig.creditsUsed,
-          character_id: usedCharacterId,
-          error_message: null,
-          started_at: new Date().toISOString(),
-        })
+        .insert(generationInsertBase)
         .select("id")
         .single();
+
+      generationCreateError = fallbackInsert.error;
+      generation = fallbackInsert.data;
+    } else {
+      generationCreateError = extendedInsert.error;
+      generation = extendedInsert.data;
+    }
 
     if (generationCreateError || !generation) {
       console.error(
@@ -1071,6 +1172,7 @@ export async function POST(req: Request) {
       provider: jobConfig.provider,
       model: jobConfig.model,
       referenceImageUrl,
+      sourceImageUrl: imageMode === "reference_edit" ? sourceImageUrl : undefined,
       outputFormat,
     });
   } catch (error) {
