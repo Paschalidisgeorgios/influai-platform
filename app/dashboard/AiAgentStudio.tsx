@@ -49,7 +49,8 @@ type ImageModeKey =
   | "standard"
   | "fast_draft"
   | "premium_image"
-  | "reference_edit";
+  | "reference_edit"
+  | "brand_assets";
 type ImageModeCardStatus = "live" | "beta" | "planned";
 
 const FAST_DRAFT_PUBLIC_ENABLED =
@@ -58,8 +59,14 @@ const PREMIUM_IMAGE_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_PREMIUM_IMAGE === "true";
 const REFERENCE_EDIT_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_REFERENCE_EDIT === "true";
+const BRAND_ASSETS_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_FAL_BRAND_ASSETS === "true";
 
 function resolveSubmitImageMode(imageMode: ImageModeKey): ImageModeKey {
+  if (imageMode === "brand_assets" && BRAND_ASSETS_PUBLIC_ENABLED) {
+    return "brand_assets";
+  }
+
   if (imageMode === "reference_edit" && REFERENCE_EDIT_PUBLIC_ENABLED) {
     return "reference_edit";
   }
@@ -719,6 +726,20 @@ export default function AiAgentStudio({
           : undefined,
         icon: PenLine,
       },
+      {
+        key: "brand_assets" as const,
+        label: a.imageModes.brandAssets.label,
+        description: a.imageModes.brandAssets.description,
+        hoverHint: a.imageModes.brandAssets.hoverHint,
+        comingSoonNote: a.imageModes.comingSoon,
+        status: (BRAND_ASSETS_PUBLIC_ENABLED
+          ? "beta"
+          : "planned") as ImageModeCardStatus,
+        creditNote: BRAND_ASSETS_PUBLIC_ENABLED
+          ? a.imageModes.fourCredits
+          : undefined,
+        icon: Megaphone,
+      },
     ],
     [a]
   );
@@ -748,6 +769,10 @@ export default function AiAgentStudio({
   >(null);
   const [referenceEditInstruction, setReferenceEditInstruction] = useState("");
   const imageModeActiveNote = useMemo(() => {
+    if (imageMode === "brand_assets" && BRAND_ASSETS_PUBLIC_ENABLED) {
+      return a.imageModeBrandAssetsActiveNote;
+    }
+
     if (imageMode === "reference_edit" && REFERENCE_EDIT_PUBLIC_ENABLED) {
       return a.imageModeReferenceEditActiveNote;
     }
@@ -764,6 +789,7 @@ export default function AiAgentStudio({
   }, [a, imageMode]);
 
   const imageModeUsesBetaBadge =
+    (imageMode === "brand_assets" && BRAND_ASSETS_PUBLIC_ENABLED) ||
     (imageMode === "reference_edit" && REFERENCE_EDIT_PUBLIC_ENABLED) ||
     (imageMode === "fast_draft" && FAST_DRAFT_PUBLIC_ENABLED) ||
     (imageMode === "premium_image" && PREMIUM_IMAGE_PUBLIC_ENABLED);
@@ -1339,7 +1365,7 @@ export default function AiAgentStudio({
                     {a.imageModeIntro}
                   </p>
 
-                  <div className="grid grid-cols-2 gap-2 sm:gap-2.5 lg:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 sm:gap-2.5">
                     {imageModes.map((mode) => {
                       const Icon = mode.icon;
                       const isSelectable =

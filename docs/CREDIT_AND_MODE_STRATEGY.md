@@ -73,16 +73,23 @@ Requires `source_image_url` (or equivalent) in the data model before activation.
 
 ---
 
-## 5. Planned Brand Assets mode
+## 5. Brand Assets mode (Beta)
 
 | Field | Value |
 |-------|--------|
-| **Future provider candidate** | Recraft |
-| **Suggested credit cost** | 2–4 credits per asset |
-| **Purpose** | Brand systems, ad creatives, thumbnails, product layouts |
-| **Status** | Planned |
+| **Mode key** | `brand_assets` |
+| **Provider** | fal.ai / Recraft V3 |
+| **Model endpoint** | `fal-ai/recraft-v3` (text-to-image) |
+| **Credit cost** | **4 credits** per job |
+| **Workflow** | `brand_assets` |
+| **Purpose** | Brand-ready ad creatives, product campaign assets, brand visuals, thumbnails, social layouts |
+| **Status** | **Beta** — requires `ENABLE_FAL_BRAND_ASSETS=true` and `NEXT_PUBLIC_ENABLE_FAL_BRAND_ASSETS=true` |
 
-May surface under Expansion / Brand Assets in the UI when backend support exists.
+**Use cases:** ad creatives, product campaign assets, brand visuals, thumbnails, social marketing layouts.
+
+**Not active when flags are off** — UI shows Planned; API returns 400.
+
+Video, Lip Sync, LoRA, Face Consistency, Character Pro, and Replicate remain **not** activated.
 
 ---
 
@@ -225,10 +232,10 @@ Existing columns (`provider`, `model`, `workflow`) remain required for Standard 
 | Mode / module | Status | Suggested credits |
 |---------------|--------|-------------------|
 | Standard Image | Live | 1 |
-| Fast Draft | Planned | 1 |
+| Fast Draft | Live (flagged) | 1 |
 | Premium Image | Live (flagged) | **3** |
-| Reference Edit | Planned | 3–5 (not active) |
-| Brand Assets | Planned | 2–4 |
+| Reference Edit | Live (flagged) | **5** |
+| Brand Assets | Beta (flagged) | **4** |
 | Video Studio (short) | Planned | 15–30 |
 | Video Studio (long/premium) | Planned | 40–80 |
 | Lip Sync Studio (short) | Planned | 10–30 |

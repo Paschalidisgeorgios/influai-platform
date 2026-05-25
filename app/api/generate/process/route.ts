@@ -18,9 +18,12 @@ const STORAGE_BUCKET = "generations";
 const FAL_FLUX_SCHNELL_MODEL = "fal-ai/flux/schnell";
 const FAL_FLUX_DEV_MODEL = "fal-ai/flux/dev";
 const FAL_NANO_BANANA_PRO_EDIT_MODEL = "fal-ai/nano-banana-pro/edit";
+/** Brand Assets — Recraft V3 text-to-image on fal.ai */
+const FAL_RECRAFT_V3_MODEL = "fal-ai/recraft-v3";
 const FAL_REQUEST_TIMEOUT_MS = 120_000;
 const FAL_PREMIUM_REQUEST_TIMEOUT_MS = 180_000;
 const FAL_REFERENCE_EDIT_TIMEOUT_MS = 180_000;
+const FAL_BRAND_ASSETS_TIMEOUT_MS = 180_000;
 
 type ImageSize = "1024x1024" | "1024x1536" | "1536x1024";
 
@@ -540,6 +543,136 @@ async function processReferenceEditImage({
   }
 }
 
+async function processBrandAssetsImage(args: {
+  generationId: string;
+  userId: string;
+  finalPrompt: string;
+  creditsUsed: number;
+  imageSize: unknown;
+  outputWidth: unknown;
+  outputHeight: unknown;
+}) {
+  const {
+    generationId,
+    userId,
+    finalPrompt,
+    creditsUsed,
+    imageSize,
+    outputWidth,
+    outputHeight,
+  } = args;
+
+  if (process.env.ENABLE_FAL_BRAND_ASSETS !== "true") {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "Brand Assets is not enabled on the server.",
+    });
+
+    return NextResponse.json(
+      { error: "Brand Assets is not enabled. Credits refunded." },
+      { status: 400 }
+    );
+  }
+
+  if (!process.env.FAL_KEY) {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "FAL_KEY is not configured.",
+    });
+
+    return NextResponse.json(
+      { error: "Image provider is not configured. Credits refunded." },
+      { status: 500 }
+    );
+  }
+
+  fal.config({
+    credentials: process.env.FAL_KEY,
+  });
+
+  const falImageSize = resolveFalImageSize({
+    imageSize,
+    outputWidth,
+    outputHeight,
+  });
+
+  try {
+    const result = await Promise.race([
+      fal.subscribe(FAL_RECRAFT_V3_MODEL, {
+        input: {
+          prompt: finalPrompt,
+          image_size: falImageSize,
+          style: "realistic_image",
+        },
+        logs: false,
+      }),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Brand Assets provider timed out."));
+        }, FAL_BRAND_ASSETS_TIMEOUT_MS);
+      }),
+    ]);
+
+    const remoteImageUrl = getFalResultImageUrl(result.data);
+
+    if (!remoteImageUrl) {
+      await markFailedAndRefund({
+        generationId,
+        userId,
+        creditsUsed,
+        errorMessage: "Brand Assets did not return image data.",
+      });
+
+      return NextResponse.json(
+        { error: "Image generation failed. Credits refunded." },
+        { status: 500 }
+      );
+    }
+
+    const { imageBuffer, contentType } =
+      await downloadImageFromUrl(remoteImageUrl);
+
+    const publicUrl = await uploadImageBuffer({
+      userId,
+      imageBuffer,
+      contentType,
+    });
+
+    await completeGeneration({
+      generationId,
+      publicUrl,
+    });
+
+    return NextResponse.json({
+      success: true,
+      generationId,
+      image: publicUrl,
+      workflow: "brand_assets",
+    });
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Brand Assets generation failed.";
+
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage,
+    });
+
+    return NextResponse.json(
+      { error: "Image generation failed. Credits refunded." },
+      { status: 500 }
+    );
+  }
+}
+
 async function processOpenAIImage({
   generationId,
   userId,
@@ -730,6 +863,18 @@ export async function POST(req: Request) {
         finalPrompt,
         creditsUsed,
         sourceImageUrl,
+      });
+    }
+
+    if (workflow === "brand_assets" && provider === "fal") {
+      return processBrandAssetsImage({
+        generationId,
+        userId: generation.user_id,
+        finalPrompt,
+        creditsUsed,
+        imageSize: generation.image_size,
+        outputWidth: generation.output_width,
+        outputHeight: generation.output_height,
       });
     }
 

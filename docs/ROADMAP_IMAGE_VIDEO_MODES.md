@@ -83,12 +83,15 @@ These modes are prepared in the **UI** (Image Mode selector) as disabled / Plann
 
 | Field | Value |
 |-------|--------|
-| **Mode key (proposed)** | `brand_assets` |
-| **Future provider candidate** | Recraft (brand/layout-oriented generation) |
-| **Intended use** | Brand systems, product layouts, ad creatives, thumbnails with layout discipline |
-| **Suggested credit cost** | 2–4 credits per asset |
-| **Status** | Planned |
-| **User-visible status** | Planned (may surface under Expansion / Brand Assets module) |
+| **Mode key** | `brand_assets` |
+| **Provider** | fal.ai / Recraft V3 |
+| **Model endpoint** | `fal-ai/recraft-v3` |
+| **Intended use** | Brand systems, product layouts, ad creatives, thumbnails, social campaign assets |
+| **Credit cost** | **4 credits** per asset |
+| **Status** | **Beta** (feature-flagged) |
+| **User-visible status** | Beta when `NEXT_PUBLIC_ENABLE_FAL_BRAND_ASSETS=true`; otherwise Planned |
+
+**Use cases:** ad creatives, product campaign assets, brand visuals, thumbnails, social layouts.
 
 ---
 
@@ -289,8 +292,8 @@ Use this checklist before marking a mode **Live** in production.
 | **P0** | Standard Image hardening | Baseline checklist green in prod |
 | **P1** | Fast Draft + credit model | 1-credit draft path, internal COGS tracked |
 | **P2** | Premium Image | **3 credits**, quality bar for campaigns |
-| **P3** | Reference Edit | Source image upload + edit pipeline |
-| **P4** | Brand Assets / Recraft | Layout/brand kits |
+| **P3** | Reference Edit | Live (flagged) — source upload + edit pipeline |
+| **P4** | Brand Assets / Recraft | Beta (flagged) — ad creatives, layouts, campaign assets |
 | **P5** | Video Studio | Video URL storage; 15–30 / 40–80 credit tiers |
 | **P6** | Lip Sync Studio | 10–30 credit band; voice + video pipeline |
 | **P7** | Omni Campaign Agent | Orchestration across formats; after P5–P6 stable |

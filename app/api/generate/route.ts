@@ -12,7 +12,11 @@ type ImageMode =
   | "standard"
   | "fast_draft"
   | "premium_image"
-  | "reference_edit";
+  | "reference_edit"
+  | "brand_assets";
+
+/** Brand Assets — Recraft V3 text-to-image on fal.ai */
+const FAL_RECRAFT_V3_MODEL = "fal-ai/recraft-v3";
 
 const PLANNED_IMAGE_MODES = new Set([
   "video",
@@ -25,6 +29,8 @@ function getCreditCostForImageMode(imageMode: ImageMode): number {
   switch (imageMode) {
     case "reference_edit":
       return 5;
+    case "brand_assets":
+      return 4;
     case "premium_image":
       return 3;
     case "fast_draft":
@@ -39,6 +45,7 @@ function parseImageMode(value: unknown): ImageMode {
   if (value === "fast_draft") return "fast_draft";
   if (value === "premium_image") return "premium_image";
   if (value === "reference_edit") return "reference_edit";
+  if (value === "brand_assets") return "brand_assets";
   return "standard";
 }
 
@@ -127,6 +134,27 @@ function resolveGenerationJobConfig(imageMode: ImageMode):
         workflow: "reference_edit",
         creditsUsed: getCreditCostForImageMode("reference_edit"),
         transactionSource: "reference_edit_generation_job",
+      },
+    };
+  }
+
+  if (imageMode === "brand_assets") {
+    if (process.env.ENABLE_FAL_BRAND_ASSETS !== "true") {
+      return {
+        ok: false,
+        error:
+          "Brand Assets is not enabled. Set ENABLE_FAL_BRAND_ASSETS=true on the server.",
+      };
+    }
+
+    return {
+      ok: true,
+      config: {
+        provider: "fal",
+        model: FAL_RECRAFT_V3_MODEL,
+        workflow: "brand_assets",
+        creditsUsed: getCreditCostForImageMode("brand_assets"),
+        transactionSource: "brand_assets_generation_job",
       },
     };
   }
@@ -818,6 +846,78 @@ ${editInstruction.trim()}`,
   ]);
 }
 
+function buildBrandAssetsFinalPrompt({
+  prompt,
+  outputFormat,
+}: {
+  prompt: string;
+  outputFormat: OutputFormat;
+}) {
+  const brief = buildCreativeBrief({ prompt, outputFormat });
+
+  return assembleFinalPrompt([
+    `Create a premium brand-ready advertising visual.
+
+User brief (preserve exactly — do not replace or contradict):
+${prompt}`,
+    brief.sceneDirection,
+    brief.formatBlock,
+    `Brand asset direction:
+- clean layout with commercial composition
+- strong product and brand clarity
+- high-end campaign asset finish
+- usable for social media ads, thumbnails and campaign layouts
+- design-forward polish suitable for marketing teams`,
+    `Brand safety (mandatory):
+- no actual text rendered in the image unless the user explicitly requests text
+- no logo unless explicitly requested
+- no watermark
+- leave clean negative space for optional post-production overlays where relevant`,
+    buildQualityRules(),
+    `Output target: ${outputFormat.label} · brand-ready campaign asset.`,
+  ]);
+}
+
+function buildBrandAssetsCharacterStylePrompt({
+  character,
+  prompt,
+  outputFormat,
+}: {
+  character: CharacterRecord;
+  prompt: string;
+  outputFormat: OutputFormat;
+}) {
+  const brief = buildCreativeBrief({ prompt, outputFormat, character });
+
+  return assembleFinalPrompt([
+    `Create a premium brand-ready advertising visual using a saved style profile.
+
+Style profile (creative direction only — not exact identity lock):
+Name: ${character.name}
+Description: ${character.description ?? "—"}
+Appearance: ${character.appearance_prompt ?? "—"}
+Style: ${character.style_prompt ?? "—"}
+
+User brief (preserve exactly — do not replace or contradict):
+${prompt}`,
+    brief.sceneDirection,
+    brief.formatBlock,
+    `Brand asset direction:
+- clean layout with commercial composition
+- strong product and brand clarity
+- high-end campaign asset finish
+- usable for social media ads, thumbnails and campaign layouts
+- design-forward polish suitable for marketing teams`,
+    `Brand safety (mandatory):
+- no actual text rendered in the image unless the user explicitly requests text
+- no logo unless explicitly requested
+- no watermark
+- leave clean negative space for optional post-production overlays where relevant`,
+    buildQualityRules(),
+    `Blend the style profile aesthetic with the brand asset direction and format rules above.`,
+  ]);
+}
+
 function buildStandardFinalPrompt({
   prompt,
   outputFormat,
@@ -1004,10 +1104,15 @@ export async function POST(req: Request) {
     let finalPrompt =
       imageMode === "reference_edit"
         ? buildReferenceEditFinalPrompt(editInstruction)
-        : buildStandardFinalPrompt({
-            prompt: effectivePrompt,
-            outputFormat,
-          });
+        : imageMode === "brand_assets"
+          ? buildBrandAssetsFinalPrompt({
+              prompt: effectivePrompt,
+              outputFormat,
+            })
+          : buildStandardFinalPrompt({
+              prompt: effectivePrompt,
+              outputFormat,
+            });
 
     let usedCharacterId: string | null = null;
     let referenceImageUrl: string | null =
@@ -1040,11 +1145,18 @@ export async function POST(req: Request) {
       usedCharacterId = character.id;
       referenceImageUrl = character.reference_image_url ?? null;
 
-      finalPrompt = buildCharacterStylePrompt({
-        character,
-        prompt: effectivePrompt,
-        outputFormat,
-      });
+      finalPrompt =
+        imageMode === "brand_assets"
+          ? buildBrandAssetsCharacterStylePrompt({
+              character,
+              prompt: effectivePrompt,
+              outputFormat,
+            })
+          : buildCharacterStylePrompt({
+              character,
+              prompt: effectivePrompt,
+              outputFormat,
+            });
     }
 
     const { data: creditSuccess, error: creditError } =
