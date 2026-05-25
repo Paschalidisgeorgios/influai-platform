@@ -24,6 +24,7 @@ import {
   Upload,
   UserRound,
   Wand2,
+  X,
   Zap,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -355,6 +356,8 @@ function ModeCardBody({
   );
 }
 
+const REFERENCE_EDIT_LOCAL_MAX_BYTES = 15 * 1024 * 1024;
+
 function ReferenceEditPlannedPanel({
   label,
   copy,
@@ -367,14 +370,66 @@ function ReferenceEditPlannedPanel({
     sourceLabel: string;
     sourcePlaceholder: string;
     sourceHint: string;
+    chooseImage: string;
+    clearImage: string;
+    invalidFile: string;
+    fileTooLarge: string;
     instructionLabel: string;
     instructionPlaceholder: string;
     previewLabel: string;
     previewPlaceholder: string;
+    generateDisabled: string;
     plannedNote: string;
   };
   panelRef: React.RefObject<HTMLDivElement | null>;
 }) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [sourcePreviewUrl, setSourcePreviewUrl] = useState<string | null>(null);
+  const [editInstruction, setEditInstruction] = useState("");
+  const [localFileError, setLocalFileError] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (sourcePreviewUrl) {
+        URL.revokeObjectURL(sourcePreviewUrl);
+      }
+    };
+  }, [sourcePreviewUrl]);
+
+  function clearLocalSource() {
+    if (sourcePreviewUrl) {
+      URL.revokeObjectURL(sourcePreviewUrl);
+    }
+    setSourcePreviewUrl(null);
+    setLocalFileError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }
+
+  function handleLocalFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setLocalFileError(copy.invalidFile);
+      return;
+    }
+
+    if (file.size > REFERENCE_EDIT_LOCAL_MAX_BYTES) {
+      setLocalFileError(copy.fileTooLarge);
+      return;
+    }
+
+    setLocalFileError(null);
+
+    if (sourcePreviewUrl) {
+      URL.revokeObjectURL(sourcePreviewUrl);
+    }
+
+    setSourcePreviewUrl(URL.createObjectURL(file));
+  }
+
   return (
     <div
       ref={panelRef}
@@ -382,8 +437,18 @@ function ReferenceEditPlannedPanel({
       aria-label={copy.sourceLabel}
       className="mt-2.5 rounded-xl border border-[#d8ad5f]/15 bg-[linear-gradient(165deg,rgba(216,173,95,0.07)_0%,rgba(0,0,0,0.35)_45%)] p-2.5 sm:p-3"
     >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+        onChange={handleLocalFileChange}
+      />
+
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-[11px] font-black text-white/85 sm:text-xs">{label}</p>
           <p className="mt-0.5 text-[9px] leading-4 text-white/38">{copy.intro}</p>
         </div>
@@ -392,36 +457,76 @@ function ReferenceEditPlannedPanel({
         </span>
       </div>
 
-      <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-2.5">
-        <div className="flex min-h-[5.5rem] flex-col rounded-lg border border-dashed border-white/12 bg-black/30 p-2 sm:min-h-[6.5rem]">
-          <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
-            {copy.sourceLabel}
-          </p>
-          <div className="mt-2 flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-white/35">
-              <Upload className="h-4 w-4" aria-hidden />
-            </div>
-            <p className="text-[10px] font-semibold text-white/50">
-              {copy.sourcePlaceholder}
+      <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 sm:gap-2.5">
+        <div className="flex min-h-[7rem] flex-col rounded-lg border border-dashed border-white/12 bg-black/30 p-2 sm:min-h-[7.5rem]">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
+              {copy.sourceLabel}
             </p>
-            <p className="text-[9px] text-white/28">{copy.sourceHint}</p>
+            {sourcePreviewUrl ? (
+              <button
+                type="button"
+                onClick={clearLocalSource}
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white/45 transition hover:bg-white/[0.06] hover:text-white/70"
+              >
+                <X className="h-3 w-3" aria-hidden />
+                {copy.clearImage}
+              </button>
+            ) : null}
           </div>
+
+          {sourcePreviewUrl ? (
+            <div className="relative mt-2 flex flex-1 overflow-hidden rounded-lg border border-white/10 bg-black/50">
+              <img
+                src={sourcePreviewUrl}
+                alt=""
+                className="h-full max-h-[5.5rem] w-full object-contain sm:max-h-[6rem]"
+              />
+            </div>
+          ) : (
+            <div className="mt-2 flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-white/35">
+                <Upload className="h-4 w-4" aria-hidden />
+              </div>
+              <p className="text-[10px] font-semibold text-white/50">
+                {copy.sourcePlaceholder}
+              </p>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="mt-0.5 rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.08em] text-[#d8ad5f]/90 transition hover:bg-[#d8ad5f]/18"
+              >
+                {copy.chooseImage}
+              </button>
+            </div>
+          )}
+
+          <p className="mt-1.5 text-center text-[9px] text-white/28">{copy.sourceHint}</p>
+          {localFileError ? (
+            <p className="mt-1 text-center text-[9px] font-medium text-amber-200/80">
+              {localFileError}
+            </p>
+          ) : null}
         </div>
 
-        <div className="flex min-h-[5.5rem] flex-col sm:min-h-[6.5rem]">
-          <label className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
+        <div className="flex min-h-[7rem] flex-col sm:min-h-[7.5rem]">
+          <label
+            htmlFor="reference-edit-instruction"
+            className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40"
+          >
             {copy.instructionLabel}
           </label>
           <textarea
-            disabled
-            readOnly
-            rows={3}
+            id="reference-edit-instruction"
+            value={editInstruction}
+            onChange={(event) => setEditInstruction(event.target.value)}
+            rows={4}
             placeholder={copy.instructionPlaceholder}
-            className="mt-1.5 min-h-[4.25rem] flex-1 resize-none rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] leading-4 text-white/45 placeholder:text-white/22 disabled:cursor-not-allowed sm:min-h-[4.75rem]"
+            className="mt-1.5 min-h-[5rem] flex-1 resize-y rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] leading-4 text-white/70 placeholder:text-white/22 outline-none focus-visible:ring-2 focus-visible:ring-[#d8ad5f]/30 sm:min-h-[5.5rem]"
           />
         </div>
 
-        <div className="flex min-h-[5.5rem] flex-col sm:min-h-[6.5rem]">
+        <div className="flex min-h-[7rem] flex-col sm:min-h-[7.5rem] lg:col-span-1">
           <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
             {copy.previewLabel}
           </p>
@@ -432,7 +537,21 @@ function ReferenceEditPlannedPanel({
         </div>
       </div>
 
-      <p className="mt-2 text-[9px] leading-3.5 text-white/30">{copy.plannedNote}</p>
+      <div className="mt-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          type="button"
+          disabled
+          aria-disabled="true"
+          title={copy.generateDisabled}
+          className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[10px] font-black uppercase tracking-[0.1em] text-white/35"
+        >
+          <Lock className="h-3.5 w-3.5" aria-hidden />
+          {copy.generateDisabled}
+        </button>
+        <p className="text-[9px] leading-3.5 text-white/30 sm:max-w-[55%]">
+          {copy.plannedNote}
+        </p>
+      </div>
     </div>
   );
 }

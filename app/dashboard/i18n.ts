@@ -172,17 +172,22 @@ const en = {
         panel: {
           status: "Planned · Coming soon",
           intro:
-            "Reference Edit is being prepared for guided image transformations.",
+            "Reference Edit will allow source images and precise edit instructions.",
           sourceLabel: "Source image",
           sourcePlaceholder: "Upload or select an image",
-          sourceHint: "From device or gallery — not active yet",
+          sourceHint: "Local preview only — nothing is uploaded",
+          chooseImage: "Choose image",
+          clearImage: "Clear",
+          invalidFile: "Please choose a JPEG, PNG, or WebP image.",
+          fileTooLarge: "Image is too large for local preview (max 15 MB).",
           instructionLabel: "Edit instructions",
           instructionPlaceholder:
             "Describe what to change: background, lighting, product details, framing…",
           previewLabel: "Result preview",
           previewPlaceholder: "Edited result will appear here",
+          generateDisabled: "Generate — coming soon",
           plannedNote:
-            "Guided image editing is planned. This preview does not use credits or generation.",
+            "Phase 1 preview. Use Standard, Fast Draft, or Premium Image below to generate now. No credits are used here.",
         },
       },
       live: "Live",
@@ -644,17 +649,22 @@ const de: DeepString<typeof en> = {
         panel: {
           status: "Geplant · Demnächst",
           intro:
-            "Reference Edit wird für geführte Bildtransformationen vorbereitet.",
+            "Reference Edit ermöglicht später Quellbilder und präzise Bearbeitungsanweisungen.",
           sourceLabel: "Quellbild",
           sourcePlaceholder: "Bild hochladen oder auswählen",
-          sourceHint: "Vom Gerät oder aus der Galerie — noch nicht aktiv",
+          sourceHint: "Nur lokale Vorschau — nichts wird hochgeladen",
+          chooseImage: "Bild wählen",
+          clearImage: "Entfernen",
+          invalidFile: "Bitte JPEG, PNG oder WebP wählen.",
+          fileTooLarge: "Bild zu groß für lokale Vorschau (max. 15 MB).",
           instructionLabel: "Bearbeitungsanweisung",
           instructionPlaceholder:
             "Beschreibe die Änderung: Hintergrund, Licht, Produktdetails, Bildausschnitt…",
           previewLabel: "Ergebnis-Vorschau",
           previewPlaceholder: "Das bearbeitete Ergebnis erscheint hier",
+          generateDisabled: "Generieren — demnächst",
           plannedNote:
-            "Geführte Bildbearbeitung ist geplant. Diese Vorschau verbraucht keine Credits und startet keine Generierung.",
+            "Phase-1-Vorschau. Nutze unten Standard, Fast Draft oder Premium Image zum Generieren. Hier keine Credits.",
         },
       },
       live: "Live",
