@@ -39,11 +39,13 @@ async function creditUser({
   creditsToAdd,
   packageKey,
   stripeSessionId,
+  sourceOverride,
 }: {
   userId: string;
   creditsToAdd: number;
   packageKey: string;
   stripeSessionId: string;
+  sourceOverride?: string;
 }) {
   const { data: existingCredits, error: fetchCreditsError } =
     await supabaseAdmin
@@ -84,7 +86,7 @@ async function creditUser({
       user_id: userId,
       amount: creditsToAdd,
       type: "purchase",
-      source: `stripe_${packageKey}`,
+      source: sourceOverride ?? `stripe_${packageKey}`,
       stripe_session_id: stripeSessionId,
     });
 
@@ -163,6 +165,7 @@ export async function POST(req: Request) {
 
   const userId = session.metadata?.userId;
   const packageKey = session.metadata?.packageKey;
+  const creditPackage = session.metadata?.creditPackage ?? packageKey;
   const stripeSessionId = session.id;
 
   if (!userId || !packageKey) {
@@ -184,11 +187,47 @@ export async function POST(req: Request) {
     );
   }
 
-  const creditsToAdd = CREDIT_PACKAGES[packageKey];
+  let creditsToAdd: number | null = null;
+
+  if (creditPackage === "custom") {
+    const rawCustomCredits =
+      session.metadata?.customCredits ?? session.metadata?.credits;
+    const parsed = rawCustomCredits
+      ? Number.parseInt(String(rawCustomCredits), 10)
+      : NaN;
+
+    if (
+      !Number.isFinite(parsed) ||
+      Number.isNaN(parsed) ||
+      parsed < 100 ||
+      parsed > 10000
+    ) {
+      console.error("Invalid custom credits in metadata:", {
+        rawCustomCredits,
+        sessionId: stripeSessionId,
+      });
+
+      await logStripeWebhookEvent({
+        eventId: event.id,
+        eventType: event.type,
+        stripeObjectId: stripeSessionId,
+      });
+
+      return NextResponse.json(
+        { error: "Invalid custom credits amount" },
+        { status: 400 }
+      );
+    }
+
+    creditsToAdd = parsed;
+  } else {
+    creditsToAdd = CREDIT_PACKAGES[packageKey];
+  }
 
   if (!creditsToAdd) {
     console.error("Invalid credit package:", {
       packageKey,
+      creditPackage,
       sessionId: stripeSessionId,
     });
 
@@ -227,6 +266,8 @@ export async function POST(req: Request) {
       creditsToAdd,
       packageKey,
       stripeSessionId,
+      sourceOverride:
+        creditPackage === "custom" ? "stripe_custom_topup" : undefined,
     });
 
     await logStripeWebhookEvent({

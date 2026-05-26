@@ -987,6 +987,13 @@ const en = {
     creditsUnit: "Credits",
     standardImages: "≈ {count} standard images (1 image = 1 credit)",
     redirecting: "Redirecting to checkout…",
+    customTopUpTitle: "Custom Credit Top-Up",
+    customTopUpDescription:
+      "Flexible top-ups are priced at €0.10 per credit. Larger packages offer better value.",
+    customTopUpLabel: "Custom credits",
+    customTopUpBuy: "Buy Custom Credits",
+    customTopUpMinError: "Minimum top-up is 100 credits.",
+    customTopUpMaxError: "Maximum top-up is 10000 credits.",
     footerNote:
       "Credits are added to your account after successful payment. Unused credits remain on your balance until used in the AI Agent.",
     recommended: "Recommended",
@@ -2070,6 +2077,13 @@ const de: DeepString<typeof en> = {
     standardImages:
       "≈ {count} Standard-Bilder (1 Bild = 1 Credit)",
     redirecting: "Weiterleitung zum Checkout…",
+    customTopUpTitle: "Individuelle Credits aufladen",
+    customTopUpDescription:
+      "Flexible Aufladungen kosten €0,10 pro Credit. Größere Pakete bieten ein besseres Preis-Leistungs-Verhältnis.",
+    customTopUpLabel: "Individuelle Credits",
+    customTopUpBuy: "Individuelle Credits kaufen",
+    customTopUpMinError: "Mindestaufladung sind 100 Credits.",
+    customTopUpMaxError: "Maximal 10000 Credits pro Aufladung.",
     footerNote:
       "Credits werden nach erfolgreicher Zahlung gutgeschrieben. Ungenutzte Credits bleiben auf deinem Guthaben, bis sie im AI Agent verwendet werden.",
     recommended: "Empfohlen",

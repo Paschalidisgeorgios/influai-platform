@@ -53,7 +53,60 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const packageKey = body.packageKey as PackageKey;
+    const packageKey = body.packageKey as PackageKey | undefined;
+    const rawCustomCredits = body.customCredits as unknown;
+
+    const originHeader = req.headers.get("x-origin");
+    const origin =
+      originHeader && originHeader.startsWith("http")
+        ? originHeader
+        : req.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL!;
+
+    if (typeof rawCustomCredits === "number" || typeof rawCustomCredits === "string") {
+      const customCredits = Number.parseInt(String(rawCustomCredits), 10);
+
+      if (
+        !Number.isFinite(customCredits) ||
+        Number.isNaN(customCredits) ||
+        customCredits < 100 ||
+        customCredits > 10000
+      ) {
+        return NextResponse.json(
+          { error: "Invalid custom credits amount" },
+          { status: 400 }
+        );
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        line_items: [
+          {
+            price_data: {
+              currency: "eur",
+              unit_amount: customCredits * 10,
+              product_data: {
+                name: "InfluExAi Custom Credit Top-Up",
+              },
+            },
+            quantity: 1,
+          },
+        ],
+        success_url: `${origin}/dashboard?checkout=success`,
+        cancel_url: `${origin}/dashboard?checkout=cancelled`,
+        metadata: {
+          userId: user.id,
+          packageKey: "custom",
+          creditPackage: "custom",
+          credits: String(customCredits),
+          customCredits: String(customCredits),
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        url: session.url,
+      });
+    }
 
     if (!packageKey || !(packageKey in CREDIT_PRODUCTS)) {
       return NextResponse.json(
@@ -63,9 +116,6 @@ export async function POST(req: Request) {
     }
 
     const selectedPackage = CREDIT_PRODUCTS[packageKey];
-
-    const origin =
-      req.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL!;
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",

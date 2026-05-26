@@ -71,6 +71,8 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
   const [loading, setLoading] = useState(true);
   const [checkoutPackage, setCheckoutPackage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [customCredits, setCustomCredits] = useState<string>("100");
+  const [customSubmitting, setCustomSubmitting] = useState(false);
 
   useEffect(() => {
     loadCredits();
@@ -166,6 +168,82 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
   }
 
   const checkoutInProgress = checkoutPackage !== null;
+
+  const parsedCustomCredits = (() => {
+    const value = parseInt(customCredits, 10);
+    if (!Number.isFinite(value) || Number.isNaN(value)) return NaN;
+    return value;
+  })();
+
+  const customCreditsValid =
+    Number.isFinite(parsedCustomCredits) &&
+    parsedCustomCredits >= 100 &&
+    parsedCustomCredits <= 10000;
+
+  const customPriceEur = customCreditsValid ? (parsedCustomCredits * 0.1).toFixed(2) : "0.00";
+
+  async function startCustomCheckout() {
+    const amount = parsedCustomCredits;
+
+    if (!Number.isFinite(amount) || amount < 100 || amount > 10000) {
+      setErrorMessage(
+        amount > 10000
+          ? copy.credits.customTopUpMaxError
+          : copy.credits.customTopUpMinError
+      );
+      return;
+    }
+
+    try {
+      setCustomSubmitting(true);
+      setErrorMessage(null);
+
+      const token = await getAccessToken();
+
+      if (!token) {
+        setErrorMessage(copy.credits.sessionExpired);
+        setCustomSubmitting(false);
+        return;
+      }
+
+      const origin =
+        typeof window !== "undefined"
+          ? window.location.origin
+          : process.env.NEXT_PUBLIC_APP_URL;
+
+      const response = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          ...(origin ? { "x-origin": origin } : {}),
+        },
+        body: JSON.stringify({
+          customCredits: amount,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setErrorMessage(data.error || copy.credits.checkoutFailed);
+        setCustomSubmitting(false);
+        return;
+      }
+
+      if (!data.url) {
+        setErrorMessage(copy.credits.checkoutNoUrl);
+        setCustomSubmitting(false);
+        return;
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      console.error("Custom checkout error:", error);
+      setErrorMessage(copy.credits.checkoutConnection);
+      setCustomSubmitting(false);
+    }
+  }
 
   return (
     <section className="space-y-4 sm:space-y-6">
@@ -381,6 +459,53 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
               </div>
             );
           })}
+        </div>
+
+        <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4 sm:rounded-[1.75rem] sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d8ad5f]">
+                {copy.credits.customTopUpTitle}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-white/55">
+                {copy.credits.customTopUpDescription}
+              </p>
+            </div>
+            <div className="mt-1 flex shrink-0 flex-col gap-2 sm:items-end">
+              <label className="flex items-center gap-2 text-xs font-bold text-white/65">
+                <span>{copy.credits.customTopUpLabel}</span>
+                <input
+                  type="number"
+                  min={100}
+                  max={10000}
+                  step={50}
+                  value={customCredits}
+                  onChange={(event) => setCustomCredits(event.target.value)}
+                  className="w-24 rounded-full border border-white/15 bg-black/50 px-3 py-1.5 text-right text-sm font-black text-white outline-none focus:border-[#d8ad5f] focus:ring-1 focus:ring-[#d8ad5f]/60"
+                />
+              </label>
+              <p className="text-xs font-medium text-[#d8ad5f]">
+                {customCreditsValid
+                  ? `€${customPriceEur}`
+                  : "€0.00"}
+              </p>
+              <button
+                type="button"
+                onClick={startCustomCheckout}
+                disabled={!customCreditsValid || customSubmitting || checkoutInProgress}
+                className="inline-flex items-center justify-center rounded-full bg-[#d8ad5f] px-4 py-2 text-xs font-black text-black shadow-[0_10px_30px_rgba(216,173,95,0.35)] transition hover:bg-[#efc777] disabled:cursor-not-allowed disabled:bg-[#d8ad5f]/40"
+              >
+                {customSubmitting ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    {copy.credits.redirecting}
+                  </>
+                ) : (
+                  copy.credits.customTopUpBuy
+                )}
+              </button>
+            </div>
+          </div>
         </div>
 
         <details className="mt-4 overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.02] p-4 sm:rounded-[1.75rem] sm:p-5">
