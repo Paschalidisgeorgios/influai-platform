@@ -2,11 +2,25 @@
 
 **Document type:** Technical implementation specification  
 **Audience:** Engineering, product, operations  
-**Status:** Planning only — **no Cinema Agent API activated**, **no code changes authorized by this document**  
+**Status:** **Planning Beta (client preview live)** — no provider API, no credits, no batch generation  
 **Last updated:** 2026-05-22  
 **Related:** [CREDIT_AND_MODE_STRATEGY.md](./CREDIT_AND_MODE_STRATEGY.md), [ROADMAP_IMAGE_VIDEO_MODES.md](./ROADMAP_IMAGE_VIDEO_MODES.md), [VIDEO_STUDIO_IMPLEMENTATION_PLAN.md](./VIDEO_STUDIO_IMPLEMENTATION_PLAN.md)
 
-This specification describes **Cinema Agent** as a **planning and orchestration layer** above image and video generation—not a single media provider. It does not enable Cinema Agent in the MVP.
+This specification describes **Cinema Agent** as a **planning and orchestration layer** above image and video generation—not a single media provider.
+
+### Planning preview (shipped in dashboard)
+
+| Item | Detail |
+|------|--------|
+| **UI** | `app/dashboard/CampaignPlanner.tsx` — client-side rule-based plan |
+| **Navigation** | Dashboard → **Campaign Planner** (Cinema Agent · Planning Beta) |
+| **Credits** | **0** — no `consume_user_credits`, no API routes |
+| **Provider** | **None** — no OpenAI, no fal, no worker changes |
+| **Outputs** | Campaign angle, content set, shot list (5+ cards), captions, hashtags |
+| **Handoff** | Copy prompt / **Use in AI Agent** → existing image generation only |
+| **Not included** | Auto batch generation, Omni orchestration API, social posting |
+
+**Omni Campaign Agent** remains a separate roadmap module; full cross-channel orchestration is not in this preview.
 
 ---
 
@@ -18,8 +32,8 @@ Cinema Agent shall later turn a **campaign idea** into a structured **visual pro
 |-----------|--------|
 | Primary value | Pre-production structure before expensive generation |
 | Outputs | Campaign plan, shot cards, exportable prompt set |
-| Generation | Delegates to existing Standard/Premium image and future Video Studio |
-| MVP | **Roadmap card only** — no API activation |
+| Generation | Delegates to existing Standard/Premium image and Video Studio (manual) |
+| MVP preview | **Campaign Planner** — planning only, no API activation |
 
 ---
 

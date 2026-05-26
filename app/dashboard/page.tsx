@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import AiAgentStudio from "./AiAgentStudio";
+import CampaignPlanner from "./CampaignPlanner";
 import CharacterManager from "./CharacterManager";
 import CompactCredits from "./CompactCredits";
 import { DashboardLanguageProvider, useDashboardLanguage } from "./DashboardLanguageProvider";
@@ -55,7 +56,7 @@ type RegenerateDraft = {
   characterId: string | null;
 };
 
-type DashboardView = "agent" | "gallery" | "characters" | "credits";
+type DashboardView = "agent" | "planner" | "gallery" | "characters" | "credits";
 
 type LiveSidebarItem = {
   id: DashboardView;
@@ -156,6 +157,13 @@ function DashboardPageInner() {
         badge: copy.sidebar.live,
       },
       {
+        id: "planner",
+        label: copy.sidebar.nav.planner.label,
+        description: copy.sidebar.nav.planner.description,
+        icon: Clapperboard,
+        badge: copy.campaignPlanner.badges.planningBeta,
+      },
+      {
         id: "gallery",
         label: copy.sidebar.nav.gallery.label,
         description: copy.sidebar.nav.gallery.description,
@@ -242,13 +250,6 @@ function DashboardPageInner() {
   const plannedModules: PlannedModule[] = useMemo(
     () => [
       {
-        id: "cinema-agent",
-        label: copy.studioSuite.planned.cinemaAgent.label,
-        description: copy.sidebar.expansion.cinemaAgent.description,
-        bestFor: copy.studioSuite.planned.cinemaAgent.bestFor,
-        icon: Clapperboard,
-      },
-      {
         id: "omni-campaign-agent",
         label: copy.studioSuite.planned.omniCampaignAgent.label,
         description: copy.sidebar.expansion.omniCampaignAgent.description,
@@ -318,10 +319,10 @@ function DashboardPageInner() {
   }, [copy]);
 
   const activeLabel = useMemo(() => {
-    return (
-      liveItems.find((item) => item.id === activeView)?.label ??
-      copy.sidebar.nav.agent.label
-    );
+    const match = liveItems.find((item) => item.id === activeView);
+    if (match) return match.label;
+    if (activeView === "planner") return copy.campaignPlanner.title;
+    return copy.sidebar.nav.agent.label;
   }, [activeView, liveItems, copy]);
 
   function showStatus(message: string) {
@@ -406,6 +407,24 @@ function DashboardPageInner() {
             onCharactersChange={() => {
               setCharactersRefreshKey((current) => current + 1);
               showStatus(copy.page.styleProfilesUpdated);
+            }}
+          />
+        </ViewShell>
+      );
+    }
+
+    if (activeView === "planner") {
+      return (
+        <ViewShell
+          eyebrow={copy.page.planner.eyebrow}
+          title={copy.page.planner.title}
+          description={copy.page.planner.description}
+        >
+          <CampaignPlanner
+            onUsePromptInAgent={(prompt) => {
+              setRegenerateDraft({ prompt, characterId: null });
+              setActiveView("agent");
+              showStatus(copy.page.promptLoaded);
             }}
           />
         </ViewShell>

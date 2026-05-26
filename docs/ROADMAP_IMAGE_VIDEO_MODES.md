@@ -112,16 +112,19 @@ Video capabilities are **not live**. UI modules (Video Studio, Cinema Agent) are
 
 **Implementation spec:** [VIDEO_STUDIO_IMPLEMENTATION_PLAN.md](./VIDEO_STUDIO_IMPLEMENTATION_PLAN.md).
 
-### 3.2 Cinema Agent
+### 3.2 Cinema Agent / Campaign Planner
 
 | Field | Value |
 |-------|--------|
-| **Module** | Cinema Agent |
-| **Provider** | TBD — likely orchestration over Video Studio + planning layer |
-| **Intended use** | Storyboard, shot lists, visual sequences before generation |
-| **Suggested credit cost** | Planning: **free/low-cost** text-only; generation: image + video credits charged separately |
-| **Status** | Planned — **not Live** |
-| **User-visible status** | Planned / Roadmap only in MVP |
+| **Module** | Cinema Agent · Campaign Planner |
+| **Provider** | **None** in preview — client-side rule-based UI only |
+| **Intended use** | Campaign angle, content set, shot list, captions, hashtags |
+| **Credit cost** | **0 credits** (planning preview) |
+| **Status** | **Planning Beta** in dashboard |
+| **User-visible status** | Sidebar → Campaign Planner; badges: Planning Beta, No credits used |
+| **Handoff** | Copy prompt / Use in AI Agent — manual generation only |
+
+**Not in scope (preview):** Batch generation, Omni API, social posting, automatic image/video jobs.
 
 **Implementation spec:** [CINEMA_AGENT_IMPLEMENTATION_PLAN.md](./CINEMA_AGENT_IMPLEMENTATION_PLAN.md).
 
@@ -149,10 +152,10 @@ Video capabilities are **not live**. UI modules (Video Studio, Cinema Agent) are
 
 | Module | Status |
 |--------|--------|
-| Cinema Agent | Planned — roadmap chips only |
-| Omni Campaign Agent | Planned — roadmap chips only |
-| Social Planner | Planned — roadmap chips only |
-| Brand Safety / Compliance | Planned — roadmap chips only |
+| Cinema Agent | **Planning Beta** — Campaign Planner (client preview, 0 credits) |
+| Omni Campaign Agent | Planned — roadmap only |
+| Social Planner | Planned — roadmap only |
+| Brand Safety / Compliance | Planned — roadmap only |
 
 ---
 

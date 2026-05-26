@@ -55,6 +55,10 @@ const en = {
         description: "Reusable creative direction",
       },
       credits: { label: "Credits", description: "Balance and packages" },
+      planner: {
+        label: "Campaign Planner",
+        description: "Cinema Agent · shot lists and prompts",
+      },
     },
     expansion: {
       videoStudio: {
@@ -169,6 +173,159 @@ const en = {
       },
     },
   },
+  campaignPlanner: {
+    title: "Campaign Planner",
+    subtitle: "Cinema Agent · Planning Beta",
+    intro:
+      "Structure your campaign before generation. This preview runs entirely in your browser — no credits, no provider calls.",
+    badges: {
+      planningBeta: "Planning Beta",
+      noCredits: "No credits used",
+      manualRequired: "Manual generation required",
+    },
+    fields: {
+      campaignIdea: "Campaign idea",
+      productBrand: "Product / brand",
+      platformFocus: "Platform focus",
+      goal: "Goal",
+    },
+    placeholders: {
+      campaignIdea:
+        "Describe the campaign: audience, offer, mood and key message…",
+      productBrand: "Brand or product name",
+    },
+    platforms: {
+      instagram: "Instagram",
+      tiktok: "TikTok / Reels",
+      youtube: "YouTube",
+      linkedin: "LinkedIn",
+      multi: "Multi-platform",
+    },
+    goals: {
+      awareness: "Brand awareness",
+      engagement: "Engagement",
+      conversion: "Conversion",
+      launch: "Product launch",
+    },
+    formats: {
+      instagram: "4:5 Feed / 9:16 Story",
+      tiktok: "9:16 Vertical",
+      youtube: "16:9 Thumbnail / Shorts",
+      linkedin: "1:1 or 4:5 Professional",
+      multi: "Square + Vertical mix",
+    },
+    generatePlan: "Generate campaign plan",
+    planningPreviewNote: "Planning preview · 0 credits · client-side only",
+    sections: {
+      campaignAngle: "Campaign Angle",
+      contentSet: "Content Set",
+      shotList: "Shot List",
+      captions: "Captions",
+      hashtags: "Hashtag ideas",
+      nextSteps: "Next Steps",
+    },
+    contentSet: {
+      stories: "3 Story ideas",
+      feedPosts: "2 Feed post ideas",
+      reel: "1 Reel / Short video idea",
+    },
+    shotCard: {
+      imagePrompt: "Suggested image prompt",
+      videoMotion: "Suggested video motion",
+    },
+    actions: {
+      copyPrompt: "Copy prompt",
+      copyCaption: "Copy caption",
+      copyHashtags: "Copy hashtags",
+      copied: "Copied",
+      useInAgent: "Use in AI Agent",
+      generateFullCampaign: "Generate full campaign",
+      generateFullCampaignHint:
+        "Batch generation is planned for a future release.",
+    },
+    nextSteps: [
+      "Copy image prompts into the AI Agent for Standard or Premium Image.",
+      "Use Video Studio motion prompts for short-form clips.",
+      "Refine captions before publishing — no auto-posting in this preview.",
+    ],
+    defaults: {
+      brandFallback: "your brand",
+      ideaFallback: "your campaign concept",
+    },
+    hashtagSeeds: [
+      "#{brand}",
+      "#CreatorMarketing",
+      "#BrandCampaign",
+      "#SocialAds",
+      "#ContentStrategy",
+      "#VisualStorytelling",
+      "#DigitalMarketing",
+      "#InfluencerStyle",
+    ],
+    templates: {
+      angleAwareness:
+        "Position {brand} for top-of-funnel awareness on {platform}: lead with the idea \"{idea}\" and a premium, scroll-stopping visual identity aligned with {goal}.",
+      angleEngagement:
+        "Drive conversation around {brand} on {platform} by framing \"{idea}\" as a relatable creator moment — optimized for saves, shares and comments ({goal}).",
+      angleConversion:
+        "Convert attention for {brand} on {platform}: pair \"{idea}\" with clear product proof, social proof and a single focused call-to-action ({goal}).",
+      angleLaunch:
+        "Launch narrative for {brand}: introduce \"{idea}\" with cinematic reveal energy on {platform}, building anticipation toward {goal}.",
+      story1:
+        "Behind-the-scenes: how {brand} prepares the drop tied to \"{idea}\" — authentic, handheld Story framing.",
+      story2:
+        "Quick poll or question sticker: audience opinion on the {goal} angle for \"{idea}\".",
+      story3:
+        "Social proof slide: customer or creator reaction highlighting why \"{idea}\" matters for {brand}.",
+      feed1:
+        "Hero still for {brand}: premium commercial lighting, product or creator focal point supporting \"{idea}\".",
+      feed2:
+        "Lifestyle context shot: {brand} in real-world use, editorial color grade, campaign-ready composition.",
+      reelIdea:
+        "15–30s vertical beat: open on detail macro, reveal full scene, end on logo or offer — motion supports \"{idea}\" for {platform}.",
+      shot1Title: "Hero opening",
+      shot2Title: "Product focus",
+      shot3Title: "Creator moment",
+      shot4Title: "Environment wide",
+      shot5Title: "Closing CTA frame",
+      shot1Direction:
+        "Cinematic opener — confident subject, premium key light, shallow depth of field.",
+      shot2Direction:
+        "Tight product or offer frame — clean background, brand-forward styling.",
+      shot3Direction:
+        "Creator portrait energy — authentic expression, on-brand wardrobe.",
+      shot4Direction:
+        "Wide lifestyle context — environment supports the campaign narrative.",
+      shot5Direction:
+        "Closing frame with space for headline or CTA overlay — balanced negative space.",
+      shot1ImagePrompt:
+        "Premium campaign visual for {brand}, concept: {idea}, cinematic commercial lighting, high-end social ad aesthetic, sharp focus, no text, no logo.",
+      shot2ImagePrompt:
+        "Product-focused campaign shot for {brand}, {idea}, studio-softbox lighting, clean composition, luxury advertising style, no text.",
+      shot3ImagePrompt:
+        "Creator portrait for {brand} campaign, {idea}, editorial fashion lighting, confident mood, realistic skin texture, no text.",
+      shot4ImagePrompt:
+        "Wide lifestyle scene for {brand}, {idea}, natural environment, golden-hour or studio-mixed light, campaign photography, no text.",
+      shot5ImagePrompt:
+        "Closing campaign frame for {brand}, {idea}, balanced composition with negative space for copy, premium commercial finish, no text.",
+      shot1VideoPrompt:
+        "Slow push-in, subtle parallax, premium campaign energy.",
+      shot2VideoPrompt:
+        "Gentle orbit around product, light sweep across surface.",
+      shot3VideoPrompt:
+        "Subtle head turn, soft hair movement, editorial portrait motion.",
+      shot4VideoPrompt:
+        "Slow pan across scene, atmospheric depth, cinematic pacing.",
+      shot5VideoPrompt:
+        "Fade-in logo area hold, minimal camera drift, confident end beat.",
+      caption1:
+        "{brand}: {idea} — built for {platform}. Discover the story behind the campaign.",
+      caption2:
+        "New from {brand}. {idea} — crafted for {goal}. See the full visual set in feed.",
+      caption3:
+        "Your next scroll-stopper from {brand}. {idea} — premium visuals, ready for {platform}.",
+    },
+  },
   page: {
     checkoutSuccess:
       "Payment successful. Your credits have been added to your balance.",
@@ -193,6 +350,12 @@ const en = {
       title: "Credits & Plans",
       description:
         "View your balance, understand credit usage (1 standard image = 1 credit) and purchase Starter, Professional or Ultimate packages via secure Stripe checkout.",
+    },
+    planner: {
+      eyebrow: "Pre-production",
+      title: "Campaign Planner",
+      description:
+        "Turn a campaign brief into angles, content ideas, shot lists and captions. Planning preview only — no credits, no automatic generation.",
     },
   },
   compactCredits: {
@@ -757,6 +920,10 @@ const de: DeepString<typeof en> = {
         description: "Wiederverwendbare Creative Direction",
       },
       credits: { label: "Credits", description: "Guthaben und Pakete" },
+      planner: {
+        label: "Campaign Planner",
+        description: "Cinema Agent · Shot Lists und Prompts",
+      },
     },
     expansion: {
       videoStudio: {
@@ -871,6 +1038,159 @@ const de: DeepString<typeof en> = {
       },
     },
   },
+  campaignPlanner: {
+    title: "Campaign Planner",
+    subtitle: "Cinema Agent · Planning Beta",
+    intro:
+      "Strukturiere deine Kampagne vor der Generierung. Diese Vorschau läuft vollständig im Browser — keine Credits, keine Provider-Calls.",
+    badges: {
+      planningBeta: "Planning Beta",
+      noCredits: "Keine Credits",
+      manualRequired: "Manuelle Generierung erforderlich",
+    },
+    fields: {
+      campaignIdea: "Kampagnenidee",
+      productBrand: "Produkt / Marke",
+      platformFocus: "Plattform-Fokus",
+      goal: "Ziel",
+    },
+    placeholders: {
+      campaignIdea:
+        "Beschreibe die Kampagne: Zielgruppe, Angebot, Stimmung und Kernbotschaft…",
+      productBrand: "Marken- oder Produktname",
+    },
+    platforms: {
+      instagram: "Instagram",
+      tiktok: "TikTok / Reels",
+      youtube: "YouTube",
+      linkedin: "LinkedIn",
+      multi: "Multi-Plattform",
+    },
+    goals: {
+      awareness: "Markenbekanntheit",
+      engagement: "Engagement",
+      conversion: "Conversion",
+      launch: "Produktlaunch",
+    },
+    formats: {
+      instagram: "4:5 Feed / 9:16 Story",
+      tiktok: "9:16 Vertikal",
+      youtube: "16:9 Thumbnail / Shorts",
+      linkedin: "1:1 oder 4:5 Professional",
+      multi: "Quadrat + Vertikal Mix",
+    },
+    generatePlan: "Kampagnenplan generieren",
+    planningPreviewNote: "Planning Preview · 0 Credits · nur clientseitig",
+    sections: {
+      campaignAngle: "Campaign Angle",
+      contentSet: "Content Set",
+      shotList: "Shot List",
+      captions: "Captions",
+      hashtags: "Hashtag-Ideen",
+      nextSteps: "Nächste Schritte",
+    },
+    contentSet: {
+      stories: "3 Story-Ideen",
+      feedPosts: "2 Feed-Post-Ideen",
+      reel: "1 Reel / Short-Video-Idee",
+    },
+    shotCard: {
+      imagePrompt: "Vorgeschlagener Bild-Prompt",
+      videoMotion: "Vorgeschlagene Video-Bewegung",
+    },
+    actions: {
+      copyPrompt: "Prompt kopieren",
+      copyCaption: "Caption kopieren",
+      copyHashtags: "Hashtags kopieren",
+      copied: "Kopiert",
+      useInAgent: "Im AI Agent nutzen",
+      generateFullCampaign: "Volle Kampagne generieren",
+      generateFullCampaignHint:
+        "Batch-Generierung ist für ein späteres Release geplant.",
+    },
+    nextSteps: [
+      "Kopiere Bild-Prompts in den AI Agent für Standard oder Premium Image.",
+      "Nutze Video Studio Motion-Prompts für Short-Form-Clips.",
+      "Verfeinere Captions vor dem Publishing — kein Auto-Posting in dieser Vorschau.",
+    ],
+    defaults: {
+      brandFallback: "deine Marke",
+      ideaFallback: "dein Kampagnenkonzept",
+    },
+    hashtagSeeds: [
+      "#{brand}",
+      "#CreatorMarketing",
+      "#BrandCampaign",
+      "#SocialAds",
+      "#ContentStrategy",
+      "#VisualStorytelling",
+      "#DigitalMarketing",
+      "#InfluencerStyle",
+    ],
+    templates: {
+      angleAwareness:
+        "Positioniere {brand} für Top-of-Funnel-Awareness auf {platform}: führe mit der Idee \"{idea}\" und einer premium, scroll-stoppenden Visual Identity im Einklang mit {goal}.",
+      angleEngagement:
+        "Fördere Gespräche um {brand} auf {platform}, indem du \"{idea}\" als relatable Creator-Moment framst — optimiert für Saves, Shares und Kommentare ({goal}).",
+      angleConversion:
+        "Wandle Aufmerksamkeit für {brand} auf {platform} in Handlungen: kombiniere \"{idea}\" mit klarem Produktnachweis, Social Proof und einem fokussierten CTA ({goal}).",
+      angleLaunch:
+        "Launch-Narrativ für {brand}: führe \"{idea}\" mit cinematic Reveal-Energie auf {platform} ein und baue Spannung Richtung {goal} auf.",
+      story1:
+        "Behind-the-scenes: wie {brand} den Drop zu \"{idea}\" vorbereitet — authentisch, handheld Story-Framing.",
+      story2:
+        "Schnelle Poll- oder Frage-Sticker: Meinung der Audience zum {goal}-Winkel von \"{idea}\".",
+      story3:
+        "Social-Proof-Slide: Kunden- oder Creator-Reaktion, warum \"{idea}\" für {brand} wichtig ist.",
+      feed1:
+        "Hero-Still für {brand}: premium Commercial Lighting, Produkt- oder Creator-Fokus für \"{idea}\".",
+      feed2:
+        "Lifestyle-Kontext: {brand} in realer Nutzung, editorial Color Grade, kampagnenfertige Komposition.",
+      reelIdea:
+        "15–30s vertikaler Beat: Detail-Macro, Full-Scene-Reveal, Abschluss mit Logo oder Offer — Motion unterstützt \"{idea}\" für {platform}.",
+      shot1Title: "Hero Opening",
+      shot2Title: "Produktfokus",
+      shot3Title: "Creator Moment",
+      shot4Title: "Environment Wide",
+      shot5Title: "Closing CTA Frame",
+      shot1Direction:
+        "Cinematic Opener — selbstbewusstes Subject, premium Key Light, geringe Schärfentiefe.",
+      shot2Direction:
+        "Enger Produkt- oder Offer-Frame — cleaner Hintergrund, brand-forward Styling.",
+      shot3Direction:
+        "Creator-Portrait-Energie — authentischer Ausdruck, on-brand Wardrobe.",
+      shot4Direction:
+        "Weiter Lifestyle-Kontext — Umgebung stützt die Kampagnen-Narrative.",
+      shot5Direction:
+        "Abschlussframe mit Platz für Headline oder CTA-Overlay — balancierter Negativraum.",
+      shot1ImagePrompt:
+        "Premium Kampagnenvisual für {brand}, Konzept: {idea}, cinematic Commercial Lighting, high-end Social-Ad-Ästhetik, scharfer Fokus, kein Text, kein Logo.",
+      shot2ImagePrompt:
+        "Produktfokussierter Kampagnen-Shot für {brand}, {idea}, Studio-Softbox-Licht, cleane Komposition, Luxury-Advertising-Stil, kein Text.",
+      shot3ImagePrompt:
+        "Creator-Portrait für {brand}-Kampagne, {idea}, editorial Fashion Lighting, selbstbewusste Stimmung, realistische Hauttextur, kein Text.",
+      shot4ImagePrompt:
+        "Weite Lifestyle-Szene für {brand}, {idea}, natürliche Umgebung, Golden-Hour- oder Studio-Mix-Licht, Kampagnenfotografie, kein Text.",
+      shot5ImagePrompt:
+        "Abschluss-Kampagnenframe für {brand}, {idea}, balancierte Komposition mit Negativraum für Copy, premium Commercial Finish, kein Text.",
+      shot1VideoPrompt:
+        "Langsamer Push-in, subtiles Parallax, premium Kampagnen-Energie.",
+      shot2VideoPrompt:
+        "Sanfte Orbit um Produkt, Licht-Sweep über Oberfläche.",
+      shot3VideoPrompt:
+        "Subtile Kopfdrehung, weiche Haarbewegung, editorial Portrait Motion.",
+      shot4VideoPrompt:
+        "Langsamer Pan über Szene, atmosphärische Tiefe, cinematic Pacing.",
+      shot5VideoPrompt:
+        "Fade-in Logo-Bereich, minimale Kamerabewegung, selbstbewusster End-Beat.",
+      caption1:
+        "{brand}: {idea} — gemacht für {platform}. Entdecke die Story hinter der Kampagne.",
+      caption2:
+        "Neu von {brand}. {idea} — crafted für {goal}. Sieh das volle Visual Set im Feed.",
+      caption3:
+        "Dein nächster Scroll-Stopper von {brand}. {idea} — premium Visuals, bereit für {platform}.",
+    },
+  },
   page: {
     checkoutSuccess:
       "Zahlung erfolgreich. Deine Credits wurden deinem Guthaben gutgeschrieben.",
@@ -896,6 +1216,12 @@ const de: DeepString<typeof en> = {
       title: "Credits & Pläne",
       description:
         "Sieh dein Guthaben, verstehe die Credit-Nutzung (1 Standard-Bild = 1 Credit) und kaufe Starter-, Professional- oder Ultimate-Pakete per sicherem Stripe-Checkout.",
+    },
+    planner: {
+      eyebrow: "Pre-Production",
+      title: "Campaign Planner",
+      description:
+        "Wandle ein Kampagnen-Briefing in Angles, Content-Ideen, Shot Lists und Captions um. Nur Planning Preview — keine Credits, keine automatische Generierung.",
     },
   },
   compactCredits: {
