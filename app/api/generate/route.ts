@@ -1139,8 +1139,12 @@ UGC Look — explicitly avoid (mandatory unless the user clearly requested studi
 - no perfect editorial lighting
 - no luxury campaign set
 - no hyper-polished ad layout
+- no glossy ad layout
+- no stock-photo look
+- no over-retouched skin
 - no plastic skin
 - no overly symmetrical composition
+- no perfect symmetry
 - no fake text, no fake logos, no watermarks
 - not a studio shoot
 - not luxury editorial
@@ -1361,6 +1365,38 @@ function buildUGCLookContextBlock({
   return sections.length > 0 ? sections.join("\n") : "";
 }
 
+function buildUGCLookEnvironmentHints(
+  location: DetectedLocation | null,
+  prompt: string,
+  platform: EffectivePlatform
+) {
+  if (!location) return [];
+
+  const allowLuxury = userRequestedStudioLook(prompt);
+
+  if (location.key === "gym") {
+    return [
+      allowLuxury
+        ? "gym environment, still captured like a creator on a phone — believable, not a staged campaign set"
+        : "real gym / locker room / car-before-gym vibe — believable everyday context",
+      "natural or practical indoor lighting — not studio lighting",
+      "handheld phone framing, candid moment",
+    ];
+  }
+
+  if (location.key === "studio") {
+    return allowLuxury
+      ? [
+          "if the user requested a studio look, keep it casual and creator-shot (phone framing) — avoid editorial perfection",
+        ]
+      : ["avoid studio backdrops — use a real-life environment instead"];
+  }
+
+  const baseHints = buildLocationHints(location, platform);
+  if (baseHints.length === 0) return [];
+  return baseHints.map((hint) => `${hint} (everyday, not a film set)`);
+}
+
 function buildUGCLookSceneDirection({
   normalizedText,
   platform,
@@ -1408,11 +1444,11 @@ function buildUGCLookSceneDirection({
     subjectHints.forEach((hint) => parts.push(`- ${hint}`));
   }
 
-  const locationHints = buildLocationHints(location, platform);
+  const locationHints = buildUGCLookEnvironmentHints(location, prompt, platform);
 
   if (locationHints.length > 0) {
     parts.push(`Environment (${location?.label ?? "real-world setting"}):`);
-    locationHints.forEach((hint) => parts.push(`- ${hint} (everyday, not a film set)`));
+    locationHints.forEach((hint) => parts.push(`- ${hint}`));
   }
 
   if (userRequestedStudioLook(prompt)) {
@@ -1435,20 +1471,18 @@ function buildUGCLookStyleBlock({
 }) {
   const sections: string[] = [
     `UGC Look style (mandatory):`,
-    `- authentic user-generated content`,
-    `- casual smartphone photo, shot on phone`,
-    `- natural everyday lighting`,
-    `- slightly imperfect framing`,
-    `- candid creator content`,
-    `- realistic casual environment`,
-    `- organic TikTok/Reels style`,
-    `- not a studio shoot`,
-    `- not luxury editorial`,
-    `- not overly polished`,
-    `- not a cinematic advertisement`,
-    `- natural skin texture`,
-    `- subtle noise or minor motion blur if suitable`,
-    `- believable real-life creator post`,
+    `- authentic user-generated content style`,
+    `- realistic smartphone camera photo`,
+    `- shot on phone, handheld creator framing`,
+    `- casual creator content — candid social media moment`,
+    `- natural everyday lighting (window light, room light, daylight)`,
+    `- slightly imperfect framing and perspective (not perfectly centered)`,
+    `- believable real-life environment (home, bathroom, car, gym, street)`,
+    `- organic TikTok/Reels style — looks like a still from a real short-form video`,
+    `- creator-shot visual, not a studio shoot`,
+    `- not luxury editorial, not glossy ad, not cinematic advertisement`,
+    `- natural skin texture, realistic imperfections`,
+    `- subtle sensor noise or minor motion blur only when it supports realism`,
     `- high-quality but organic — attractive, not sloppy or low-res on purpose`,
     `- no text, no logo, no watermark`,
   ];
@@ -1485,7 +1519,15 @@ function buildUGCLookFinalPrompt({
 
   return assembleFinalPrompt([
     `Create an authentic creator-style UGC photo for social media.
-This must look like real smartphone content — believable, organic, and creator-shot (not a luxury studio or editorial campaign).`,
+UGC Look requirements (always apply):
+- authentic user-generated content style, casual creator content
+- realistic smartphone camera photo, shot on phone, handheld framing
+- natural everyday lighting, believable real-life environment
+- slightly imperfect framing, candid social media moment
+- organic TikTok/Reels still-frame vibe (mobile-first)
+- not a studio shoot, not luxury editorial, not overly polished, not a cinematic advertisement
+- natural skin texture, realistic imperfections
+- no text, no logo, no watermark`,
     `User request (preserve exactly — do not replace or contradict):
 ${prompt}`,
     ugcSceneDirection,
