@@ -193,6 +193,8 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
   const showCustomMaxError =
     Number.isFinite(parsedCustomCredits) && parsedCustomCredits > 10000;
 
+  const quickTopUpAmounts = [100, 250, 500, 1000];
+
   async function startCustomCheckout() {
     const amount = parsedCustomCredits;
 
@@ -257,30 +259,30 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
   }
 
   return (
-    <section className="space-y-4 sm:space-y-6">
+    <section className="space-y-3 sm:space-y-4">
       <div className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.035] shadow-[0_20px_70px_rgba(0,0,0,0.25)] sm:rounded-[2rem]">
-        <div className="relative p-4 sm:p-6">
+        <div className="relative p-4 sm:p-5">
           <div className="pointer-events-none absolute right-0 top-0 h-44 w-44 rounded-full bg-[#d8ad5f]/10 blur-3xl" />
 
-          <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative z-10 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <p className="text-[10px] font-black uppercase tracking-[0.34em] text-[#d8ad5f]">
                 {copy.credits.accountBalance}
               </p>
-              <h3 className="mt-2 text-xl font-black tracking-tight text-white sm:text-2xl">
+              <h3 className="mt-1.5 text-lg font-black tracking-tight text-white sm:text-xl">
                 {copy.credits.availableCredits}
               </h3>
-              <p className="mt-2 text-xs leading-5 text-white/45">
+              <p className="mt-1.5 text-xs leading-5 text-white/45">
                 {copy.credits.oneCreditRule}
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#d8ad5f]/15 text-[#d8ad5f]">
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/30 px-3.5 py-2.5">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[#d8ad5f]/15 text-[#d8ad5f]">
                   <CreditCard className="h-5 w-5" />
                 </div>
-                <p className="text-3xl font-black tracking-tight text-white sm:text-4xl">
+                <p className="text-2xl font-black tracking-tight text-white sm:text-3xl">
                   {loading ? "…" : formatCredits(credits)}
                 </p>
               </div>
@@ -315,7 +317,7 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
           {errorMessage && (
             <div
               role="alert"
-              className="relative z-10 mt-4 flex items-start gap-3 rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-100"
+              className="relative z-10 mt-3 flex items-start gap-3 rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-2.5 text-sm text-red-100"
             >
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <p className="font-medium leading-6">{errorMessage}</p>
@@ -326,7 +328,7 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
 
       <div
         id="custom-credit-top-up"
-        className={`relative scroll-mt-24 overflow-hidden rounded-[1.5rem] border bg-gradient-to-b from-[#d8ad5f]/12 to-[#d8ad5f]/[0.03] p-5 shadow-[0_24px_80px_rgba(216,173,95,0.14)] sm:rounded-[2rem] sm:p-6 ${
+        className={`relative scroll-mt-24 overflow-hidden rounded-[1.5rem] border bg-gradient-to-b from-[#d8ad5f]/12 to-[#d8ad5f]/[0.03] p-4 shadow-[0_24px_80px_rgba(216,173,95,0.14)] sm:rounded-[2rem] sm:p-5 ${
           packagesFocused
             ? "border-[#d8ad5f]/50 ring-2 ring-[#d8ad5f]/30"
             : "border-[#d8ad5f]/35"
@@ -335,18 +337,18 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#d8ad5f]/50 to-transparent" />
 
         <div className="relative">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-black uppercase tracking-[0.34em] text-[#d8ad5f]">
                 {copy.credits.customTopUpTitle}
               </p>
-              <p className="mt-3 text-base font-bold leading-7 text-white sm:text-lg">
+              <p className="mt-2 text-sm font-bold leading-6 text-white sm:text-base">
                 {copy.credits.customTopUpIntro}
               </p>
-              <p className="mt-2 text-sm leading-6 text-white/60">
+              <p className="mt-1.5 text-sm leading-6 text-white/60">
                 {copy.credits.customTopUpPricePerCredit}
               </p>
-              <p className="mt-1 text-sm leading-6 text-white/50">
+              <p className="mt-1 text-xs leading-5 text-white/50">
                 {copy.credits.customTopUpExamples}
               </p>
               <p className="mt-1 text-xs leading-5 text-white/40">
@@ -368,9 +370,22 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                   placeholder={copy.credits.customTopUpPlaceholder}
                   value={customCredits}
                   onChange={(event) => setCustomCredits(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-white/15 bg-black/40 px-4 py-3.5 text-2xl font-black tracking-tight text-white outline-none transition placeholder:text-white/25 focus:border-[#d8ad5f] focus:ring-2 focus:ring-[#d8ad5f]/40"
+                  className="mt-2 w-full rounded-2xl border border-white/15 bg-black/40 px-4 py-2.5 text-xl font-black tracking-tight text-white outline-none transition placeholder:text-white/25 focus:border-[#d8ad5f] focus:ring-2 focus:ring-[#d8ad5f]/40"
                 />
               </label>
+
+              <div className="grid grid-cols-4 gap-1.5">
+                {quickTopUpAmounts.map((amount) => (
+                  <button
+                    key={amount}
+                    type="button"
+                    onClick={() => setCustomCredits(String(amount))}
+                    className="rounded-full border border-white/15 bg-black/35 px-2 py-1.5 text-[11px] font-bold text-white/75 transition hover:border-[#d8ad5f]/40 hover:text-white"
+                  >
+                    {amount}
+                  </button>
+                ))}
+              </div>
 
               {showCustomMinError && (
                 <p className="text-xs font-semibold text-red-300" role="status">
@@ -383,11 +398,11 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                 </p>
               )}
 
-              <div className="rounded-2xl border border-[#d8ad5f]/25 bg-black/25 px-4 py-3 text-center">
+              <div className="rounded-2xl border border-[#d8ad5f]/25 bg-black/25 px-4 py-2.5 text-center">
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/35">
                   {copy.credits.price}
                 </p>
-                <p className="mt-1 text-4xl font-black tracking-tight text-[#d8ad5f] sm:text-5xl">
+                <p className="mt-1 text-3xl font-black tracking-tight text-[#d8ad5f] sm:text-4xl">
                   {customPriceDisplay}
                 </p>
               </div>
@@ -398,7 +413,7 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                 disabled={
                   !customCreditsValid || customSubmitting || checkoutInProgress
                 }
-                className="inline-flex w-full items-center justify-center rounded-full bg-[#d8ad5f] px-5 py-3.5 text-sm font-black text-black shadow-[0_12px_36px_rgba(216,173,95,0.35)] transition hover:bg-[#efc777] disabled:cursor-not-allowed disabled:bg-[#d8ad5f]/40"
+                className="inline-flex w-full items-center justify-center rounded-full bg-[#d8ad5f] px-5 py-2.5 text-sm font-black text-black shadow-[0_12px_36px_rgba(216,173,95,0.35)] transition hover:bg-[#efc777] disabled:cursor-not-allowed disabled:bg-[#d8ad5f]/40"
               >
                 {customSubmitting ? (
                   <>
@@ -417,7 +432,7 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
       <div>
         <div
           id="credit-packages"
-          className={`mb-3 flex scroll-mt-24 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between ${
+          className={`mb-2 flex scroll-mt-24 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between ${
             packagesFocused ? "rounded-2xl ring-2 ring-[#d8ad5f]/35" : ""
           }`}
         >
@@ -425,7 +440,7 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
             <p className="text-[10px] font-black uppercase tracking-[0.34em] text-[#d8ad5f]">
               {copy.credits.creditPackages}
             </p>
-            <h4 className="mt-2 text-xl font-black text-white sm:text-2xl">
+            <h4 className="mt-1.5 text-lg font-black text-white sm:text-xl">
               {copy.credits.choosePlan}
             </h4>
           </div>
@@ -436,7 +451,7 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:items-stretch lg:gap-5">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 lg:items-stretch lg:gap-4">
           {creditPackages.map((creditPackage) => {
             const isLoading = checkoutPackage === creditPackage.key;
             const isDisabled = checkoutInProgress && !isLoading;
@@ -444,7 +459,7 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
             return (
               <div
                 key={creditPackage.key}
-                className={`relative flex flex-col overflow-hidden rounded-[1.5rem] border p-5 transition sm:rounded-[2rem] sm:p-6 ${
+                className={`relative flex flex-col overflow-hidden rounded-[1.5rem] border p-4 transition sm:rounded-[2rem] sm:p-5 ${
                   creditPackage.highlight
                     ? "order-first border-[#d8ad5f]/45 bg-gradient-to-b from-[#d8ad5f]/14 to-[#d8ad5f]/[0.03] shadow-[0_24px_80px_rgba(216,173,95,0.18)] ring-1 ring-[#d8ad5f]/35 lg:order-none lg:z-10 lg:-mt-1 lg:mb-1"
                     : "border-white/10 bg-white/[0.035] shadow-[0_20px_70px_rgba(0,0,0,0.2)]"
@@ -482,20 +497,20 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                     )}
                   </div>
 
-                  <p className="mt-5 text-[10px] font-black uppercase tracking-[0.2em] text-[#d8ad5f]">
+                  <p className="mt-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#d8ad5f]">
                     {creditPackage.tagline}
                   </p>
 
-                  <h4 className="mt-2 text-2xl font-black text-white sm:text-3xl">
+                  <h4 className="mt-1.5 text-xl font-black text-white sm:text-2xl">
                     {creditPackage.name}
                   </h4>
 
-                  <p className="mt-2 text-sm leading-6 text-white/45">
+                  <p className="mt-1.5 text-sm leading-5 text-white/45">
                     {creditPackage.description}
                   </p>
 
                   <div
-                    className={`mt-5 rounded-2xl border p-4 sm:p-5 ${
+                    className={`mt-3 rounded-2xl border p-3.5 sm:p-4 ${
                       creditPackage.highlight
                         ? "border-[#d8ad5f]/25 bg-black/20"
                         : "border-white/10 bg-black/25"
@@ -504,16 +519,16 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                     <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/35">
                       {copy.credits.price}
                     </p>
-                    <p className="mt-2 text-4xl font-black tracking-tight text-[#d8ad5f] sm:text-5xl">
+                    <p className="mt-1.5 text-3xl font-black tracking-tight text-[#d8ad5f] sm:text-4xl">
                       {formatEurPrice(creditPackage.priceEur)}
                     </p>
 
-                    <p className="mt-3 text-[10px] font-black uppercase tracking-[0.18em] text-white/35">
+                    <p className="mt-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/35">
                       {copy.credits.creditsIncluded}
                     </p>
-                    <p className="mt-1 text-2xl font-black text-white sm:text-3xl">
+                    <p className="mt-1 text-xl font-black text-white sm:text-2xl">
                       {formatCredits(creditPackage.credits)}{" "}
-                      <span className="text-lg font-bold text-white/55 sm:text-xl">
+                      <span className="text-base font-bold text-white/55 sm:text-lg">
                         {copy.credits.creditsUnit}
                       </span>
                     </p>
@@ -524,11 +539,11 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                     </p>
                   </div>
 
-                  <ul className="mt-5 flex-1 space-y-2.5">
+                  <ul className="mt-3.5 flex-1 space-y-2">
                     {creditPackage.benefits.map((benefit) => (
                       <li
                         key={benefit}
-                        className="flex items-start gap-2.5 text-sm leading-5 text-white/60"
+                        className="flex items-start gap-2 text-sm leading-5 text-white/60"
                       >
                         <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#d8ad5f]" />
                         <span>{benefit}</span>
@@ -541,7 +556,7 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                     onClick={() => startCheckout(creditPackage.key)}
                     disabled={checkoutInProgress}
                     aria-busy={isLoading}
-                    className={`mt-6 inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm font-black transition disabled:cursor-not-allowed ${
+                    className={`mt-4 inline-flex w-full items-center justify-center rounded-full px-5 py-2.5 text-sm font-black transition disabled:cursor-not-allowed ${
                       creditPackage.highlight
                         ? "bg-[#d8ad5f] text-black hover:bg-[#efc777] disabled:bg-[#d8ad5f]/60"
                         : "bg-white text-black hover:bg-white/85 disabled:bg-white/50"
@@ -562,7 +577,7 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
           })}
         </div>
 
-        <details className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.02] p-4 sm:rounded-[1.75rem] sm:p-5">
+        <details className="mt-4 overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.02] p-3.5 sm:rounded-[1.75rem] sm:p-4">
           <summary className="cursor-pointer list-none select-none">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-black text-white/85">{copy.credits.modeCostsLabel}</p>
@@ -571,8 +586,8 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
               </span>
             </div>
           </summary>
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+          <div className="mt-3 grid gap-3 lg:grid-cols-2">
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-3.5">
               <ul className="space-y-2">
                 {[
                   copy.credits.modeCosts.standard,

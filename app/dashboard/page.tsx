@@ -705,16 +705,30 @@ function DashboardPageInner() {
             className={
               activeView === "agent"
                 ? "min-h-screen"
-                : "mx-auto max-w-[1700px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8"
+                : "min-h-0 h-full overflow-y-auto overscroll-contain px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:pt-24"
             }
           >
-            {statusMessage && activeView !== "agent" && (
-              <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 text-sm font-bold text-white shadow-[0_10px_40px_rgba(0,0,0,0.25)]">
-                {statusMessage}
-              </div>
-            )}
+            {activeView !== "agent" ? (
+              <div className="mx-auto w-full max-w-[1700px]">
+                {statusMessage && (
+                  <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-bold text-white shadow-[0_10px_40px_rgba(0,0,0,0.25)]">
+                    {statusMessage}
+                  </div>
+                )}
 
-            {renderContent()}
+                {renderContent()}
+              </div>
+            ) : (
+              <>
+                {statusMessage && (
+                  <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 text-sm font-bold text-white shadow-[0_10px_40px_rgba(0,0,0,0.25)]">
+                    {statusMessage}
+                  </div>
+                )}
+
+                {renderContent()}
+              </>
+            )}
           </div>
         </section>
       </div>
