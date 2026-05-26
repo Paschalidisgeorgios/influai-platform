@@ -154,7 +154,7 @@ Video capabilities are **not live**. UI modules (Video Studio, Cinema Agent) are
 |--------|--------|
 | Cinema Agent | **Planning Beta** — Campaign Planner (client preview, 0 credits) |
 | Omni Campaign Agent | Planned — roadmap only |
-| Social Planner | Planned — roadmap only |
+| Social Planner | **Preview in Campaign Planner** — posting order, no social API |
 | Brand Safety / Compliance | Planned — roadmap only |
 
 ---

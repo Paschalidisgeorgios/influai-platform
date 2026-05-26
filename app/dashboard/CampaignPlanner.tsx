@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   Calculator,
+  CalendarDays,
   Check,
   Clapperboard,
   Copy,
@@ -58,6 +59,23 @@ type CampaignEstimate = {
   shotCount: number;
   lineItems: EstimateLineItem[];
   totalCredits: number;
+};
+
+type SocialScheduleSlot = {
+  order: number;
+  day: number;
+  platform: string;
+  contentTitle: string;
+  timeWindow: string;
+  caption: string;
+};
+
+type SocialPlannerPreview = {
+  slots: SocialScheduleSlot[];
+  hashtagLine: string;
+  captionsText: string;
+  scheduleText: string;
+  platformFit: Array<{ platform: string; note: string }>;
 };
 
 type PlatformKey = "instagram" | "tiktok" | "youtube" | "linkedin" | "multi";
@@ -252,6 +270,103 @@ function formatCreditsPerUnit(
     .replace("{credits}", String(credits));
 }
 
+function buildSocialPlannerPreview(
+  plan: CampaignPlan,
+  socialCopy: ReturnType<
+    typeof useDashboardLanguage
+  >["copy"]["campaignPlanner"]["socialPlanner"]
+): SocialPlannerPreview {
+  const slots: SocialScheduleSlot[] = [
+    {
+      order: 1,
+      day: 1,
+      platform: socialCopy.platforms.instagramFeed,
+      contentTitle: socialCopy.slots.launchVisual,
+      timeWindow: "18:00–20:00",
+      caption: plan.captions[0],
+    },
+    {
+      order: 2,
+      day: 2,
+      platform: socialCopy.platforms.instagramStory,
+      contentTitle: socialCopy.slots.behindTheScenes,
+      timeWindow: "12:00–14:00",
+      caption: plan.captions[0],
+    },
+    {
+      order: 3,
+      day: 3,
+      platform: socialCopy.platforms.tiktokReels,
+      contentTitle: socialCopy.slots.shortHook,
+      timeWindow: "18:00–21:00",
+      caption: plan.captions[1],
+    },
+    {
+      order: 4,
+      day: 4,
+      platform: socialCopy.platforms.instagramStory,
+      contentTitle: socialCopy.slots.engagementStory,
+      timeWindow: "12:00–14:00",
+      caption: plan.captions[1],
+    },
+    {
+      order: 5,
+      day: 5,
+      platform: socialCopy.platforms.youtubeShorts,
+      contentTitle: socialCopy.slots.recapClip,
+      timeWindow: "17:00–20:00",
+      caption: plan.captions[2],
+    },
+  ];
+
+  const hashtagLine = plan.hashtags.join(" ");
+
+  const scheduleText = [
+    socialCopy.suggestedPostingOrder,
+    "",
+    ...slots.map((slot) => {
+      const dayLine = socialCopy.dayLine
+        .replace("{day}", String(slot.day))
+        .replace("{platform}", slot.platform)
+        .replace("{content}", slot.contentTitle)
+        .replace("{time}", slot.timeWindow);
+
+      return `${dayLine}\nCaption: ${slot.caption}\n${socialCopy.hashtagsLabel}: ${hashtagLine}`;
+    }),
+  ].join("\n\n");
+
+  const captionsText = plan.captions
+    .map((caption, index) => `Caption ${index + 1}:\n${caption}`)
+    .join("\n\n");
+
+  const platformFit = [
+    {
+      platform: socialCopy.platforms.instagramFeed,
+      note: socialCopy.platformFitNotes.instagramFeed,
+    },
+    {
+      platform: socialCopy.platforms.instagramStory,
+      note: socialCopy.platformFitNotes.instagramStory,
+    },
+    {
+      platform: socialCopy.platforms.tiktokReels,
+      note: socialCopy.platformFitNotes.tiktokReels,
+    },
+    {
+      platform: socialCopy.platforms.youtubeShorts,
+      note: socialCopy.platformFitNotes.youtubeShorts,
+    },
+  ];
+
+  return {
+    slots,
+    hashtagLine,
+    captionsText,
+    scheduleText,
+    platformFit,
+  };
+}
+
 function CampaignEstimateCard({
   estimate,
   copy,
@@ -359,6 +474,115 @@ function CampaignEstimateCard({
   );
 }
 
+function SocialPlannerPreviewCard({
+  preview,
+  copy,
+}: {
+  preview: SocialPlannerPreview;
+  copy: ReturnType<typeof useDashboardLanguage>["copy"]["campaignPlanner"];
+}) {
+  const s = copy.socialPlanner;
+
+  return (
+    <section className="overflow-hidden rounded-[1.35rem] border border-sky-500/15 bg-[linear-gradient(165deg,rgba(56,189,248,0.07)_0%,rgba(0,0,0,0.35)_45%)] p-4 sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-sky-200">
+            <CalendarDays className="h-5 w-5" aria-hidden />
+          </div>
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-[0.14em] text-sky-100">
+              {s.title}
+            </h3>
+            <p className="mt-1 max-w-xl text-xs leading-5 text-white/40">{s.intro}</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-violet-100">
+            {copy.badges.planningBeta}
+          </span>
+          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/45">
+            {s.noSocialApi}
+          </span>
+          <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-emerald-200">
+            {s.manualPosting}
+          </span>
+        </div>
+      </div>
+
+      <p className="mt-4 text-[10px] font-black uppercase tracking-[0.14em] text-white/35">
+        {s.suggestedPostingOrder}
+      </p>
+      <ol className="mt-3 space-y-3">
+        {preview.slots.map((slot) => (
+          <li
+            key={slot.order}
+            className="rounded-xl border border-white/[0.08] bg-black/30 p-3 sm:p-4"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <p className="text-xs font-black text-white">
+                {s.suggestedDays} {slot.day} — {slot.platform}
+              </p>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[9px] font-bold text-white/45">
+                {slot.timeWindow}
+              </span>
+            </div>
+            <p className="mt-1.5 text-sm font-semibold text-white/70">
+              {slot.contentTitle}
+            </p>
+            <p className="mt-2 text-xs leading-5 text-white/50">{slot.caption}</p>
+            <p className="mt-2 text-[10px] leading-4 text-white/35">
+              {preview.hashtagLine}
+            </p>
+          </li>
+        ))}
+      </ol>
+
+      <div className="mt-4">
+        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/35">
+          {s.platformFit}
+        </p>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          {preview.platformFit.map((item) => (
+            <div
+              key={item.platform}
+              className="rounded-lg border border-white/[0.06] bg-black/25 px-3 py-2.5"
+            >
+              <p className="text-[11px] font-bold text-sky-100/90">{item.platform}</p>
+              <p className="mt-1 text-[10px] leading-4 text-white/40">{item.note}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <CopyButton
+          value={preview.scheduleText}
+          label={s.copySchedule}
+          copiedLabel={copy.actions.copied}
+        />
+        <CopyButton
+          value={preview.captionsText}
+          label={s.copyCaptions}
+          copiedLabel={copy.actions.copied}
+        />
+        <button
+          type="button"
+          disabled
+          title={s.scheduleAutoHint}
+          className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[10px] font-bold text-white/35"
+        >
+          <Lock className="h-3 w-3" aria-hidden />
+          {s.scheduleAutomatically}
+          <span className="rounded-full border border-white/10 bg-white/[0.06] px-1.5 py-0.5 text-[8px] uppercase tracking-[0.08em] text-white/30">
+            {copy.badges.planned}
+          </span>
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function CopyButton({
   value,
   label,
@@ -420,6 +644,12 @@ export default function CampaignPlanner({
       shots: p.estimate.lineItems.shots,
     });
   }, [plan, p.estimate.lineItems]);
+
+  const socialPlannerPreview = useMemo(() => {
+    if (!plan) return null;
+
+    return buildSocialPlannerPreview(plan, p.socialPlanner);
+  }, [plan, p.socialPlanner]);
 
   const platformOptions = useMemo(
     () =>
@@ -601,6 +831,10 @@ export default function CampaignPlanner({
 
           {campaignEstimate ? (
             <CampaignEstimateCard estimate={campaignEstimate} copy={p} />
+          ) : null}
+
+          {socialPlannerPreview ? (
+            <SocialPlannerPreviewCard preview={socialPlannerPreview} copy={p} />
           ) : null}
 
           <section className="rounded-[1.35rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
