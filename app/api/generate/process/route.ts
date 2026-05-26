@@ -36,6 +36,8 @@ const FAL_LIP_SYNC_VIDEO_MODEL = "fal-ai/sync-lipsync/v2/pro";
 const FAL_LIP_SYNC_REQUEST_TIMEOUT_MS = 600_000;
 
 const ERR_PROVIDER_NO_IMAGE_URL = "Provider did not return an image URL.";
+const ERR_OPENAI_NO_IMAGE_DATA = "OpenAI did not return image data.";
+const OPENAI_IMAGE_MODEL = "gpt-image-1";
 const ERR_PROVIDER_NO_VIDEO_URL = "Provider did not return a video URL.";
 const REFUND_TRANSACTION_SOURCE = "generation_worker_failure";
 
@@ -102,8 +104,15 @@ function normalizeImageSize(value: unknown): ImageSize {
 function normalizeWorkflow(value: unknown): string {
   if (typeof value !== "string") return "standard";
 
-  const normalized = value.trim().toLowerCase();
-  return normalized || "standard";
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+
+  if (!normalized) return "standard";
+  if (normalized === "ugclook") return "ugc_look";
+
+  return normalized;
 }
 
 function normalizeProvider(value: unknown): string {
@@ -255,18 +264,44 @@ async function completeGeneration({
   generationId: string;
   publicUrl: string;
 }) {
+  const completedPayload = {
+    image_url: publicUrl,
+    status: "completed" as const,
+    error_message: null,
+    completed_at: new Date().toISOString(),
+  };
+
   const { data: updated, error: updateError } = await supabaseAdmin
     .from("generations")
-    .update({
-      image_url: publicUrl,
-      status: "completed",
-      error_message: null,
-      completed_at: new Date().toISOString(),
-    })
+    .update(completedPayload)
     .eq("id", generationId)
     .eq("status", "processing")
     .select("id")
     .maybeSingle();
+
+  if (updateError && isMissingColumnError(updateError)) {
+    const { data: fallbackUpdated, error: fallbackError } = await supabaseAdmin
+      .from("generations")
+      .update({
+        image_url: publicUrl,
+        status: "completed",
+        error_message: null,
+      })
+      .eq("id", generationId)
+      .eq("status", "processing")
+      .select("id")
+      .maybeSingle();
+
+    if (fallbackError) {
+      throw new Error(fallbackError.message);
+    }
+
+    if (!fallbackUpdated) {
+      throw new Error("Generation is no longer processing.");
+    }
+
+    return;
+  }
 
   if (updateError) {
     throw new Error(updateError.message);
@@ -1203,11 +1238,31 @@ async function processLipSyncVideo({
   }
 }
 
+async function resolveOpenAIImageBuffer(result: {
+  data?: Array<{ b64_json?: string | null; url?: string | null }>;
+}): Promise<{ imageBuffer: Buffer; contentType: string } | null> {
+  const first = result.data?.[0];
+  if (!first) return null;
+
+  if (typeof first.b64_json === "string" && first.b64_json.length > 0) {
+    return {
+      imageBuffer: base64ToBuffer(first.b64_json),
+      contentType: "image/png",
+    };
+  }
+
+  if (typeof first.url === "string" && first.url.trim().length > 0) {
+    const { imageBuffer, contentType } = await downloadImageFromUrl(first.url);
+    return { imageBuffer, contentType };
+  }
+
+  return null;
+}
+
 async function processOpenAIImage({
   generationId,
   userId,
   finalPrompt,
-  model,
   creditsUsed,
   imageSize,
   workflow,
@@ -1215,27 +1270,26 @@ async function processOpenAIImage({
   generationId: string;
   userId: string;
   finalPrompt: string;
-  model: string;
   creditsUsed: number;
   imageSize: ImageSize;
   workflow: string;
 }) {
   try {
     const result = await openai.images.generate({
-      model,
+      model: OPENAI_IMAGE_MODEL,
       prompt: finalPrompt,
       size: imageSize,
       n: 1,
     });
 
-    const imageBase64 = result.data?.[0]?.b64_json;
+    const resolvedImage = await resolveOpenAIImageBuffer(result);
 
-    if (!imageBase64) {
+    if (!resolvedImage) {
       await markFailedAndRefund({
         generationId,
         userId,
         creditsUsed,
-        errorMessage: ERR_PROVIDER_NO_IMAGE_URL,
+        errorMessage: ERR_OPENAI_NO_IMAGE_DATA,
       });
 
       return NextResponse.json(
@@ -1244,12 +1298,10 @@ async function processOpenAIImage({
       );
     }
 
-    const imageBuffer = base64ToBuffer(imageBase64);
-
     const publicUrl = await uploadImageBuffer({
       userId,
-      imageBuffer,
-      contentType: "image/png",
+      imageBuffer: resolvedImage.imageBuffer,
+      contentType: resolvedImage.contentType,
     });
 
     await completeGeneration({
@@ -1261,6 +1313,9 @@ async function processOpenAIImage({
       success: true,
       generationId,
       image: publicUrl,
+      workflow,
+      provider: "openai",
+      model: OPENAI_IMAGE_MODEL,
     });
   } catch (error) {
     const errorMessage =
@@ -1352,7 +1407,10 @@ export async function POST(req: Request) {
     workerCreditsUsed = creditsUsed;
 
     const workflow = normalizeWorkflow(generation.workflow);
-    const provider = normalizeProvider(generation.provider);
+    const provider =
+      workflow === "ugc_look"
+        ? "openai"
+        : normalizeProvider(generation.provider);
 
     const finalPrompt = generation.final_prompt || generation.prompt;
 
@@ -1363,7 +1421,6 @@ export async function POST(req: Request) {
         generationId,
         userId: generation.user_id,
         finalPrompt,
-        model: generation.model || "gpt-image-1",
         creditsUsed,
         imageSize,
         workflow,

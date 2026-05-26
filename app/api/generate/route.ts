@@ -2389,11 +2389,9 @@ export async function POST(req: Request) {
       process.env.NEXT_PUBLIC_APP_URL ??
       new URL(req.url).origin;
 
-    try {
-      await triggerWorker(generation.id, origin);
-    } catch (error) {
+    void triggerWorker(generation.id, origin).catch((error) => {
       console.error("Worker trigger exception:", error);
-    }
+    });
 
     return NextResponse.json({
       success: true,
