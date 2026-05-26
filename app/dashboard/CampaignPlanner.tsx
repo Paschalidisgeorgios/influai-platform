@@ -14,6 +14,7 @@ import {
   Lock,
   Megaphone,
   Send,
+  ShieldCheck,
   Sparkles,
 } from "lucide-react";
 import { useDashboardLanguage } from "./DashboardLanguageProvider";
@@ -76,6 +77,12 @@ type SocialPlannerPreview = {
   captionsText: string;
   scheduleText: string;
   platformFit: Array<{ platform: string; note: string }>;
+};
+
+type BrandSafetyChecklistItem = {
+  id: string;
+  label: string;
+  description: string;
 };
 
 type PlatformKey = "instagram" | "tiktok" | "youtube" | "linkedin" | "multi";
@@ -583,6 +590,155 @@ function SocialPlannerPreviewCard({
   );
 }
 
+function BrandSafetyPreviewCard({
+  copy,
+}: {
+  copy: ReturnType<typeof useDashboardLanguage>["copy"]["campaignPlanner"];
+}) {
+  const b = copy.brandSafety;
+  const [checked, setChecked] = useState<Record<string, boolean>>({});
+
+  const items: BrandSafetyChecklistItem[] = [
+    {
+      id: "ai-disclosure",
+      label: b.items.aiDisclosure.label,
+      description: b.items.aiDisclosure.description,
+    },
+    {
+      id: "readable-text",
+      label: b.items.readableText.label,
+      description: b.items.readableText.description,
+    },
+    {
+      id: "fake-logos",
+      label: b.items.fakeLogos.label,
+      description: b.items.fakeLogos.description,
+    },
+    {
+      id: "hands-faces",
+      label: b.items.handsFaces.label,
+      description: b.items.handsFaces.description,
+    },
+    {
+      id: "product-claims",
+      label: b.items.productClaims.label,
+      description: b.items.productClaims.description,
+    },
+    {
+      id: "usage-rights",
+      label: b.items.usageRights.label,
+      description: b.items.usageRights.description,
+    },
+    {
+      id: "platform-compliance",
+      label: b.items.platformCompliance.label,
+      description: b.items.platformCompliance.description,
+    },
+    {
+      id: "watermark-disclosure",
+      label: b.items.watermarkDisclosure.label,
+      description: b.items.watermarkDisclosure.description,
+    },
+  ];
+
+  const checklistText = [
+    `${b.checklistTitle}`,
+    "",
+    ...items.map((item) => {
+      const mark = checked[item.id] ? "[x]" : "[ ]";
+      return `${mark} ${item.label} — ${item.description}`;
+    }),
+  ].join("\n");
+
+  function toggleItem(id: string) {
+    setChecked((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
+
+  return (
+    <section className="overflow-hidden rounded-[1.35rem] border border-amber-400/20 bg-[linear-gradient(165deg,rgba(251,191,36,0.07)_0%,rgba(0,0,0,0.4)_45%)] p-4 sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/15 text-amber-200">
+            <ShieldCheck className="h-5 w-5" aria-hidden />
+          </div>
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-[0.14em] text-amber-100">
+              {b.title}
+            </h3>
+            <p className="mt-1 max-w-xl text-xs leading-5 text-white/40">
+              {b.intro}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-emerald-200">
+            {b.badges.manualChecklist}
+          </span>
+          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/45">
+            {b.badges.noAutomatedScan}
+          </span>
+          <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-violet-100">
+            {b.badges.compliancePlanned}
+          </span>
+        </div>
+      </div>
+
+      <p className="mt-4 text-[10px] font-black uppercase tracking-[0.14em] text-white/35">
+        {b.checklistTitle}
+      </p>
+      <ul className="mt-3 space-y-3">
+        {items.map((item) => (
+          <li
+            key={item.id}
+            className="flex gap-3 rounded-xl border border-white/[0.08] bg-black/35 p-3 sm:p-4"
+          >
+            <div className="mt-0.5">
+              <input
+                id={`brand-safety-${item.id}`}
+                type="checkbox"
+                checked={!!checked[item.id]}
+                onChange={() => toggleItem(item.id)}
+                className="h-4 w-4 rounded border-white/30 bg-black/60 text-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60"
+              />
+            </div>
+            <div className="min-w-0">
+              <label
+                htmlFor={`brand-safety-${item.id}`}
+                className="cursor-pointer text-xs font-semibold text-white"
+              >
+                {item.label}
+              </label>
+              <p className="mt-1 text-xs leading-5 text-white/50">
+                {item.description}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <CopyButton
+          value={checklistText}
+          label={b.copyChecklist}
+          copiedLabel={copy.actions.copied}
+        />
+        <button
+          type="button"
+          disabled
+          title={b.runScanHint}
+          className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[10px] font-bold text-white/35"
+        >
+          <Lock className="h-3 w-3" aria-hidden />
+          {b.runAutomatedScan}
+          <span className="rounded-full border border-white/10 bg-white/[0.06] px-1.5 py-0.5 text-[8px] uppercase tracking-[0.08em] text-white/30">
+            {copy.badges.planned}
+          </span>
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function CopyButton({
   value,
   label,
@@ -836,6 +992,8 @@ export default function CampaignPlanner({
           {socialPlannerPreview ? (
             <SocialPlannerPreviewCard preview={socialPlannerPreview} copy={p} />
           ) : null}
+
+          <BrandSafetyPreviewCard copy={p} />
 
           <section className="rounded-[1.35rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
             <div className="flex items-center gap-2">

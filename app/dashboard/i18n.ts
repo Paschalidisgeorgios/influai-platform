@@ -247,6 +247,63 @@ const en = {
       },
       dayLine: "Day {day} — {platform} — {content} — {time}",
     },
+    brandSafety: {
+      title: "Brand Safety Preview",
+      intro:
+        "This is a manual pre-publish checklist. Automated compliance scanning is planned.",
+      checklistTitle: "Pre-publish brand safety checklist",
+      copyChecklist: "Copy checklist",
+      runAutomatedScan: "Run automated scan",
+      runScanHint:
+        "Automated scanning requires computer vision model validation and legal review before activation.",
+      badges: {
+        manualChecklist: "Manual checklist",
+        noAutomatedScan: "No automated scan",
+        compliancePlanned: "Compliance planned",
+      },
+      items: {
+        aiDisclosure: {
+          label: "AI content disclosure reminder",
+          description:
+            "Add an AI or synthetic media disclosure where required by your brand guidelines or jurisdiction.",
+        },
+        readableText: {
+          label: "Check for unintended readable text",
+          description:
+            "Scan visuals for stray readable words, UI fragments or artifacts that could be confusing or off-brand.",
+        },
+        fakeLogos: {
+          label: "Check for fake logos or brand names",
+          description:
+            "Ensure there are no unintended third-party logos, trademarks or brand names that you do not own.",
+        },
+        handsFaces: {
+          label: "Check hands, fingers and facial details",
+          description:
+            "Review hands, fingers, faces and expressions for realism and potential artifacts before publishing.",
+        },
+        productClaims: {
+          label: "Check product claims and legal wording",
+          description:
+            "Verify that any claims, offers or guarantees in captions and overlays are accurate and approved by legal.",
+        },
+        usageRights: {
+          label: "Confirm usage rights for assets",
+          description:
+            "Confirm you hold the rights to use all uploaded, reference and stock assets in the planned campaign.",
+        },
+        platformCompliance: {
+          label: "Confirm platform compliance before posting",
+          description:
+            "Cross-check the campaign against platform ad policies, sensitive content rules and age restrictions.",
+        },
+        watermarkDisclosure: {
+          label: "Watermark / disclosure note if applicable",
+          description:
+            "Add a watermark or disclosure note if your brand, platform or jurisdiction requires it for AI content.",
+        },
+      },
+    },
     fields: {
       campaignIdea: "Campaign idea",
       productBrand: "Product / brand",
@@ -1177,6 +1234,63 @@ const de: DeepString<typeof en> = {
         youtubeShorts: "Recap, Teaser, CTA-freundlicher Vertical Cut",
       },
       dayLine: "Tag {day} — {platform} — {content} — {time}",
+    },
+    brandSafety: {
+      title: "Brand Safety Preview",
+      intro:
+        "Dies ist eine manuelle Pre-Publish-Checkliste. Automatisiertes Compliance-Scanning ist geplant.",
+      checklistTitle: "Pre-Publish Brand-Safety-Checkliste",
+      copyChecklist: "Checkliste kopieren",
+      runAutomatedScan: "Automatischen Scan ausführen",
+      runScanHint:
+        "Automatisiertes Scanning erfordert Computer-Vision-Validierung und rechtliche Prüfung vor der Aktivierung.",
+      badges: {
+        manualChecklist: "Manuelle Checkliste",
+        noAutomatedScan: "Kein automatischer Scan",
+        compliancePlanned: "Compliance geplant",
+      },
+      items: {
+        aiDisclosure: {
+          label: "AI-Content-Disclosure / Hinweis",
+          description:
+            "Füge dort, wo es Brand-Guidelines oder Recht verlangen, einen kurzen Hinweis auf AI- oder Synthetic-Media-Inhalte hinzu.",
+        },
+        readableText: {
+          label: "Auf ungewollt lesbaren Text prüfen",
+          description:
+            "Scanne Visuals nach zufälligen lesbaren Wörtern, UI-Fragmenten oder Artefakten, die verwirrend oder off-brand wirken könnten.",
+        },
+        fakeLogos: {
+          label: "Auf Fake-Logos oder Markennamen prüfen",
+          description:
+            "Stelle sicher, dass keine unbeabsichtigten Logos, Marken oder Markennamen Dritter enthalten sind, an denen du keine Rechte hast.",
+        },
+        handsFaces: {
+          label: "Hände, Finger und Gesichter prüfen",
+          description:
+            "Überprüfe Hände, Finger, Gesichter und Mimik auf Realismus und mögliche Artefakte, bevor du veröffentlichst.",
+        },
+        productClaims: {
+          label: "Produktversprechen und Rechtstexte prüfen",
+          description:
+            "Stimme Claims, Angebote und Garantien in Captions und Overlays mit Fakten und ggf. Legal-Team ab.",
+        },
+        usageRights: {
+          label: "Nutzungsrechte für Assets bestätigen",
+          description:
+            "Bestätige, dass du die Rechte zur Nutzung aller hochgeladenen, referenzierten und Stock-Assets in der Kampagne besitzt.",
+        },
+        platformCompliance: {
+          label: "Plattform-Compliance vor Posting prüfen",
+          description:
+            "Gleiche die Kampagne mit Plattform-Richtlinien, sensiblen Inhalten und Altersbeschränkungen ab.",
+        },
+        watermarkDisclosure: {
+          label: "Watermark / Disclosure-Hinweis falls nötig",
+          description:
+            "Füge bei Bedarf ein Wasserzeichen oder einen Disclosure-Hinweis hinzu, wenn Brand, Plattform oder Recht dies für AI-Content verlangen.",
+        },
+      },
     },
     fields: {
       campaignIdea: "Kampagnenidee",
