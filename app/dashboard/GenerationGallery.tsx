@@ -78,7 +78,12 @@ function getStatusLabel(
 
 function getWorkflowLabel(
   workflow: string | null | undefined,
-  labels: { standard: string; video: string; lipSync: string }
+  labels: {
+    standard: string;
+    video: string;
+    lipSync: string;
+    ugcLook: string;
+  }
 ) {
   if (workflow === "lip_sync") {
     return labels.lipSync;
@@ -86,6 +91,10 @@ function getWorkflowLabel(
 
   if (workflow === "video_image_to_video") {
     return labels.video;
+  }
+
+  if (workflow === "ugc_look") {
+    return labels.ugcLook;
   }
 
   if (!workflow || workflow === "standard" || workflow === "openai") {
@@ -657,6 +666,7 @@ export default function GenerationGallery({
                         standard: g.standard,
                         video: g.videoBadge,
                         lipSync: g.lipSyncBadge,
+                        ugcLook: g.ugcLookBadge,
                       })}
                     </span>
 
@@ -831,6 +841,7 @@ export default function GenerationGallery({
                       standard: g.standard,
                       video: g.videoBadge,
                       lipSync: g.lipSyncBadge,
+                      ugcLook: g.ugcLookBadge,
                     })}
                   </span>
 

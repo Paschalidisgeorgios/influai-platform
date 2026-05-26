@@ -1460,6 +1460,7 @@ export default function AiAgentStudio({
         key: "ugc_look" as const,
         label: a.imageModes.ugcLook.label,
         description: a.imageModes.ugcLook.description,
+        hoverHint: a.imageModes.ugcLook.hoverHint,
         status: (UGC_LOOK_PUBLIC_ENABLED ? "beta" : "planned") as ImageModeCardStatus,
         creditNote: suite.modes.ugcLook.credits,
         bestFor: suite.modes.ugcLook.bestFor,

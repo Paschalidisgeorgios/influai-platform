@@ -125,7 +125,7 @@ const en = {
       ugcLook: {
         label: "UGC Look",
         credits: "2 Credits",
-        bestFor: "Authentic smartphone-style creator visuals",
+        bestFor: "Organic social content",
       },
       fastDraft: {
         label: "Fast Draft",
@@ -592,6 +592,8 @@ const en = {
         label: "UGC Look",
         description:
           "Authentic smartphone-style creator visuals for TikTok, Reels and organic ads.",
+        hoverHint:
+          "Best for casual creator posts, product recommendations and realistic social content.",
       },
       fastDraft: {
         label: "Fast Draft",
@@ -833,6 +835,7 @@ const en = {
     creditsRefundedHint: "Credits were refunded.",
     lipSyncBadge: "Lip Sync",
     videoBadge: "Video",
+    ugcLookBadge: "UGC Look",
     videoUnavailable: "Video unavailable",
     noVideoUrl: "This generation has no video URL.",
     openVideoDirectly: "Open video directly",
@@ -1159,7 +1162,7 @@ const de: DeepString<typeof en> = {
       ugcLook: {
         label: "UGC Look",
         credits: "2 Credits",
-        bestFor: "Authentischer Smartphone-/Creator-Look",
+        bestFor: "Organischer Social Content",
       },
       fastDraft: {
         label: "Fast Draft",
@@ -1632,6 +1635,8 @@ const de: DeepString<typeof en> = {
         label: "UGC Look",
         description:
           "Authentische Smartphone-/Creator-Visuals für TikTok, Reels und Organic Ads.",
+        hoverHint:
+          "Ideal für lockere Creator-Posts, Produktempfehlungen und realistischen Social Content.",
       },
       fastDraft: {
         label: "Fast Draft",
@@ -1881,6 +1886,7 @@ const de: DeepString<typeof en> = {
     creditsRefundedHint: "Credits wurden erstattet.",
     lipSyncBadge: "Lip Sync",
     videoBadge: "Video",
+    ugcLookBadge: "UGC-Look",
     videoUnavailable: "Video nicht verfügbar",
     noVideoUrl: "Diese Generierung hat keine Video-URL.",
     openVideoDirectly: "Video direkt öffnen",

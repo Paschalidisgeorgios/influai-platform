@@ -1095,30 +1095,253 @@ ${prompt}`,
   ]);
 }
 
-function buildUGCLookStyleBlock({
+function userRequestedStudioLook(prompt: string) {
+  const text = normalizePromptText(prompt).toLowerCase();
+  return /\b(studio|luxury|editorial|high-end commercial|campaign shoot|magazine|glossy ad)\b/i.test(
+    text
+  );
+}
+
+function promptMentionsCarContext(prompt: string) {
+  const text = normalizePromptText(prompt).toLowerCase();
+  return (
+    detectContentType(prompt).includes("automotive") ||
+    /\b(car|auto|vehicle|dashboard|driving|parking|commute|on the go|on-the-go|road trip|steering|windshield|seat)\b/i.test(
+      text
+    )
+  );
+}
+
+function promptMentionsFitnessContext(prompt: string) {
+  const text = normalizePromptText(prompt).toLowerCase();
+  return (
+    detectContentType(prompt).includes("fitness") ||
+    /\b(gym|workout|fitness|leggings|pre-workout|shaker|training|gym bag)\b/i.test(
+      text
+    )
+  );
+}
+
+function promptMentionsBeautyContext(prompt: string) {
+  const text = normalizePromptText(prompt).toLowerCase();
+  return (
+    detectContentType(prompt).includes("beauty") ||
+    /\b(skincare|makeup|beauty|serum|moisturizer|bathroom|mirror selfie|routine)\b/.test(
+      text
+    )
+  );
+}
+
+function buildUGCLookNegativeBlock() {
+  return `
+UGC Look — explicitly avoid (mandatory unless the user clearly requested studio/luxury):
+- no studio lighting
+- no perfect editorial lighting
+- no luxury campaign set
+- no hyper-polished ad layout
+- no plastic skin
+- no overly symmetrical composition
+- no fake text, no fake logos, no watermarks
+- not a studio shoot
+- not luxury editorial
+- not overly polished
+- not a cinematic advertisement
+  `.trim();
+}
+
+function buildUGCLookQualityRules() {
+  return `
+Quality standards (UGC Look):
+- high-quality but believable organic creator content (not "bad quality" on purpose)
+- natural skin texture with realistic pores and tone
+- sharp enough for social feeds while still feeling phone-captured
+- attractive but imperfect framing — candid, not art-directed symmetry
+- no distorted anatomy, no deformed hands
+- subtle sensor noise or minor motion blur only when it supports realism
+  `.trim();
+}
+
+function buildUGCLookPlatformFormatBlock(
+  platform: EffectivePlatform,
+  outputFormat: OutputFormat
+) {
+  if (platform === "youtube_thumbnail") {
+    return `
+Platform: YouTube Thumbnail (${outputFormat.label})
+Aspect ratio: ${outputFormat.aspectRatio} wide
+
+Format requirements:
+- creator-shot thumbnail energy (phone or casual camera feel — not a luxury studio set)
+- wide composition with a clear focal subject
+- strong hook visual readable at small preview size
+- empty space for future title text — do not render text
+- no actual text, no logo, no watermark in the image
+    `.trim();
+  }
+
+  if (
+    platform === "tiktok" ||
+    platform === "instagram_story" ||
+    platform === "youtube_shorts"
+  ) {
+    const label =
+      platform === "tiktok"
+        ? "TikTok / Reels"
+        : platform === "instagram_story"
+          ? "Instagram Story"
+          : "YouTube Shorts";
+
+    return `
+Platform: ${label}
+Aspect ratio: ${outputFormat.aspectRatio} vertical 9:16
+
+Format requirements:
+- vertical 9:16, mobile-first framing
+- close creator framing suitable for short-form video
+- space for captions and app UI (headroom + lower third)
+- handheld social video frame look — feels like a still from a real short-form video
+- organic TikTok/Reels creator post aesthetic
+- no actual text, no logo, no watermark in the image
+    `.trim();
+  }
+
+  if (platform === "instagram_post") {
+    return `
+Platform: Instagram Post
+Aspect ratio: ${outputFormat.aspectRatio} portrait feed
+
+Format requirements:
+- casual creator feed photo — phone or everyday camera
+- believable real-life creator post, not a magazine editorial
+- no actual text, no logo, no watermark in the image
+    `.trim();
+  }
+
+  return `
+Platform: Square social asset
+Aspect ratio: ${outputFormat.aspectRatio}
+
+Format requirements:
+- balanced square composition with natural creator framing
+- believable organic social content — not a polished campaign layout
+- no actual text, no logo, no watermark in the image
+  `.trim();
+}
+
+function buildUGCSubjectHints(prompt: string, contentTypes: ContentType[]) {
+  const hints: string[] = [];
+  const allowLuxury = userRequestedStudioLook(prompt);
+
+  if (contentTypes.includes("automotive")) {
+    hints.push(
+      allowLuxury
+        ? "cars in a believable everyday setting — still shot like a creator, not a dealership studio"
+        : "everyday car interior or exterior context — dashboard, seat, window, parking lot or street",
+      "natural daylight or casual parking-lot lighting",
+      "casual creator selfie angle or passenger-seat POV when suitable"
+    );
+  }
+
+  if (contentTypes.includes("fitness")) {
+    hints.push(
+      "gym bag, shaker, leggings, casual pre-workout vibe",
+      allowLuxury
+        ? "real gym or car-before-gym environment — still organic creator energy"
+        : "real gym or car-before-gym environment — not a luxury studio gym unless explicitly requested",
+      "authentic pre-workout creator moment"
+    );
+  }
+
+  if (contentTypes.includes("beauty")) {
+    hints.push(
+      "bathroom mirror or phone selfie angle, natural indoor light",
+      "real shelf or countertop context — casual recommendation vibe",
+      allowLuxury
+        ? "skincare/makeup shown like a real creator routine"
+        : "avoid glossy studio beauty lighting unless explicitly requested"
+    );
+  }
+
+  if (contentTypes.includes("fashion")) {
+    hints.push(
+      "creator outfit check or mirror selfie — everyday styling, not runway editorial"
+    );
+  }
+
+  if (contentTypes.includes("product")) {
+    hints.push(
+      "product held in hand or on a real surface",
+      "creator-shot product recommendation in a real home/car/bathroom/gym setting",
+      "imperfect but attractive framing"
+    );
+  }
+
+  if (contentTypes.includes("food")) {
+    hints.push(
+      "casual food creator shot — kitchen table, cafe, or car snack moment",
+      "natural light, not restaurant studio plating unless requested"
+    );
+  }
+
+  if (contentTypes.includes("creator") && !contentTypes.includes("fashion")) {
+    hints.push(
+      "expressive creator presence readable on mobile — candid, not posed like a catalog"
+    );
+  }
+
+  return hints;
+}
+
+function buildUGCLookContextBlock({
+  prompt,
   platform,
   contentTypes,
 }: {
+  prompt: string;
   platform: EffectivePlatform;
   contentTypes: ContentType[];
 }) {
-  const sections: string[] = [
-    `UGC Look style (mandatory):`,
-    `- authentic user-generated content style`,
-    `- smartphone camera photo (handheld feel)`,
-    `- casual real-life framing`,
-    `- natural lighting`,
-    `- slightly imperfect composition (believable, not sloppy)`,
-    `- realistic skin texture`,
-    `- not overly polished`,
-    `- avoid luxury studio look unless the user explicitly requested studio/luxury`,
-    `- everyday background (home/street/gym/car as appropriate)`,
-    `- subtle motion blur if suitable`,
-    `- social media creator ad aesthetic`,
-    `- TikTok/Reels organic content look`,
-    `- believable amateur-but-attractive visual`,
-    `- no text, no logo, no watermark`,
-  ];
+  const sections: string[] = [];
+
+  if (promptMentionsCarContext(prompt)) {
+    sections.push(
+      `Auto / on-the-go context:`,
+      `- everyday car interior, dashboard, seat or window context`,
+      `- natural daylight or parking-lot lighting`,
+      `- casual creator angle — commuting or parked moment`
+    );
+  }
+
+  if (promptMentionsFitnessContext(prompt)) {
+    sections.push(
+      `Fitness context:`,
+      `- gym bag, shaker, leggings, casual pre-workout vibe`,
+      `- real gym or car-before-gym environment`,
+      `- not a luxury studio gym unless explicitly requested`
+    );
+  }
+
+  if (promptMentionsBeautyContext(prompt)) {
+    sections.push(
+      `Beauty / skincare context:`,
+      `- bathroom mirror or phone selfie, natural indoor light`,
+      `- real shelf or countertop context`,
+      `- casual recommendation vibe — friend sharing a product`
+    );
+  }
+
+  if (
+    contentTypes.includes("product") ||
+    /\b(product|unboxing|review|recommend|haul)\b/i.test(normalizePromptText(prompt))
+  ) {
+    sections.push(
+      `Product UGC context:`,
+      `- product held in hand or used in a real setting`,
+      `- real home, car, bathroom or gym background`,
+      `- creator-shot product recommendation`,
+      `- imperfect but attractive framing`
+    );
+  }
 
   if (
     platform === "tiktok" ||
@@ -1126,22 +1349,114 @@ function buildUGCLookStyleBlock({
     platform === "youtube_shorts"
   ) {
     sections.push(
-      ``,
-      `Vertical / mobile-first (mandatory):`,
+      `Short-form vertical context:`,
       `- vertical 9:16, mobile-first framing`,
-      `- subject close enough for smartphone content`,
-      `- leave space for captions/UI (headroom + lower third)`
+      `- close creator framing`,
+      `- space for captions and app UI`,
+      `- handheld social video frame look`,
+      `- feels like a still from a real short-form video`
     );
   }
 
-  if (contentTypes.includes("product")) {
-    sections.push(
-      ``,
-      `Product / ad realism:`,
-      `- looks like a real creator photographed the product`,
-      `- handheld creator-style product shot`,
-      `- natural environment (home/car/street/gym) when suitable`
+  return sections.length > 0 ? sections.join("\n") : "";
+}
+
+function buildUGCLookSceneDirection({
+  normalizedText,
+  platform,
+  prompt,
+  contentTypes,
+  location,
+  isShort,
+}: {
+  normalizedText: string;
+  platform: EffectivePlatform;
+  prompt: string;
+  contentTypes: ContentType[];
+  location: DetectedLocation | null;
+  isShort: boolean;
+}) {
+  const parts: string[] = [
+    "Creative interpretation (expand the user request — keep casual UGC energy, do not replace their wording):",
+    `User intent: "${normalizedText}"`,
+  ];
+
+  if (isShort) {
+    if (
+      platform === "tiktok" ||
+      platform === "instagram_story" ||
+      platform === "youtube_shorts"
+    ) {
+      parts.push(
+        "Scene: one believable creator moment captured on a phone — candid, immediate, organic."
+      );
+    } else if (platform === "instagram_post") {
+      parts.push(
+        "Scene: casual creator feed post — real environment, natural light, not a magazine shoot."
+      );
+    } else {
+      parts.push(
+        "Scene: expand into a complete believable creator post — everyday setting, phone-camera realism."
+      );
+    }
+  }
+
+  const subjectHints = buildUGCSubjectHints(prompt, contentTypes);
+
+  if (subjectHints.length > 0) {
+    parts.push("Subject direction (UGC):");
+    subjectHints.forEach((hint) => parts.push(`- ${hint}`));
+  }
+
+  const locationHints = buildLocationHints(location, platform);
+
+  if (locationHints.length > 0) {
+    parts.push(`Environment (${location?.label ?? "real-world setting"}):`);
+    locationHints.forEach((hint) => parts.push(`- ${hint} (everyday, not a film set)`));
+  }
+
+  if (userRequestedStudioLook(prompt)) {
+    parts.push(
+      "Note: user mentioned studio/luxury — keep smartphone UGC framing but allow slightly elevated styling."
     );
+  }
+
+  return parts.join("\n");
+}
+
+function buildUGCLookStyleBlock({
+  prompt,
+  platform,
+  contentTypes,
+}: {
+  prompt: string;
+  platform: EffectivePlatform;
+  contentTypes: ContentType[];
+}) {
+  const sections: string[] = [
+    `UGC Look style (mandatory):`,
+    `- authentic user-generated content`,
+    `- casual smartphone photo, shot on phone`,
+    `- natural everyday lighting`,
+    `- slightly imperfect framing`,
+    `- candid creator content`,
+    `- realistic casual environment`,
+    `- organic TikTok/Reels style`,
+    `- not a studio shoot`,
+    `- not luxury editorial`,
+    `- not overly polished`,
+    `- not a cinematic advertisement`,
+    `- natural skin texture`,
+    `- subtle noise or minor motion blur if suitable`,
+    `- believable real-life creator post`,
+    `- high-quality but organic — attractive, not sloppy or low-res on purpose`,
+    `- no text, no logo, no watermark`,
+  ];
+
+  const contextBlock = buildUGCLookContextBlock({ prompt, platform, contentTypes });
+
+  if (contextBlock) {
+    sections.push("", contextBlock);
   }
 
   return sections.join("\n");
@@ -1155,19 +1470,34 @@ function buildUGCLookFinalPrompt({
   outputFormat: OutputFormat;
 }) {
   const brief = buildCreativeBrief({ prompt, outputFormat });
+  const ugcSceneDirection = buildUGCLookSceneDirection({
+    normalizedText: brief.normalizedText,
+    platform: brief.platform,
+    prompt,
+    contentTypes: brief.contentTypes,
+    location: brief.location,
+    isShort: brief.isShort,
+  });
+  const ugcFormatBlock = buildUGCLookPlatformFormatBlock(
+    brief.platform,
+    outputFormat
+  );
 
   return assembleFinalPrompt([
     `Create an authentic creator-style UGC photo for social media.
-This should look like real smartphone content (not a luxury studio shoot).`,
+This must look like real smartphone content — believable, organic, and creator-shot (not a luxury studio or editorial campaign).`,
     `User request (preserve exactly — do not replace or contradict):
 ${prompt}`,
-    brief.sceneDirection,
-    brief.formatBlock,
+    ugcSceneDirection,
+    ugcFormatBlock,
     brief.brandSafetyBlock,
     buildUGCLookStyleBlock({
+      prompt,
       platform: brief.platform,
       contentTypes: brief.contentTypes,
     }),
+    buildUGCLookNegativeBlock(),
+    buildUGCLookQualityRules(),
     `Output target: ${outputFormat.label} · UGC Look (authentic creator-style).`,
   ]);
 }
@@ -1182,10 +1512,23 @@ function buildUGCLookCharacterStylePrompt({
   outputFormat: OutputFormat;
 }) {
   const brief = buildCreativeBrief({ prompt, outputFormat, character });
+  const ugcSceneDirection = buildUGCLookSceneDirection({
+    normalizedText: brief.normalizedText,
+    platform: brief.platform,
+    prompt,
+    contentTypes: brief.contentTypes,
+    location: brief.location,
+    isShort: brief.isShort,
+  });
+  let ugcFormatBlock = buildUGCLookPlatformFormatBlock(
+    brief.platform,
+    outputFormat
+  );
+  ugcFormatBlock += `\n\nStyle profile active: apply profile mood while keeping UGC smartphone realism (not studio polish).`;
 
   return assembleFinalPrompt([
     `Create an authentic creator-style UGC photo for social media using a saved style profile.
-Keep the output believable as real smartphone content (not overly polished).`,
+Keep the output believable as real smartphone content — organic creator energy, not a luxury studio shoot.`,
     `Style profile (creative direction only — not exact identity lock):
 Name: ${character.name}
 Description: ${character.description ?? "—"}
@@ -1193,13 +1536,16 @@ Appearance: ${character.appearance_prompt ?? "—"}
 Style: ${character.style_prompt ?? "—"}`,
     `User request (preserve exactly — do not replace or contradict):
 ${prompt}`,
-    brief.sceneDirection,
-    brief.formatBlock,
+    ugcSceneDirection,
+    ugcFormatBlock,
     brief.brandSafetyBlock,
     buildUGCLookStyleBlock({
+      prompt,
       platform: brief.platform,
       contentTypes: brief.contentTypes,
     }),
+    buildUGCLookNegativeBlock(),
+    buildUGCLookQualityRules(),
     `Blend the style profile aesthetic with the UGC Look rules above.`,
   ]);
 }

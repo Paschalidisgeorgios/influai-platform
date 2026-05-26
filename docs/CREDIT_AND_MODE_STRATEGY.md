@@ -49,14 +49,19 @@ Standard Image is the production default and fallback. All planned modes must be
 | Field | Value |
 |-------|--------|
 | **Mode key** | `ugc_look` |
-| **Provider** | OpenAI (same as Standard Image) |
-| **Model** | `gpt-image-1` |
 | **Credit cost** | **2 credits** per image |
 | **Workflow** | `ugc_look` |
-| **Purpose** | Authentic creator-style smartphone visuals for TikTok/Reels/organic ads |
+| **Purpose** | Authentic smartphone-style creator visuals for TikTok, Reels and organic social ads |
+| **Provider** | Standard image provider initially (OpenAI `gpt-image-1`, same pipeline as Standard Image) |
 | **Status** | **Beta** when `ENABLE_UGC_LOOK=true` and `NEXT_PUBLIC_ENABLE_UGC_LOOK=true` |
 
-UGC Look is intentionally **not a new provider**. It uses the existing OpenAI image pipeline and storage path, with additional **UGC-specific prompt-building** (less studio-polished, more real-life creator framing).
+UGC Look is intentionally **not a separate provider yet**. It uses the existing Standard/OpenAI image pipeline and storage path, with **prompt-driven** UGC-specific building:
+
+- Positive rules: phone-shot framing, natural everyday light, candid creator environments, vertical short-form cues, context blocks (car, gym, beauty, product-in-hand).
+- Negative rules: no studio/editorial lighting, no luxury campaign sets, no hyper-polished ad layouts, no plastic skin or fake text/logos.
+- Quality bar: high-quality but believable organic content — not intentionally low-res or sloppy.
+
+UI shows **UGC Look · 2 Credits**; gallery workflow badge: **UGC Look** (not Standard).
 
 ---
 
