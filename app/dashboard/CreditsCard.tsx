@@ -180,7 +180,18 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
     parsedCustomCredits >= 100 &&
     parsedCustomCredits <= 10000;
 
-  const customPriceEur = customCreditsValid ? (parsedCustomCredits * 0.1).toFixed(2) : "0.00";
+  const customPriceEur = customCreditsValid
+    ? (parsedCustomCredits * 0.1).toFixed(2)
+    : "0.00";
+
+  const customPriceDisplay = `€${customPriceEur}`;
+
+  const showCustomMinError =
+    customCredits.trim() !== "" &&
+    (!Number.isFinite(parsedCustomCredits) || parsedCustomCredits < 100);
+
+  const showCustomMaxError =
+    Number.isFinite(parsedCustomCredits) && parsedCustomCredits > 10000;
 
   async function startCustomCheckout() {
     const amount = parsedCustomCredits;
@@ -289,7 +300,7 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                     setPackagesFocused(true);
                     window.setTimeout(() => setPackagesFocused(false), 1600);
                     document
-                      .getElementById("credit-packages")
+                      .getElementById("custom-credit-top-up")
                       ?.scrollIntoView({ behavior: "smooth", block: "start" });
                   }}
                   disabled={checkoutInProgress}
@@ -310,6 +321,96 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
               <p className="font-medium leading-6">{errorMessage}</p>
             </div>
           )}
+        </div>
+      </div>
+
+      <div
+        id="custom-credit-top-up"
+        className={`relative scroll-mt-24 overflow-hidden rounded-[1.5rem] border bg-gradient-to-b from-[#d8ad5f]/12 to-[#d8ad5f]/[0.03] p-5 shadow-[0_24px_80px_rgba(216,173,95,0.14)] sm:rounded-[2rem] sm:p-6 ${
+          packagesFocused
+            ? "border-[#d8ad5f]/50 ring-2 ring-[#d8ad5f]/30"
+            : "border-[#d8ad5f]/35"
+        }`}
+      >
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#d8ad5f]/50 to-transparent" />
+
+        <div className="relative">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.34em] text-[#d8ad5f]">
+                {copy.credits.customTopUpTitle}
+              </p>
+              <p className="mt-3 text-base font-bold leading-7 text-white sm:text-lg">
+                {copy.credits.customTopUpIntro}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-white/60">
+                {copy.credits.customTopUpPricePerCredit}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-white/50">
+                {copy.credits.customTopUpExamples}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-white/40">
+                {copy.credits.customTopUpPackageHint}
+              </p>
+            </div>
+
+            <div className="flex shrink-0 flex-col items-stretch gap-3 sm:w-[min(100%,17rem)]">
+              <label className="block">
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-white/50">
+                  {copy.credits.customTopUpLabel}
+                </span>
+                <input
+                  type="number"
+                  min={100}
+                  max={10000}
+                  step={50}
+                  inputMode="numeric"
+                  placeholder={copy.credits.customTopUpPlaceholder}
+                  value={customCredits}
+                  onChange={(event) => setCustomCredits(event.target.value)}
+                  className="mt-2 w-full rounded-2xl border border-white/15 bg-black/40 px-4 py-3.5 text-2xl font-black tracking-tight text-white outline-none transition placeholder:text-white/25 focus:border-[#d8ad5f] focus:ring-2 focus:ring-[#d8ad5f]/40"
+                />
+              </label>
+
+              {showCustomMinError && (
+                <p className="text-xs font-semibold text-red-300" role="status">
+                  {copy.credits.customTopUpMinError}
+                </p>
+              )}
+              {showCustomMaxError && (
+                <p className="text-xs font-semibold text-red-300" role="status">
+                  {copy.credits.customTopUpMaxError}
+                </p>
+              )}
+
+              <div className="rounded-2xl border border-[#d8ad5f]/25 bg-black/25 px-4 py-3 text-center">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/35">
+                  {copy.credits.price}
+                </p>
+                <p className="mt-1 text-4xl font-black tracking-tight text-[#d8ad5f] sm:text-5xl">
+                  {customPriceDisplay}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={startCustomCheckout}
+                disabled={
+                  !customCreditsValid || customSubmitting || checkoutInProgress
+                }
+                className="inline-flex w-full items-center justify-center rounded-full bg-[#d8ad5f] px-5 py-3.5 text-sm font-black text-black shadow-[0_12px_36px_rgba(216,173,95,0.35)] transition hover:bg-[#efc777] disabled:cursor-not-allowed disabled:bg-[#d8ad5f]/40"
+              >
+                {customSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {copy.credits.redirecting}
+                  </>
+                ) : (
+                  copy.credits.customTopUpBuy
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -461,54 +562,7 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
           })}
         </div>
 
-        <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4 sm:rounded-[1.75rem] sm:p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d8ad5f]">
-                {copy.credits.customTopUpTitle}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-white/55">
-                {copy.credits.customTopUpDescription}
-              </p>
-            </div>
-            <div className="mt-1 flex shrink-0 flex-col gap-2 sm:items-end">
-              <label className="flex items-center gap-2 text-xs font-bold text-white/65">
-                <span>{copy.credits.customTopUpLabel}</span>
-                <input
-                  type="number"
-                  min={100}
-                  max={10000}
-                  step={50}
-                  value={customCredits}
-                  onChange={(event) => setCustomCredits(event.target.value)}
-                  className="w-24 rounded-full border border-white/15 bg-black/50 px-3 py-1.5 text-right text-sm font-black text-white outline-none focus:border-[#d8ad5f] focus:ring-1 focus:ring-[#d8ad5f]/60"
-                />
-              </label>
-              <p className="text-xs font-medium text-[#d8ad5f]">
-                {customCreditsValid
-                  ? `€${customPriceEur}`
-                  : "€0.00"}
-              </p>
-              <button
-                type="button"
-                onClick={startCustomCheckout}
-                disabled={!customCreditsValid || customSubmitting || checkoutInProgress}
-                className="inline-flex items-center justify-center rounded-full bg-[#d8ad5f] px-4 py-2 text-xs font-black text-black shadow-[0_10px_30px_rgba(216,173,95,0.35)] transition hover:bg-[#efc777] disabled:cursor-not-allowed disabled:bg-[#d8ad5f]/40"
-              >
-                {customSubmitting ? (
-                  <>
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    {copy.credits.redirecting}
-                  </>
-                ) : (
-                  copy.credits.customTopUpBuy
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <details className="mt-4 overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.02] p-4 sm:rounded-[1.75rem] sm:p-5">
+        <details className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.02] p-4 sm:rounded-[1.75rem] sm:p-5">
           <summary className="cursor-pointer list-none select-none">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-black text-white/85">{copy.credits.modeCostsLabel}</p>

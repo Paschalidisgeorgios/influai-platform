@@ -988,9 +988,14 @@ const en = {
     standardImages: "≈ {count} standard images (1 image = 1 credit)",
     redirecting: "Redirecting to checkout…",
     customTopUpTitle: "Custom Credit Top-Up",
-    customTopUpDescription:
-      "Flexible top-ups are priced at €0.10 per credit. Larger packages offer better value.",
+    customTopUpIntro:
+      "Need a flexible amount? Add custom credits starting from 100 credits.",
+    customTopUpPricePerCredit: "Custom credits cost €0.10 per credit.",
+    customTopUpExamples:
+      "Examples: 100 credits = €10, 250 credits = €25, 1000 credits = €100.",
+    customTopUpPackageHint: "Larger packages offer better value.",
     customTopUpLabel: "Custom credits",
+    customTopUpPlaceholder: "100",
     customTopUpBuy: "Buy Custom Credits",
     customTopUpMinError: "Minimum top-up is 100 credits.",
     customTopUpMaxError: "Maximum top-up is 10000 credits.",
@@ -2078,9 +2083,14 @@ const de: DeepString<typeof en> = {
       "≈ {count} Standard-Bilder (1 Bild = 1 Credit)",
     redirecting: "Weiterleitung zum Checkout…",
     customTopUpTitle: "Individuelle Credits aufladen",
-    customTopUpDescription:
-      "Flexible Aufladungen kosten €0,10 pro Credit. Größere Pakete bieten ein besseres Preis-Leistungs-Verhältnis.",
+    customTopUpIntro:
+      "Du brauchst eine flexible Menge? Lade individuelle Credits ab 100 Credits auf.",
+    customTopUpPricePerCredit: "Individuelle Credits kosten 0,10 € pro Credit.",
+    customTopUpExamples:
+      "Beispiele: 100 Credits = 10 €, 250 Credits = 25 €, 1000 Credits = 100 €.",
+    customTopUpPackageHint: "Größere Pakete bieten den besseren Preisvorteil.",
     customTopUpLabel: "Individuelle Credits",
+    customTopUpPlaceholder: "100",
     customTopUpBuy: "Individuelle Credits kaufen",
     customTopUpMinError: "Mindestaufladung sind 100 Credits.",
     customTopUpMaxError: "Maximal 10000 Credits pro Aufladung.",
