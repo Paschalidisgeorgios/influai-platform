@@ -8,6 +8,7 @@ import {
   Clock,
   Clapperboard,
   CreditCard,
+  Copy,
   ExternalLink,
   GalleryVerticalEnd,
   ImageIcon,
@@ -30,7 +31,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useDashboardLanguage } from "./DashboardLanguageProvider";
-import { formatCopy } from "./i18n";
+import { formatCopy, type DashboardLanguage } from "./i18n";
 
 type Character = {
   id: string;
@@ -148,6 +149,350 @@ type AiAgentStudioProps = {
   onOpenGallery?: () => void;
   onOpenCredits?: () => void;
 };
+
+type SuggestedCaption = {
+  displayText: string;
+  body: string;
+  hashtagsLine: string;
+};
+
+const CAPTION_STOP_WORDS = new Set([
+  "create",
+  "generate",
+  "make",
+  "design",
+  "a",
+  "an",
+  "the",
+  "with",
+  "and",
+  "for",
+  "in",
+  "on",
+  "at",
+  "to",
+  "of",
+  "cinematic",
+  "premium",
+  "vertical",
+  "horizontal",
+  "photo",
+  "image",
+  "visual",
+  "shot",
+  "campaign",
+  "aesthetic",
+  "lighting",
+  "commercial",
+  "high",
+  "end",
+  "social",
+  "media",
+  "no",
+  "text",
+  "logo",
+  "her",
+  "his",
+  "their",
+  "she",
+  "he",
+  "showing",
+  "featuring",
+  "portrait",
+  "creator",
+  "ad",
+  "concept",
+]);
+
+function workflowToImageMode(workflow: string | null | undefined): ImageModeKey {
+  switch (workflow) {
+    case "ugc_look":
+      return "ugc_look";
+    case "brand_assets":
+      return "brand_assets";
+    case "fast_draft":
+      return "fast_draft";
+    case "premium_image":
+      return "premium_image";
+    case "reference_edit":
+      return "reference_edit";
+    default:
+      return "standard";
+  }
+}
+
+function resolveFormatKeyFromResult(
+  outputFormat: string | null | undefined,
+  fallback: OutputFormatKey
+): OutputFormatKey {
+  if (!outputFormat) return fallback;
+
+  const lower = outputFormat.toLowerCase();
+
+  if (lower.includes("tiktok") || lower.includes("reels")) return "tiktok";
+  if (lower.includes("story")) return "instagram_story";
+  if (lower.includes("instagram")) return "instagram_post";
+  if (lower.includes("thumbnail")) return "youtube_thumbnail";
+  if (lower.includes("shorts")) return "youtube_shorts";
+  if (lower.includes("square") || lower.includes("1:1")) return "square";
+
+  const keys: OutputFormatKey[] = [
+    "square",
+    "tiktok",
+    "instagram_post",
+    "instagram_story",
+    "youtube_thumbnail",
+    "youtube_shorts",
+  ];
+
+  for (const key of keys) {
+    if (lower.includes(key.replaceAll("_", " ")) || lower.includes(key)) {
+      return key;
+    }
+  }
+
+  return fallback;
+}
+
+function cleanPromptForCaption(raw: string): string {
+  let cleaned = raw.trim();
+
+  const stripPatterns = [
+    /^(create|generate|make|design)\s+(a\s+)?(cinematic\s+|premium\s+|vertical\s+|professional\s+)*(photo|image|visual|shot|portrait|ad)\s+(of|for|showing)\s+/i,
+    /^(create|generate|make)\s+/i,
+    /\s+(no text|no logo|no watermark).*$/i,
+    /\s*,\s*high[- ]end.*$/i,
+  ];
+
+  for (const pattern of stripPatterns) {
+    cleaned = cleaned.replace(pattern, "");
+  }
+
+  return cleaned.replace(/\s+/g, " ").replace(/[,.]+\s*$/, "").trim();
+}
+
+function extractSignificantWords(prompt: string): string[] {
+  const cleaned = cleanPromptForCaption(prompt).toLowerCase();
+  const words = cleaned
+    .replace(/[^\w\s-]/g, " ")
+    .split(/\s+/)
+    .filter((word) => word.length > 2 && !CAPTION_STOP_WORDS.has(word));
+
+  return [...new Set(words)];
+}
+
+function hashString(value: string): number {
+  let hash = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) | 0;
+  }
+
+  return Math.abs(hash);
+}
+
+function capitalizeFirst(value: string): string {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function lowerFirst(value: string): string {
+  if (!value) return value;
+  return value.charAt(0).toLowerCase() + value.slice(1);
+}
+
+function buildHashtagThemes(
+  prompt: string,
+  formatKey: OutputFormatKey,
+  imageMode: ImageModeKey
+): string[] {
+  const words = extractSignificantWords(prompt);
+  const tags: string[] = [];
+
+  const push = (tag: string) => {
+    const normalized = tag.replace(/[^a-z0-9]/gi, "").toLowerCase();
+
+    if (normalized.length > 2 && !tags.includes(normalized)) {
+      tags.push(normalized);
+    }
+  };
+
+  words.forEach((word) => push(word));
+
+  const blob = words.join(" ");
+
+  if (/\b(fitness|gym|workout|protein|preworkout)\b/.test(blob)) {
+    [
+      "fitnesscreator",
+      "preworkout",
+      "gymroutine",
+      "healthylifestyle",
+      "creatorcontent",
+      "wellness",
+    ].forEach(push);
+  }
+
+  if (/\b(food|recipe|cook|kitchen)\b/.test(blob)) {
+    ["foodcontent", "recipeoftheday", "homecooking", "foodcreator"].forEach(push);
+  }
+
+  if (/\b(fashion|style|outfit|luxury)\b/.test(blob)) {
+    ["styleinspo", "ootd", "fashioncreator", "luxurylifestyle"].forEach(push);
+  }
+
+  if (/\b(product|brand|skincare|beauty)\b/.test(blob)) {
+    ["brandcontent", "productshot", "creatormarketing", "ugcstyle"].forEach(push);
+  }
+
+  if (imageMode === "ugc_look") push("authenticcontent");
+  if (imageMode === "brand_assets") push("brandmarketing");
+
+  switch (formatKey) {
+    case "tiktok":
+      push("tiktok");
+      push("reels");
+      break;
+    case "instagram_post":
+    case "instagram_story":
+      push("instagram");
+      push("creatordaily");
+      break;
+    case "youtube_thumbnail":
+      push("youtube");
+      push("thumbnail");
+      break;
+    case "youtube_shorts":
+      push("youtubeshorts");
+      push("shorts");
+      break;
+    default:
+      push("creatorcontent");
+  }
+
+  return tags.slice(0, 8);
+}
+
+function formatHashtags(tags: string[]): string {
+  return tags.map((tag) => `#${tag}`).join(" ");
+}
+
+function buildCaptionBody(
+  prompt: string,
+  imageMode: ImageModeKey,
+  formatKey: OutputFormatKey,
+  styleProfileName: string | null | undefined,
+  locale: DashboardLanguage
+): string {
+  const cleaned = cleanPromptForCaption(prompt);
+  const lower = cleaned.toLowerCase();
+
+  const styleNote =
+    styleProfileName &&
+    (imageMode === "brand_assets" || imageMode === "premium_image")
+      ? locale === "de"
+        ? ` Im Look von ${styleProfileName}.`
+        : ` In the ${styleProfileName} signature style.`
+      : styleProfileName && imageMode === "ugc_look"
+        ? locale === "de"
+          ? ` Authentisch im Stil von ${styleProfileName}.`
+          : ` Authentic vibes with ${styleProfileName}.`
+        : "";
+
+  if (
+    /\b(pre[- ]?workout|before (the )?gym)\b/.test(lower) &&
+    /\b(protein|shake|fuel|car)\b/.test(lower)
+  ) {
+    return locale === "de"
+      ? `Kurzer Moment vor dem Training. Auftanken, fokussiert bleiben und heute für dich selbst da sein.${styleNote}`
+      : `Pre-workout moments before the real work starts. Fuel up, stay focused, and show up for yourself today.${styleNote}`;
+  }
+
+  const subject = cleaned.length > 0 ? cleaned : prompt.slice(0, 120);
+  const shortSubject =
+    subject.length > 72 ? `${subject.slice(0, 72).trim()}…` : subject;
+
+  if (formatKey === "youtube_thumbnail") {
+    const hook = capitalizeFirst(shortSubject).replace(/\.$/, "");
+    return locale === "de" ? `${hook} — jetzt ansehen` : `${hook} — watch this`;
+  }
+
+  if (imageMode === "ugc_look") {
+    const templates =
+      locale === "de"
+        ? [
+            `${capitalizeFirst(shortSubject)}. Einfach echt — genau so läuft es gerade.`,
+            `Kleiner Moment aus dem Alltag: ${lowerFirst(shortSubject)}. Mehr davon folgt.`,
+            `Heute on point: ${lowerFirst(shortSubject)}. Swipe, speichern, weitermachen.`,
+          ]
+        : [
+            `${capitalizeFirst(shortSubject)}. Keeping it real — this is the energy today.`,
+            `Little behind-the-scenes moment: ${lowerFirst(shortSubject)}. Save this if it resonates.`,
+            `Today's vibe: ${lowerFirst(shortSubject)}. Posting it as-is.`,
+          ];
+
+    return templates[hashString(prompt) % templates.length] + styleNote;
+  }
+
+  if (imageMode === "brand_assets") {
+    return locale === "de"
+      ? `Kampagnenvisual für ${lowerFirst(shortSubject)}. Klar, hochwertig und scroll-stark.${styleNote}`
+      : `Campaign visual for ${lowerFirst(shortSubject)}. Polished, clear, and built to stop the scroll.${styleNote}`;
+  }
+
+  if (imageMode === "premium_image") {
+    return locale === "de"
+      ? `Premium-Look für ${lowerFirst(shortSubject)}. Stilvoll inszeniert und bereit für den Feed.${styleNote}`
+      : `Premium look for ${lowerFirst(shortSubject)}. Elevated styling, ready for your feed.${styleNote}`;
+  }
+
+  const isVerticalSocial =
+    formatKey === "tiktok" ||
+    formatKey === "instagram_post" ||
+    formatKey === "instagram_story" ||
+    formatKey === "youtube_shorts";
+
+  if (isVerticalSocial) {
+    return locale === "de"
+      ? `${capitalizeFirst(shortSubject)}. Speichern, teilen und dranbleiben.${styleNote}`
+      : `${capitalizeFirst(shortSubject)}. Save it, share it, and keep the momentum going.${styleNote}`;
+  }
+
+  return locale === "de"
+    ? `${capitalizeFirst(shortSubject)}. Bereit für deinen nächsten Post.${styleNote}`
+    : `${capitalizeFirst(shortSubject)}. Ready for your next post.${styleNote}`;
+}
+
+function buildSuggestedCaption(params: {
+  prompt: string;
+  formatKey: OutputFormatKey;
+  imageMode: ImageModeKey;
+  styleProfileName?: string | null;
+  locale: DashboardLanguage;
+}): SuggestedCaption {
+  const { prompt, formatKey, imageMode, styleProfileName, locale } = params;
+  const body = buildCaptionBody(
+    prompt,
+    imageMode,
+    formatKey,
+    styleProfileName,
+    locale
+  );
+  const tagCount =
+    formatKey === "youtube_thumbnail"
+      ? 5
+      : formatKey === "youtube_shorts"
+        ? 6
+        : 7;
+  const hashtagsLine = formatHashtags(
+    buildHashtagThemes(prompt, formatKey, imageMode).slice(0, tagCount)
+  );
+
+  return {
+    body,
+    hashtagsLine,
+    displayText: `${body}\n\n${hashtagsLine}`,
+  };
+}
 
 function shouldShowCreditsRefundedHint(
   errorMessage: string | null,
@@ -1508,7 +1853,7 @@ export default function AiAgentStudio({
   onOpenGallery,
   onOpenCredits,
 }: AiAgentStudioProps) {
-  const { copy, format } = useDashboardLanguage();
+  const { copy, format, language } = useDashboardLanguage();
   const a = copy.agent;
   const suite = copy.studioSuite;
   const supabase = createClient();
@@ -1701,6 +2046,7 @@ export default function AiAgentStudio({
   );
 
   const [agentResult, setAgentResult] = useState<AgentResult | null>(null);
+  const [captionCopied, setCaptionCopied] = useState(false);
   const [processingStepIndex, setProcessingStepIndex] = useState(0);
 
   const processingSteps = useMemo(
@@ -2624,6 +2970,51 @@ export default function AiAgentStudio({
     return selectedImageModeEntry.description;
   }, [selectedImageModeEntry]);
 
+  useEffect(() => {
+    setCaptionCopied(false);
+  }, [agentResult?.id, agentResult?.status]);
+
+  const suggestedCaption = useMemo(() => {
+    if (
+      agentResult?.status !== "completed" ||
+      !agentResult.image_url ||
+      agentResult.video_url
+    ) {
+      return null;
+    }
+
+    const resolvedImageMode = workflowToImageMode(agentResult.workflow ?? null);
+    const resolvedFormatKey = resolveFormatKeyFromResult(
+      agentResult.output_format,
+      outputFormatKey
+    );
+
+    return buildSuggestedCaption({
+      prompt: agentResult.prompt,
+      formatKey: resolvedFormatKey,
+      imageMode: resolvedImageMode,
+      styleProfileName: selectedCharacter?.name ?? null,
+      locale: language,
+    });
+  }, [
+    agentResult,
+    language,
+    outputFormatKey,
+    selectedCharacter?.name,
+  ]);
+
+  async function copySuggestedCaption() {
+    if (!suggestedCaption) return;
+
+    try {
+      await navigator.clipboard.writeText(suggestedCaption.displayText);
+      setCaptionCopied(true);
+      window.setTimeout(() => setCaptionCopied(false), 2200);
+    } catch (error) {
+      console.error("Caption copy failed:", error);
+    }
+  }
+
   const formSurfaceClass = showSplitWorkspace
     ? "relative isolate flex h-full min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl"
     : "relative isolate w-full max-w-3xl overflow-visible rounded-[1.75rem] border border-white/10 bg-white/[0.05] shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl";
@@ -3200,6 +3591,51 @@ export default function AiAgentStudio({
               {a.createAnother}
             </button>
           </div>
+
+          {agentResult.status === "completed" &&
+          agentResult.image_url &&
+          !agentResult.video_url &&
+          suggestedCaption ? (
+            <div className="rounded-xl border border-[#d8ad5f]/25 bg-[#d8ad5f]/[0.07] p-3.5 sm:p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#d8ad5f]">
+                    {a.suggestedCaptionTitle}
+                  </p>
+                  <p className="mt-1 text-[11px] text-white/42">
+                    {a.suggestedCaptionSubtitle}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void copySuggestedCaption()}
+                  className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-black transition ${
+                    captionCopied
+                      ? "border border-emerald-500/30 bg-emerald-500/15 text-emerald-100"
+                      : "bg-[#d8ad5f] text-black hover:bg-[#efc777]"
+                  }`}
+                >
+                  {captionCopied ? (
+                    <>
+                      <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+                      <span>{a.suggestedCaptionCopied}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5" aria-hidden />
+                      <span>{a.suggestedCaptionCopy}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-white/82">
+                {suggestedCaption.body}
+              </p>
+              <p className="mt-2 break-words text-xs leading-relaxed text-[#d8ad5f]/90">
+                {suggestedCaption.hashtagsLine}
+              </p>
+            </div>
+          ) : null}
         </div>
       </motion.div>
     );

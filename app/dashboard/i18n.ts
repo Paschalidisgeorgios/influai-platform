@@ -799,6 +799,10 @@ const en = {
     openImage: "Open image",
     viewInGallery: "View in Gallery",
     createAnother: "Create another",
+    suggestedCaptionTitle: "Suggested Caption",
+    suggestedCaptionSubtitle: "Caption for your post",
+    suggestedCaptionCopy: "Copy Caption",
+    suggestedCaptionCopied: "Copied",
     processingHint:
       "Processing in the background. The image will appear here automatically.",
     processingStay:
@@ -1863,6 +1867,10 @@ const de: DeepString<typeof en> = {
     openImage: "Bild öffnen",
     viewInGallery: "In Gallery ansehen",
     createAnother: "Weiteres erstellen",
+    suggestedCaptionTitle: "Caption-Vorschlag",
+    suggestedCaptionSubtitle: "Caption für deinen Post",
+    suggestedCaptionCopy: "Caption kopieren",
+    suggestedCaptionCopied: "Kopiert",
     processingHint:
       "Verarbeitung im Hintergrund. Das Bild erscheint hier automatisch.",
     processingStay:
