@@ -39,6 +39,7 @@ type CreditPackage = PricingPackage & {
 export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
   const { copy } = useDashboardLanguage();
   const supabase = createClient();
+  const [packagesFocused, setPackagesFocused] = useState(false);
 
   const studioFeatures = useMemo(
     () => [
@@ -167,109 +168,65 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
   const checkoutInProgress = checkoutPackage !== null;
 
   return (
-    <section className="space-y-6 sm:space-y-8">
+    <section className="space-y-4 sm:space-y-6">
       <div className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.035] shadow-[0_20px_70px_rgba(0,0,0,0.25)] sm:rounded-[2rem]">
         <div className="relative p-4 sm:p-6">
-          <div className="pointer-events-none absolute right-0 top-0 h-48 w-48 rounded-full bg-[#d8ad5f]/10 blur-3xl" />
+          <div className="pointer-events-none absolute right-0 top-0 h-44 w-44 rounded-full bg-[#d8ad5f]/10 blur-3xl" />
 
-          <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0 flex-1">
+          <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
               <p className="text-[10px] font-black uppercase tracking-[0.34em] text-[#d8ad5f]">
                 {copy.credits.accountBalance}
               </p>
-
-              <h3 className="mt-3 text-2xl font-black tracking-tight text-white sm:text-3xl">
-                {copy.credits.creditsTitle}
+              <h3 className="mt-2 text-xl font-black tracking-tight text-white sm:text-2xl">
+                {copy.credits.availableCredits}
               </h3>
-
-              <p className="mt-3 max-w-xl text-sm leading-6 text-white/45">
-                {copy.credits.balanceDescription}
-              </p>
-
-              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#d8ad5f]/25 bg-[#d8ad5f]/10 px-3 py-1.5 text-xs font-bold text-[#d8ad5f]">
-                <Sparkles className="h-3.5 w-3.5 shrink-0" />
+              <p className="mt-2 text-xs leading-5 text-white/45">
                 {copy.credits.oneCreditRule}
-              </div>
-
-              <div className="mt-5 rounded-2xl border border-white/10 bg-black/25 p-4 sm:p-5">
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
-                  {copy.studioSuite.title}
-                </p>
-                <p className="mt-2 text-xs leading-5 text-white/45">
-                  {copy.credits.workflowChargeNote}
-                </p>
-                <ul className="mt-3 space-y-2">
-                  {[
-                    copy.credits.modeCosts.standard,
-                    copy.credits.modeCosts.ugcLook,
-                    copy.credits.modeCosts.fastDraft,
-                    copy.credits.modeCosts.premium,
-                    copy.credits.modeCosts.referenceEdit,
-                    copy.credits.modeCosts.brandAssets,
-                    copy.credits.modeCosts.videoStudio,
-                    copy.credits.modeCosts.lipSync,
-                  ].map((item) => (
-                    <li
-                      key={item}
-                      className="flex items-start gap-2 text-sm leading-5 text-white/60"
-                    >
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#d8ad5f]" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-3 text-xs leading-5 text-white/45">
-                  {copy.credits.lipSyncUsageNote}
-                </p>
-              </div>
-
-              <div className="mt-5 flex flex-wrap gap-2">
-                {studioFeatures.map((feature) => {
-                  const Icon = feature.icon;
-
-                  return (
-                    <span
-                      key={feature.label}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-[11px] font-bold text-white/55"
-                    >
-                      <Icon className="h-3 w-3 shrink-0 text-[#d8ad5f]" />
-                      {feature.label}
-                    </span>
-                  );
-                })}
-              </div>
+              </p>
             </div>
 
-            <div className="w-full shrink-0 rounded-[1.35rem] border border-white/10 bg-black/30 p-4 sm:max-w-[240px] sm:p-5">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
-                {copy.credits.availableCredits}
-              </p>
-
-              <div className="mt-2 flex items-center gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#d8ad5f]/15 text-[#d8ad5f]">
                   <CreditCard className="h-5 w-5" />
                 </div>
-
                 <p className="text-3xl font-black tracking-tight text-white sm:text-4xl">
                   {loading ? "…" : formatCredits(credits)}
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={loadCredits}
-                disabled={loading || checkoutInProgress}
-                className="mt-4 w-full rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-bold text-white/60 transition hover:border-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {loading ? copy.credits.refreshing : copy.credits.refreshBalance}
-              </button>
+              <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:grid-cols-1">
+                <button
+                  type="button"
+                  onClick={loadCredits}
+                  disabled={loading || checkoutInProgress}
+                  className="w-full rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-bold text-white/60 transition hover:border-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {loading ? copy.credits.refreshing : copy.credits.refreshBalance}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPackagesFocused(true);
+                    window.setTimeout(() => setPackagesFocused(false), 1600);
+                    document
+                      .getElementById("credit-packages")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  disabled={checkoutInProgress}
+                  className="w-full rounded-full bg-[#d8ad5f] px-4 py-2 text-xs font-black text-black transition hover:bg-[#efc777] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {credits === 0 ? copy.credits.buyCreditsCta : copy.credits.upgradeCreditsCta}
+                </button>
+              </div>
             </div>
           </div>
 
           {errorMessage && (
             <div
               role="alert"
-              className="relative z-10 mt-5 flex items-start gap-3 rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-100"
+              className="relative z-10 mt-4 flex items-start gap-3 rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-100"
             >
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <p className="font-medium leading-6">{errorMessage}</p>
@@ -279,7 +236,12 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
       </div>
 
       <div>
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div
+          id="credit-packages"
+          className={`mb-3 flex scroll-mt-24 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between ${
+            packagesFocused ? "rounded-2xl ring-2 ring-[#d8ad5f]/35" : ""
+          }`}
+        >
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.34em] text-[#d8ad5f]">
               {copy.credits.creditPackages}
@@ -420,6 +382,60 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
             );
           })}
         </div>
+
+        <details className="mt-4 overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.02] p-4 sm:rounded-[1.75rem] sm:p-5">
+          <summary className="cursor-pointer list-none select-none">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-black text-white/85">{copy.credits.modeCostsLabel}</p>
+              <span className="text-xs font-bold text-white/35">
+                {copy.credits.workflowChargeNote}
+              </span>
+            </div>
+          </summary>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+              <ul className="space-y-2">
+                {[
+                  copy.credits.modeCosts.standard,
+                  copy.credits.modeCosts.fastDraft,
+                  copy.credits.modeCosts.ugcLook,
+                  copy.credits.modeCosts.premium,
+                  copy.credits.modeCosts.brandAssets,
+                  copy.credits.modeCosts.referenceEdit,
+                  copy.credits.modeCosts.videoStudio,
+                  copy.credits.modeCosts.lipSync,
+                ].map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-start gap-2 text-sm leading-5 text-white/60"
+                  >
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#d8ad5f]" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-xs leading-5 text-white/45">
+                {copy.credits.lipSyncUsageNote}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2 self-start">
+              {studioFeatures.map((feature) => {
+                const Icon = feature.icon;
+
+                return (
+                  <span
+                    key={feature.label}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-[11px] font-bold text-white/55"
+                  >
+                    <Icon className="h-3 w-3 shrink-0 text-[#d8ad5f]" />
+                    {feature.label}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        </details>
 
         <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-dashed border-white/12 bg-white/[0.02] p-5 sm:rounded-[2rem] sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

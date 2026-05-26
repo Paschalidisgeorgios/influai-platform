@@ -1,16 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CreditCard, Loader2, RefreshCw } from "lucide-react";
+import { CreditCard, Loader2, Plus, RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useDashboardLanguage } from "./DashboardLanguageProvider";
 import { formatCopy } from "./i18n";
 
 type CompactCreditsProps = {
   refreshKey?: number;
+  onOpenCredits?: () => void;
 };
 
-export default function CompactCredits({ refreshKey = 0 }: CompactCreditsProps) {
+export default function CompactCredits({
+  refreshKey = 0,
+  onOpenCredits,
+}: CompactCreditsProps) {
   const { copy } = useDashboardLanguage();
   const supabase = createClient();
 
@@ -80,27 +84,48 @@ export default function CompactCredits({ refreshKey = 0 }: CompactCreditsProps) 
             : formatCopy(copy.compactCredits.creditsAvailable, { count: credits })
       }
     >
-      <div
-        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full sm:h-7 sm:w-7 ${
-          isZeroBalance ? "bg-amber-400 text-black" : "bg-[#d8ad5f] text-black"
-        }`}
+      <button
+        type="button"
+        onClick={onOpenCredits}
+        disabled={!onOpenCredits}
+        className="flex min-w-0 flex-1 items-center gap-1.5 rounded-full text-left disabled:cursor-default"
+        aria-label={copy.agent.openCredits}
+        title={copy.agent.openCredits}
       >
-        <CreditCard className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden />
-      </div>
-
-      <div className="min-w-0 pr-0.5">
-        <p className="hidden text-[9px] font-black uppercase leading-none tracking-[0.16em] text-white/35 md:block">
-          {copy.compactCredits.credits}
-        </p>
-        <p
-          className={`text-[11px] font-black tabular-nums leading-none sm:text-xs ${
-            isZeroBalance ? "text-amber-100" : "text-white"
+        <div
+          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full sm:h-7 sm:w-7 ${
+            isZeroBalance ? "bg-amber-400 text-black" : "bg-[#d8ad5f] text-black"
           }`}
-          aria-live="polite"
         >
-          {displayCredits}
-        </p>
-      </div>
+          <CreditCard className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden />
+        </div>
+
+        <div className="min-w-0 pr-0.5">
+          <p className="hidden text-[9px] font-black uppercase leading-none tracking-[0.16em] text-white/35 md:block">
+            {copy.compactCredits.credits}
+          </p>
+          <p
+            className={`text-[11px] font-black tabular-nums leading-none sm:text-xs ${
+              isZeroBalance ? "text-amber-100" : "text-white"
+            }`}
+            aria-live="polite"
+          >
+            {displayCredits}
+          </p>
+        </div>
+      </button>
+
+      {onOpenCredits ? (
+        <button
+          type="button"
+          onClick={onOpenCredits}
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/10 bg-[#d8ad5f]/10 text-[#d8ad5f] transition hover:border-[#d8ad5f]/30 hover:bg-[#d8ad5f]/15 sm:h-7 sm:w-7"
+          title={copy.agent.buyCredits}
+          aria-label={copy.agent.buyCredits}
+        >
+          <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden />
+        </button>
+      ) : null}
 
       <button
         type="button"

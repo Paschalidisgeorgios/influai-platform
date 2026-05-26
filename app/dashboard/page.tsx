@@ -664,7 +664,10 @@ function DashboardPageInner() {
         <section className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <div className="fixed right-5 top-5 z-50 hidden items-center gap-2 lg:flex">
             <LanguageSelector />
-            <CompactCredits refreshKey={creditsRefreshKey} />
+            <CompactCredits
+              refreshKey={creditsRefreshKey}
+              onOpenCredits={() => setActiveView("credits")}
+            />
           </div>
 
           <header className="sticky top-0 z-40 border-b border-white/10 bg-black/60 backdrop-blur-2xl lg:hidden">
@@ -690,7 +693,10 @@ function DashboardPageInner() {
 
               <div className="flex shrink-0 items-center gap-2">
                 <LanguageSelector compact />
-                <CompactCredits refreshKey={creditsRefreshKey} />
+                <CompactCredits
+                  refreshKey={creditsRefreshKey}
+                  onOpenCredits={() => setActiveView("credits")}
+                />
               </div>
             </div>
           </header>
