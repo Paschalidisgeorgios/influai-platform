@@ -18,6 +18,7 @@ const supabaseAdmin = createClient(
 );
 
 const STORAGE_BUCKET = "generations";
+const VIDEO_STORAGE_BUCKET = "generation-videos";
 const FAL_FLUX_SCHNELL_MODEL = "fal-ai/flux/schnell";
 const FAL_FLUX_DEV_MODEL = "fal-ai/flux/dev";
 const FAL_NANO_BANANA_PRO_EDIT_MODEL = "fal-ai/nano-banana-pro/edit";
@@ -610,22 +611,36 @@ async function uploadVideoBuffer({
   const extension = contentType.includes("webm") ? "webm" : "mp4";
   const filePath = `${userId}/${crypto.randomUUID()}.${extension}`;
 
-  const { error: uploadError } = await supabaseAdmin.storage
-    .from(STORAGE_BUCKET)
-    .upload(filePath, videoBuffer, {
-      contentType,
-      upsert: false,
-    });
+  const tryBuckets = [VIDEO_STORAGE_BUCKET, STORAGE_BUCKET];
 
-  if (uploadError) {
-    throw new Error(uploadError.message);
+  for (const bucket of tryBuckets) {
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from(bucket)
+      .upload(filePath, videoBuffer, {
+        contentType,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      // If the optional video bucket doesn't exist yet, fall back to `generations`.
+      if (
+        bucket === VIDEO_STORAGE_BUCKET &&
+        /bucket.*not found|does not exist/i.test(uploadError.message)
+      ) {
+        continue;
+      }
+
+      throw new Error(uploadError.message);
+    }
+
+    const {
+      data: { publicUrl },
+    } = supabaseAdmin.storage.from(bucket).getPublicUrl(filePath);
+
+    return publicUrl;
   }
 
-  const {
-    data: { publicUrl },
-  } = supabaseAdmin.storage.from(STORAGE_BUCKET).getPublicUrl(filePath);
-
-  return publicUrl;
+  throw new Error("Video upload failed.");
 }
 
 type FalFluxJobOptions = {

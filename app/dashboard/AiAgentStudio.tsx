@@ -75,6 +75,14 @@ const VIDEO_STUDIO_PUBLIC_ENABLED =
  * Keep UI visible as roadmap-only and prevent generation triggers.
  */
 const LIP_SYNC_PUBLIC_ENABLED = false;
+const SOCIAL_PLANNER_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_SOCIAL_PLANNER === "true";
+const COMPLIANCE_CHECK_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_COMPLIANCE_CHECK === "true";
+const CINEMA_AGENT_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_CINEMA_AGENT === "true";
+const OMNI_CAMPAIGN_AGENT_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_OMNI_CAMPAIGN_AGENT === "true";
 
 type StudioTab = "image" | "video" | "lip_sync";
 
@@ -157,6 +165,15 @@ type SuggestedCaption = {
   displayText: string;
   body: string;
   hashtagsLine: string;
+};
+
+type SocialPlanEntry = {
+  id: string;
+  generationId: string;
+  title: string;
+  scheduledAt: string;
+  captionText: string;
+  assetUrl: string;
 };
 
 const CAPTION_STOP_WORDS = new Set([
@@ -2050,6 +2067,20 @@ export default function AiAgentStudio({
 
   const [agentResult, setAgentResult] = useState<AgentResult | null>(null);
   const [captionCopied, setCaptionCopied] = useState(false);
+  const [planCopied, setPlanCopied] = useState(false);
+  const [planAdded, setPlanAdded] = useState(false);
+  const [complianceReviewed, setComplianceReviewed] = useState(false);
+  const [plannerDate, setPlannerDate] = useState("");
+  const [plannerTime, setPlannerTime] = useState("");
+  const [socialPlanEntries, setSocialPlanEntries] = useState<SocialPlanEntry[]>(
+    []
+  );
+  const [complianceChecks, setComplianceChecks] = useState({
+    noFakeText: false,
+    noFakeLogo: false,
+    noArtifacts: false,
+    disclosure: false,
+  });
   const [processingStepIndex, setProcessingStepIndex] = useState(0);
 
   const processingSteps = useMemo(
@@ -2975,7 +3006,139 @@ export default function AiAgentStudio({
 
   useEffect(() => {
     setCaptionCopied(false);
+    setPlanCopied(false);
+    setPlanAdded(false);
+    setComplianceReviewed(false);
   }, [agentResult?.id, agentResult?.status]);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("influExAi_social_plan_v1");
+      if (!stored) return;
+      const parsed = JSON.parse(stored) as SocialPlanEntry[];
+      if (Array.isArray(parsed)) {
+        setSocialPlanEntries(parsed);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        "influExAi_social_plan_v1",
+        JSON.stringify(socialPlanEntries.slice(0, 50))
+      );
+    } catch {
+      // ignore
+    }
+  }, [socialPlanEntries]);
+
+  function buildCinemaPlanText(): string {
+    const modeLabel = agentResult?.workflow ?? "standard";
+    const formatLabel = agentResult?.output_format ?? selectedOutputFormat.label;
+    const styleName = selectedCharacter?.name ? `Style profile: ${selectedCharacter.name}` : "Style profile: none";
+    const base = cleanPromptForCaption(agentResult?.prompt ?? prompt ?? "");
+
+    const shots = [
+      "Hook shot: close-up detail with strong subject focus",
+      "Context shot: wider environment establishing frame",
+      "Action shot: hands / movement / interaction moment",
+      "Hero shot: clean composition, strongest version",
+      "Variation: alternative angle / lighting / background",
+    ];
+
+    return [
+      "Cinema Agent — 5-shot plan",
+      `Brief: ${base || "—"}`,
+      `Format: ${formatLabel}`,
+      `Mode/workflow: ${modeLabel}`,
+      styleName,
+      "",
+      "Shot ideas:",
+      ...shots.map((s, idx) => `${idx + 1}. ${s}`),
+    ].join("\n");
+  }
+
+  function buildOmniPlanText(): string {
+    const base = cleanPromptForCaption(agentResult?.prompt ?? prompt ?? "");
+    const formatLabel = agentResult?.output_format ?? selectedOutputFormat.label;
+    const styleName = selectedCharacter?.name ? selectedCharacter.name : "none";
+    return [
+      "Omni Campaign Agent — 7-day plan",
+      `Campaign idea: ${base || "—"}`,
+      `Primary format: ${formatLabel}`,
+      `Style profile: ${styleName}`,
+      "",
+      "Plan:",
+      "Day 1 — Hook post + caption",
+      "Day 2 — Behind-the-scenes angle (UGC tone)",
+      "Day 3 — Benefit-focused post (clean product focus)",
+      "Day 4 — Social proof angle (creator reaction)",
+      "Day 5 — Comparison / before-after angle",
+      "Day 6 — Short-form video concept (Video Studio)",
+      "Day 7 — Recap + CTA + save/share prompt",
+      "",
+      "Estimated credits (select assets manually before generating):",
+      "- Standard image: 1",
+      "- UGC Look: 2",
+      "- Premium: 3",
+      "- Brand Assets: 4",
+      "- Reference Edit: 5",
+      "- Video Studio: 25",
+    ].join("\n");
+  }
+
+  async function copyPlan(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setPlanCopied(true);
+      window.setTimeout(() => setPlanCopied(false), 2200);
+    } catch (error) {
+      console.error("Plan copy failed:", error);
+    }
+  }
+
+  function addToSocialPlan() {
+    if (!agentResult?.id) return;
+    const assetUrl = agentResult.video_url || agentResult.image_url;
+    if (!assetUrl) return;
+    if (!suggestedCaption) return;
+
+    const date = plannerDate.trim();
+    const time = plannerTime.trim();
+    const scheduledAt = date && time ? `${date} ${time}` : date || time || "—";
+
+    const entry: SocialPlanEntry = {
+      id: crypto.randomUUID(),
+      generationId: agentResult.id,
+      title: (agentResult.output_format ?? selectedOutputFormat.label) || "Post",
+      scheduledAt,
+      captionText: suggestedCaption.displayText,
+      assetUrl,
+    };
+
+    setSocialPlanEntries((current) => [entry, ...current].slice(0, 50));
+    setPlanAdded(true);
+    window.setTimeout(() => setPlanAdded(false), 2200);
+  }
+
+  function buildPlanExportText() {
+    if (socialPlanEntries.length === 0) return "—";
+    return socialPlanEntries
+      .map((entry, idx) => {
+        return [
+          `#${idx + 1} ${entry.title} — ${entry.scheduledAt}`,
+          `Asset: ${entry.assetUrl}`,
+          "",
+          entry.captionText,
+          "",
+          "----",
+        ].join("\n");
+      })
+      .join("\n");
+  }
 
   const suggestedCaption = useMemo(() => {
     if (
@@ -3599,6 +3762,7 @@ export default function AiAgentStudio({
           agentResult.image_url &&
           !agentResult.video_url &&
           suggestedCaption ? (
+            <div className="space-y-3">
             <div className="rounded-xl border border-[#d8ad5f]/25 bg-[#d8ad5f]/[0.07] p-3.5 sm:p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
@@ -3637,6 +3801,184 @@ export default function AiAgentStudio({
               <p className="mt-2 break-words text-xs leading-relaxed text-[#d8ad5f]/90">
                 {suggestedCaption.hashtagsLine}
               </p>
+            </div>
+
+            {SOCIAL_PLANNER_PUBLIC_ENABLED ? (
+              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3.5 sm:p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#d8ad5f]">
+                      {a.socialPlannerTitle}
+                    </p>
+                    <p className="mt-1 text-[11px] text-white/42">
+                      {a.socialPlannerSubtitle}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void copySuggestedCaption()}
+                      className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-xs font-black text-white/75 transition hover:border-white/20"
+                    >
+                      {a.socialPlannerCopyCaption}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void copyPlan(buildPlanExportText())}
+                      className={`rounded-full px-4 py-2 text-xs font-black transition ${
+                        planCopied
+                          ? "border border-emerald-500/30 bg-emerald-500/15 text-emerald-100"
+                          : "border border-white/10 bg-white/[0.06] text-white/75 hover:border-white/20"
+                      }`}
+                    >
+                      {planCopied ? a.planCopied : a.socialPlannerCopyPlan}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <label className="block">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
+                      {a.socialPlannerDateLabel}
+                    </span>
+                    <input
+                      type="date"
+                      value={plannerDate}
+                      onChange={(e) => setPlannerDate(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-white/10 bg-black/35 px-3 py-2 text-xs font-bold text-white outline-none focus:border-[#d8ad5f]/40"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
+                      {a.socialPlannerTimeLabel}
+                    </span>
+                    <input
+                      type="time"
+                      value={plannerTime}
+                      onChange={(e) => setPlannerTime(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-white/10 bg-black/35 px-3 py-2 text-xs font-bold text-white outline-none focus:border-[#d8ad5f]/40"
+                    />
+                  </label>
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={addToSocialPlan}
+                      className={`w-full rounded-full px-4 py-2.5 text-xs font-black transition ${
+                        planAdded
+                          ? "border border-emerald-500/30 bg-emerald-500/15 text-emerald-100"
+                          : "bg-[#d8ad5f] text-black hover:bg-[#efc777]"
+                      }`}
+                    >
+                      {planAdded ? a.socialPlannerAdded : a.socialPlannerAdd}
+                    </button>
+                  </div>
+                </div>
+
+                {socialPlanEntries.length > 0 ? (
+                  <div className="mt-3 max-h-40 overflow-y-auto rounded-xl border border-white/10 bg-black/25 p-3 text-xs text-white/60">
+                    {socialPlanEntries.slice(0, 3).map((entry) => (
+                      <div key={entry.id} className="mb-2 last:mb-0">
+                        <p className="font-bold text-white/75">
+                          {entry.title} · {entry.scheduledAt}
+                        </p>
+                        <p className="line-clamp-2">{entry.captionText}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            {COMPLIANCE_CHECK_PUBLIC_ENABLED ? (
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5 sm:p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#d8ad5f]">
+                      {a.complianceTitle}
+                    </p>
+                    <p className="mt-1 text-[11px] text-white/42">
+                      {a.complianceSubtitle}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setComplianceReviewed(true)}
+                    className={`rounded-full px-4 py-2 text-xs font-black transition ${
+                      complianceReviewed
+                        ? "border border-emerald-500/30 bg-emerald-500/15 text-emerald-100"
+                        : "border border-white/10 bg-white/[0.06] text-white/75 hover:border-white/20"
+                    }`}
+                  >
+                    {complianceReviewed ? a.complianceReviewed : a.complianceMarkReviewed}
+                  </button>
+                </div>
+
+                <div className="mt-3 grid gap-2 text-xs text-white/70">
+                  {[
+                    { key: "noFakeText", label: a.complianceItemNoFakeText },
+                    { key: "noFakeLogo", label: a.complianceItemNoFakeLogo },
+                    { key: "noArtifacts", label: a.complianceItemNoArtifacts },
+                    { key: "disclosure", label: a.complianceItemDisclosure },
+                  ].map((item) => (
+                    <label
+                      key={item.key}
+                      className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/25 px-3 py-2"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={(complianceChecks as any)[item.key]}
+                        onChange={(e) =>
+                          setComplianceChecks((current) => ({
+                            ...current,
+                            [item.key]: e.target.checked,
+                          }))
+                        }
+                      />
+                      <span>{item.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {CINEMA_AGENT_PUBLIC_ENABLED || OMNI_CAMPAIGN_AGENT_PUBLIC_ENABLED ? (
+              <div className="grid gap-3 lg:grid-cols-2">
+                {CINEMA_AGENT_PUBLIC_ENABLED ? (
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5 sm:p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#d8ad5f]">
+                      {a.cinemaAgentTitle}
+                    </p>
+                    <p className="mt-1 text-[11px] text-white/42">
+                      {a.cinemaAgentSubtitle}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void copyPlan(buildCinemaPlanText())}
+                      className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-white px-4 py-2.5 text-xs font-black text-black"
+                    >
+                      {a.copyPlan}
+                    </button>
+                  </div>
+                ) : null}
+                {OMNI_CAMPAIGN_AGENT_PUBLIC_ENABLED ? (
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5 sm:p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#d8ad5f]">
+                      {a.omniAgentTitle}
+                    </p>
+                    <p className="mt-1 text-[11px] text-white/42">
+                      {a.omniAgentSubtitle}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void copyPlan(buildOmniPlanText())}
+                      className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-white px-4 py-2.5 text-xs font-black text-black"
+                    >
+                      {a.copyPlan}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             </div>
           ) : null}
         </div>
