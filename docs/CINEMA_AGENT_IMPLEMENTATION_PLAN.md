@@ -16,11 +16,12 @@ This specification describes **Cinema Agent** as a **planning and orchestration 
 | **Navigation** | Dashboard → **Campaign Planner** (Cinema Agent · Planning Beta) |
 | **Credits** | **0** — no `consume_user_credits`, no API routes |
 | **Provider** | **None** — no OpenAI, no fal, no worker changes |
-| **Outputs** | Campaign angle, content set, shot list (5+ cards), captions, hashtags |
+| **Outputs** | Campaign angle, content set, shot list (5+ cards), captions, hashtags, **Campaign Estimate** preview |
+| **Estimate** | Client-side only: story/feed/shot @ 1 credit, reel @ 25 credits (future). **No credits deducted.** |
 | **Handoff** | **Use in AI Agent** on each shot card → loads `suggestedImagePrompt` into the AI Agent prompt field via `regenerateDraft` (no `/api/generate`, no credits). **Copy prompt** copies text only. |
 | **Generation** | **Manual only** — user picks mode/format in AI Agent and submits. No auto-start. |
 | **Not included** | Auto batch generation, Omni orchestration API, social posting |
-| **Future** | Batch generation with per-shot credit estimate and explicit confirm before `/api/generate` |
+| **Future** | Batch generation with explicit user confirmation, live credit estimate, then `/api/generate` per asset |
 
 **Omni Campaign Agent** remains a separate roadmap module; full cross-channel orchestration is not in this preview.
 

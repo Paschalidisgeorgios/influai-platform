@@ -179,9 +179,35 @@ const en = {
     intro:
       "Structure your campaign before generation. This preview runs entirely in your browser — no credits, no provider calls.",
     badges: {
-      planningBeta: "Planning Beta",
+      planningBeta: "Planning Preview",
       noCredits: "No credits used",
-      manualRequired: "Manual generation required",
+      manualRequired: "Manual generation only",
+      batchPlanned: "Batch generation planned",
+      planned: "Planned",
+    },
+    estimate: {
+      title: "Campaign Estimate",
+      intro:
+        "Preview only — no credits are deducted. Use individual prompts in the AI Agent until batch generation ships.",
+      estimatedCredits: "Estimated credits",
+      totalEstimated: "Total estimated credits",
+      futureEstimate: "Future estimate",
+      batchNote:
+        "Batch generation is planned. You can currently generate selected prompts manually in the AI Agent.",
+      lineItems: {
+        stories: "Story images",
+        feedPosts: "Feed post images",
+        reel: "Reel / Short video",
+        shots: "Shot card images",
+      },
+      counts: {
+        storyIdeas: "Story ideas",
+        feedPosts: "Feed post ideas",
+        reelShort: "Reel / Short ideas",
+        shotCards: "Shot cards",
+      },
+      creditsPerUnit: "{count} × {credits} credit(s)",
+      creditsPerUnitPlural: "{count} × {credits} credits",
     },
     fields: {
       campaignIdea: "Campaign idea",
@@ -241,7 +267,7 @@ const en = {
       useInAgent: "Use in AI Agent",
       generateFullCampaign: "Generate full campaign",
       generateFullCampaignHint:
-        "Batch generation is planned for a future release.",
+        "Batch generation is planned. You can currently generate selected prompts manually in the AI Agent.",
     },
     nextSteps: [
       "Copy image prompts into the AI Agent for Standard or Premium Image.",
@@ -1046,9 +1072,35 @@ const de: DeepString<typeof en> = {
     intro:
       "Strukturiere deine Kampagne vor der Generierung. Diese Vorschau läuft vollständig im Browser — keine Credits, keine Provider-Calls.",
     badges: {
-      planningBeta: "Planning Beta",
+      planningBeta: "Planning Preview",
       noCredits: "Keine Credits",
-      manualRequired: "Manuelle Generierung erforderlich",
+      manualRequired: "Nur manuelle Generierung",
+      batchPlanned: "Batch-Generierung geplant",
+      planned: "Geplant",
+    },
+    estimate: {
+      title: "Campaign Estimate",
+      intro:
+        "Nur Vorschau — es werden keine Credits abgezogen. Nutze einzelne Prompts im AI Agent, bis Batch-Generierung verfügbar ist.",
+      estimatedCredits: "Geschätzte Credits",
+      totalEstimated: "Geschätzte Credits gesamt",
+      futureEstimate: "Zukünftige Schätzung",
+      batchNote:
+        "Batch-Generierung ist geplant. Aktuell kannst du ausgewählte Prompts manuell im AI Agent generieren.",
+      lineItems: {
+        stories: "Story-Bilder",
+        feedPosts: "Feed-Post-Bilder",
+        reel: "Reel / Short-Video",
+        shots: "Shot-Card-Bilder",
+      },
+      counts: {
+        storyIdeas: "Story-Ideen",
+        feedPosts: "Feed-Post-Ideen",
+        reelShort: "Reel / Short-Ideen",
+        shotCards: "Shot Cards",
+      },
+      creditsPerUnit: "{count} × {credits} Credit",
+      creditsPerUnitPlural: "{count} × {credits} Credits",
     },
     fields: {
       campaignIdea: "Kampagnenidee",
@@ -1108,7 +1160,7 @@ const de: DeepString<typeof en> = {
       useInAgent: "Im AI Agent nutzen",
       generateFullCampaign: "Volle Kampagne generieren",
       generateFullCampaignHint:
-        "Batch-Generierung ist für ein späteres Release geplant.",
+        "Batch-Generierung ist geplant. Aktuell kannst du ausgewählte Prompts manuell im AI Agent generieren.",
     },
     nextSteps: [
       "Kopiere Bild-Prompts in den AI Agent für Standard oder Premium Image.",

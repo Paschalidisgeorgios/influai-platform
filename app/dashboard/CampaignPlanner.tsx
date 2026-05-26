@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import {
+  Calculator,
   Check,
   Clapperboard,
   Copy,
@@ -36,6 +37,27 @@ export type CampaignPlan = {
 
 type CampaignPlannerProps = {
   onUsePrompt?: (prompt: string) => void;
+};
+
+const CREDIT_PER_IMAGE = 1;
+const CREDIT_PER_REEL_VIDEO = 25;
+
+type EstimateLineItem = {
+  id: string;
+  label: string;
+  count: number;
+  creditsPerUnit: number;
+  subtotal: number;
+  isFutureEstimate?: boolean;
+};
+
+type CampaignEstimate = {
+  storyCount: number;
+  feedCount: number;
+  reelCount: number;
+  shotCount: number;
+  lineItems: EstimateLineItem[];
+  totalCredits: number;
 };
 
 type PlatformKey = "instagram" | "tiktok" | "youtube" | "linkedin" | "multi";
@@ -160,6 +182,183 @@ function buildCampaignPlan(
   };
 }
 
+function computeCampaignEstimate(
+  plan: CampaignPlan,
+  labels: {
+    stories: string;
+    feedPosts: string;
+    reel: string;
+    shots: string;
+  }
+): CampaignEstimate {
+  const storyCount = plan.contentSet.stories.length;
+  const feedCount = plan.contentSet.feedPosts.length;
+  const reelCount = 1;
+  const shotCount = plan.shots.length;
+
+  const lineItems: EstimateLineItem[] = [
+    {
+      id: "stories",
+      label: labels.stories,
+      count: storyCount,
+      creditsPerUnit: CREDIT_PER_IMAGE,
+      subtotal: storyCount * CREDIT_PER_IMAGE,
+    },
+    {
+      id: "feed",
+      label: labels.feedPosts,
+      count: feedCount,
+      creditsPerUnit: CREDIT_PER_IMAGE,
+      subtotal: feedCount * CREDIT_PER_IMAGE,
+    },
+    {
+      id: "reel",
+      label: labels.reel,
+      count: reelCount,
+      creditsPerUnit: CREDIT_PER_REEL_VIDEO,
+      subtotal: reelCount * CREDIT_PER_REEL_VIDEO,
+      isFutureEstimate: true,
+    },
+    {
+      id: "shots",
+      label: labels.shots,
+      count: shotCount,
+      creditsPerUnit: CREDIT_PER_IMAGE,
+      subtotal: shotCount * CREDIT_PER_IMAGE,
+    },
+  ];
+
+  const totalCredits = lineItems.reduce((sum, item) => sum + item.subtotal, 0);
+
+  return {
+    storyCount,
+    feedCount,
+    reelCount,
+    shotCount,
+    lineItems,
+    totalCredits,
+  };
+}
+
+function formatCreditsPerUnit(
+  count: number,
+  credits: number,
+  singular: string,
+  plural: string
+) {
+  const template = count === 1 ? singular : plural;
+  return template
+    .replace("{count}", String(count))
+    .replace("{credits}", String(credits));
+}
+
+function CampaignEstimateCard({
+  estimate,
+  copy,
+}: {
+  estimate: CampaignEstimate;
+  copy: ReturnType<typeof useDashboardLanguage>["copy"]["campaignPlanner"];
+}) {
+  const e = copy.estimate;
+
+  return (
+    <section className="overflow-hidden rounded-[1.35rem] border border-[#d8ad5f]/20 bg-[linear-gradient(165deg,rgba(216,173,95,0.08)_0%,rgba(0,0,0,0.35)_45%)] p-4 sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#d8ad5f]/15 text-[#d8ad5f]">
+            <Calculator className="h-5 w-5" aria-hidden />
+          </div>
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-[0.14em] text-[#d8ad5f]">
+              {e.title}
+            </h3>
+            <p className="mt-1 max-w-xl text-xs leading-5 text-white/40">{e.intro}</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-violet-100">
+            {copy.badges.planningBeta}
+          </span>
+          <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-emerald-200">
+            {copy.badges.noCredits}
+          </span>
+          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/45">
+            {copy.badges.batchPlanned}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[
+          { label: e.counts.storyIdeas, value: estimate.storyCount },
+          { label: e.counts.feedPosts, value: estimate.feedCount },
+          { label: e.counts.reelShort, value: estimate.reelCount },
+          { label: e.counts.shotCards, value: estimate.shotCount },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="rounded-lg border border-white/[0.06] bg-black/30 px-3 py-2.5"
+          >
+            <p className="text-[9px] font-black uppercase tracking-[0.1em] text-white/35">
+              {stat.label}
+            </p>
+            <p className="mt-1 text-lg font-black text-white">{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-black/25">
+        <div className="border-b border-white/10 px-3 py-2 sm:px-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/40">
+            {e.estimatedCredits}
+          </p>
+        </div>
+        <ul className="divide-y divide-white/[0.06]">
+          {estimate.lineItems.map((item) => (
+            <li
+              key={item.id}
+              className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 sm:px-4"
+            >
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-white/75">{item.label}</p>
+                <p className="text-[10px] text-white/35">
+                  {formatCreditsPerUnit(
+                    item.count,
+                    item.creditsPerUnit,
+                    e.creditsPerUnit,
+                    e.creditsPerUnitPlural
+                  )}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {item.isFutureEstimate ? (
+                  <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.08em] text-sky-100">
+                    {e.futureEstimate}
+                  </span>
+                ) : null}
+                <span className="text-sm font-black text-[#d8ad5f]">
+                  {item.subtotal}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div className="flex items-center justify-between border-t border-white/10 bg-white/[0.03] px-3 py-3 sm:px-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/45">
+            {e.totalEstimated}
+          </p>
+          <p className="text-xl font-black text-[#d8ad5f]">
+            {estimate.totalCredits}{" "}
+            <span className="text-xs font-bold text-white/40">Credits</span>
+          </p>
+        </div>
+      </div>
+
+      <p className="mt-4 text-xs leading-5 text-white/45">{e.batchNote}</p>
+    </section>
+  );
+}
+
 function CopyButton({
   value,
   label,
@@ -210,6 +409,17 @@ export default function CampaignPlanner({
   const [plan, setPlan] = useState<CampaignPlan | null>(null);
 
   const canGenerate = campaignIdea.trim().length >= 8;
+
+  const campaignEstimate = useMemo(() => {
+    if (!plan) return null;
+
+    return computeCampaignEstimate(plan, {
+      stories: p.estimate.lineItems.stories,
+      feedPosts: p.estimate.lineItems.feedPosts,
+      reel: p.estimate.lineItems.reel,
+      shots: p.estimate.lineItems.shots,
+    });
+  }, [plan, p.estimate.lineItems]);
 
   const platformOptions = useMemo(
     () =>
@@ -264,6 +474,9 @@ export default function CampaignPlanner({
         </span>
         <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/45">
           {p.badges.manualRequired}
+        </span>
+        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/45">
+          {p.badges.batchPlanned}
         </span>
       </div>
 
@@ -385,6 +598,10 @@ export default function CampaignPlanner({
               {plan.campaignAngle}
             </p>
           </section>
+
+          {campaignEstimate ? (
+            <CampaignEstimateCard estimate={campaignEstimate} copy={p} />
+          ) : null}
 
           <section className="rounded-[1.35rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
             <div className="flex items-center gap-2">
@@ -579,8 +796,14 @@ export default function CampaignPlanner({
               >
                 <Lock className="h-3.5 w-3.5" aria-hidden />
                 {p.actions.generateFullCampaign}
+                <span className="rounded-full border border-white/10 bg-white/[0.06] px-1.5 py-0.5 text-[8px] uppercase tracking-[0.08em] text-white/30">
+                  {p.badges.planned}
+                </span>
               </button>
             </div>
+            <p className="mt-3 text-xs leading-5 text-white/40">
+              {p.estimate.batchNote}
+            </p>
           </section>
         </div>
       ) : null}
