@@ -13,7 +13,8 @@ type ImageMode =
   | "fast_draft"
   | "premium_image"
   | "reference_edit"
-  | "brand_assets";
+  | "brand_assets"
+  | "ugc_look";
 
 type GenerateMode = ImageMode | "video_image_to_video" | "lip_sync";
 
@@ -51,6 +52,8 @@ function getCreditCostForMode(mode: GenerateMode): number {
 
 function getCreditCostForImageMode(imageMode: ImageMode): number {
   switch (imageMode) {
+    case "ugc_look":
+      return 2;
     case "reference_edit":
       return 5;
     case "brand_assets":
@@ -76,6 +79,7 @@ function parseImageMode(value: unknown): ImageMode {
   if (value === "premium_image") return "premium_image";
   if (value === "reference_edit") return "reference_edit";
   if (value === "brand_assets") return "brand_assets";
+  if (value === "ugc_look") return "ugc_look";
   return "standard";
 }
 
@@ -229,6 +233,26 @@ function resolveGenerationJobConfig(mode: GenerateMode):
         workflow: "brand_assets",
         creditsUsed: getCreditCostForImageMode("brand_assets"),
         transactionSource: "brand_assets_generation_job",
+      },
+    };
+  }
+
+  if (imageMode === "ugc_look") {
+    if (process.env.ENABLE_UGC_LOOK !== "true") {
+      return {
+        ok: false,
+        error: "UGC Look is not enabled. Set ENABLE_UGC_LOOK=true on the server.",
+      };
+    }
+
+    return {
+      ok: true,
+      config: {
+        provider: "openai",
+        model: "gpt-image-1",
+        workflow: "ugc_look",
+        creditsUsed: getCreditCostForImageMode("ugc_look"),
+        transactionSource: "ugc_look_generation_job",
       },
     };
   }
@@ -1071,6 +1095,115 @@ ${prompt}`,
   ]);
 }
 
+function buildUGCLookStyleBlock({
+  platform,
+  contentTypes,
+}: {
+  platform: EffectivePlatform;
+  contentTypes: ContentType[];
+}) {
+  const sections: string[] = [
+    `UGC Look style (mandatory):`,
+    `- authentic user-generated content style`,
+    `- smartphone camera photo (handheld feel)`,
+    `- casual real-life framing`,
+    `- natural lighting`,
+    `- slightly imperfect composition (believable, not sloppy)`,
+    `- realistic skin texture`,
+    `- not overly polished`,
+    `- avoid luxury studio look unless the user explicitly requested studio/luxury`,
+    `- everyday background (home/street/gym/car as appropriate)`,
+    `- subtle motion blur if suitable`,
+    `- social media creator ad aesthetic`,
+    `- TikTok/Reels organic content look`,
+    `- believable amateur-but-attractive visual`,
+    `- no text, no logo, no watermark`,
+  ];
+
+  if (
+    platform === "tiktok" ||
+    platform === "instagram_story" ||
+    platform === "youtube_shorts"
+  ) {
+    sections.push(
+      ``,
+      `Vertical / mobile-first (mandatory):`,
+      `- vertical 9:16, mobile-first framing`,
+      `- subject close enough for smartphone content`,
+      `- leave space for captions/UI (headroom + lower third)`
+    );
+  }
+
+  if (contentTypes.includes("product")) {
+    sections.push(
+      ``,
+      `Product / ad realism:`,
+      `- looks like a real creator photographed the product`,
+      `- handheld creator-style product shot`,
+      `- natural environment (home/car/street/gym) when suitable`
+    );
+  }
+
+  return sections.join("\n");
+}
+
+function buildUGCLookFinalPrompt({
+  prompt,
+  outputFormat,
+}: {
+  prompt: string;
+  outputFormat: OutputFormat;
+}) {
+  const brief = buildCreativeBrief({ prompt, outputFormat });
+
+  return assembleFinalPrompt([
+    `Create an authentic creator-style UGC photo for social media.
+This should look like real smartphone content (not a luxury studio shoot).`,
+    `User request (preserve exactly — do not replace or contradict):
+${prompt}`,
+    brief.sceneDirection,
+    brief.formatBlock,
+    brief.brandSafetyBlock,
+    buildUGCLookStyleBlock({
+      platform: brief.platform,
+      contentTypes: brief.contentTypes,
+    }),
+    `Output target: ${outputFormat.label} · UGC Look (authentic creator-style).`,
+  ]);
+}
+
+function buildUGCLookCharacterStylePrompt({
+  character,
+  prompt,
+  outputFormat,
+}: {
+  character: CharacterRecord;
+  prompt: string;
+  outputFormat: OutputFormat;
+}) {
+  const brief = buildCreativeBrief({ prompt, outputFormat, character });
+
+  return assembleFinalPrompt([
+    `Create an authentic creator-style UGC photo for social media using a saved style profile.
+Keep the output believable as real smartphone content (not overly polished).`,
+    `Style profile (creative direction only — not exact identity lock):
+Name: ${character.name}
+Description: ${character.description ?? "—"}
+Appearance: ${character.appearance_prompt ?? "—"}
+Style: ${character.style_prompt ?? "—"}`,
+    `User request (preserve exactly — do not replace or contradict):
+${prompt}`,
+    brief.sceneDirection,
+    brief.formatBlock,
+    brief.brandSafetyBlock,
+    buildUGCLookStyleBlock({
+      platform: brief.platform,
+      contentTypes: brief.contentTypes,
+    }),
+    `Blend the style profile aesthetic with the UGC Look rules above.`,
+  ]);
+}
+
 function buildCharacterStylePrompt({
   character,
   prompt,
@@ -1668,6 +1801,11 @@ export async function POST(req: Request) {
               prompt: effectivePrompt,
               outputFormat,
             })
+          : imageMode === "ugc_look"
+            ? buildUGCLookFinalPrompt({
+                prompt: effectivePrompt,
+                outputFormat,
+              })
           : buildStandardFinalPrompt({
               prompt: effectivePrompt,
               outputFormat,
@@ -1711,6 +1849,12 @@ export async function POST(req: Request) {
               prompt: effectivePrompt,
               outputFormat,
             })
+          : imageMode === "ugc_look"
+            ? buildUGCLookCharacterStylePrompt({
+                character,
+                prompt: effectivePrompt,
+                outputFormat,
+              })
           : buildCharacterStylePrompt({
               character,
               prompt: effectivePrompt,

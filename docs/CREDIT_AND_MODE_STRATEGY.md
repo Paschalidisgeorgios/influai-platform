@@ -15,6 +15,7 @@ Modes are enabled per environment via feature flags. The dashboard **Studio Suit
 | Tool | Status (typical) | Credits |
 |------|------------------|---------|
 | Standard Image | Live | 1 |
+| UGC Look | Beta (flag) | 2 |
 | Fast Draft | Beta (flag) | 1 |
 | Premium Image | Beta (flag) | 3 |
 | Reference Edit | Beta (flag) | 5 |
@@ -40,6 +41,22 @@ Cinema Agent, Omni Campaign Agent, Social Planner, Brand Safety / Compliance, Wa
 | **Purpose** | Reliable campaign visuals, social assets, creator images |
 
 Standard Image is the production default and fallback. All planned modes must be additive; they must not degrade or replace Standard until independently production-tested.
+
+---
+
+## 1b. UGC Look mode (Beta)
+
+| Field | Value |
+|-------|--------|
+| **Mode key** | `ugc_look` |
+| **Provider** | OpenAI (same as Standard Image) |
+| **Model** | `gpt-image-1` |
+| **Credit cost** | **2 credits** per image |
+| **Workflow** | `ugc_look` |
+| **Purpose** | Authentic creator-style smartphone visuals for TikTok/Reels/organic ads |
+| **Status** | **Beta** when `ENABLE_UGC_LOOK=true` and `NEXT_PUBLIC_ENABLE_UGC_LOOK=true` |
+
+UGC Look is intentionally **not a new provider**. It uses the existing OpenAI image pipeline and storage path, with additional **UGC-specific prompt-building** (less studio-polished, more real-life creator framing).
 
 ---
 

@@ -60,12 +60,20 @@ type RegenerateDraft = {
 
 type DashboardView = "agent" | "planner" | "gallery" | "characters" | "credits";
 
+type SidebarBadgeVariant = "live" | "beta" | "credits";
+
+type SidebarBadge = {
+  label: string;
+  variant: SidebarBadgeVariant;
+};
+
 type LiveSidebarItem = {
   id: DashboardView;
   label: string;
   description: string;
   icon: LucideIcon;
   badge?: string;
+  badges?: SidebarBadge[];
 };
 
 type ModeAvailability = "live" | "beta" | "planned";
@@ -99,15 +107,29 @@ function getModeAvailabilityBadgeClass(availability: ModeAvailability) {
   return "border-white/12 bg-white/[0.06] text-white/45";
 }
 
+function getSidebarBadgeClass(variant: SidebarBadgeVariant) {
+  if (variant === "beta") {
+    return "border-violet-500/30 bg-violet-500/10 text-violet-100";
+  }
+
+  if (variant === "credits") {
+    return "border-emerald-500/25 bg-emerald-500/10 text-emerald-200";
+  }
+
+  return "border-emerald-500/25 bg-emerald-500/10 text-emerald-200";
+}
+
 function ViewShell({
   eyebrow,
   title,
   description,
+  badges,
   children,
 }: {
   eyebrow: string;
   title: string;
   description: string;
+  badges?: SidebarBadge[];
   children: React.ReactNode;
 }) {
   return (
@@ -128,6 +150,21 @@ function ViewShell({
             <p className="mt-3 max-w-2xl text-sm leading-6 text-white/45">
               {description}
             </p>
+
+            {badges && badges.length > 0 ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {badges.map((badge) => (
+                  <span
+                    key={badge.label}
+                    className={`rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] ${getSidebarBadgeClass(
+                      badge.variant
+                    )}`}
+                  >
+                    {badge.label}
+                  </span>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -163,7 +200,16 @@ function DashboardPageInner() {
         label: copy.sidebar.nav.planner.label,
         description: copy.sidebar.nav.planner.description,
         icon: Clapperboard,
-        badge: copy.campaignPlanner.badges.planningBeta,
+        badges: [
+          {
+            label: copy.campaignPlanner.badges.planningBeta,
+            variant: "beta",
+          },
+          {
+            label: copy.campaignPlanner.badges.noCredits,
+            variant: "credits",
+          },
+        ],
       },
       {
         id: "gallery",
@@ -251,6 +297,13 @@ function DashboardPageInner() {
 
   const plannedModules: PlannedModule[] = useMemo(
     () => [
+      {
+        id: "cinema-agent",
+        label: copy.sidebar.expansion.cinemaAgent.label,
+        description: copy.sidebar.expansion.cinemaAgent.description,
+        bestFor: copy.sidebar.expansion.cinemaAgent.activeNote,
+        icon: Clapperboard,
+      },
       {
         id: "omni-campaign-agent",
         label: copy.studioSuite.planned.omniCampaignAgent.label,
@@ -436,6 +489,16 @@ function DashboardPageInner() {
           eyebrow={copy.page.planner.eyebrow}
           title={copy.page.planner.title}
           description={copy.page.planner.description}
+          badges={[
+            {
+              label: copy.campaignPlanner.badges.planningBeta,
+              variant: "beta",
+            },
+            {
+              label: copy.campaignPlanner.badges.noCredits,
+              variant: "credits",
+            },
+          ]}
         >
           <CampaignPlanner onUsePrompt={handleUseCampaignPrompt} />
         </ViewShell>
@@ -533,11 +596,26 @@ function DashboardPageInner() {
                           {item.label}
                         </p>
 
-                        {item.badge && (
-                          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-emerald-200">
+                        {item.badge ? (
+                          <span
+                            className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] ${getSidebarBadgeClass(
+                              "live"
+                            )}`}
+                          >
                             {item.badge}
                           </span>
-                        )}
+                        ) : null}
+
+                        {item.badges?.map((badge) => (
+                          <span
+                            key={badge.label}
+                            className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] ${getSidebarBadgeClass(
+                              badge.variant
+                            )}`}
+                          >
+                            {badge.label}
+                          </span>
+                        ))}
                       </div>
 
                       <p className="truncate text-xs text-white/30">

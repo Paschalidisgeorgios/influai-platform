@@ -13,7 +13,8 @@ This specification describes **Cinema Agent** as a **planning and orchestration 
 | Item | Detail |
 |------|--------|
 | **UI** | `app/dashboard/CampaignPlanner.tsx` — client-side rule-based plan |
-| **Navigation** | Dashboard → **Campaign Planner** (Cinema Agent · Planning Beta) |
+| **Navigation** | Dashboard → **Live Studio** → **Campaign Planner** — active planning preview module (not roadmap-only) |
+| **Visibility** | Promoted as **Planning Beta** with **No credits used** badge; Cinema Agent / Omni remain planned expansion modules |
 | **Credits** | **0** — no `consume_user_credits`, no API routes |
 | **Provider** | **None** — no OpenAI, no fal, no worker changes |
 | **Outputs** | Campaign angle, content set, shot list (5+ cards), captions, hashtags, **Campaign Estimate** preview, **Social Planner Preview**, **Brand Safety Preview** (manual checklist), **Export Package Preview** (manual copy) |
@@ -22,7 +23,7 @@ This specification describes **Cinema Agent** as a **planning and orchestration 
 | **Brand Safety Preview** | Client-side manual checklist: disclosure reminders, logo/text checks, usage rights, platform compliance. **No automated scanning**, no API calls. Copy checklist only. |
 | **Export Package Preview** | Client-side copy bundle: campaign brief, shot prompts, captions, hashtags, social schedule, brand safety checklist. **No PDF/ZIP export yet**, no API calls. Copy full plan / shot prompts / captions. |
 | **Handoff** | **Use in AI Agent** on each shot card → loads `suggestedImagePrompt` into the AI Agent prompt field via `regenerateDraft` (no `/api/generate`, no credits). **Copy prompt** copies text only. |
-| **Generation** | **Manual only** — user picks mode/format in AI Agent and submits. No auto-start. |
+| **Generation** | **Manual only** — user picks mode/format in AI Agent and submits. No auto-start. Manual asset generation through AI Agent after planning. |
 | **Not included** | Auto batch generation, Omni orchestration API, social posting |
 | **Future** | Batch generation with explicit user confirmation, live credit estimate, then `/api/generate` per asset |
 | **Future (Social)** | Scheduling requires platform API review, OAuth, and explicit user authorization before any auto-post |

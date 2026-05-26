@@ -201,6 +201,7 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                 <ul className="mt-3 space-y-2">
                   {[
                     copy.credits.modeCosts.standard,
+                    copy.credits.modeCosts.ugcLook,
                     copy.credits.modeCosts.fastDraft,
                     copy.credits.modeCosts.premium,
                     copy.credits.modeCosts.referenceEdit,

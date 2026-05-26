@@ -26,7 +26,7 @@ const en = {
       "Planned modules stay disabled until a future release.",
     roadmap: "Roadmap",
     roadmapBody:
-      "Live and beta creative modes run in the AI Agent. Expansion modules below are roadmap previews only.",
+      "Live and beta creative modes run in the AI Agent. Campaign Planner is the active Cinema Agent planning preview — expansion modules below ship later.",
     watermarkedPromoTitle: "Watermarked Promo Package",
     watermarkedPromoBadge: "Planned",
     watermarkedPromoBody:
@@ -45,7 +45,7 @@ const en = {
       "Image, video and lip-sync workflows run in the AI Agent. Credits apply per selected mode.",
     expansionPlanned: "Expansion / Planned",
     expansionPlannedHint:
-      "Preview only — not connected to generation, credits or billing.",
+      "Campaign Planner in Live Studio is the active first step. Modules below are planned — not connected to generation, credits or billing.",
     creditCostShort: "Credits",
     nav: {
       agent: { label: "AI Agent", description: "Generate campaign visuals" },
@@ -57,7 +57,8 @@ const en = {
       credits: { label: "Credits", description: "Balance and packages" },
       planner: {
         label: "Campaign Planner",
-        description: "Cinema Agent · shot lists and prompts",
+        description:
+          "Plan campaign concepts, shot lists, captions, schedules and safety checks before generating assets.",
       },
     },
     expansion: {
@@ -85,6 +86,8 @@ const en = {
         label: "Cinema Agent",
         description:
           "Plan campaign scenes, shot lists and visual sequences before generation.",
+        activeNote:
+          "Active now: Campaign Planner in Live Studio (Planning Beta)",
       },
       omniCampaignAgent: {
         label: "Omni Campaign Agent",
@@ -118,6 +121,11 @@ const en = {
         label: "Standard Image",
         credits: "1 Credit",
         bestFor: "Reliable campaign visuals",
+      },
+      ugcLook: {
+        label: "UGC Look",
+        credits: "2 Credits",
+        bestFor: "Authentic smartphone-style creator visuals",
       },
       fastDraft: {
         label: "Fast Draft",
@@ -177,9 +185,9 @@ const en = {
     title: "Campaign Planner",
     subtitle: "Cinema Agent · Planning Beta",
     intro:
-      "Structure your campaign before generation. This preview runs entirely in your browser — no credits, no provider calls.",
+      "Plan campaign concepts, shot lists, captions, schedules and safety checks before generating assets. This preview runs entirely in your browser — no credits, no provider calls.",
     badges: {
-      planningBeta: "Planning Preview",
+      planningBeta: "Planning Beta",
       noCredits: "No credits used",
       manualRequired: "Manual generation only",
       batchPlanned: "Batch generation planned",
@@ -367,7 +375,7 @@ const en = {
       multi: "Square + Vertical mix",
     },
     generatePlan: "Generate campaign plan",
-    planningPreviewNote: "Planning preview · 0 credits · client-side only",
+    planningPreviewNote: "Planning Beta · no credits used · client-side only",
     sections: {
       campaignAngle: "Campaign Angle",
       contentSet: "Content Set",
@@ -505,10 +513,10 @@ const en = {
         "View your balance, understand credit usage (1 standard image = 1 credit) and purchase Starter, Professional or Ultimate packages via secure Stripe checkout.",
     },
     planner: {
-      eyebrow: "Pre-production",
+      eyebrow: "Campaign Planning",
       title: "Campaign Planner",
       description:
-        "Turn a campaign brief into angles, content ideas, shot lists and captions. Planning preview only — no credits, no automatic generation.",
+        "Create structured campaign plans, shot prompts, captions, social schedules and safety checklists before generating assets.",
     },
   },
   compactCredits: {
@@ -535,6 +543,7 @@ const en = {
     imageModeIntro:
       "Choose how the AI Agent generates visuals. Standard Image is the production default. Fast Draft is optional when enabled for your environment.",
     imageModeStandardActiveNote: "Standard Image · Live · 1 Credit",
+    imageModeUGCLookActiveNote: "UGC Look · Beta · 2 Credits",
     imageModeFastDraftActiveNote: "Fast Draft · Beta · 1 Credit",
     imageModePremiumActiveNote: "Premium Image · Beta · 3 Credits",
     imageModeReferenceEditActiveNote: "Reference Edit · Beta · 5 Credits",
@@ -578,6 +587,11 @@ const en = {
         label: "Standard Image",
         description:
           "Reliable campaign visuals powered by the production image workflow.",
+      },
+      ugcLook: {
+        label: "UGC Look",
+        description:
+          "Authentic smartphone-style creator visuals for TikTok, Reels and organic ads.",
       },
       fastDraft: {
         label: "Fast Draft",
@@ -923,6 +937,7 @@ const en = {
       "Credits are charged based on the selected workflow.",
     modeCosts: {
       standard: "Standard Image: 1 Credit",
+      ugcLook: "UGC Look: 2 Credits",
       fastDraft: "Fast Draft: 1 Credit",
       premium: "Premium Image: 3 Credits",
       referenceEdit: "Reference Edit: 5 Credits",
@@ -1039,7 +1054,7 @@ const de: DeepString<typeof en> = {
       "Geplante Module bleiben bis zu einem späteren Release deaktiviert.",
     roadmap: "Roadmap",
     roadmapBody:
-      "Live- und Beta-Modi laufen im AI Agent. Erweiterungsmodule unten sind nur Roadmap-Vorschau.",
+      "Live- und Beta-Modi laufen im AI Agent. Campaign Planner ist die aktive Cinema-Agent-Planning-Vorschau — Erweiterungsmodule unten folgen später.",
     watermarkedPromoTitle: "Watermarked Promo-Paket",
     watermarkedPromoBadge: "Geplant",
     watermarkedPromoBody:
@@ -1058,7 +1073,7 @@ const de: DeepString<typeof en> = {
       "Bild-, Video- und Lip-Sync-Workflows laufen im AI Agent. Credits je gewähltem Modus.",
     expansionPlanned: "Expansion / Geplant",
     expansionPlannedHint:
-      "Nur Vorschau — nicht an Generierung, Credits oder Abrechnung angebunden.",
+      "Campaign Planner im Live Studio ist der aktive erste Schritt. Module unten sind geplant — nicht an Generierung, Credits oder Abrechnung angebunden.",
     creditCostShort: "Credits",
     nav: {
       agent: {
@@ -1076,7 +1091,8 @@ const de: DeepString<typeof en> = {
       credits: { label: "Credits", description: "Guthaben und Pakete" },
       planner: {
         label: "Campaign Planner",
-        description: "Cinema Agent · Shot Lists und Prompts",
+        description:
+          "Plane Kampagnenkonzepte, Shot Lists, Captions, Schedules und Safety Checks vor der Asset-Generierung.",
       },
     },
     expansion: {
@@ -1104,6 +1120,8 @@ const de: DeepString<typeof en> = {
         label: "Cinema Agent",
         description:
           "Plane Kampagnen-Szenen, Shot Lists und Visual Sequences vor der Generierung.",
+        activeNote:
+          "Aktiv: Campaign Planner im Live Studio (Planning Beta)",
       },
       omniCampaignAgent: {
         label: "Omni Campaign Agent",
@@ -1137,6 +1155,11 @@ const de: DeepString<typeof en> = {
         label: "Standard Image",
         credits: "1 Credit",
         bestFor: "Zuverlässige Kampagnenvisuals",
+      },
+      ugcLook: {
+        label: "UGC Look",
+        credits: "2 Credits",
+        bestFor: "Authentischer Smartphone-/Creator-Look",
       },
       fastDraft: {
         label: "Fast Draft",
@@ -1196,9 +1219,9 @@ const de: DeepString<typeof en> = {
     title: "Campaign Planner",
     subtitle: "Cinema Agent · Planning Beta",
     intro:
-      "Strukturiere deine Kampagne vor der Generierung. Diese Vorschau läuft vollständig im Browser — keine Credits, keine Provider-Calls.",
+      "Plane Kampagnenkonzepte, Shot Lists, Captions, Schedules und Safety Checks vor der Asset-Generierung. Diese Vorschau läuft vollständig im Browser — keine Credits, keine Provider-Calls.",
     badges: {
-      planningBeta: "Planning Preview",
+      planningBeta: "Planning Beta",
       noCredits: "Keine Credits",
       manualRequired: "Nur manuelle Generierung",
       batchPlanned: "Batch-Generierung geplant",
@@ -1386,7 +1409,7 @@ const de: DeepString<typeof en> = {
       multi: "Quadrat + Vertikal Mix",
     },
     generatePlan: "Kampagnenplan generieren",
-    planningPreviewNote: "Planning Preview · 0 Credits · nur clientseitig",
+    planningPreviewNote: "Planning Beta · keine Credits · nur clientseitig",
     sections: {
       campaignAngle: "Campaign Angle",
       contentSet: "Content Set",
@@ -1525,10 +1548,10 @@ const de: DeepString<typeof en> = {
         "Sieh dein Guthaben, verstehe die Credit-Nutzung (1 Standard-Bild = 1 Credit) und kaufe Starter-, Professional- oder Ultimate-Pakete per sicherem Stripe-Checkout.",
     },
     planner: {
-      eyebrow: "Pre-Production",
+      eyebrow: "Campaign Planning",
       title: "Campaign Planner",
       description:
-        "Wandle ein Kampagnen-Briefing in Angles, Content-Ideen, Shot Lists und Captions um. Nur Planning Preview — keine Credits, keine automatische Generierung.",
+        "Erstelle strukturierte Kampagnenpläne, Shot Prompts, Captions, Social Schedules und Safety Checklisten vor der Asset-Generierung.",
     },
   },
   compactCredits: {
@@ -1556,6 +1579,7 @@ const de: DeepString<typeof en> = {
     imageModeIntro:
       "Wähle, wie der AI Agent Visuals erzeugt. Standard Image ist der Produktions-Default. Fast Draft ist optional, wenn es in deiner Umgebung aktiviert ist.",
     imageModeStandardActiveNote: "Standard Image · Live · 1 Credit",
+    imageModeUGCLookActiveNote: "UGC Look · Beta · 2 Credits",
     imageModeFastDraftActiveNote: "Fast Draft · Beta · 1 Credit",
     imageModePremiumActiveNote: "Premium Image · Beta · 3 Credits",
     imageModeReferenceEditActiveNote: "Reference Edit · Beta · 5 Credits",
@@ -1603,6 +1627,11 @@ const de: DeepString<typeof en> = {
         label: "Standard Image",
         description:
           "Zuverlässige Kampagnenvisuals über den Produktions-Image-Workflow.",
+      },
+      ugcLook: {
+        label: "UGC Look",
+        description:
+          "Authentische Smartphone-/Creator-Visuals für TikTok, Reels und Organic Ads.",
       },
       fastDraft: {
         label: "Fast Draft",
@@ -1960,6 +1989,7 @@ const de: DeepString<typeof en> = {
       "Credits werden je gewähltem Workflow verbraucht.",
     modeCosts: {
       standard: "Standard Image: 1 Credit",
+      ugcLook: "UGC Look: 2 Credits",
       fastDraft: "Fast Draft: 1 Credit",
       premium: "Premium Image: 3 Credits",
       referenceEdit: "Reference Edit: 5 Credits",

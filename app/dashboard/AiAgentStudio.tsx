@@ -54,7 +54,8 @@ type ImageModeKey =
   | "fast_draft"
   | "premium_image"
   | "reference_edit"
-  | "brand_assets";
+  | "brand_assets"
+  | "ugc_look";
 type ImageModeCardStatus = "live" | "beta" | "planned";
 
 const FAST_DRAFT_PUBLIC_ENABLED =
@@ -65,6 +66,8 @@ const REFERENCE_EDIT_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_REFERENCE_EDIT === "true";
 const BRAND_ASSETS_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_BRAND_ASSETS === "true";
+const UGC_LOOK_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_UGC_LOOK === "true";
 const VIDEO_STUDIO_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO === "true";
 const LIP_SYNC_PUBLIC_ENABLED =
@@ -86,6 +89,10 @@ function isVideoStudioWorkflow(workflow?: string | null) {
 function resolveSubmitImageMode(imageMode: ImageModeKey): ImageModeKey {
   if (imageMode === "brand_assets" && BRAND_ASSETS_PUBLIC_ENABLED) {
     return "brand_assets";
+  }
+
+  if (imageMode === "ugc_look" && UGC_LOOK_PUBLIC_ENABLED) {
+    return "ugc_look";
   }
 
   if (imageMode === "reference_edit" && REFERENCE_EDIT_PUBLIC_ENABLED) {
@@ -164,6 +171,8 @@ function shouldShowCreditsRefundedHint(
 
 function getRequiredCreditsForImageMode(imageMode: ImageModeKey): number {
   switch (imageMode) {
+    case "ugc_look":
+      return 2;
     case "premium_image":
       return 3;
     case "reference_edit":
@@ -1448,6 +1457,15 @@ export default function AiAgentStudio({
         icon: ImageIcon,
       },
       {
+        key: "ugc_look" as const,
+        label: a.imageModes.ugcLook.label,
+        description: a.imageModes.ugcLook.description,
+        status: (UGC_LOOK_PUBLIC_ENABLED ? "beta" : "planned") as ImageModeCardStatus,
+        creditNote: suite.modes.ugcLook.credits,
+        bestFor: suite.modes.ugcLook.bestFor,
+        icon: Clapperboard,
+      },
+      {
         key: "fast_draft" as const,
         label: a.imageModes.fastDraft.label,
         description: a.imageModes.fastDraft.description,
@@ -1560,6 +1578,10 @@ export default function AiAgentStudio({
       return a.imageModeVideoStudioActiveNote;
     }
 
+    if (imageMode === "ugc_look" && UGC_LOOK_PUBLIC_ENABLED) {
+      return a.imageModeUGCLookActiveNote;
+    }
+
     if (imageMode === "brand_assets" && BRAND_ASSETS_PUBLIC_ENABLED) {
       return a.imageModeBrandAssetsActiveNote;
     }
@@ -1582,6 +1604,7 @@ export default function AiAgentStudio({
   const imageModeUsesBetaBadge =
     isLipSyncActive ||
     isVideoStudioActive ||
+    (imageMode === "ugc_look" && UGC_LOOK_PUBLIC_ENABLED) ||
     (imageMode === "brand_assets" && BRAND_ASSETS_PUBLIC_ENABLED) ||
     (imageMode === "reference_edit" && REFERENCE_EDIT_PUBLIC_ENABLED) ||
     (imageMode === "fast_draft" && FAST_DRAFT_PUBLIC_ENABLED) ||
@@ -1663,6 +1686,10 @@ export default function AiAgentStudio({
   }, [charactersRefreshKey]);
 
   useEffect(() => {
+    if (imageMode === "ugc_look" && !UGC_LOOK_PUBLIC_ENABLED) {
+      setImageMode("standard");
+    }
+
     if (imageMode === "fast_draft" && !FAST_DRAFT_PUBLIC_ENABLED) {
       setImageMode("standard");
     }

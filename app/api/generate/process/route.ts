@@ -1325,7 +1325,7 @@ export async function POST(req: Request) {
 
     const finalPrompt = generation.final_prompt || generation.prompt;
 
-    if (workflow === "standard" && provider === "openai") {
+    if ((workflow === "standard" || workflow === "ugc_look") && provider === "openai") {
       const imageSize = normalizeImageSize(generation.image_size);
 
       return processOpenAIImage({
