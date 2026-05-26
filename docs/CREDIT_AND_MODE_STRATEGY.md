@@ -8,7 +8,23 @@
 
 This document defines how InfluExAi should price and roll out image, video, lip-sync, and promotional modes. It is the authoritative reference for **credit costs**, **rollout order**, and **safety rules** before any new provider is activated.
 
-Nothing in this file enables a mode in production. Live behavior today remains **Standard Image only** (OpenAI `gpt-image-1`, **1 credit**). All other modules (image modes, Video Studio, Lip Sync, Cinema Agent) are **planned** — no UI or API activation without backend implementation and cost monitoring ([§12](#12-important-implementation-rule)).
+Modes are enabled per environment via feature flags. The dashboard **Studio Suite** surfaces status (Live / Beta / Planned) and credit cost without changing billing logic.
+
+### Studio Suite — credit costs (user-facing)
+
+| Tool | Status (typical) | Credits |
+|------|------------------|---------|
+| Standard Image | Live | 1 |
+| Fast Draft | Beta (flag) | 1 |
+| Premium Image | Beta (flag) | 3 |
+| Reference Edit | Beta (flag) | 5 |
+| Brand Assets | Beta (flag) | 4 |
+| Video Studio | Beta (flag) | 25 |
+| Lip Sync Studio | Beta (flag) | 30 |
+
+### Planned modules (no generation API)
+
+Cinema Agent, Omni Campaign Agent, Social Planner, Brand Safety / Compliance, Watermarked Promo Package — roadmap UI only.
 
 ---
 

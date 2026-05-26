@@ -193,7 +193,10 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
 
               <div className="mt-5 rounded-2xl border border-white/10 bg-black/25 p-4 sm:p-5">
                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
-                  {copy.credits.modeUsageIntro}
+                  {copy.studioSuite.title}
+                </p>
+                <p className="mt-2 text-xs leading-5 text-white/45">
+                  {copy.credits.workflowChargeNote}
                 </p>
                 <ul className="mt-3 space-y-2">
                   {[

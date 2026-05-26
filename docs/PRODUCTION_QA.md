@@ -222,6 +222,18 @@ Prerequisites: `ENABLE_FAL_LIP_SYNC=true`, `NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC=true
 
 ---
 
+## 16. Studio Suite navigation (UI only)
+
+| Step | Action | Expected | Pass |
+|------|--------|----------|------|
+| 16.1 | Open Dashboard sidebar | **Live Studio**, **Creative Modes**, **Expansion / Planned** groups visible | ☐ |
+| 16.2 | Creative Modes list | Each mode shows status badge + credit cost + short “best for” | ☐ |
+| 16.3 | AI Agent → Studio Modes overview | Table/cards list all modes with Live/Beta/Planned | ☐ |
+| 16.4 | Credits view | Workflow cost list + “Credits are charged based on the selected workflow.” | ☐ |
+| 16.5 | Planned sidebar rows | Cinema, Omni, Social Planner, Brand Safety, Watermarked Promo — disabled, lock icon | ☐ |
+
+---
+
 ## Failure log
 
 | Step | What failed | Screenshot / log | Ticket |

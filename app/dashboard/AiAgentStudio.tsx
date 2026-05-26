@@ -361,6 +361,7 @@ function ModeCardBody({
   description,
   statusLabel,
   creditNote,
+  bestFor,
   comingSoonNote,
   statusTone = "live",
   showLock = false,
@@ -372,6 +373,7 @@ function ModeCardBody({
   description: string;
   statusLabel: string;
   creditNote?: string;
+  bestFor?: string;
   comingSoonNote?: string;
   statusTone?: "live" | "beta" | "planned";
   showLock?: boolean;
@@ -424,8 +426,14 @@ function ModeCardBody({
       </p>
 
       {creditNote ? (
-        <p className="relative mt-1 text-[9px] font-bold uppercase tracking-[0.08em] text-white/45">
+        <p className="relative mt-1 text-[9px] font-bold uppercase tracking-[0.08em] text-[#d8ad5f]/85">
           {creditNote}
+        </p>
+      ) : null}
+
+      {bestFor ? (
+        <p className="relative mt-0.5 line-clamp-2 text-[8px] leading-3.5 text-white/32 sm:text-[9px]">
+          {bestFor}
         </p>
       ) : null}
 
@@ -1423,6 +1431,7 @@ export default function AiAgentStudio({
 }: AiAgentStudioProps) {
   const { copy, format } = useDashboardLanguage();
   const a = copy.agent;
+  const suite = copy.studioSuite;
   const supabase = createClient();
 
   const imageModes = useMemo(
@@ -1432,7 +1441,8 @@ export default function AiAgentStudio({
         label: a.imageModes.standard.label,
         description: a.imageModes.standard.description,
         status: "live" as ImageModeCardStatus,
-        creditNote: a.imageModes.oneCredit,
+        creditNote: suite.modes.standard.credits,
+        bestFor: suite.modes.standard.bestFor,
         icon: ImageIcon,
       },
       {
@@ -1442,7 +1452,8 @@ export default function AiAgentStudio({
         status: (FAST_DRAFT_PUBLIC_ENABLED
           ? "beta"
           : "planned") as ImageModeCardStatus,
-        creditNote: FAST_DRAFT_PUBLIC_ENABLED ? a.imageModes.oneCredit : undefined,
+        creditNote: suite.modes.fastDraft.credits,
+        bestFor: suite.modes.fastDraft.bestFor,
         icon: Zap,
       },
       {
@@ -1452,9 +1463,8 @@ export default function AiAgentStudio({
         status: (PREMIUM_IMAGE_PUBLIC_ENABLED
           ? "beta"
           : "planned") as ImageModeCardStatus,
-        creditNote: PREMIUM_IMAGE_PUBLIC_ENABLED
-          ? a.imageModes.threeCredits
-          : undefined,
+        creditNote: suite.modes.premium.credits,
+        bestFor: suite.modes.premium.bestFor,
         icon: Sparkles,
       },
       {
@@ -1466,9 +1476,8 @@ export default function AiAgentStudio({
         status: (REFERENCE_EDIT_PUBLIC_ENABLED
           ? "beta"
           : "planned") as ImageModeCardStatus,
-        creditNote: REFERENCE_EDIT_PUBLIC_ENABLED
-          ? a.imageModes.fiveCredits
-          : undefined,
+        creditNote: suite.modes.referenceEdit.credits,
+        bestFor: suite.modes.referenceEdit.bestFor,
         icon: PenLine,
       },
       {
@@ -1480,13 +1489,12 @@ export default function AiAgentStudio({
         status: (BRAND_ASSETS_PUBLIC_ENABLED
           ? "beta"
           : "planned") as ImageModeCardStatus,
-        creditNote: BRAND_ASSETS_PUBLIC_ENABLED
-          ? a.imageModes.fourCredits
-          : undefined,
+        creditNote: suite.modes.brandAssets.credits,
+        bestFor: suite.modes.brandAssets.bestFor,
         icon: Megaphone,
       },
     ],
-    [a]
+    [a, suite]
   );
 
   const localizedOutputFormats = useMemo(
@@ -2639,9 +2647,18 @@ export default function AiAgentStudio({
                     }`}
                   >
                     <Clapperboard className="h-3.5 w-3.5" aria-hidden />
-                    {VIDEO_STUDIO_PUBLIC_ENABLED
-                      ? a.studioTabVideo
-                      : a.studioTabVideoPlanned}
+                    <span className="flex flex-col items-start sm:flex-row sm:items-center sm:gap-1.5">
+                      <span>
+                        {VIDEO_STUDIO_PUBLIC_ENABLED
+                          ? a.studioTabVideo
+                          : a.studioTabVideoPlanned}
+                      </span>
+                      {VIDEO_STUDIO_PUBLIC_ENABLED ? (
+                        <span className="text-[9px] font-bold text-sky-200/80">
+                          · {suite.modes.videoStudio.credits}
+                        </span>
+                      ) : null}
+                    </span>
                   </button>
                   <button
                     type="button"
@@ -2663,9 +2680,18 @@ export default function AiAgentStudio({
                     }`}
                   >
                     <Mic className="h-3.5 w-3.5" aria-hidden />
-                    {LIP_SYNC_PUBLIC_ENABLED
-                      ? a.studioTabLipSync
-                      : a.studioTabLipSyncPlanned}
+                    <span className="flex flex-col items-start sm:flex-row sm:items-center sm:gap-1.5">
+                      <span>
+                        {LIP_SYNC_PUBLIC_ENABLED
+                          ? a.studioTabLipSync
+                          : a.studioTabLipSyncPlanned}
+                      </span>
+                      {LIP_SYNC_PUBLIC_ENABLED ? (
+                        <span className="text-[9px] font-bold text-violet-200/80">
+                          · {suite.modes.lipSync.credits}
+                        </span>
+                      ) : null}
+                    </span>
                   </button>
                 </div>
 
@@ -2713,7 +2739,7 @@ export default function AiAgentStudio({
                 <fieldset className="rounded-2xl border border-white/10 bg-black/20 p-2.5 sm:p-3">
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-0.5">
                     <legend className="text-[10px] font-black uppercase tracking-[0.22em] text-white/40">
-                      {a.imageMode}
+                      {suite.title}
                     </legend>
                     <span
                       className={`rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] ${
@@ -2726,8 +2752,11 @@ export default function AiAgentStudio({
                     </span>
                   </div>
 
-                  <p className="mb-2.5 px-0.5 text-[10px] leading-4 text-white/32">
+                  <p className="mb-1 px-0.5 text-[10px] leading-4 text-white/32">
                     {a.imageModeIntro}
+                  </p>
+                  <p className="mb-2.5 px-0.5 text-[10px] leading-4 text-white/28">
+                    {suite.workflowChargeNote}
                   </p>
 
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 sm:gap-2.5">
@@ -2785,6 +2814,7 @@ export default function AiAgentStudio({
                                 statusLabel={statusLabel}
                                 statusTone={mode.status}
                                 creditNote={mode.creditNote}
+                                bestFor={mode.bestFor}
                               />
                             </button>
                           ) : isReferenceEditPlanned ? (
@@ -2807,6 +2837,8 @@ export default function AiAgentStudio({
                                 description={mode.description}
                                 statusLabel={statusLabel}
                                 statusTone="planned"
+                                creditNote={mode.creditNote}
+                                bestFor={mode.bestFor}
                                 comingSoonNote={
                                   "comingSoonNote" in mode
                                     ? mode.comingSoonNote
@@ -2829,6 +2861,8 @@ export default function AiAgentStudio({
                                 description={mode.description}
                                 statusLabel={statusLabel}
                                 statusTone="planned"
+                                creditNote={mode.creditNote}
+                                bestFor={mode.bestFor}
                                 comingSoonNote={
                                   "comingSoonNote" in mode
                                     ? mode.comingSoonNote

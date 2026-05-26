@@ -4,22 +4,27 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Bot,
-  Boxes,
+  Calendar,
   Clapperboard,
   CreditCard,
   Film,
   GalleryVerticalEnd,
   Home,
+  ImageIcon,
   Lock,
   LogOut,
+  Megaphone,
   Menu,
   Mic2,
+  PenLine,
   Rocket,
+  Shield,
   Sparkles,
+  Tag,
   UserRound,
   Wand2,
-  Workflow,
   X,
+  Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import AiAgentStudio from "./AiAgentStudio";
@@ -29,7 +34,21 @@ import { DashboardLanguageProvider, useDashboardLanguage } from "./DashboardLang
 import CreditsCard from "./CreditsCard";
 import GenerationGallery from "./GenerationGallery";
 import LanguageSelector from "./LanguageSelector";
+import StudioModesOverview from "./StudioModesOverview";
 import { createClient } from "@/lib/supabase/client";
+
+const FAST_DRAFT_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_FAL_FAST_DRAFT === "true";
+const PREMIUM_IMAGE_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_FAL_PREMIUM_IMAGE === "true";
+const REFERENCE_EDIT_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_FAL_REFERENCE_EDIT === "true";
+const BRAND_ASSETS_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_FAL_BRAND_ASSETS === "true";
+const VIDEO_STUDIO_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO === "true";
+const LIP_SYNC_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC === "true";
 
 type RegenerateDraft = {
   prompt: string;
@@ -46,26 +65,35 @@ type LiveSidebarItem = {
   badge?: string;
 };
 
-type ExpansionStatus = "coming_soon" | "planned" | "roadmap";
+type ModeAvailability = "live" | "beta" | "planned";
 
-type ExpansionModule = {
+type CreativeModeSidebarItem = {
   id: string;
   label: string;
-  description: string;
-  status: ExpansionStatus;
+  credits: string;
+  bestFor: string;
+  availability: ModeAvailability;
   icon: LucideIcon;
 };
 
-function getExpansionStatusBadgeClass(status: ExpansionStatus) {
-  if (status === "coming_soon") {
-    return "border-[#d8ad5f]/35 bg-[#d8ad5f]/12 text-[#d8ad5f]";
+type PlannedModule = {
+  id: string;
+  label: string;
+  description: string;
+  bestFor: string;
+  icon: LucideIcon;
+};
+
+function getModeAvailabilityBadgeClass(availability: ModeAvailability) {
+  if (availability === "live") {
+    return "border-emerald-500/25 bg-emerald-500/10 text-emerald-200";
   }
 
-  if (status === "planned") {
-    return "border-white/12 bg-white/[0.06] text-white/55";
+  if (availability === "beta") {
+    return "border-amber-400/25 bg-amber-500/10 text-amber-100";
   }
 
-  return "border-violet-500/25 bg-violet-500/10 text-violet-200";
+  return "border-white/12 bg-white/[0.06] text-white/45";
 }
 
 function ViewShell({
@@ -149,58 +177,113 @@ function DashboardPageInner() {
     [copy]
   );
 
-  const expansionModules: ExpansionModule[] = useMemo(
+  const creativeModeItems: CreativeModeSidebarItem[] = useMemo(
     () => [
       {
-        id: "video-studio",
-        label: copy.sidebar.expansion.videoStudio.label,
-        description: copy.sidebar.expansion.videoStudio.description,
-        status: "coming_soon",
+        id: "standard",
+        label: copy.studioSuite.modes.standard.label,
+        credits: copy.studioSuite.modes.standard.credits,
+        bestFor: copy.studioSuite.modes.standard.bestFor,
+        availability: "live",
+        icon: ImageIcon,
+      },
+      {
+        id: "fast_draft",
+        label: copy.studioSuite.modes.fastDraft.label,
+        credits: copy.studioSuite.modes.fastDraft.credits,
+        bestFor: copy.studioSuite.modes.fastDraft.bestFor,
+        availability: FAST_DRAFT_PUBLIC_ENABLED ? "beta" : "planned",
+        icon: Zap,
+      },
+      {
+        id: "premium_image",
+        label: copy.studioSuite.modes.premium.label,
+        credits: copy.studioSuite.modes.premium.credits,
+        bestFor: copy.studioSuite.modes.premium.bestFor,
+        availability: PREMIUM_IMAGE_PUBLIC_ENABLED ? "beta" : "planned",
+        icon: Sparkles,
+      },
+      {
+        id: "reference_edit",
+        label: copy.studioSuite.modes.referenceEdit.label,
+        credits: copy.studioSuite.modes.referenceEdit.credits,
+        bestFor: copy.studioSuite.modes.referenceEdit.bestFor,
+        availability: REFERENCE_EDIT_PUBLIC_ENABLED ? "beta" : "planned",
+        icon: PenLine,
+      },
+      {
+        id: "brand_assets",
+        label: copy.studioSuite.modes.brandAssets.label,
+        credits: copy.studioSuite.modes.brandAssets.credits,
+        bestFor: copy.studioSuite.modes.brandAssets.bestFor,
+        availability: BRAND_ASSETS_PUBLIC_ENABLED ? "beta" : "planned",
+        icon: Megaphone,
+      },
+      {
+        id: "video_studio",
+        label: copy.studioSuite.modes.videoStudio.label,
+        credits: copy.studioSuite.modes.videoStudio.credits,
+        bestFor: copy.studioSuite.modes.videoStudio.bestFor,
+        availability: VIDEO_STUDIO_PUBLIC_ENABLED ? "beta" : "planned",
         icon: Film,
       },
       {
-        id: "lip-sync-studio",
-        label: copy.sidebar.expansion.lipSyncStudio.label,
-        description: copy.sidebar.expansion.lipSyncStudio.description,
-        status: "coming_soon",
+        id: "lip_sync",
+        label: copy.studioSuite.modes.lipSync.label,
+        credits: copy.studioSuite.modes.lipSync.credits,
+        bestFor: copy.studioSuite.modes.lipSync.bestFor,
+        availability: LIP_SYNC_PUBLIC_ENABLED ? "beta" : "planned",
         icon: Mic2,
-      },
-      {
-        id: "cinema-agent",
-        label: copy.sidebar.expansion.cinemaAgent.label,
-        description: copy.sidebar.expansion.cinemaAgent.description,
-        status: "planned",
-        icon: Clapperboard,
-      },
-      {
-        id: "omni-campaign-agent",
-        label: copy.sidebar.expansion.omniCampaignAgent.label,
-        description: copy.sidebar.expansion.omniCampaignAgent.description,
-        status: "roadmap",
-        icon: Wand2,
-      },
-      {
-        id: "brand-assets",
-        label: copy.sidebar.expansion.brandAssets.label,
-        description: copy.sidebar.expansion.brandAssets.description,
-        status: "planned",
-        icon: Boxes,
-      },
-      {
-        id: "automation",
-        label: copy.sidebar.expansion.automation.label,
-        description: copy.sidebar.expansion.automation.description,
-        status: "planned",
-        icon: Workflow,
       },
     ],
     [copy]
   );
 
-  function getExpansionStatusLabel(status: ExpansionStatus) {
-    if (status === "coming_soon") return copy.sidebar.comingSoon;
-    if (status === "planned") return copy.sidebar.planned;
-    return copy.sidebar.roadmapBadge;
+  const plannedModules: PlannedModule[] = useMemo(
+    () => [
+      {
+        id: "cinema-agent",
+        label: copy.studioSuite.planned.cinemaAgent.label,
+        description: copy.sidebar.expansion.cinemaAgent.description,
+        bestFor: copy.studioSuite.planned.cinemaAgent.bestFor,
+        icon: Clapperboard,
+      },
+      {
+        id: "omni-campaign-agent",
+        label: copy.studioSuite.planned.omniCampaignAgent.label,
+        description: copy.sidebar.expansion.omniCampaignAgent.description,
+        bestFor: copy.studioSuite.planned.omniCampaignAgent.bestFor,
+        icon: Wand2,
+      },
+      {
+        id: "social-planner",
+        label: copy.studioSuite.planned.socialPlanner.label,
+        description: copy.sidebar.expansion.socialPlanner.description,
+        bestFor: copy.studioSuite.planned.socialPlanner.bestFor,
+        icon: Calendar,
+      },
+      {
+        id: "brand-safety",
+        label: copy.studioSuite.planned.brandSafety.label,
+        description: copy.sidebar.expansion.brandSafety.description,
+        bestFor: copy.studioSuite.planned.brandSafety.bestFor,
+        icon: Shield,
+      },
+      {
+        id: "watermarked-promo",
+        label: copy.studioSuite.planned.watermarkedPromo.label,
+        description: copy.sidebar.watermarkedPromoBody,
+        bestFor: copy.studioSuite.planned.watermarkedPromo.bestFor,
+        icon: Tag,
+      },
+    ],
+    [copy]
+  );
+
+  function getModeAvailabilityLabel(availability: ModeAvailability) {
+    if (availability === "live") return copy.sidebar.live;
+    if (availability === "beta") return copy.sidebar.beta;
+    return copy.sidebar.planned;
   }
 
   const [activeView, setActiveView] = useState<DashboardView>("agent");
@@ -283,14 +366,17 @@ function DashboardPageInner() {
   function renderContent() {
     if (activeView === "agent") {
       return (
-        <AiAgentStudio
-          charactersRefreshKey={charactersRefreshKey}
-          regenerateDraft={regenerateDraft}
-          onClearRegenerateDraft={handleClearRegenerateDraft}
-          onGenerationQueued={handleGenerationQueued}
-          onOpenGallery={() => setActiveView("gallery")}
-          onOpenCredits={() => setActiveView("credits")}
-        />
+        <>
+          <StudioModesOverview />
+          <AiAgentStudio
+            charactersRefreshKey={charactersRefreshKey}
+            regenerateDraft={regenerateDraft}
+            onClearRegenerateDraft={handleClearRegenerateDraft}
+            onGenerationQueued={handleGenerationQueued}
+            onOpenGallery={() => setActiveView("gallery")}
+            onOpenCredits={() => setActiveView("credits")}
+          />
+        </>
       );
     }
 
@@ -437,63 +523,100 @@ function DashboardPageInner() {
           <div className="mt-7">
             <div className="mb-3 px-3">
               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/25">
-                {copy.sidebar.expansionModules}
+                {copy.sidebar.creativeModes}
               </p>
               <p className="mt-2 text-[11px] leading-5 text-white/35">
-                {copy.sidebar.expansionIntro}
+                {copy.sidebar.creativeModesHint}
+              </p>
+            </div>
+
+            <div className="space-y-1.5" role="list">
+              {creativeModeItems.map((mode) => {
+                const Icon = mode.icon;
+                const statusLabel = getModeAvailabilityLabel(mode.availability);
+
+                return (
+                  <div
+                    key={mode.id}
+                    role="listitem"
+                    className="flex items-start gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-2.5 py-2.5"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-white/45">
+                      <Icon className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="text-[11px] font-bold text-white/70">
+                          {mode.label}
+                        </p>
+                        <span
+                          className={`rounded-full border px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.08em] ${getModeAvailabilityBadgeClass(
+                            mode.availability
+                          )}`}
+                        >
+                          {statusLabel}
+                        </span>
+                        <span className="text-[8px] font-bold uppercase tracking-[0.06em] text-[#d8ad5f]/90">
+                          {mode.credits}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-white/30">
+                        {mode.bestFor}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-7">
+            <div className="mb-3 px-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/25">
+                {copy.sidebar.expansionPlanned}
+              </p>
+              <p className="mt-2 text-[11px] leading-5 text-white/35">
+                {copy.sidebar.expansionPlannedHint}
               </p>
             </div>
 
             <div
               className="space-y-2"
               role="list"
-              aria-label={copy.sidebar.expansionModules}
+              aria-label={copy.sidebar.expansionPlanned}
             >
-              {expansionModules.map((module) => {
-                const Icon = module.icon;
-                const statusLabel = getExpansionStatusLabel(module.status);
-
-                return (
-                  <div
-                    key={module.id}
-                    role="listitem"
-                    aria-disabled="true"
-                    title={`${module.label} — ${statusLabel}. ${copy.sidebar.moduleUnavailable}`}
-                    className="relative flex w-full cursor-not-allowed items-start gap-3 rounded-[1.3rem] border border-white/[0.06] bg-white/[0.02] px-3 py-3 text-left"
-                  >
-                    <div className="pointer-events-none absolute inset-0 rounded-[1.3rem] bg-gradient-to-r from-transparent via-white/[0.02] to-transparent" />
-
-                    <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/[0.06] bg-black/30 text-white/35">
-                      <Icon className="h-4 w-4" />
-                    </div>
-
-                    <div className="relative min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <p className="text-sm font-bold text-white/45">
-                          {module.label}
-                        </p>
-
-                        <span
-                          className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] ${getExpansionStatusBadgeClass(
-                            module.status
-                          )}`}
-                        >
-                          {statusLabel}
-                        </span>
-                      </div>
-
-                      <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-white/28">
-                        {module.description}
-                      </p>
-                    </div>
-
-                    <Lock
-                      className="relative mt-0.5 h-3.5 w-3.5 shrink-0 text-white/18"
-                      aria-hidden
-                    />
+              {plannedModules.map((module) => (
+                <div
+                  key={module.id}
+                  role="listitem"
+                  aria-disabled="true"
+                  title={`${module.label} — ${copy.sidebar.planned}. ${copy.sidebar.moduleUnavailable}`}
+                  className="relative flex w-full cursor-not-allowed items-start gap-3 rounded-[1.3rem] border border-white/[0.06] bg-white/[0.02] px-3 py-3 text-left"
+                >
+                  <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.06] bg-black/30 text-white/30">
+                    <module.icon className="h-4 w-4" />
                   </div>
-                );
-              })}
+
+                  <div className="relative min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <p className="text-[11px] font-bold text-white/40">
+                        {module.label}
+                      </p>
+                      <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.1em] text-white/40">
+                        {copy.sidebar.planned}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[10px] leading-4 text-white/28">
+                      {module.bestFor}
+                    </p>
+                  </div>
+
+                  <Lock
+                    className="relative mt-0.5 h-3.5 w-3.5 shrink-0 text-white/18"
+                    aria-hidden
+                  />
+                </div>
+              ))}
             </div>
 
             <p className="mt-3 px-3 text-[10px] leading-4 text-white/25">
@@ -514,20 +637,6 @@ function DashboardPageInner() {
             <p className="mt-2 text-xs leading-5 text-white/40">
               {copy.sidebar.roadmapBody}
             </p>
-
-            <div className="mt-4 rounded-xl border border-dashed border-white/10 bg-black/20 p-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/50">
-                  {copy.sidebar.watermarkedPromoTitle}
-                </p>
-                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.1em] text-white/40">
-                  {copy.sidebar.watermarkedPromoBadge}
-                </span>
-              </div>
-              <p className="mt-2 text-[11px] leading-4 text-white/35">
-                {copy.sidebar.watermarkedPromoBody}
-              </p>
-            </div>
           </div>
 
           <Link

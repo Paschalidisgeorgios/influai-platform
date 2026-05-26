@@ -21,12 +21,12 @@ const en = {
     liveStudio: "Live Studio",
     expansionModules: "Expansion modules",
     expansionIntro:
-      "Video Studio and Lip Sync Studio are coming soon. Cinema Agent and Omni Campaign Agent are on the roadmap. Not live in this release.",
+      "Campaign orchestration and compliance tools — preview only. No API, credits or billing.",
     expansionFootnote:
-      "Includes Premium Image Modes and advanced studio workflows — preview only, not billable.",
+      "Planned modules stay disabled until a future release.",
     roadmap: "Roadmap",
     roadmapBody:
-      "Video Studio and Lip Sync Studio are coming soon. Cinema Agent and Omni Campaign Agent are on the roadmap. All expansion modules are disabled here — no routing, API calls or credit usage in this MVP.",
+      "Live and beta creative modes run in the AI Agent. Expansion modules below are roadmap previews only.",
     watermarkedPromoTitle: "Watermarked Promo Package",
     watermarkedPromoBadge: "Planned",
     watermarkedPromoBody:
@@ -35,10 +35,18 @@ const en = {
     logout: "Logout",
     studioMenu: "Studio Menu",
     live: "Live",
+    beta: "Beta",
     comingSoon: "Coming soon",
     planned: "Planned",
     roadmapBadge: "Roadmap",
     moduleUnavailable: "Not available in the current release.",
+    creativeModes: "Creative Modes",
+    creativeModesHint:
+      "Image, video and lip-sync workflows run in the AI Agent. Credits apply per selected mode.",
+    expansionPlanned: "Expansion / Planned",
+    expansionPlannedHint:
+      "Preview only — not connected to generation, credits or billing.",
+    creditCostShort: "Credits",
     nav: {
       agent: { label: "AI Agent", description: "Generate campaign visuals" },
       gallery: { label: "Asset Gallery", description: "Manage generated assets" },
@@ -78,6 +86,86 @@ const en = {
         label: "Omni Campaign Agent",
         description:
           "Turn a campaign idea into visuals, video concepts, captions and export-ready assets.",
+      },
+      socialPlanner: {
+        label: "Social Planner",
+        description:
+          "Plan posts and campaign calendars — preview only, no social posting API.",
+      },
+      brandSafety: {
+        label: "Brand Safety / Compliance",
+        description:
+          "Policy checks and compliance hints for campaign assets.",
+      },
+    },
+  },
+  studioSuite: {
+    title: "Studio Modes",
+    description:
+      "Choose the right workflow for your campaign asset. Credits are charged based on the selected mode.",
+    workflowChargeNote:
+      "Credits are charged based on the selected workflow.",
+    creditCost: "Credit Cost",
+    bestFor: "Best for",
+    status: "Status",
+    tool: "Tool",
+    modes: {
+      standard: {
+        label: "Standard Image",
+        credits: "1 Credit",
+        bestFor: "Reliable campaign visuals",
+      },
+      fastDraft: {
+        label: "Fast Draft",
+        credits: "1 Credit",
+        bestFor: "Quick visual exploration",
+      },
+      premium: {
+        label: "Premium Image",
+        credits: "3 Credits",
+        bestFor: "Higher-quality campaign visuals",
+      },
+      referenceEdit: {
+        label: "Reference Edit",
+        credits: "5 Credits",
+        bestFor: "Guided image edits",
+      },
+      brandAssets: {
+        label: "Brand Assets",
+        credits: "4 Credits",
+        bestFor: "Ad creatives and product visuals",
+      },
+      videoStudio: {
+        label: "Video Studio",
+        credits: "25 Credits",
+        bestFor: "Image-to-video creator clips",
+      },
+      lipSync: {
+        label: "Lip Sync Studio",
+        credits: "30 Credits",
+        bestFor: "Talking creator clips",
+      },
+    },
+    planned: {
+      cinemaAgent: {
+        label: "Cinema Agent",
+        bestFor: "Shot planning and scene briefs",
+      },
+      omniCampaignAgent: {
+        label: "Omni Campaign Agent",
+        bestFor: "Cross-channel campaign orchestration",
+      },
+      socialPlanner: {
+        label: "Social Planner",
+        bestFor: "Content calendars and post planning",
+      },
+      brandSafety: {
+        label: "Brand Safety / Compliance",
+        bestFor: "Policy and compliance review",
+      },
+      watermarkedPromo: {
+        label: "Watermarked Promo Package",
+        bestFor: "Low-cost watermarked exports",
       },
     },
   },
@@ -514,6 +602,8 @@ const en = {
     balanceDescription:
       "Credits are used when you generate images in the AI Agent. Each standard image uses one credit.",
     modeUsageIntro: "Credits are used depending on the selected mode.",
+    workflowChargeNote:
+      "Credits are charged based on the selected workflow.",
     modeCosts: {
       standard: "Standard Image: 1 Credit",
       fastDraft: "Fast Draft: 1 Credit",
@@ -627,12 +717,12 @@ const de: DeepString<typeof en> = {
     liveStudio: "Live Studio",
     expansionModules: "Erweiterungsmodule",
     expansionIntro:
-      "Video Studio und Lip Sync Studio sind demnächst verfügbar. Cinema Agent und Omni Campaign Agent sind auf der Roadmap. In diesem Release nicht live.",
+      "Kampagnen-Orchestrierung und Compliance — nur Vorschau. Keine API, Credits oder Abrechnung.",
     expansionFootnote:
-      "Umfasst Premium Image Modes und erweiterte Studio-Workflows — nur Vorschau, nicht abrechenbar.",
+      "Geplante Module bleiben bis zu einem späteren Release deaktiviert.",
     roadmap: "Roadmap",
     roadmapBody:
-      "Video Studio und Lip Sync Studio sind demnächst verfügbar. Cinema Agent und Omni Campaign Agent sind auf der Roadmap. Alle Erweiterungsmodule sind hier deaktiviert — kein Routing, keine API-Aufrufe und kein Credit-Verbrauch in diesem MVP.",
+      "Live- und Beta-Modi laufen im AI Agent. Erweiterungsmodule unten sind nur Roadmap-Vorschau.",
     watermarkedPromoTitle: "Watermarked Promo-Paket",
     watermarkedPromoBadge: "Geplant",
     watermarkedPromoBody:
@@ -641,10 +731,18 @@ const de: DeepString<typeof en> = {
     logout: "Abmelden",
     studioMenu: "Studio-Menü",
     live: "Live",
+    beta: "Beta",
     comingSoon: "Demnächst",
     planned: "Geplant",
     roadmapBadge: "Roadmap",
     moduleUnavailable: "In der aktuellen Version nicht verfügbar.",
+    creativeModes: "Creative Modes",
+    creativeModesHint:
+      "Bild-, Video- und Lip-Sync-Workflows laufen im AI Agent. Credits je gewähltem Modus.",
+    expansionPlanned: "Expansion / Geplant",
+    expansionPlannedHint:
+      "Nur Vorschau — nicht an Generierung, Credits oder Abrechnung angebunden.",
+    creditCostShort: "Credits",
     nav: {
       agent: {
         label: "AI Agent",
@@ -690,6 +788,86 @@ const de: DeepString<typeof en> = {
         label: "Omni Campaign Agent",
         description:
           "Wandle eine Kampagnen-Idee in Visuals, Video-Konzepte, Captions und exportfertige Assets um.",
+      },
+      socialPlanner: {
+        label: "Social Planner",
+        description:
+          "Plane Posts und Kampagnen-Kalender — nur Vorschau, keine Social-Posting-API.",
+      },
+      brandSafety: {
+        label: "Brand Safety / Compliance",
+        description:
+          "Policy-Checks und Compliance-Hinweise für Kampagnen-Assets.",
+      },
+    },
+  },
+  studioSuite: {
+    title: "Studio-Modi",
+    description:
+      "Wähle den passenden Workflow für dein Kampagnen-Asset. Credits werden je gewähltem Modus verbraucht.",
+    workflowChargeNote:
+      "Credits werden je gewähltem Workflow verbraucht.",
+    creditCost: "Credit-Kosten",
+    bestFor: "Ideal für",
+    status: "Status",
+    tool: "Tool",
+    modes: {
+      standard: {
+        label: "Standard Image",
+        credits: "1 Credit",
+        bestFor: "Zuverlässige Kampagnenvisuals",
+      },
+      fastDraft: {
+        label: "Fast Draft",
+        credits: "1 Credit",
+        bestFor: "Schnelle visuelle Exploration",
+      },
+      premium: {
+        label: "Premium Image",
+        credits: "3 Credits",
+        bestFor: "Höherwertige Kampagnenvisuals",
+      },
+      referenceEdit: {
+        label: "Reference Edit",
+        credits: "5 Credits",
+        bestFor: "Geführte Bildbearbeitung",
+      },
+      brandAssets: {
+        label: "Brand Assets",
+        credits: "4 Credits",
+        bestFor: "Ad Creatives und Produktvisuals",
+      },
+      videoStudio: {
+        label: "Video Studio",
+        credits: "25 Credits",
+        bestFor: "Image-to-Video Creator-Clips",
+      },
+      lipSync: {
+        label: "Lip Sync Studio",
+        credits: "30 Credits",
+        bestFor: "Talking-Creator-Clips",
+      },
+    },
+    planned: {
+      cinemaAgent: {
+        label: "Cinema Agent",
+        bestFor: "Shot-Planung und Szenen-Briefings",
+      },
+      omniCampaignAgent: {
+        label: "Omni Campaign Agent",
+        bestFor: "Kanalübergreifende Kampagnen-Orchestrierung",
+      },
+      socialPlanner: {
+        label: "Social Planner",
+        bestFor: "Content-Kalender und Post-Planung",
+      },
+      brandSafety: {
+        label: "Brand Safety / Compliance",
+        bestFor: "Policy- und Compliance-Prüfung",
+      },
+      watermarkedPromo: {
+        label: "Watermarked Promo Package",
+        bestFor: "Günstige Exporte mit Wasserzeichen",
       },
     },
   },
@@ -1144,6 +1322,8 @@ const de: DeepString<typeof en> = {
       "Credits werden beim Generieren von Bildern im AI Agent verwendet. Jedes Standard-Bild verbraucht einen Credit.",
     modeUsageIntro:
       "Credits werden je nach gewähltem Modus verbraucht.",
+    workflowChargeNote:
+      "Credits werden je gewähltem Workflow verbraucht.",
     modeCosts: {
       standard: "Standard Image: 1 Credit",
       fastDraft: "Fast Draft: 1 Credit",
