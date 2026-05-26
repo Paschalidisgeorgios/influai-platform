@@ -18,7 +18,6 @@ import {
   Mic,
   MonitorPlay,
   PenLine,
-  Plus,
   Search,
   Send,
   Sparkles,
@@ -459,6 +458,75 @@ function ModeCardBody({
       )}
     </>
   );
+}
+
+function ImageModeChip({
+  label,
+  selected,
+  disabled,
+  onClick,
+  title,
+}: {
+  label: string;
+  selected: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+  title?: string;
+}) {
+  if (disabled) {
+    return (
+      <span
+        title={title}
+        className="inline-flex cursor-not-allowed items-center rounded-full border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-[11px] font-bold text-white/30"
+      >
+        {label}
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      title={title}
+      onClick={onClick}
+      className={`inline-flex items-center rounded-full border px-3 py-2 text-[11px] font-black transition outline-none focus-visible:ring-2 focus-visible:ring-[#d8ad5f]/40 ${
+        selected
+          ? "border-[#d8ad5f]/50 bg-[#d8ad5f]/15 text-[#f0d4a8] ring-1 ring-[#d8ad5f]/25"
+          : "border-white/10 bg-black/25 text-white/60 hover:border-white/20 hover:text-white"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function getImageModeChipLabel(
+  key: ImageModeKey,
+  chips: {
+    standard: string;
+    fastDraft: string;
+    ugcLook: string;
+    premium: string;
+    brandAssets: string;
+    referenceEdit: string;
+  }
+) {
+  switch (key) {
+    case "fast_draft":
+      return chips.fastDraft;
+    case "ugc_look":
+      return chips.ugcLook;
+    case "premium_image":
+      return chips.premium;
+    case "brand_assets":
+      return chips.brandAssets;
+    case "reference_edit":
+      return chips.referenceEdit;
+    case "standard":
+    default:
+      return chips.standard;
+  }
 }
 
 const REFERENCE_EDIT_MAX_BYTES = 12 * 1024 * 1024;
@@ -1457,16 +1525,6 @@ export default function AiAgentStudio({
         icon: ImageIcon,
       },
       {
-        key: "ugc_look" as const,
-        label: a.imageModes.ugcLook.label,
-        description: a.imageModes.ugcLook.description,
-        hoverHint: a.imageModes.ugcLook.hoverHint,
-        status: (UGC_LOOK_PUBLIC_ENABLED ? "beta" : "planned") as ImageModeCardStatus,
-        creditNote: suite.modes.ugcLook.credits,
-        bestFor: suite.modes.ugcLook.bestFor,
-        icon: Clapperboard,
-      },
-      {
         key: "fast_draft" as const,
         label: a.imageModes.fastDraft.label,
         description: a.imageModes.fastDraft.description,
@@ -1476,6 +1534,16 @@ export default function AiAgentStudio({
         creditNote: suite.modes.fastDraft.credits,
         bestFor: suite.modes.fastDraft.bestFor,
         icon: Zap,
+      },
+      {
+        key: "ugc_look" as const,
+        label: a.imageModes.ugcLook.label,
+        description: a.imageModes.ugcLook.description,
+        hoverHint: a.imageModes.ugcLook.hoverHint,
+        status: (UGC_LOOK_PUBLIC_ENABLED ? "beta" : "planned") as ImageModeCardStatus,
+        creditNote: suite.modes.ugcLook.credits,
+        bestFor: suite.modes.ugcLook.bestFor,
+        icon: Clapperboard,
       },
       {
         key: "premium_image" as const,
@@ -1489,19 +1557,6 @@ export default function AiAgentStudio({
         icon: Sparkles,
       },
       {
-        key: "reference_edit" as const,
-        label: a.imageModes.referenceEdit.label,
-        description: a.imageModes.referenceEdit.description,
-        hoverHint: a.imageModes.referenceEdit.hoverHint,
-        comingSoonNote: a.imageModes.comingSoon,
-        status: (REFERENCE_EDIT_PUBLIC_ENABLED
-          ? "beta"
-          : "planned") as ImageModeCardStatus,
-        creditNote: suite.modes.referenceEdit.credits,
-        bestFor: suite.modes.referenceEdit.bestFor,
-        icon: PenLine,
-      },
-      {
         key: "brand_assets" as const,
         label: a.imageModes.brandAssets.label,
         description: a.imageModes.brandAssets.description,
@@ -1513,6 +1568,19 @@ export default function AiAgentStudio({
         creditNote: suite.modes.brandAssets.credits,
         bestFor: suite.modes.brandAssets.bestFor,
         icon: Megaphone,
+      },
+      {
+        key: "reference_edit" as const,
+        label: a.imageModes.referenceEdit.label,
+        description: a.imageModes.referenceEdit.description,
+        hoverHint: a.imageModes.referenceEdit.hoverHint,
+        comingSoonNote: a.imageModes.comingSoon,
+        status: (REFERENCE_EDIT_PUBLIC_ENABLED
+          ? "beta"
+          : "planned") as ImageModeCardStatus,
+        creditNote: suite.modes.referenceEdit.credits,
+        bestFor: suite.modes.referenceEdit.bestFor,
+        icon: PenLine,
       },
     ],
     [a, suite]
@@ -1633,6 +1701,21 @@ export default function AiAgentStudio({
   );
 
   const [agentResult, setAgentResult] = useState<AgentResult | null>(null);
+  const [processingStepIndex, setProcessingStepIndex] = useState(0);
+
+  const processingSteps = useMemo(
+    () => [
+      a.processingStepBrief,
+      a.processingStepDirection,
+      a.processingStepFormat,
+      a.processingStepSaving,
+    ],
+    [a]
+  );
+
+  const activeProcessingStep =
+    processingSteps[processingStepIndex % processingSteps.length] ??
+    a.processingStepBrief;
 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -1685,6 +1768,19 @@ export default function AiAgentStudio({
   useEffect(() => {
     loadCharacters();
   }, [charactersRefreshKey]);
+
+  useEffect(() => {
+    if (agentResult?.status !== "processing") {
+      setProcessingStepIndex(0);
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setProcessingStepIndex((current) => (current + 1) % processingSteps.length);
+    }, 2800);
+
+    return () => window.clearInterval(interval);
+  }, [agentResult?.status, processingSteps.length]);
 
   useEffect(() => {
     if (imageMode === "ugc_look" && !UGC_LOOK_PUBLIC_ENABLED) {
@@ -2568,54 +2664,57 @@ export default function AiAgentStudio({
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(6,6,10,0.92)_0%,rgba(6,6,10,0.68)_36%,rgba(38,30,36,0.34)_60%,rgba(18,15,24,0.72)_100%)]" />
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full min-w-0 max-w-6xl flex-col items-center justify-start py-4 sm:py-8 lg:min-h-[calc(100dvh-5rem)] lg:justify-center lg:py-10">
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="text-xs font-semibold text-white/45"
-        >
-          InfluExAi Agent
-        </motion.p>
+      <div className="relative z-10 mx-auto w-full min-w-0 max-w-7xl py-4 sm:py-6 lg:py-8">
+        <div className="mb-5 sm:mb-6 lg:mb-8">
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="text-xs font-semibold text-white/45"
+          >
+            InfluExAi Agent
+          </motion.p>
 
-        <motion.h2
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.05 }}
-          className="mt-3 text-center text-2xl font-black tracking-[-0.055em] text-white sm:text-3xl lg:text-5xl"
-        >
-          {a.title}
-        </motion.h2>
+          <motion.h2
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.05 }}
+            className="mt-2 text-2xl font-black tracking-[-0.055em] text-white sm:text-3xl lg:text-4xl"
+          >
+            {a.title}
+          </motion.h2>
 
-        <motion.p
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="mx-auto mt-4 max-w-2xl text-center text-xs leading-6 text-white/50 sm:text-sm"
-        >
-          {a.subtitle}
-        </motion.p>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="mt-3 max-w-2xl text-xs leading-6 text-white/50 sm:text-sm"
+          >
+            {a.subtitle}
+          </motion.p>
+        </div>
 
         {statusMessage && (
-          <div className="mt-6 w-full max-w-3xl rounded-2xl border border-white/10 bg-white/[0.08] px-4 py-3 text-sm font-bold text-white">
+          <div className="mb-4 w-full rounded-2xl border border-white/10 bg-white/[0.08] px-4 py-3 text-sm font-bold text-white">
             {statusMessage}
           </div>
         )}
 
         {errorMessage && (
-          <div className="mt-6 flex w-full max-w-3xl items-center gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-100">
+          <div className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-100">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
 
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start lg:gap-8">
         <motion.form
           ref={formRef}
           initial={{ opacity: 0, y: 22, scale: 0.985 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.16 }}
           onSubmit={queueGeneration}
-          className="relative isolate mt-6 w-full max-w-5xl overflow-visible rounded-[1.35rem] border border-white/12 bg-white/[0.075] shadow-[0_30px_110px_rgba(0,0,0,0.55)] backdrop-blur-2xl sm:mt-8 sm:rounded-[1.7rem]"
+          className="relative isolate w-full min-w-0 overflow-visible rounded-[1.35rem] border border-white/12 bg-white/[0.075] shadow-[0_30px_110px_rgba(0,0,0,0.55)] backdrop-blur-2xl sm:rounded-[1.7rem]"
         >
           <div className="pointer-events-none absolute inset-0 rounded-[1.7rem] bg-[radial-gradient(circle_at_50%_100%,rgba(216,173,95,0.16),transparent_42%)]" />
           <div className="pointer-events-none absolute inset-0 rounded-[1.7rem] bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.08),transparent_38%)]" />
@@ -2623,17 +2722,22 @@ export default function AiAgentStudio({
           <div className="relative z-10">
             {studioTab === "image" ? (
               <>
-                <textarea
-                  value={prompt}
-                  onChange={(event) => setPrompt(event.target.value)}
-                  onKeyDown={submitFromTextarea}
-                  placeholder={typedExample || a.promptPlaceholder}
-                  className="min-h-[104px] w-full resize-y bg-transparent px-4 py-4 text-base leading-relaxed text-white outline-none placeholder:text-white/32 sm:min-h-[78px] sm:resize-none sm:px-6 sm:py-5 sm:text-lg"
-                />
+                <div className="border-b border-white/10 px-4 py-4 sm:px-6 sm:py-5">
+                  <h3 className="text-base font-black text-white sm:text-lg">
+                    {a.workspacePromptHeadline}
+                  </h3>
+                  <textarea
+                    value={prompt}
+                    onChange={(event) => setPrompt(event.target.value)}
+                    onKeyDown={submitFromTextarea}
+                    placeholder={typedExample || a.promptPlaceholder}
+                    className="mt-3 min-h-[120px] w-full resize-y rounded-2xl border border-white/10 bg-black/30 px-4 py-4 text-base leading-relaxed text-white outline-none placeholder:text-white/32 focus-visible:ring-2 focus-visible:ring-[#d8ad5f]/30 sm:min-h-[140px] sm:text-lg"
+                  />
 
-                <p className="border-t border-white/10 px-4 py-2 text-[11px] font-medium text-white/35 sm:px-6">
-                  {a.enterHint}
-                </p>
+                  <p className="mt-2 text-[11px] font-medium text-white/35">
+                    {a.enterHint}
+                  </p>
+                </div>
               </>
             ) : studioTab === "video" ? (
               <div className="border-t border-white/10 px-4 py-4 sm:px-6">
@@ -2778,10 +2882,10 @@ export default function AiAgentStudio({
                 ) : null}
 
                 {studioTab === "image" ? (
-                <fieldset className="rounded-2xl border border-white/10 bg-black/20 p-2.5 sm:p-3">
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-0.5">
+                <fieldset className="rounded-2xl border border-white/10 bg-black/20 p-3 sm:p-4">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <legend className="text-[10px] font-black uppercase tracking-[0.22em] text-white/40">
-                      {suite.title}
+                      {a.imageMode}
                     </legend>
                     <span
                       className={`rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] ${
@@ -2794,180 +2898,67 @@ export default function AiAgentStudio({
                     </span>
                   </div>
 
-                  <p className="mb-1 px-0.5 text-[10px] leading-4 text-white/32">
-                    {a.imageModeIntro}
-                  </p>
-                  <p className="mb-2.5 px-0.5 text-[10px] leading-4 text-white/28">
-                    {suite.workflowChargeNote}
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 sm:gap-2.5">
+                  <div className="flex flex-wrap gap-2">
                     {imageModes.map((mode) => {
-                      const Icon = mode.icon;
                       const isSelectable =
                         mode.status === "live" || mode.status === "beta";
                       const isSelected = isSelectable && imageMode === mode.key;
-                      const statusLabel =
-                        mode.status === "live"
-                          ? a.imageModes.live
-                          : mode.status === "beta"
-                            ? a.imageModes.beta
-                            : a.imageModes.planned;
-
-                      const isReferenceEditPlanned =
-                        mode.key === "reference_edit" &&
-                        !REFERENCE_EDIT_PUBLIC_ENABLED;
-                      const plannedTitle =
+                      const chipLabel = getImageModeChipLabel(
+                        mode.key,
+                        a.imageModeChips
+                      );
+                      const chipTitle =
                         "hoverHint" in mode && mode.hoverHint
                           ? `${mode.description} — ${mode.hoverHint}`
-                          : `${mode.description} — ${a.imageModes.plannedTooltip}`;
+                          : mode.description;
 
                       return (
-                        <div
+                        <ImageModeChip
                           key={mode.key}
-                          className={`relative flex flex-col rounded-xl border p-2 text-left sm:p-2.5 ${
-                            isReferenceEditPlanned
-                              ? "min-h-[4.75rem] sm:min-h-[5.25rem]"
-                              : "min-h-[5rem] sm:min-h-[5.75rem]"
-                          } ${
+                          label={chipLabel}
+                          selected={isSelected}
+                          disabled={!isSelectable}
+                          title={chipTitle}
+                          onClick={
                             isSelectable
-                              ? isSelected
-                                ? "border-[#d8ad5f]/50 bg-[#d8ad5f]/12 ring-1 ring-[#d8ad5f]/25"
-                                : "border-white/10 bg-white/[0.04]"
-                              : isReferenceEditPlanned
-                                ? "border-[#d8ad5f]/15 bg-[linear-gradient(160deg,rgba(216,173,95,0.06)_0%,rgba(255,255,255,0.02)_55%)]"
-                                : "border-white/[0.08] bg-white/[0.025]"
-                          }`}
-                        >
-                          {isSelectable ? (
-                            <button
-                              type="button"
-                              aria-pressed={isSelected}
-                              onClick={() => setImageMode(mode.key)}
-                              title={mode.description}
-                              className="flex h-full w-full flex-col text-left outline-none focus-visible:ring-2 focus-visible:ring-[#d8ad5f]/40 rounded-lg"
-                            >
-                              <ModeCardBody
-                                Icon={Icon}
-                                isLive={isSelectable}
-                                isSelected={isSelected}
-                                label={mode.label}
-                                description={mode.description}
-                                statusLabel={statusLabel}
-                                statusTone={mode.status}
-                                creditNote={mode.creditNote}
-                                bestFor={mode.bestFor}
-                              />
-                            </button>
-                          ) : isReferenceEditPlanned ? (
-                            <button
-                              type="button"
-                              title={plannedTitle}
-                              onClick={() => {
-                                referenceEditPanelRef.current?.scrollIntoView({
-                                  behavior: "smooth",
-                                  block: "nearest",
-                                });
-                              }}
-                              className="flex h-full w-full flex-col text-left outline-none focus-visible:ring-2 focus-visible:ring-[#d8ad5f]/35 rounded-lg"
-                            >
-                              <ModeCardBody
-                                Icon={Icon}
-                                isLive={false}
-                                isSelected={false}
-                                label={mode.label}
-                                description={mode.description}
-                                statusLabel={statusLabel}
-                                statusTone="planned"
-                                creditNote={mode.creditNote}
-                                bestFor={mode.bestFor}
-                                comingSoonNote={
-                                  "comingSoonNote" in mode
-                                    ? mode.comingSoonNote
-                                    : undefined
-                                }
-                              />
-                            </button>
-                          ) : (
-                            <div
-                              role="presentation"
-                              aria-disabled="true"
-                              title={plannedTitle}
-                              className="flex h-full cursor-not-allowed flex-col"
-                            >
-                              <ModeCardBody
-                                Icon={Icon}
-                                isLive={false}
-                                isSelected={false}
-                                label={mode.label}
-                                description={mode.description}
-                                statusLabel={statusLabel}
-                                statusTone="planned"
-                                creditNote={mode.creditNote}
-                                bestFor={mode.bestFor}
-                                comingSoonNote={
-                                  "comingSoonNote" in mode
-                                    ? mode.comingSoonNote
-                                    : undefined
-                                }
-                                showLock
-                              />
-                            </div>
-                          )}
-                        </div>
+                              ? () => setImageMode(mode.key)
+                              : undefined
+                          }
+                        />
                       );
                     })}
                   </div>
 
-                  <ReferenceEditPanel
-                    label={a.imageModes.referenceEdit.label}
-                    copy={a.imageModes.referenceEdit.panel}
-                    panelRef={referenceEditPanelRef}
-                    getAccessToken={getAccessToken}
-                    isEnabled={REFERENCE_EDIT_PUBLIC_ENABLED}
-                    sourcePreviewUrl={referenceEditSourceUrl}
-                    onSourcePreviewUrlChange={setReferenceEditSourceUrl}
-                    editInstruction={referenceEditInstruction}
-                    onEditInstructionChange={setReferenceEditInstruction}
-                  />
-
-                  <div className="mt-3 rounded-xl border border-white/[0.06] bg-black/25 px-2.5 py-2.5 sm:px-3">
-                    <p className="text-[9px] font-black uppercase tracking-[0.14em] text-white/35">
-                      {a.imageModeRoadmapLabel}
-                    </p>
-                    <p className="mt-1 text-[10px] leading-4 text-white/28">
-                      {a.imageModeRoadmapNote}
-                    </p>
-                    <p className="mt-1 text-[10px] leading-4 text-white/28">
-                      {a.futureModulesPlannedNote}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {a.studioRoadmapChips.map((chip) => (
-                        <span
-                          key={chip}
-                          className="pointer-events-none rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[9px] font-semibold text-white/42"
-                        >
-                          {chip}
-                        </span>
-                      ))}
+                  {isReferenceEditActive ? (
+                    <div className="mt-4">
+                      <ReferenceEditPanel
+                        label={a.imageModes.referenceEdit.label}
+                        copy={a.imageModes.referenceEdit.panel}
+                        panelRef={referenceEditPanelRef}
+                        getAccessToken={getAccessToken}
+                        isEnabled={REFERENCE_EDIT_PUBLIC_ENABLED}
+                        sourcePreviewUrl={referenceEditSourceUrl}
+                        onSourcePreviewUrlChange={setReferenceEditSourceUrl}
+                        editInstruction={referenceEditInstruction}
+                        onEditInstructionChange={setReferenceEditInstruction}
+                      />
                     </div>
-                  </div>
+                  ) : null}
                 </fieldset>
                 ) : null}
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-3 py-2 text-xs font-bold text-white/65">
-                    <Plus className="h-3.5 w-3.5 shrink-0" />
-                    <span>{a.agent}</span>
-                  </div>
-
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/35">
+                    {a.styleProfile}
+                  </p>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                   <select
                     value={selectedCharacterId}
                     onChange={(event) => {
                       setSelectedCharacterId(event.target.value);
                     }}
                     aria-label={a.styleProfileAria}
-                    className="max-w-full rounded-full border border-white/10 bg-black/35 px-3 py-2 text-xs font-bold text-white outline-none sm:max-w-[280px]"
+                    className="w-full max-w-full rounded-full border border-white/10 bg-black/35 px-3 py-2.5 text-xs font-bold text-white outline-none sm:w-auto sm:min-w-[200px] sm:max-w-[280px]"
                   >
                     <option value="">
                       {loadingCharacters
@@ -3052,12 +3043,10 @@ export default function AiAgentStudio({
                     )}
                   </div>
 
-                  <div className="rounded-full bg-[#d8ad5f] px-3 py-2 text-xs font-black text-black">
-                    {selectedCharacter ? a.styleProfile : a.standard}
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                {studioTab === "image" ? (
                   <div className="flex flex-wrap gap-2">
                     {agentModes.map((mode) => (
                       <button
@@ -3075,97 +3064,103 @@ export default function AiAgentStudio({
                       </button>
                     ))}
                   </div>
+                ) : null}
 
-                  <motion.button
-                    whileHover={{ scale: 1.06 }}
-                    whileTap={{ scale: 0.96 }}
-                    type="submit"
-                    disabled={
-                      isSubmitBlocked ||
-                      referenceEditSubmitBlocked ||
-                      videoSubmitBlocked ||
-                      lipSyncSubmitBlocked
-                    }
-                    title={
-                      isLipSyncActive
-                        ? a.generateLipSync
-                        : isVideoStudioActive
-                          ? a.generateVideo
-                          : undefined
-                    }
-                    className={`inline-flex h-12 shrink-0 items-center justify-center self-end rounded-full shadow-xl transition disabled:opacity-50 sm:self-auto ${
-                      isLipSyncActive
-                        ? "min-w-[3rem] gap-2 bg-violet-500 px-4 text-white hover:bg-violet-400"
-                        : isVideoStudioActive
-                          ? "min-w-[3rem] gap-2 bg-sky-500 px-4 text-black hover:bg-sky-400"
-                          : "w-12 bg-white text-black hover:bg-white/85"
-                    }`}
-                  >
-                    {isSubmitBlocked ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : isLipSyncActive ? (
-                      <>
-                        <Mic className="h-4 w-4" aria-hidden />
-                        <span className="hidden text-xs font-black sm:inline">
-                          {a.generateLipSync}
-                        </span>
-                      </>
-                    ) : isVideoStudioActive ? (
-                      <>
-                        <Clapperboard className="h-4 w-4" aria-hidden />
-                        <span className="hidden text-xs font-black sm:inline">
-                          {a.generateVideo}
-                        </span>
-                      </>
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </motion.button>
-                </div>
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="submit"
+                  disabled={
+                    isSubmitBlocked ||
+                    referenceEditSubmitBlocked ||
+                    videoSubmitBlocked ||
+                    lipSyncSubmitBlocked
+                  }
+                  title={
+                    isLipSyncActive
+                      ? a.generateLipSync
+                      : isVideoStudioActive
+                        ? a.generateVideo
+                        : undefined
+                  }
+                  className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 text-sm font-black shadow-xl transition disabled:opacity-50 ${
+                    isLipSyncActive
+                      ? "bg-violet-500 text-white hover:bg-violet-400"
+                      : isVideoStudioActive
+                        ? "bg-sky-500 text-black hover:bg-sky-400"
+                        : "bg-[#d8ad5f] text-black hover:bg-[#efc777]"
+                  }`}
+                >
+                  {isSubmitBlocked ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isLipSyncActive ? (
+                    <>
+                      <Mic className="h-4 w-4" aria-hidden />
+                      <span>{a.generateLipSync}</span>
+                    </>
+                  ) : isVideoStudioActive ? (
+                    <>
+                      <Clapperboard className="h-4 w-4" aria-hidden />
+                      <span>{a.generateVideo}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" aria-hidden />
+                      <span>{a.generateButton}</span>
+                    </>
+                  )}
+                </motion.button>
               </div>
             </div>
           </div>
         </motion.form>
 
-        <div ref={resultRef} className="mt-6 w-full max-w-5xl scroll-mt-24 sm:mt-8 sm:scroll-mt-28">
-          {agentResult && (
-            <motion.div
-              initial={{ opacity: 0, y: 22 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.06] shadow-[0_30px_110px_rgba(0,0,0,0.45)] backdrop-blur-2xl sm:rounded-[1.7rem]"
-            >
-              <div className="border-b border-white/10 p-4 sm:p-5">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d8ad5f]">
-                      {a.latestResult}
-                    </p>
-
-                    <h3 className="mt-2 text-xl font-black text-white sm:text-2xl">
-                      {agentResult.status === "processing"
-                        ? isLipSyncWorkflow(agentResult.workflow)
-                          ? a.generatingLipSync
-                          : isVideoStudioWorkflow(agentResult.workflow)
-                            ? a.generatingVideo
-                            : a.generating
-                        : agentResult.status === "completed"
-                          ? a.completed
-                          : agentResult.status === "insufficient_credits"
-                            ? a.insufficientCreditsTitle
-                            : agentResult.status === "active_generation_limit"
-                              ? a.activeGenerationLimitTitle
-                              : a.failed}
-                    </h3>
-
-                    <p className="mt-2 text-sm text-white/45">
-                      {resultStatusDescription}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-bold text-white/55">
-                      {agentResult.output_format ?? selectedOutputFormat.label}
-                    </span>
+        <div
+          ref={resultRef}
+          className="w-full min-w-0 scroll-mt-24 lg:sticky lg:top-24"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.1 }}
+            className="flex min-h-[min(420px,72dvh)] flex-col overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.06] shadow-[0_30px_110px_rgba(0,0,0,0.45)] backdrop-blur-2xl sm:min-h-[480px] sm:rounded-[1.7rem] lg:min-h-[min(560px,78dvh)]"
+          >
+            {!agentResult ? (
+              <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center sm:px-10">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/[0.04]">
+                  <ImageIcon className="h-7 w-7 text-white/25" aria-hidden />
+                </div>
+                <h3 className="mt-5 text-lg font-black text-white sm:text-xl">
+                  {a.resultPlaceholderTitle}
+                </h3>
+                <p className="mt-3 max-w-sm text-sm leading-6 text-white/40">
+                  {a.resultPlaceholderHint}
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="border-b border-white/10 px-4 py-4 sm:px-5 sm:py-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d8ad5f]">
+                        {a.latestResult}
+                      </p>
+                      <h3 className="mt-2 text-lg font-black text-white sm:text-xl">
+                        {agentResult.status === "processing"
+                          ? isLipSyncWorkflow(agentResult.workflow)
+                            ? a.generatingLipSync
+                            : isVideoStudioWorkflow(agentResult.workflow)
+                              ? a.generatingVideo
+                              : a.generating
+                          : agentResult.status === "completed"
+                            ? a.completed
+                            : agentResult.status === "insufficient_credits"
+                              ? a.insufficientCreditsTitle
+                              : agentResult.status === "active_generation_limit"
+                                ? a.activeGenerationLimitTitle
+                                : a.failed}
+                      </h3>
+                    </div>
 
                     <span
                       className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black ${
@@ -3175,82 +3170,67 @@ export default function AiAgentStudio({
                             ? "border-amber-500/25 bg-amber-500/10 text-amber-100"
                             : agentResult.status === "active_generation_limit"
                               ? "border-sky-500/25 bg-sky-500/10 text-sky-100"
-                            : agentResult.status === "failed"
-                              ? "border-red-500/20 bg-red-500/10 text-red-200"
-                              : "border-[#d8ad5f]/25 bg-[#d8ad5f]/10 text-[#d8ad5f]"
+                              : agentResult.status === "failed"
+                                ? "border-red-500/20 bg-red-500/10 text-red-200"
+                                : "border-[#d8ad5f]/25 bg-[#d8ad5f]/10 text-[#d8ad5f]"
                       }`}
                     >
                       {agentResult.status === "processing" && (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       )}
-
                       {agentResult.status === "completed" && (
                         <CheckCircle2 className="h-3.5 w-3.5" />
                       )}
-
                       {agentResult.status === "insufficient_credits" && (
                         <CreditCard className="h-3.5 w-3.5" />
                       )}
-
                       {agentResult.status === "active_generation_limit" && (
                         <Clock className="h-3.5 w-3.5" />
                       )}
-
                       {agentResult.status === "failed" && (
                         <AlertCircle className="h-3.5 w-3.5" />
                       )}
-
                       {resultStatusLabel}
                     </span>
                   </div>
+
+                  {agentResult.status === "processing" && (
+                    <div className="mt-4 space-y-3">
+                      <div className="h-2 overflow-hidden rounded-full bg-white/[0.08]">
+                        <motion.div
+                          className="h-full rounded-full bg-[#d8ad5f]"
+                          initial={{ width: "12%" }}
+                          animate={{ width: ["12%", "68%", "42%", "88%"] }}
+                          transition={{
+                            duration: 3.2,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          }}
+                        />
+                      </div>
+                      <p className="text-sm font-bold text-[#d8ad5f]">
+                        {activeProcessingStep}
+                      </p>
+                      <p className="text-xs leading-5 text-white/40">
+                        {a.processingHint}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                {agentResult.status === "processing" && (
-                  <div className="mt-5">
-                    <div className="h-2 overflow-hidden rounded-full bg-white/[0.08]">
-                      <motion.div
-                        className="h-full rounded-full bg-[#d8ad5f]"
-                        initial={{ width: "12%" }}
-                        animate={{ width: ["12%", "68%", "42%", "88%"] }}
-                        transition={{
-                          duration: 3.2,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      />
-                    </div>
-
-                    <div className="mt-3 flex items-start gap-2 text-xs font-bold leading-5 text-white/40">
-                      <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      <span>
-                        {a.processingHint}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid gap-0 lg:grid-cols-[1fr_360px]">
-                <div className="relative flex min-h-[min(320px,50dvh)] items-center justify-center bg-black/45 sm:min-h-[420px]">
+                <div className="relative flex flex-1 items-center justify-center bg-black/45">
                   {agentResult.status === "processing" && (
-                    <div className="flex w-full max-w-md flex-col items-center justify-center gap-5 p-10 text-center">
+                    <div className="flex w-full max-w-md flex-col items-center justify-center gap-5 p-8 text-center sm:p-10">
                       <div className="relative">
                         <div className="absolute inset-0 rounded-full bg-[#d8ad5f]/30 blur-2xl" />
-
-                        <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-[#d8ad5f]/25 bg-[#d8ad5f]/10">
-                          <Loader2 className="h-9 w-9 animate-spin text-[#d8ad5f]" />
+                        <div className="relative flex h-24 w-24 items-center justify-center rounded-full border border-[#d8ad5f]/25 bg-[#d8ad5f]/10">
+                          <Loader2 className="h-10 w-10 animate-spin text-[#d8ad5f]" />
                         </div>
                       </div>
-
                       <div>
                         <p className="text-lg font-black text-white">
-                          {isLipSyncWorkflow(agentResult.workflow)
-                            ? a.generatingLipSync
-                            : isVideoStudioWorkflow(agentResult.workflow)
-                              ? a.generatingVideo
-                              : a.generating}
+                          {activeProcessingStep}
                         </p>
-
                         <p className="mt-3 text-sm leading-6 text-white/45">
                           {isLipSyncWorkflow(agentResult.workflow)
                             ? a.lipSyncLongerHint
@@ -3259,79 +3239,50 @@ export default function AiAgentStudio({
                               : a.processingStay}
                         </p>
                       </div>
-
-                      <div className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/30">
-                          {a.currentJob}
-                        </p>
-
-                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-white/55">
-                          {agentResult.prompt}
-                        </p>
-                      </div>
                     </div>
                   )}
 
                   {agentResult.status === "insufficient_credits" && (
-                    <motion.div className="flex flex-col items-center justify-center gap-4 p-8 text-center sm:p-10">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full border border-amber-500/25 bg-amber-500/10 text-amber-100">
-                        <CreditCard className="h-8 w-8" aria-hidden />
-                      </div>
-
-                      <div className="max-w-md space-y-2">
-                        <p className="text-base font-black text-white">
-                          {a.insufficientCreditsIntro}
-                        </p>
-                        <p className="text-sm leading-6 text-white/55">
-                          {format(a.insufficientCreditsModeRequires, {
-                            count:
-                              agentResult.requiredCredits ??
-                              getRequiredCreditsForStudio(studioTab, imageMode),
-                          })}
-                        </p>
-                        <p className="text-sm leading-6 text-white/45">
-                          {a.insufficientCreditsBuyMore}
-                        </p>
-                      </div>
-
+                    <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
+                      <CreditCard className="h-12 w-12 text-amber-100" />
+                      <p className="text-base font-black text-white">
+                        {a.insufficientCreditsIntro}
+                      </p>
+                      <p className="text-sm text-white/55">
+                        {format(a.insufficientCreditsModeRequires, {
+                          count:
+                            agentResult.requiredCredits ??
+                            getRequiredCreditsForStudio(studioTab, imageMode),
+                        })}
+                      </p>
                       {onOpenCredits ? (
                         <button
                           type="button"
                           onClick={onOpenCredits}
-                          className="inline-flex items-center justify-center rounded-full bg-[#d8ad5f] px-5 py-3 text-sm font-black text-black transition hover:bg-[#efc777]"
+                          className="inline-flex items-center justify-center rounded-full bg-[#d8ad5f] px-5 py-3 text-sm font-black text-black"
                         >
-                          <CreditCard className="mr-2 h-4 w-4" aria-hidden />
                           {a.buyCredits}
                         </button>
                       ) : null}
-                    </motion.div>
+                    </div>
                   )}
 
                   {agentResult.status === "active_generation_limit" && (
-                    <div className="flex flex-col items-center justify-center gap-4 p-8 text-center sm:p-10">
-                      <motion.div className="flex h-16 w-16 items-center justify-center rounded-full border border-sky-500/25 bg-sky-500/10 text-sky-100">
-                        <Clock className="h-8 w-8" aria-hidden />
-                      </motion.div>
-
-                      <motion.div className="max-w-md space-y-2">
-                        <p className="text-base font-black text-white">
-                          {a.activeGenerationLimitTitle}
-                        </p>
-                        <p className="text-sm leading-6 text-white/55">
-                          {a.activeGenerationLimitIntro}
-                        </p>
-                      </motion.div>
+                    <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
+                      <Clock className="h-12 w-12 text-sky-100" />
+                      <p className="text-base font-black text-white">
+                        {a.activeGenerationLimitTitle}
+                      </p>
+                      <p className="text-sm text-white/55">
+                        {a.activeGenerationLimitIntro}
+                      </p>
                     </div>
                   )}
 
                   {agentResult.status === "failed" && (
-                    <div className="flex flex-col items-center justify-center gap-4 p-10 text-center">
+                    <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
                       <AlertCircle className="h-12 w-12 text-red-200" />
-
-                      <p className="text-sm font-bold text-red-100">
-                        {a.failed}
-                      </p>
-
+                      <p className="text-sm font-bold text-red-100">{a.failed}</p>
                       {shouldShowCreditsRefundedHint(
                         agentResult.error_message,
                         Boolean(agentResult.id),
@@ -3342,22 +3293,20 @@ export default function AiAgentStudio({
                           {a.creditsRefundedHint}
                         </p>
                       )}
-
                       <p className="max-w-md text-xs leading-6 text-red-100/60">
                         {agentResult.error_message ?? copy.gallery.unknownError}
                       </p>
                     </div>
                   )}
 
-                  {agentResult.status === "completed" &&
-                    agentResult.video_url && (
-                      <video
-                        src={agentResult.video_url}
-                        controls
-                        playsInline
-                        className="max-h-[640px] w-full object-contain"
-                      />
-                    )}
+                  {agentResult.status === "completed" && agentResult.video_url && (
+                    <video
+                      src={agentResult.video_url}
+                      controls
+                      playsInline
+                      className="max-h-full w-full object-contain"
+                    />
+                  )}
 
                   {agentResult.status === "completed" &&
                     !agentResult.video_url &&
@@ -3365,7 +3314,7 @@ export default function AiAgentStudio({
                       <img
                         src={agentResult.image_url}
                         alt={agentResult.prompt}
-                        className="max-h-[640px] w-full object-contain"
+                        className="max-h-full w-full object-contain"
                         referrerPolicy="no-referrer"
                       />
                     )}
@@ -3373,9 +3322,8 @@ export default function AiAgentStudio({
                   {agentResult.status === "completed" &&
                     !agentResult.video_url &&
                     !agentResult.image_url && (
-                      <div className="flex flex-col items-center justify-center gap-4 p-10 text-center">
+                      <div className="flex flex-col items-center gap-3 p-8 text-center">
                         <ImageOff className="h-12 w-12 text-white/45" />
-
                         <p className="text-sm font-bold text-white">
                           {a.imageUrlMissing}
                         </p>
@@ -3383,65 +3331,43 @@ export default function AiAgentStudio({
                     )}
                 </div>
 
-                <aside className="flex flex-col justify-between gap-5 border-t border-white/10 p-4 sm:gap-6 sm:p-5 lg:border-l lg:border-t-0 lg:min-h-[280px]">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-[0.24em] text-white/35">
-                      {copy.gallery.prompt}
-                    </p>
-
-                    <p className="mt-3 line-clamp-6 text-sm leading-6 text-white/65">
-                      {agentResult.prompt}
-                    </p>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-1">
+                <div className="space-y-3 border-t border-white/10 p-4 sm:p-5">
+                  <p className="line-clamp-2 text-xs leading-5 text-white/45">
+                    {agentResult.prompt}
+                  </p>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                     {agentResult.video_url && (
                       <a
                         href={agentResult.video_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-black text-black transition hover:bg-white/85"
+                        className="inline-flex flex-1 items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-black text-black"
                       >
                         <ExternalLink className="mr-2 h-4 w-4" />
                         {a.openVideo}
                       </a>
                     )}
-
                     {agentResult.image_url && !agentResult.video_url && (
                       <a
                         href={agentResult.image_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-black text-black transition hover:bg-white/85"
+                        className="inline-flex flex-1 items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-black text-black"
                       >
                         <ExternalLink className="mr-2 h-4 w-4" />
                         {a.openImage}
                       </a>
                     )}
-
-                    {agentResult.status === "insufficient_credits" &&
-                    onOpenCredits ? (
-                      <button
-                        type="button"
-                        onClick={onOpenCredits}
-                        className="inline-flex items-center justify-center rounded-full bg-[#d8ad5f] px-5 py-3 text-sm font-black text-black transition hover:bg-[#efc777]"
-                      >
-                        <CreditCard className="mr-2 h-4 w-4" aria-hidden />
-                        {a.openCredits}
-                      </button>
-                    ) : null}
-
-                    {agentResult.status === "completed" && (
+                    {agentResult.status === "completed" && onOpenGallery ? (
                       <button
                         type="button"
                         onClick={onOpenGallery}
-                        className="inline-flex items-center justify-center rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-5 py-3 text-sm font-bold text-[#d8ad5f] transition hover:bg-[#d8ad5f]/15"
+                        className="inline-flex flex-1 items-center justify-center rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-5 py-3 text-sm font-bold text-[#d8ad5f]"
                       >
                         <GalleryVerticalEnd className="mr-2 h-4 w-4" />
                         {a.viewInGallery}
                       </button>
-                    )}
-
+                    ) : null}
                     <button
                       type="button"
                       onClick={() => {
@@ -3449,28 +3375,28 @@ export default function AiAgentStudio({
                         setAgentResult(null);
                         setStatusMessage(null);
                         setErrorMessage(null);
-
-                        window.scrollTo({
-                          top: 0,
+                        formRef.current?.scrollIntoView({
                           behavior: "smooth",
+                          block: "start",
                         });
                       }}
-                      className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-bold text-white/70 transition hover:border-white/20 hover:text-white"
+                      className="inline-flex flex-1 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-bold text-white/70"
                     >
                       {a.createAnother}
                     </button>
                   </div>
-                </aside>
-              </div>
-            </motion.div>
-          )}
+                </div>
+              </>
+            )}
+          </motion.div>
+        </div>
         </div>
 
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.28 }}
-          className="mt-5 flex w-full max-w-4xl flex-wrap justify-center gap-2 px-1 sm:gap-3"
+          className="mt-6 flex w-full flex-wrap gap-2 sm:gap-3"
         >
           {quickPrompts.slice(0, 4).map((quickPrompt) => {
             const Icon = quickPrompt.icon;
