@@ -253,6 +253,11 @@ async function markFailedAndRefund({
   creditsUsed: number;
   errorMessage: string;
 }): Promise<MarkFailedResult> {
+  console.error("Generation failed", {
+    generationId,
+    errorMessage: errorMessage?.slice(0, 400),
+  });
+
   const { data: current, error: fetchError } = await supabaseAdmin
     .from("generations")
     .select("id, status, credits_used, user_id")
@@ -276,18 +281,55 @@ async function markFailedAndRefund({
 
   const refundAmount = storedCredits > 0 ? storedCredits : 0;
 
+  const updatePayload = {
+    status: "failed" as const,
+    error_message: errorMessage.trim() || "Generation failed.",
+    credits_used: 0,
+    failed_at: new Date().toISOString(),
+  };
+
   const { data: updated, error: updateError } = await supabaseAdmin
     .from("generations")
-    .update({
-      status: "failed",
-      error_message: errorMessage.trim() || "Generation failed.",
-      credits_used: 0,
-      failed_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq("id", generationId)
     .eq("status", "processing")
     .select("id")
     .maybeSingle();
+
+  if (updateError && isMissingColumnError(updateError)) {
+    const { data: fallbackUpdated, error: fallbackError } = await supabaseAdmin
+      .from("generations")
+      .update({
+        status: "failed",
+        error_message: errorMessage.trim() || "Generation failed.",
+        credits_used: 0,
+      })
+      .eq("id", generationId)
+      .eq("status", "processing")
+      .select("id")
+      .maybeSingle();
+
+    if (fallbackError) {
+      console.error("Worker failed generation update error:", fallbackError);
+      return { markedFailed: false, refunded: false, skipped: true };
+    }
+
+    if (!fallbackUpdated) {
+      return { markedFailed: false, refunded: false, skipped: true };
+    }
+
+    if (refundAmount <= 0) {
+      return { markedFailed: true, refunded: false, skipped: false };
+    }
+
+    try {
+      await refundCredits(refundTargetUserId, refundAmount);
+      return { markedFailed: true, refunded: true, skipped: false };
+    } catch (refundError) {
+      console.error("Worker refund after failed mark error:", refundError);
+      return { markedFailed: true, refunded: false, skipped: false };
+    }
+  }
 
   if (updateError) {
     console.error("Worker failed generation update error:", updateError);
@@ -1349,6 +1391,7 @@ async function processOpenAIImage({
   workflow: string;
 }) {
   try {
+    console.log("OpenAI workflow processing", { generationId, workflow });
     const result = await openai.images.generate({
       model: OPENAI_IMAGE_MODEL,
       prompt: finalPrompt,
@@ -1383,6 +1426,7 @@ async function processOpenAIImage({
       publicUrl,
     });
 
+    console.log("Generation completed", { generationId });
     return NextResponse.json({
       success: true,
       generationId,
@@ -1395,6 +1439,7 @@ async function processOpenAIImage({
     const errorMessage =
       error instanceof Error ? error.message : "OpenAI generation failed.";
 
+    console.error("Generation failed", { generationId, error: errorMessage });
     await markFailedAndRefund({
       generationId,
       userId,
@@ -1468,6 +1513,12 @@ export async function POST(req: Request) {
       workflow === "ugc_look"
         ? "openai"
         : normalizeProvider(generation.provider);
+
+    console.log("Processing generation", {
+      generationId,
+      workflow,
+      provider,
+    });
 
     const finalPrompt = (
       generation.final_prompt?.trim() ||

@@ -2417,6 +2417,12 @@ export async function POST(req: Request) {
       process.env.NEXT_PUBLIC_APP_URL ??
       new URL(req.url).origin;
 
+    console.log("Triggering generation worker", {
+      generationId: generation.id,
+      workflow: jobConfig.workflow,
+      provider: jobConfig.provider,
+    });
+
     void triggerWorker(generation.id, origin).catch((error) => {
       console.error("Worker trigger exception:", error);
     });
