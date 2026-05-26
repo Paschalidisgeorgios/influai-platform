@@ -167,20 +167,31 @@ export default function AiinflugenLanding({
 
   const t = text[language];
 
-  const studioCapabilities = useMemo(
-    () => [
+  const studioCapabilities = useMemo(() => {
+    const videoLive =
+      process.env.NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO === "true";
+    const lipSyncLive =
+      process.env.NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC === "true";
+
+    return [
       { label: "AI Visual Agent", status: "live" as const },
       { label: "Style Profiles", status: "live" as const },
       { label: "Social Formats", status: "live" as const },
       { label: "Asset Gallery", status: "live" as const },
       { label: "Credits", status: "live" as const },
-      { label: "Video Studio", status: "coming_soon" as const },
-      { label: "Lip Sync Studio", status: "coming_soon" as const },
+      {
+        label: "Video Studio",
+        status: videoLive ? ("live" as const) : ("coming_soon" as const),
+      },
+      {
+        label: "Lip Sync Studio",
+        status: lipSyncLive ? ("live" as const) : ("coming_soon" as const),
+      },
       { label: "Cinema Agent", status: "planned" as const },
       { label: "Omni Campaign Agent", status: "roadmap" as const },
-    ],
-    []
-  );
+      { label: "Social Planner", status: "planned" as const },
+    ];
+  }, []);
 
   const tools = [
     {

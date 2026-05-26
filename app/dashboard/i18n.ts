@@ -139,6 +139,14 @@ const en = {
     studioTabImage: "Image Studio",
     studioTabVideo: "Video Studio",
     studioTabVideoPlanned: "Video Studio · Coming soon",
+    studioTabLipSync: "Lip Sync Studio",
+    studioTabLipSyncPlanned: "Lip Sync Studio · Coming soon",
+    lipSyncMissingSource: "Upload source media for Lip Sync Studio.",
+    lipSyncMissingAudio: "Upload audio for Lip Sync Studio.",
+    lipSyncLongerHint:
+      "Lip Sync may take longer than image generation.",
+    generateLipSync: "Generate Lip Sync",
+    imageModeLipSyncActiveNote: "Lip Sync Studio · Beta · 30 Credits",
     videoStudioMissingSource: "Upload a source image for Video Studio.",
     videoStudioMissingMotion: "Add a motion prompt for Video Studio.",
     videoStudioLongerHint:
@@ -154,15 +162,13 @@ const en = {
     referenceEditMissingInstruction:
       "Add edit instructions for Reference Edit.",
     studioRoadmapChips: [
-      "Fast Draft Mode",
-      "Premium Image Mode",
-      "Reference Edit Mode",
-      "Brand Assets",
-      "Video Studio",
-      "Lip Sync Studio",
       "Cinema Agent",
       "Omni Campaign Agent",
+      "Social Planner",
+      "Brand Safety / Compliance",
     ],
+    futureModulesPlannedNote:
+      "Planned modules — preview only. No API, credits, or provider calls.",
     imageModes: {
       standard: {
         label: "Standard Image",
@@ -222,6 +228,40 @@ const en = {
         hoverHint:
           "Brand Assets supports ad creatives, product campaign layouts, thumbnails and social marketing visuals.",
       },
+      lipSync: {
+        label: "Lip Sync Studio",
+        description:
+          "Sync a talking creator clip from source media and your audio track.",
+        panel: {
+          statusPlanned: "Coming soon · Planned",
+          statusActive: "Beta",
+          introPlanned:
+            "Lip Sync Studio is being prepared for talking creator videos.",
+          introActive:
+            "Upload source media and audio. Your lip-synced video appears in the agent and gallery.",
+          sourceLabel: "Source media",
+          sourcePlaceholder: "Upload image or video",
+          sourceHint: "Image: PNG/JPEG/WebP · Video: MP4/WebM/MOV · max 50 MB",
+          uploadSource: "Upload source media",
+          audioLabel: "Audio",
+          audioPlaceholder: "Upload audio track",
+          audioHint: "MP3, WAV, AAC, OGG, M4A · max 25 MB",
+          uploadAudio: "Upload audio",
+          uploading: "Uploading…",
+          clearSource: "Clear source",
+          clearAudio: "Clear audio",
+          invalidSource: "Unsupported source file.",
+          invalidAudio: "Unsupported audio file.",
+          sourceTooLarge: "Source file is too large (max 50 MB).",
+          audioTooLarge: "Audio file is too large (max 25 MB).",
+          uploadFailed: "Upload failed. Please try again.",
+          instructionsLabel: "Instructions (optional)",
+          instructionsPlaceholder:
+            "Describe expression, energy, or scene mood…",
+          activeNote:
+            "Lip Sync uses your source media and audio — no text-to-speech.",
+        },
+      },
       videoStudio: {
         label: "Video Studio",
         description:
@@ -258,6 +298,7 @@ const en = {
       fourCredits: "4 Credits",
       fiveCredits: "5 Credits",
       twentyFiveCredits: "25 Credits",
+      thirtyCredits: "30 Credits",
       planned: "Planned",
       comingSoon: "Coming soon",
       plannedTooltip: "Planned — not available in this release",
@@ -313,6 +354,7 @@ const en = {
     latestResult: "Latest result",
     generating: "Generating your image…",
     generatingVideo: "Generating your video…",
+    generatingLipSync: "Generating your lip sync video…",
     completed: "Generation completed",
     failed: "Generation failed",
     openImage: "Open image",
@@ -370,6 +412,7 @@ const en = {
     processingLabel: "Processing",
     generationFailed: "Generation failed",
     creditsRefundedHint: "Credits were refunded.",
+    lipSyncBadge: "Lip Sync",
     videoBadge: "Video",
     videoUnavailable: "Video unavailable",
     noVideoUrl: "This generation has no video URL.",
@@ -478,7 +521,9 @@ const en = {
       referenceEdit: "Reference Edit: 5 Credits",
       brandAssets: "Brand Assets: 4 Credits",
       videoStudio: "Video Studio: 25 Credits",
+      lipSync: "Lip Sync Studio: 30 Credits",
     },
+    lipSyncUsageNote: "Lip Sync uses source media and audio input.",
     oneCreditRule: "1 standard image = 1 credit",
     availableCredits: "Available credits",
     refreshing: "Refreshing balance…",
@@ -708,6 +753,15 @@ const de: DeepString<typeof en> = {
     studioTabImage: "Image Studio",
     studioTabVideo: "Video Studio",
     studioTabVideoPlanned: "Video Studio · Demnächst",
+    studioTabLipSync: "Lip Sync Studio",
+    studioTabLipSyncPlanned: "Lip Sync Studio · Demnächst",
+    lipSyncMissingSource:
+      "Lade Quellmedien für Lip Sync Studio hoch.",
+    lipSyncMissingAudio: "Lade Audio für Lip Sync Studio hoch.",
+    lipSyncLongerHint:
+      "Lip Sync kann länger dauern als Bild-Generierung.",
+    generateLipSync: "Lip Sync generieren",
+    imageModeLipSyncActiveNote: "Lip Sync Studio · Beta · 30 Credits",
     videoStudioMissingSource:
       "Lade ein Quellbild für Video Studio hoch.",
     videoStudioMissingMotion:
@@ -726,15 +780,13 @@ const de: DeepString<typeof en> = {
     referenceEditMissingInstruction:
       "Füge Bearbeitungsanweisungen für Reference Edit hinzu.",
     studioRoadmapChips: [
-      "Fast Draft Mode",
-      "Premium Image Mode",
-      "Reference Edit Mode",
-      "Brand Assets",
-      "Video Studio",
-      "Lip Sync Studio",
       "Cinema Agent",
       "Omni Campaign Agent",
+      "Social Planner",
+      "Brand Safety / Compliance",
     ],
+    futureModulesPlannedNote:
+      "Geplante Module — nur Vorschau. Keine API, Credits oder Provider-Calls.",
     imageModes: {
       standard: {
         label: "Standard Image",
@@ -795,6 +847,40 @@ const de: DeepString<typeof en> = {
         hoverHint:
           "Brand Assets unterstützt Ad Creatives, Produktkampagnen-Layouts, Thumbnails und Social-Marketing-Visuals.",
       },
+      lipSync: {
+        label: "Lip Sync Studio",
+        description:
+          "Erstelle ein Talking-Creator-Video aus Quellmedien und deiner Audiospur.",
+        panel: {
+          statusPlanned: "Demnächst · Geplant",
+          statusActive: "Beta",
+          introPlanned:
+            "Lip Sync Studio wird für Talking-Creator-Videos vorbereitet.",
+          introActive:
+            "Lade Quellmedien und Audio hoch. Dein Lip-Sync-Video erscheint im Agent und in der Galerie.",
+          sourceLabel: "Quellmedien",
+          sourcePlaceholder: "Bild oder Video hochladen",
+          sourceHint: "Bild: PNG/JPEG/WebP · Video: MP4/WebM/MOV · max. 50 MB",
+          uploadSource: "Quellmedien hochladen",
+          audioLabel: "Audio",
+          audioPlaceholder: "Audiospur hochladen",
+          audioHint: "MP3, WAV, AAC, OGG, M4A · max. 25 MB",
+          uploadAudio: "Audio hochladen",
+          uploading: "Wird hochgeladen…",
+          clearSource: "Quelle entfernen",
+          clearAudio: "Audio entfernen",
+          invalidSource: "Nicht unterstützte Quelldatei.",
+          invalidAudio: "Nicht unterstützte Audiodatei.",
+          sourceTooLarge: "Quelldatei zu groß (max. 50 MB).",
+          audioTooLarge: "Audiodatei zu groß (max. 25 MB).",
+          uploadFailed: "Upload fehlgeschlagen. Bitte erneut versuchen.",
+          instructionsLabel: "Anweisungen (optional)",
+          instructionsPlaceholder:
+            "Beschreibe Ausdruck, Energie oder Szenenstimmung…",
+          activeNote:
+            "Lip Sync nutzt Quellmedien und Audio — kein Text-to-Speech.",
+        },
+      },
       videoStudio: {
         label: "Video Studio",
         description:
@@ -831,6 +917,7 @@ const de: DeepString<typeof en> = {
       fourCredits: "4 Credits",
       fiveCredits: "5 Credits",
       twentyFiveCredits: "25 Credits",
+      thirtyCredits: "30 Credits",
       planned: "Geplant",
       comingSoon: "Demnächst",
       plannedTooltip: "Geplant — in diesem Release nicht verfügbar",
@@ -887,6 +974,7 @@ const de: DeepString<typeof en> = {
     latestResult: "Neuestes Ergebnis",
     generating: "Dein Bild wird generiert…",
     generatingVideo: "Dein Video wird generiert…",
+    generatingLipSync: "Dein Lip-Sync-Video wird generiert…",
     completed: "Generierung abgeschlossen",
     failed: "Generierung fehlgeschlagen",
     openImage: "Bild öffnen",
@@ -950,6 +1038,7 @@ const de: DeepString<typeof en> = {
     processingLabel: "In Bearbeitung",
     generationFailed: "Generierung fehlgeschlagen",
     creditsRefundedHint: "Credits wurden erstattet.",
+    lipSyncBadge: "Lip Sync",
     videoBadge: "Video",
     videoUnavailable: "Video nicht verfügbar",
     noVideoUrl: "Diese Generierung hat keine Video-URL.",
@@ -1062,7 +1151,10 @@ const de: DeepString<typeof en> = {
       referenceEdit: "Reference Edit: 5 Credits",
       brandAssets: "Brand Assets: 4 Credits",
       videoStudio: "Video Studio: 25 Credits",
+      lipSync: "Lip Sync Studio: 30 Credits",
     },
+    lipSyncUsageNote:
+      "Lip Sync nutzt Quellmedien und Audio als Eingabe.",
     oneCreditRule: "1 Standard-Bild = 1 Credit",
     availableCredits: "Verfügbare Credits",
     refreshing: "Guthaben wird aktualisiert…",

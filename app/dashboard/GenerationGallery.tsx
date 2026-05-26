@@ -78,8 +78,12 @@ function getStatusLabel(
 
 function getWorkflowLabel(
   workflow: string | null | undefined,
-  labels: { standard: string; video: string }
+  labels: { standard: string; video: string; lipSync: string }
 ) {
+  if (workflow === "lip_sync") {
+    return labels.lipSync;
+  }
+
   if (workflow === "video_image_to_video") {
     return labels.video;
   }
@@ -94,6 +98,7 @@ function getWorkflowLabel(
 function isVideoGeneration(generation: Generation) {
   return (
     generation.workflow === "video_image_to_video" ||
+    generation.workflow === "lip_sync" ||
     Boolean(generation.video_url)
   );
 }
@@ -651,13 +656,19 @@ export default function GenerationGallery({
                       {getWorkflowLabel(generation.workflow, {
                         standard: g.standard,
                         video: g.videoBadge,
+                        lipSync: g.lipSyncBadge,
                       })}
-                      {isVideoGeneration(generation) ? (
-                        <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.08em] text-sky-100">
-                          {g.videoBadge}
-                        </span>
-                      ) : null}
                     </span>
+
+                    {generation.workflow === "lip_sync" ? (
+                      <span className="rounded-full border border-violet-500/25 bg-violet-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-violet-100">
+                        {g.lipSyncBadge}
+                      </span>
+                    ) : isVideoGeneration(generation) ? (
+                      <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-sky-100">
+                        {g.videoBadge}
+                      </span>
+                    ) : null}
 
                     {(generation.output_format ||
                       generation.social_platform) && (
@@ -819,6 +830,7 @@ export default function GenerationGallery({
                     {getWorkflowLabel(selectedGeneration.workflow, {
                       standard: g.standard,
                       video: g.videoBadge,
+                      lipSync: g.lipSyncBadge,
                     })}
                   </span>
 

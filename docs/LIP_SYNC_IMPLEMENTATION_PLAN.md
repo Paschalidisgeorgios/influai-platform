@@ -2,23 +2,24 @@
 
 **Document type:** Technical implementation specification  
 **Audience:** Engineering, product, operations, legal/compliance (review before Live)  
-**Status:** Planning only — **no lip-sync provider activated**, **no code changes authorized by this document**  
+**Status:** **Beta live** when `ENABLE_FAL_LIP_SYNC` + `NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC` are `true`  
 **Last updated:** 2026-05-22  
 **Related:** [CREDIT_AND_MODE_STRATEGY.md](./CREDIT_AND_MODE_STRATEGY.md), [ROADMAP_IMAGE_VIDEO_MODES.md](./ROADMAP_IMAGE_VIDEO_MODES.md), [VIDEO_STUDIO_IMPLEMENTATION_PLAN.md](./VIDEO_STUDIO_IMPLEMENTATION_PLAN.md)
 
-This specification describes how **Lip Sync Studio** should integrate talking-head and UGC-style video workflows. It does not enable Lip Sync in the MVP.
+This specification describes **Lip Sync Studio** integration. Runtime is gated by feature flags; without flags the UI shows Coming soon.
 
 ---
 
 ## 1. Goal
 
-Lip Sync Studio shall later produce **talking creator clips**, **UGC-style ads**, and **avatar-like short videos** from image/video + audio or script inputs.
+Lip Sync Studio produces **talking creator clips** from **source media + uploaded audio** (no TTS in v1).
 
 | Objective | Detail |
 |-----------|--------|
-| Core output | Lip-synced video with stored `video_url` |
-| Inputs | Still image, short video, script text, and/or audio upload |
-| MVP | **Not live** — Planned / Coming soon UI only |
+| Core output | Lip-synced video in `generations.video_url` |
+| Inputs | Source image or video URL + audio URL; optional instructions |
+| Credits | **30** per job (`lip_sync_generation_job`) |
+| MVP scope | **No** script-only, **no** TTS, **no** auto social posting |
 
 ---
 

@@ -342,6 +342,24 @@ If duplicates appear, stop manual refunds and inspect Vercel worker logs for rep
 
 ---
 
+## 10b. Lip Sync Studio (Beta)
+
+| Item | Value |
+|------|--------|
+| Flags | `ENABLE_FAL_LIP_SYNC`, `NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC` |
+| Credits | 30 per job |
+| Upload API | `POST /api/lip-sync/upload` (`type=source` \| `audio`) |
+| Generate | `imageMode: lip_sync`, `sourceMediaUrl`, `audioUrl`, `sourceMediaType` |
+| Worker | `workflow === lip_sync` → fal image (`fal-ai/ai-avatar`) or video (`fal-ai/sync-lipsync/v2/pro`) |
+| Output | `generations.video_url` |
+| Refund | Same idempotent `markFailedAndRefund` as other modes |
+
+**Enable checklist:** run `LIP_SYNC_REQUIRED_SQL.md` + `LIP_SYNC_STORAGE_SQL.md`, set flags on Vercel, redeploy, run `PRODUCTION_QA.md` §15.
+
+**Planned-only modules (no ops action):** Cinema Agent, Omni Campaign Agent, Social Planner, Brand Safety — UI roadmap chips only.
+
+---
+
 ## 11. Standard operating procedures
 
 ### Deploy production

@@ -26,6 +26,11 @@ const FAL_REFERENCE_EDIT_TIMEOUT_MS = 180_000;
 const FAL_BRAND_ASSETS_TIMEOUT_MS = 180_000;
 const FAL_KLING_I2V_MODEL = "fal-ai/kling-video/v2.1/standard/image-to-video";
 const FAL_VIDEO_REQUEST_TIMEOUT_MS = 300_000;
+/** Image + audio → talking video — see docs/LIP_SYNC_IMPLEMENTATION_PLAN.md */
+const FAL_LIP_SYNC_IMAGE_MODEL = "fal-ai/ai-avatar";
+/** Video + audio → lip-synced output — see docs/LIP_SYNC_IMPLEMENTATION_PLAN.md */
+const FAL_LIP_SYNC_VIDEO_MODEL = "fal-ai/sync-lipsync/v2/pro";
+const FAL_LIP_SYNC_REQUEST_TIMEOUT_MS = 600_000;
 
 const ERR_PROVIDER_NO_IMAGE_URL = "Provider did not return an image URL.";
 const ERR_PROVIDER_NO_VIDEO_URL = "Provider did not return a video URL.";
@@ -945,6 +950,238 @@ async function processVideoImageToVideo({
   }
 }
 
+async function processLipSyncImage({
+  generationId,
+  userId,
+  finalPrompt,
+  creditsUsed,
+  sourceImageUrl,
+  audioUrl,
+}: {
+  generationId: string;
+  userId: string;
+  finalPrompt: string;
+  creditsUsed: number;
+  sourceImageUrl: string;
+  audioUrl: string;
+}) {
+  if (process.env.ENABLE_FAL_LIP_SYNC !== "true") {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "Lip Sync Studio is not enabled on the server.",
+    });
+
+    return NextResponse.json(
+      { error: "Lip Sync Studio is not enabled. Credits refunded." },
+      { status: 400 }
+    );
+  }
+
+  if (!process.env.FAL_KEY) {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "FAL_KEY is not configured.",
+    });
+
+    return NextResponse.json(
+      { error: "Lip sync provider is not configured. Credits refunded." },
+      { status: 500 }
+    );
+  }
+
+  fal.config({ credentials: process.env.FAL_KEY });
+
+  try {
+    const result = await Promise.race([
+      fal.subscribe(FAL_LIP_SYNC_IMAGE_MODEL, {
+        input: {
+          image_url: sourceImageUrl,
+          audio_url: audioUrl,
+          prompt: finalPrompt,
+        },
+        logs: false,
+      }),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Lip Sync provider timed out."));
+        }, FAL_LIP_SYNC_REQUEST_TIMEOUT_MS);
+      }),
+    ]);
+
+    const remoteVideoUrl =
+      getFalResultVideoUrl(result.data) ?? getFalResultVideoUrl(result);
+
+    if (!remoteVideoUrl) {
+      await markFailedAndRefund({
+        generationId,
+        userId,
+        creditsUsed,
+        errorMessage: ERR_PROVIDER_NO_VIDEO_URL,
+      });
+
+      return NextResponse.json(
+        { error: "Lip sync generation failed. Credits refunded." },
+        { status: 500 }
+      );
+    }
+
+    const { videoBuffer, contentType } =
+      await downloadVideoFromUrl(remoteVideoUrl);
+
+    const publicUrl = await uploadVideoBuffer({
+      userId,
+      videoBuffer,
+      contentType,
+    });
+
+    await completeVideoGeneration({
+      generationId,
+      publicUrl,
+    });
+
+    return NextResponse.json({
+      success: true,
+      generationId,
+      video: publicUrl,
+      workflow: "lip_sync",
+    });
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Lip sync generation failed.";
+
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage,
+    });
+
+    return NextResponse.json(
+      { error: "Lip sync generation failed. Credits refunded." },
+      { status: 500 }
+    );
+  }
+}
+
+async function processLipSyncVideo({
+  generationId,
+  userId,
+  creditsUsed,
+  sourceVideoUrl,
+  audioUrl,
+}: {
+  generationId: string;
+  userId: string;
+  creditsUsed: number;
+  sourceVideoUrl: string;
+  audioUrl: string;
+}) {
+  if (process.env.ENABLE_FAL_LIP_SYNC !== "true") {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "Lip Sync Studio is not enabled on the server.",
+    });
+
+    return NextResponse.json(
+      { error: "Lip Sync Studio is not enabled. Credits refunded." },
+      { status: 400 }
+    );
+  }
+
+  if (!process.env.FAL_KEY) {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "FAL_KEY is not configured.",
+    });
+
+    return NextResponse.json(
+      { error: "Lip sync provider is not configured. Credits refunded." },
+      { status: 500 }
+    );
+  }
+
+  fal.config({ credentials: process.env.FAL_KEY });
+
+  try {
+    const result = await Promise.race([
+      fal.subscribe(FAL_LIP_SYNC_VIDEO_MODEL, {
+        input: {
+          video_url: sourceVideoUrl,
+          audio_url: audioUrl,
+          sync_mode: "cut_off",
+        },
+        logs: false,
+      }),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Lip Sync provider timed out."));
+        }, FAL_LIP_SYNC_REQUEST_TIMEOUT_MS);
+      }),
+    ]);
+
+    const remoteVideoUrl =
+      getFalResultVideoUrl(result.data) ?? getFalResultVideoUrl(result);
+
+    if (!remoteVideoUrl) {
+      await markFailedAndRefund({
+        generationId,
+        userId,
+        creditsUsed,
+        errorMessage: ERR_PROVIDER_NO_VIDEO_URL,
+      });
+
+      return NextResponse.json(
+        { error: "Lip sync generation failed. Credits refunded." },
+        { status: 500 }
+      );
+    }
+
+    const { videoBuffer, contentType } =
+      await downloadVideoFromUrl(remoteVideoUrl);
+
+    const publicUrl = await uploadVideoBuffer({
+      userId,
+      videoBuffer,
+      contentType,
+    });
+
+    await completeVideoGeneration({
+      generationId,
+      publicUrl,
+    });
+
+    return NextResponse.json({
+      success: true,
+      generationId,
+      video: publicUrl,
+      workflow: "lip_sync",
+    });
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Lip sync generation failed.";
+
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage,
+    });
+
+    return NextResponse.json(
+      { error: "Lip sync generation failed. Credits refunded." },
+      { status: 500 }
+    );
+  }
+}
+
 async function processOpenAIImage({
   generationId,
   userId,
@@ -1055,7 +1292,9 @@ export async function POST(req: Request) {
         output_width,
         output_height,
         reference_image_url,
-        source_image_url
+        source_image_url,
+        source_video_url,
+        audio_url
       `
       )
       .eq("id", generationId)
@@ -1171,6 +1410,76 @@ export async function POST(req: Request) {
         outputWidth: generation.output_width,
         outputHeight: generation.output_height,
       });
+    }
+
+    if (workflow === "lip_sync" && provider === "fal") {
+      const audioUrl =
+        typeof generation.audio_url === "string" &&
+        generation.audio_url.trim().length > 0
+          ? generation.audio_url.trim()
+          : null;
+
+      const sourceVideoUrl =
+        typeof generation.source_video_url === "string" &&
+        generation.source_video_url.trim().length > 0
+          ? generation.source_video_url.trim()
+          : null;
+
+      const sourceImageUrl =
+        typeof generation.source_image_url === "string" &&
+        generation.source_image_url.trim().length > 0
+          ? generation.source_image_url.trim()
+          : typeof generation.reference_image_url === "string" &&
+              generation.reference_image_url.trim().length > 0
+            ? generation.reference_image_url.trim()
+            : null;
+
+      if (!audioUrl) {
+        await markFailedAndRefund({
+          generationId,
+          userId: generation.user_id,
+          creditsUsed,
+          errorMessage: "Lip Sync audio is missing.",
+        });
+
+        return NextResponse.json(
+          { error: "Lip Sync audio is missing. Credits refunded." },
+          { status: 400 }
+        );
+      }
+
+      if (sourceVideoUrl) {
+        return processLipSyncVideo({
+          generationId,
+          userId: generation.user_id,
+          creditsUsed,
+          sourceVideoUrl,
+          audioUrl,
+        });
+      }
+
+      if (sourceImageUrl) {
+        return processLipSyncImage({
+          generationId,
+          userId: generation.user_id,
+          finalPrompt,
+          creditsUsed,
+          sourceImageUrl,
+          audioUrl,
+        });
+      }
+
+      await markFailedAndRefund({
+        generationId,
+        userId: generation.user_id,
+        creditsUsed,
+        errorMessage: "Lip Sync source media is missing.",
+      });
+
+      return NextResponse.json(
+        { error: "Lip Sync source media is missing. Credits refunded." },
+        { status: 400 }
+      );
     }
 
     await markFailedAndRefund({

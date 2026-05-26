@@ -206,6 +206,22 @@ Run on a test account with sufficient credits. Record starting balance: ________
 
 ---
 
+## 15. Lip Sync Studio (Beta, flags required)
+
+Prerequisites: `ENABLE_FAL_LIP_SYNC=true`, `NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC=true`, `FAL_KEY` set, buckets from `LIP_SYNC_STORAGE_SQL.md`, columns from `LIP_SYNC_REQUIRED_SQL.md`.
+
+| Step | Action | Expected | Pass |
+|------|--------|----------|------|
+| 15.1 | Open AI Agent → Lip Sync tab | Tab visible; Coming soon when flags off | ☐ |
+| 15.2 | Generate without source media | Blocked in UI; API 400 if forced | ☐ |
+| 15.3 | Generate without audio | Blocked in UI; API 400 if forced | ☐ |
+| 15.4 | Upload source + audio, submit | 30 credits debited; `workflow = lip_sync` | ☐ |
+| 15.5 | Completed job | `video_url` set; Agent + Gallery play `<video>` | ☐ |
+| 15.6 | Provider failure (test env) | `failed`, refund, `credits_used = 0` | ☐ |
+| 15.7 | Cinema / Omni / Social chips | Roadmap only — not clickable, no API | ☐ |
+
+---
+
 ## Failure log
 
 | Step | What failed | Screenshot / log | Ticket |

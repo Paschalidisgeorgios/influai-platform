@@ -127,20 +127,32 @@ Video capabilities are **not live**. UI modules (Video Studio, Cinema Agent) are
 
 ---
 
-## 4. Planned lip sync
+## 4. Lip Sync Studio (Beta)
 
 ### 4.1 Lip Sync Studio
 
 | Field | Value |
 |-------|--------|
 | **Module** | Lip Sync Studio |
-| **Future provider candidates** | Lip-sync / talking-avatar providers (evaluate quality, language support, latency) |
-| **Intended use** | Talking creator clips, UGC-style ads, voice-to-video |
-| **Suggested credit cost** | Short: **10–30**; longer/premium: **30–60** credits — [strategy doc](./CREDIT_AND_MODE_STRATEGY.md) §7 |
-| **Status** | Planned — **not Live** |
-| **User-visible status** | Coming soon / Planned |
+| **Provider** | fal.ai (`fal-ai/ai-avatar` image+audio, `fal-ai/sync-lipsync/v2/pro` video+audio) |
+| **Intended use** | Talking creator clips from source media + uploaded audio |
+| **Credit cost** | **30 credits** — [strategy doc](./CREDIT_AND_MODE_STRATEGY.md) §7 |
+| **Feature flags** | `ENABLE_FAL_LIP_SYNC`, `NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC` |
+| **Status** | **Beta** when flags enabled |
+| **User-visible status** | Beta tab in AI Agent; disabled when flags off |
+
+**Not in scope:** TTS, script-only lip sync, social posting APIs.
 
 **Implementation spec:** [LIP_SYNC_IMPLEMENTATION_PLAN.md](./LIP_SYNC_IMPLEMENTATION_PLAN.md).
+
+### 4.2 Planned campaign modules (UI only)
+
+| Module | Status |
+|--------|--------|
+| Cinema Agent | Planned — roadmap chips only |
+| Omni Campaign Agent | Planned — roadmap chips only |
+| Social Planner | Planned — roadmap chips only |
+| Brand Safety / Compliance | Planned — roadmap chips only |
 
 ---
 

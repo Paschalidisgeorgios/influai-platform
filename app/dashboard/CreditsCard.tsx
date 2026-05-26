@@ -203,6 +203,7 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                     copy.credits.modeCosts.referenceEdit,
                     copy.credits.modeCosts.brandAssets,
                     copy.credits.modeCosts.videoStudio,
+                    copy.credits.modeCosts.lipSync,
                   ].map((item) => (
                     <li
                       key={item}
@@ -213,6 +214,9 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                     </li>
                   ))}
                 </ul>
+                <p className="mt-3 text-xs leading-5 text-white/45">
+                  {copy.credits.lipSyncUsageNote}
+                </p>
               </div>
 
               <div className="mt-5 flex flex-wrap gap-2">

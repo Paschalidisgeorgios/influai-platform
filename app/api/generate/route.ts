@@ -15,9 +15,13 @@ type ImageMode =
   | "reference_edit"
   | "brand_assets";
 
-type GenerateMode = ImageMode | "video_image_to_video";
+type GenerateMode = ImageMode | "video_image_to_video" | "lip_sync";
 
 const FAL_KLING_I2V_MODEL = "fal-ai/kling-video/v2.1/standard/image-to-video";
+/** Image + audio → talking video (fal.ai) */
+const FAL_LIP_SYNC_IMAGE_MODEL = "fal-ai/ai-avatar";
+/** Video + audio → lip-synced video (fal.ai Sync Lipsync 2 Pro) */
+const FAL_LIP_SYNC_VIDEO_MODEL = "fal-ai/sync-lipsync/v2/pro";
 
 /** Brand Assets — FLUX Dev via fal.ai (stable; Recraft endpoint returned 422) */
 const FAL_BRAND_ASSETS_MODEL = "fal-ai/flux/dev";
@@ -26,12 +30,18 @@ const ACTIVE_GENERATION_LIMIT = 2;
 
 const PLANNED_IMAGE_MODES = new Set([
   "video",
-  "lip_sync",
   "video_studio",
   "lip_sync_studio",
+  "cinema_agent",
+  "omni_campaign_agent",
+  "social_planner",
 ]);
 
 function getCreditCostForMode(mode: GenerateMode): number {
+  if (mode === "lip_sync") {
+    return 30;
+  }
+
   if (mode === "video_image_to_video") {
     return 25;
   }
@@ -57,6 +67,7 @@ function getCreditCostForImageMode(imageMode: ImageMode): number {
 
 function parseGenerateMode(value: unknown): GenerateMode {
   if (value === "video_image_to_video") return "video_image_to_video";
+  if (value === "lip_sync") return "lip_sync";
   return parseImageMode(value);
 }
 
@@ -112,6 +123,27 @@ function resolveGenerationJobConfig(mode: GenerateMode):
         workflow: "video_image_to_video",
         creditsUsed: getCreditCostForMode("video_image_to_video"),
         transactionSource: "video_image_to_video_generation_job",
+      },
+    };
+  }
+
+  if (mode === "lip_sync") {
+    if (process.env.ENABLE_FAL_LIP_SYNC !== "true") {
+      return {
+        ok: false,
+        error:
+          "Lip Sync Studio is not enabled. Set ENABLE_FAL_LIP_SYNC=true on the server.",
+      };
+    }
+
+    return {
+      ok: true,
+      config: {
+        provider: "fal",
+        model: FAL_LIP_SYNC_IMAGE_MODEL,
+        workflow: "lip_sync",
+        creditsUsed: getCreditCostForMode("lip_sync"),
+        transactionSource: "lip_sync_generation_job",
       },
     };
   }
@@ -887,6 +919,29 @@ ${motionInstruction.trim()}`,
   ]);
 }
 
+function buildLipSyncFinalPrompt(instructions: string) {
+  const sections = [
+    `Create a premium talking creator / UGC lip-sync video.`,
+    `Sync mouth movement naturally to the provided audio.`,
+    `Keep the subject recognizable.`,
+    `Premium creator campaign look.`,
+    `No text, no logo, no watermark.`,
+  ];
+
+  if (instructions.trim()) {
+    sections.push(
+      `Optional direction from user (preserve intent):
+${instructions.trim()}`
+    );
+  }
+
+  return assembleFinalPrompt(sections);
+}
+
+function parseSourceMediaType(value: unknown): "image" | "video" {
+  return value === "video" ? "video" : "image";
+}
+
 function buildReferenceEditFinalPrompt(editInstruction: string) {
   return assembleFinalPrompt([
     `Edit the provided source image according to the instructions below.
@@ -1142,6 +1197,227 @@ export async function POST(req: Request) {
       typeof body.motionInstruction === "string"
         ? body.motionInstruction.trim()
         : "";
+    const sourceMediaUrl =
+      typeof body.sourceMediaUrl === "string" ? body.sourceMediaUrl.trim() : "";
+    const audioUrl =
+      typeof body.audioUrl === "string" ? body.audioUrl.trim() : "";
+    const sourceMediaType = parseSourceMediaType(body.sourceMediaType);
+    const lipSyncInstructions =
+      typeof body.lipSyncInstructions === "string"
+        ? body.lipSyncInstructions.trim()
+        : typeof body.instructions === "string"
+          ? body.instructions.trim()
+          : "";
+
+    if (imageMode === "lip_sync") {
+      if (!sourceMediaUrl) {
+        return NextResponse.json(
+          { error: "Source media is required for Lip Sync Studio." },
+          { status: 400 }
+        );
+      }
+
+      if (!audioUrl) {
+        return NextResponse.json(
+          { error: "Audio is required for Lip Sync Studio." },
+          { status: 400 }
+        );
+      }
+
+      const lipJobConfigResult = resolveGenerationJobConfig(imageMode);
+
+      if (!lipJobConfigResult.ok) {
+        return NextResponse.json(
+          { error: lipJobConfigResult.error },
+          { status: 400 }
+        );
+      }
+
+      const lipJobConfig = lipJobConfigResult.config;
+      const lipModel =
+        sourceMediaType === "video"
+          ? FAL_LIP_SYNC_VIDEO_MODEL
+          : FAL_LIP_SYNC_IMAGE_MODEL;
+      const finalPrompt = buildLipSyncFinalPrompt(lipSyncInstructions);
+      const promptLabel =
+        lipSyncInstructions || "Lip Sync generation";
+
+      const { count: lipActiveCount, error: lipActiveError } =
+        await supabaseAdmin
+          .from("generations")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("status", "processing");
+
+      if (lipActiveError) {
+        console.error("Active generation count error:", lipActiveError);
+
+        return NextResponse.json(
+          { error: "Could not verify active generations" },
+          { status: 500 }
+        );
+      }
+
+      if ((lipActiveCount ?? 0) >= ACTIVE_GENERATION_LIMIT) {
+        return NextResponse.json(
+          {
+            error: "Too many active generations",
+            reason: "active_generation_limit",
+            limit: ACTIVE_GENERATION_LIMIT,
+          },
+          { status: 429 }
+        );
+      }
+
+      const { data: lipCreditSuccess, error: lipCreditError } =
+        await supabaseAdmin.rpc("consume_user_credits", {
+          target_user_id: user.id,
+          credits_to_consume: lipJobConfig.creditsUsed,
+        });
+
+      if (lipCreditError) {
+        console.error("Credit consume error:", lipCreditError);
+
+        return NextResponse.json(
+          { error: "Credit check failed" },
+          { status: 500 }
+        );
+      }
+
+      if (!lipCreditSuccess) {
+        return NextResponse.json(
+          {
+            error: "Not enough credits",
+            requiredCredits: lipJobConfig.creditsUsed,
+            reason: "insufficient_credits",
+          },
+          { status: 402 }
+        );
+      }
+
+      const lipInsertBase: Record<string, unknown> = {
+        user_id: user.id,
+        prompt: promptLabel,
+        final_prompt: finalPrompt,
+        image_url: null,
+        video_url: null,
+        status: "processing",
+        provider: lipJobConfig.provider,
+        model: lipModel,
+        workflow: lipJobConfig.workflow,
+        source_image_url:
+          sourceMediaType === "image" ? sourceMediaUrl : null,
+        source_video_url:
+          sourceMediaType === "video" ? sourceMediaUrl : null,
+        audio_url: audioUrl,
+        social_platform: outputFormat.platform,
+        output_format: outputFormat.label,
+        image_size: outputFormat.imageSize,
+        output_width: outputFormat.width,
+        output_height: outputFormat.height,
+        credits_used: lipJobConfig.creditsUsed,
+        character_id: null,
+        error_message: null,
+        started_at: new Date().toISOString(),
+      };
+
+      let lipGenerationError: { message?: string; code?: string } | null = null;
+      let lipGeneration: { id: string } | null = null;
+
+      const lipInsertAttempt = await supabaseAdmin
+        .from("generations")
+        .insert(lipInsertBase)
+        .select("id")
+        .single();
+
+      if (lipInsertAttempt.error && isMissingColumnError(lipInsertAttempt.error)) {
+        const lipFallback = await supabaseAdmin
+          .from("generations")
+          .insert({
+            user_id: lipInsertBase.user_id,
+            prompt: lipInsertBase.prompt,
+            final_prompt: lipInsertBase.final_prompt,
+            image_url: null,
+            status: "processing",
+            provider: lipInsertBase.provider,
+            model: lipModel,
+            workflow: lipInsertBase.workflow,
+            reference_image_url:
+              sourceMediaType === "image" ? sourceMediaUrl : null,
+            social_platform: lipInsertBase.social_platform,
+            output_format: lipInsertBase.output_format,
+            image_size: lipInsertBase.image_size,
+            output_width: lipInsertBase.output_width,
+            output_height: lipInsertBase.output_height,
+            credits_used: lipInsertBase.credits_used,
+            character_id: null,
+            error_message: null,
+            started_at: lipInsertBase.started_at,
+          })
+          .select("id")
+          .single();
+
+        lipGenerationError = lipFallback.error;
+        lipGeneration = lipFallback.data;
+      } else {
+        lipGenerationError = lipInsertAttempt.error;
+        lipGeneration = lipInsertAttempt.data;
+      }
+
+      if (lipGenerationError || !lipGeneration) {
+        console.error(
+          "Lip sync generation create error:",
+          JSON.stringify(lipGenerationError, null, 2)
+        );
+
+        await refundCredits(user.id, lipJobConfig.creditsUsed);
+
+        return NextResponse.json(
+          { error: "Failed to create lip sync job. Credits refunded." },
+          { status: 500 }
+        );
+      }
+
+      const { error: lipTxError } = await supabaseAdmin
+        .from("credit_transactions")
+        .insert({
+          user_id: user.id,
+          amount: -lipJobConfig.creditsUsed,
+          type: "usage",
+          source: lipJobConfig.transactionSource,
+        });
+
+      if (lipTxError) {
+        console.error("Credit transaction log error:", lipTxError);
+      }
+
+      const lipOrigin =
+        req.headers.get("origin") ??
+        process.env.NEXT_PUBLIC_APP_URL ??
+        new URL(req.url).origin;
+
+      try {
+        await triggerWorker(lipGeneration.id, lipOrigin);
+      } catch (error) {
+        console.error("Worker trigger exception:", error);
+      }
+
+      return NextResponse.json({
+        success: true,
+        queued: true,
+        generationId: lipGeneration.id,
+        creditsUsed: lipJobConfig.creditsUsed,
+        characterId: null,
+        imageMode,
+        workflow: lipJobConfig.workflow,
+        provider: lipJobConfig.provider,
+        model: lipModel,
+        sourceMediaUrl,
+        audioUrl,
+        sourceMediaType,
+        outputFormat,
+      });
+    }
 
     if (imageMode === "video_image_to_video") {
       if (!sourceImageUrl) {

@@ -108,7 +108,7 @@ export function RoadmapSection({
           eyebrow: "Roadmap",
           title: "Expanding studio modules",
           intro:
-            "InfluExAi ships image creation today. Video Studio, Lip Sync Studio, Cinema Agent and Omni Campaign Agent are previewed below — not live, not billable, and not connected to generation APIs in this release.",
+            "InfluExAi ships image and beta video workflows when enabled. Lip Sync Studio (30 credits, source media + audio) is available behind feature flags. Cinema Agent, Omni Campaign Agent, Social Planner and Brand Safety remain planned previews — not clickable, no API, no credits.",
           liveTitle: "Available now",
           comingSoonTitle: "Coming soon & roadmap",
           comingSoonNote:
@@ -119,7 +119,7 @@ export function RoadmapSection({
           eyebrow: "Roadmap",
           title: "Erweiterbare Studio-Module",
           intro:
-            "InfluExAi liefert heute Bild-Workflows. Video Studio, Lip Sync Studio, Cinema Agent und Omni Campaign Agent sind unten als Vorschau sichtbar — nicht live, nicht abrechenbar und in diesem Release nicht an Generierungs-APIs angebunden.",
+            "InfluExAi liefert Bild- und optional Beta-Video-Workflows. Lip Sync Studio (30 Credits, Quellmedien + Audio) ist per Feature-Flag verfügbar. Cinema Agent, Omni Campaign Agent, Social Planner und Brand Safety sind nur geplante Vorschau — nicht klickbar, keine API, keine Credits.",
           liveTitle: "Jetzt verfügbar",
           comingSoonTitle: "Demnächst & Roadmap",
           comingSoonNote:

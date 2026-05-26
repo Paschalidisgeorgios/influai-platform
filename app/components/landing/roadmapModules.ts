@@ -60,13 +60,19 @@ export const LIVE_STUDIO_MODULES: RoadmapModule[] = [
   },
 ];
 
-/** Video, lip sync, cinema and omni — visible first in roadmap; not live. */
+/** Cinema, omni, social — roadmap preview only (no API). Video/lip sync may be live when flagged. */
 export const COMING_SOON_STUDIO_MODULE_IDS = [
   "video-studio",
   "lip-sync-studio",
   "cinema-agent",
   "omni-campaign-agent",
+  "social-planner",
 ] as const;
+
+const VIDEO_STUDIO_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO === "true";
+const LIP_SYNC_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC === "true";
 
 export const EXPANDING_STUDIO_MODULES: RoadmapModule[] = [
   {
@@ -77,17 +83,17 @@ export const EXPANDING_STUDIO_MODULES: RoadmapModule[] = [
       "Create short-form video campaigns, product clips and creator motion assets from prompts and images.",
     descriptionDe:
       "Erstelle Short-Form-Video-Kampagnen, Produktclips und Creator-Motion-Assets aus Prompts und Bildern.",
-    status: "coming_soon",
+    status: VIDEO_STUDIO_PUBLIC_ENABLED ? "live" : "coming_soon",
   },
   {
     id: "lip-sync-studio",
     titleEn: "Lip Sync Studio",
     titleDe: "Lip Sync Studio",
     descriptionEn:
-      "Generate talking creator clips from scripts, voice and visual assets.",
+      "Sync talking creator clips from source media and an uploaded audio track (beta when enabled).",
     descriptionDe:
-      "Generiere sprechende Creator-Clips aus Skripten, Voice und Visual Assets.",
-    status: "coming_soon",
+      "Synchronisiere Talking-Creator-Clips aus Quellmedien und einer hochgeladenen Audiospur (Beta, wenn aktiviert).",
+    status: LIP_SYNC_PUBLIC_ENABLED ? "live" : "coming_soon",
   },
   {
     id: "cinema-agent",
@@ -108,6 +114,26 @@ export const EXPANDING_STUDIO_MODULES: RoadmapModule[] = [
     descriptionDe:
       "Wandle eine Kampagnen-Idee in Visuals, Video-Konzepte, Captions und exportfertige Assets um.",
     status: "in_roadmap",
+  },
+  {
+    id: "social-planner",
+    titleEn: "Social Planner",
+    titleDe: "Social Planner",
+    descriptionEn:
+      "Plan posts and campaign calendars — preview only, no social posting API.",
+    descriptionDe:
+      "Plane Posts und Kampagnen-Kalender — nur Vorschau, keine Social-Posting-API.",
+    status: "planned",
+  },
+  {
+    id: "brand-safety",
+    titleEn: "Brand Safety / Compliance",
+    titleDe: "Brand Safety / Compliance",
+    descriptionEn:
+      "Policy checks and compliance hints for campaign assets (planned).",
+    descriptionDe:
+      "Policy-Checks und Compliance-Hinweise für Kampagnen-Assets (geplant).",
+    status: "planned",
   },
   {
     id: "fast-image-mode",

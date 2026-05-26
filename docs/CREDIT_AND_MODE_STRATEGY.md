@@ -110,18 +110,21 @@ Billing unit (per clip vs per second) must be fixed before UI goes Live. Store `
 
 ---
 
-## 7. Planned Lip Sync Studio
+## 7. Lip Sync Studio (Beta)
 
 | Field | Value |
 |-------|--------|
-| **Future provider candidates** | Lip-sync / talking-avatar providers |
-| **Suggested cost model** | Short clip: **10–30 credits**; longer/premium: **30–60 credits** (duration, provider, quality) — variable, not active |
-| **Purpose** | Talking creator clips, UGC ads, avatar content |
-| **Status** | Planned — **not Live** |
+| **Mode key** | `lip_sync` |
+| **Provider** | fal.ai |
+| **Models** | Image + audio: `fal-ai/ai-avatar` · Video + audio: `fal-ai/sync-lipsync/v2/pro` |
+| **Credit cost** | **30 credits** per job |
+| **Inputs** | Source media URL (image or video) + audio URL; optional instructions (no TTS) |
+| **Output** | `generations.video_url` |
+| **Feature flags** | `ENABLE_FAL_LIP_SYNC=true`, `NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC=true` |
+| **Refund** | Idempotent refund on worker failure (`markFailedAndRefund`) |
+| **Status** | **Beta** when flags enabled |
 
-Higher perceived value and COGS than still images; separate tier from Video Studio where both exist.
-
-**Implementation spec:** [LIP_SYNC_IMPLEMENTATION_PLAN.md](./LIP_SYNC_IMPLEMENTATION_PLAN.md) (planning only, **not Live**).
+**Implementation spec:** [LIP_SYNC_IMPLEMENTATION_PLAN.md](./LIP_SYNC_IMPLEMENTATION_PLAN.md). SQL: [LIP_SYNC_REQUIRED_SQL.md](./LIP_SYNC_REQUIRED_SQL.md), storage: [LIP_SYNC_STORAGE_SQL.md](./LIP_SYNC_STORAGE_SQL.md).
 
 ---
 

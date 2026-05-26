@@ -15,6 +15,7 @@ import {
   Loader2,
   Lock,
   Megaphone,
+  Mic,
   MonitorPlay,
   PenLine,
   Plus,
@@ -64,8 +65,21 @@ const BRAND_ASSETS_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_BRAND_ASSETS === "true";
 const VIDEO_STUDIO_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO === "true";
+const LIP_SYNC_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC === "true";
 
-type StudioTab = "image" | "video";
+type StudioTab = "image" | "video" | "lip_sync";
+
+const LIP_SYNC_SOURCE_MAX_BYTES = 50 * 1024 * 1024;
+const LIP_SYNC_AUDIO_MAX_BYTES = 25 * 1024 * 1024;
+
+function isLipSyncWorkflow(workflow?: string | null) {
+  return workflow === "lip_sync";
+}
+
+function isVideoStudioWorkflow(workflow?: string | null) {
+  return workflow === "video_image_to_video";
+}
 
 function resolveSubmitImageMode(imageMode: ImageModeKey): ImageModeKey {
   if (imageMode === "brand_assets" && BRAND_ASSETS_PUBLIC_ENABLED) {
@@ -166,6 +180,10 @@ function getRequiredCreditsForStudio(
   studioTab: StudioTab,
   imageMode: ImageModeKey
 ): number {
+  if (studioTab === "lip_sync" && LIP_SYNC_PUBLIC_ENABLED) {
+    return 30;
+  }
+
   if (studioTab === "video" && VIDEO_STUDIO_PUBLIC_ENABLED) {
     return 25;
   }
@@ -990,6 +1008,411 @@ function VideoStudioPanel({
   );
 }
 
+function LipSyncStudioPanel({
+  label,
+  copy,
+  panelRef,
+  getAccessToken,
+  isEnabled,
+  sourcePreviewUrl,
+  sourceMediaType,
+  onSourceChange,
+  audioPreviewLabel,
+  audioUrl,
+  onAudioChange,
+  instructions,
+  onInstructionsChange,
+  onInstructionsKeyDown,
+}: {
+  label: string;
+  copy: {
+    statusPlanned: string;
+    statusActive: string;
+    introPlanned: string;
+    introActive: string;
+    sourceLabel: string;
+    sourcePlaceholder: string;
+    sourceHint: string;
+    uploadSource: string;
+    audioLabel: string;
+    audioPlaceholder: string;
+    audioHint: string;
+    uploadAudio: string;
+    uploading: string;
+    clearSource: string;
+    clearAudio: string;
+    invalidSource: string;
+    invalidAudio: string;
+    sourceTooLarge: string;
+    audioTooLarge: string;
+    uploadFailed: string;
+    instructionsLabel: string;
+    instructionsPlaceholder: string;
+    activeNote: string;
+  };
+  panelRef: React.RefObject<HTMLDivElement | null>;
+  getAccessToken: () => Promise<string | null>;
+  isEnabled: boolean;
+  sourcePreviewUrl: string | null;
+  sourceMediaType: "image" | "video" | null;
+  onSourceChange: (
+    url: string | null,
+    mediaType: "image" | "video" | null
+  ) => void;
+  audioPreviewLabel: string | null;
+  audioUrl: string | null;
+  onAudioChange: (url: string | null, label: string | null) => void;
+  instructions: string;
+  onInstructionsChange: (value: string) => void;
+  onInstructionsKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+}) {
+  const sourceInputRef = useRef<HTMLInputElement | null>(null);
+  const audioInputRef = useRef<HTMLInputElement | null>(null);
+  const blobPreviewRef = useRef<string | null>(null);
+  const [localFileError, setLocalFileError] = useState<string | null>(null);
+  const [uploadingSource, setUploadingSource] = useState(false);
+  const [uploadingAudio, setUploadingAudio] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (blobPreviewRef.current) {
+        URL.revokeObjectURL(blobPreviewRef.current);
+      }
+    };
+  }, []);
+
+  function revokeBlobPreview() {
+    if (blobPreviewRef.current) {
+      URL.revokeObjectURL(blobPreviewRef.current);
+      blobPreviewRef.current = null;
+    }
+  }
+
+  function clearSource() {
+    revokeBlobPreview();
+    onSourceChange(null, null);
+    setLocalFileError(null);
+    if (sourceInputRef.current) {
+      sourceInputRef.current.value = "";
+    }
+  }
+
+  function clearAudio() {
+    onAudioChange(null, null);
+    setLocalFileError(null);
+    if (audioInputRef.current) {
+      audioInputRef.current.value = "";
+    }
+  }
+
+  async function uploadLipSyncFile(
+    file: File,
+    uploadType: "source" | "audio"
+  ): Promise<{ fileUrl?: string; fileType?: string; error?: string }> {
+    const token = await getAccessToken();
+
+    if (!token) {
+      return { error: copy.uploadFailed };
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("type", uploadType);
+
+    const response = await fetch("/api/lip-sync/upload", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const data = (await response.json()) as {
+      fileUrl?: string;
+      fileType?: string;
+      error?: string;
+    };
+
+    if (!response.ok || !data.fileUrl) {
+      return { error: data.error ?? copy.uploadFailed };
+    }
+
+    return { fileUrl: data.fileUrl, fileType: data.fileType };
+  }
+
+  async function handleSourceFileChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const mime = file.type.toLowerCase();
+    const isImage =
+      mime.startsWith("image/") || /\.(png|jpe?g|webp)$/i.test(file.name);
+    const isVideo =
+      mime.startsWith("video/") || /\.(mp4|webm|mov)$/i.test(file.name);
+
+    if (!isImage && !isVideo) {
+      setLocalFileError(copy.invalidSource);
+      return;
+    }
+
+    if (file.size > LIP_SYNC_SOURCE_MAX_BYTES) {
+      setLocalFileError(copy.sourceTooLarge);
+      return;
+    }
+
+    setLocalFileError(null);
+    revokeBlobPreview();
+
+    const blobUrl = URL.createObjectURL(file);
+    blobPreviewRef.current = blobUrl;
+    const previewType: "image" | "video" = isVideo ? "video" : "image";
+    onSourceChange(blobUrl, previewType);
+    setUploadingSource(true);
+
+    try {
+      const result = await uploadLipSyncFile(file, "source");
+
+      if (!result.fileUrl) {
+        setLocalFileError(result.error ?? copy.uploadFailed);
+        return;
+      }
+
+      revokeBlobPreview();
+      const mediaType =
+        result.fileType === "video"
+          ? "video"
+          : result.fileType === "image"
+            ? "image"
+            : previewType;
+      onSourceChange(result.fileUrl, mediaType);
+    } catch {
+      setLocalFileError(copy.uploadFailed);
+    } finally {
+      setUploadingSource(false);
+      if (sourceInputRef.current) {
+        sourceInputRef.current.value = "";
+      }
+    }
+  }
+
+  async function handleAudioFileChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const mime = file.type.toLowerCase();
+    const allowedAudio =
+      mime.startsWith("audio/") || /\.(mp3|wav|aac|ogg|m4a)$/i.test(file.name);
+
+    if (!allowedAudio) {
+      setLocalFileError(copy.invalidAudio);
+      return;
+    }
+
+    if (file.size > LIP_SYNC_AUDIO_MAX_BYTES) {
+      setLocalFileError(copy.audioTooLarge);
+      return;
+    }
+
+    setLocalFileError(null);
+    setUploadingAudio(true);
+
+    try {
+      const result = await uploadLipSyncFile(file, "audio");
+
+      if (!result.fileUrl) {
+        setLocalFileError(result.error ?? copy.uploadFailed);
+        return;
+      }
+
+      onAudioChange(result.fileUrl, file.name);
+    } catch {
+      setLocalFileError(copy.uploadFailed);
+    } finally {
+      setUploadingAudio(false);
+      if (audioInputRef.current) {
+        audioInputRef.current.value = "";
+      }
+    }
+  }
+
+  const panelStatus = isEnabled ? copy.statusActive : copy.statusPlanned;
+  const panelIntro = isEnabled ? copy.introActive : copy.introPlanned;
+  const uploading = uploadingSource || uploadingAudio;
+
+  return (
+    <motion.div
+      ref={panelRef}
+      id="lip-sync-studio-panel"
+      aria-label={label}
+      initial={false}
+      className="mt-2.5 rounded-xl border border-violet-500/15 bg-[linear-gradient(165deg,rgba(139,92,246,0.08)_0%,rgba(0,0,0,0.35)_45%)] p-2.5 sm:p-3"
+    >
+      <input
+        ref={sourceInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime,.mov"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+        onChange={handleSourceFileChange}
+      />
+      <input
+        ref={audioInputRef}
+        type="file"
+        accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/aac,audio/ogg,.mp3,.wav,.aac,.ogg,.m4a"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+        onChange={handleAudioFileChange}
+      />
+
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-black text-white/85 sm:text-xs">{label}</p>
+          <p className="mt-0.5 text-[9px] leading-4 text-white/38">{panelIntro}</p>
+        </div>
+        <span className="shrink-0 rounded-full border border-violet-500/25 bg-violet-500/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.1em] text-violet-100/90">
+          {panelStatus}
+        </span>
+      </div>
+
+      <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5">
+        <div className="flex min-h-[7rem] flex-col rounded-lg border border-dashed border-white/12 bg-black/30 p-2 sm:min-h-[7.5rem]">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
+              {copy.sourceLabel}
+            </p>
+            {sourcePreviewUrl ? (
+              <button
+                type="button"
+                onClick={clearSource}
+                disabled={uploading}
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white/45 transition hover:bg-white/[0.06] hover:text-white/70 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <X className="h-3 w-3" aria-hidden />
+                {copy.clearSource}
+              </button>
+            ) : null}
+          </div>
+
+          {sourcePreviewUrl ? (
+            <div className="relative mt-2 flex flex-1 items-center justify-center overflow-hidden rounded-md bg-black/50">
+              {sourceMediaType === "video" ? (
+                <video
+                  src={sourcePreviewUrl}
+                  className="max-h-28 w-full object-contain"
+                  muted
+                  playsInline
+                />
+              ) : (
+                <img
+                  src={sourcePreviewUrl}
+                  alt=""
+                  className="max-h-28 w-full object-contain"
+                />
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={!isEnabled || uploadingSource}
+              onClick={() => sourceInputRef.current?.click()}
+              className="mt-2 flex flex-1 flex-col items-center justify-center gap-2 rounded-md border border-white/10 bg-black/35 px-3 py-4 text-center transition hover:border-violet-500/30 hover:bg-violet-500/5 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {uploadingSource ? (
+                <Loader2 className="h-5 w-5 animate-spin text-violet-200" />
+              ) : (
+                <Upload className="h-5 w-5 text-violet-200/80" />
+              )}
+              <span className="text-[10px] font-bold text-white/55">
+                {uploadingSource ? copy.uploading : copy.uploadSource}
+              </span>
+              <span className="text-[9px] text-white/30">{copy.sourceHint}</span>
+            </button>
+          )}
+        </div>
+
+        <div className="flex min-h-[7rem] flex-col rounded-lg border border-dashed border-white/12 bg-black/30 p-2 sm:min-h-[7.5rem]">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
+              {copy.audioLabel}
+            </p>
+            {audioUrl ? (
+              <button
+                type="button"
+                onClick={clearAudio}
+                disabled={uploading}
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white/45 transition hover:bg-white/[0.06] hover:text-white/70 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <X className="h-3 w-3" aria-hidden />
+                {copy.clearAudio}
+              </button>
+            ) : null}
+          </div>
+
+          {audioUrl ? (
+            <div className="mt-2 flex flex-1 flex-col justify-center gap-2 rounded-md border border-white/10 bg-black/40 p-3">
+              <Mic className="h-5 w-5 text-violet-200/80" aria-hidden />
+              <p className="line-clamp-2 text-[10px] font-semibold text-white/65">
+                {audioPreviewLabel ?? copy.audioPlaceholder}
+              </p>
+              <audio src={audioUrl} controls className="w-full" />
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={!isEnabled || uploadingAudio}
+              onClick={() => audioInputRef.current?.click()}
+              className="mt-2 flex flex-1 flex-col items-center justify-center gap-2 rounded-md border border-white/10 bg-black/35 px-3 py-4 text-center transition hover:border-violet-500/30 hover:bg-violet-500/5 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {uploadingAudio ? (
+                <Loader2 className="h-5 w-5 animate-spin text-violet-200" />
+              ) : (
+                <Mic className="h-5 w-5 text-violet-200/80" />
+              )}
+              <span className="text-[10px] font-bold text-white/55">
+                {uploadingAudio ? copy.uploading : copy.uploadAudio}
+              </span>
+              <span className="text-[9px] text-white/30">{copy.audioHint}</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-2.5">
+        <label
+          htmlFor="lip-sync-instructions"
+          className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40"
+        >
+          {copy.instructionsLabel}
+        </label>
+        <textarea
+          id="lip-sync-instructions"
+          value={instructions}
+          onChange={(event) => onInstructionsChange(event.target.value)}
+          onKeyDown={onInstructionsKeyDown}
+          rows={3}
+          disabled={!isEnabled}
+          placeholder={copy.instructionsPlaceholder}
+          className="mt-1.5 w-full resize-y rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] leading-4 text-white/70 placeholder:text-white/22 outline-none focus-visible:ring-2 focus-visible:ring-violet-500/30 disabled:opacity-50"
+        />
+      </div>
+
+      {localFileError ? (
+        <p className="mt-2 text-[10px] font-semibold text-red-200/90">{localFileError}</p>
+      ) : null}
+
+      {isEnabled ? (
+        <p className="mt-2.5 text-[9px] leading-4 text-white/32">{copy.activeNote}</p>
+      ) : null}
+    </motion.div>
+  );
+}
+
 export default function AiAgentStudio({
   charactersRefreshKey = 0,
   regenerateDraft = null,
@@ -1082,10 +1505,18 @@ export default function AiAgentStudio({
   const submitInFlightRef = useRef(false);
   const referenceEditPanelRef = useRef<HTMLDivElement | null>(null);
   const videoStudioPanelRef = useRef<HTMLDivElement | null>(null);
+  const lipSyncPanelRef = useRef<HTMLDivElement | null>(null);
 
   const [studioTab, setStudioTab] = useState<StudioTab>("image");
   const [videoSourceUrl, setVideoSourceUrl] = useState<string | null>(null);
   const [videoMotionPrompt, setVideoMotionPrompt] = useState("");
+  const [lipSyncSourceUrl, setLipSyncSourceUrl] = useState<string | null>(null);
+  const [lipSyncSourceMediaType, setLipSyncSourceMediaType] = useState<
+    "image" | "video" | null
+  >(null);
+  const [lipSyncAudioUrl, setLipSyncAudioUrl] = useState<string | null>(null);
+  const [lipSyncAudioLabel, setLipSyncAudioLabel] = useState<string | null>(null);
+  const [lipSyncInstructions, setLipSyncInstructions] = useState("");
 
   const [prompt, setPrompt] = useState("");
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -1099,11 +1530,22 @@ export default function AiAgentStudio({
 
   const isVideoStudioActive =
     studioTab === "video" && VIDEO_STUDIO_PUBLIC_ENABLED;
+  const isLipSyncActive =
+    studioTab === "lip_sync" && LIP_SYNC_PUBLIC_ENABLED;
   const videoStudioReady =
     Boolean(videoSourceUrl?.trim()) && Boolean(videoMotionPrompt.trim());
   const videoSubmitBlocked = isVideoStudioActive && !videoStudioReady;
+  const lipSyncReady =
+    Boolean(lipSyncSourceUrl?.trim()) &&
+    Boolean(lipSyncAudioUrl?.trim()) &&
+    Boolean(lipSyncSourceMediaType);
+  const lipSyncSubmitBlocked = isLipSyncActive && !lipSyncReady;
 
   const imageModeActiveNote = useMemo(() => {
+    if (isLipSyncActive) {
+      return a.imageModeLipSyncActiveNote;
+    }
+
     if (isVideoStudioActive) {
       return a.imageModeVideoStudioActiveNote;
     }
@@ -1125,9 +1567,10 @@ export default function AiAgentStudio({
     }
 
     return a.imageModeStandardActiveNote;
-  }, [a, imageMode, isVideoStudioActive]);
+  }, [a, imageMode, isVideoStudioActive, isLipSyncActive]);
 
   const imageModeUsesBetaBadge =
+    isLipSyncActive ||
     isVideoStudioActive ||
     (imageMode === "brand_assets" && BRAND_ASSETS_PUBLIC_ENABLED) ||
     (imageMode === "reference_edit" && REFERENCE_EDIT_PUBLIC_ENABLED) ||
@@ -1384,7 +1827,7 @@ export default function AiAgentStudio({
 
     event.preventDefault();
 
-    if (studioTab === "video") {
+    if (studioTab === "video" || studioTab === "lip_sync") {
       return;
     }
 
@@ -1414,6 +1857,24 @@ export default function AiAgentStudio({
     formRef.current?.requestSubmit();
   }
 
+  function submitLipSyncFromInstructions(
+    event: React.KeyboardEvent<HTMLTextAreaElement>
+  ) {
+    if (event.key !== "Enter") return;
+    if (event.shiftKey) return;
+
+    event.preventDefault();
+
+    if (!isLipSyncActive) return;
+
+    if (isSubmitBlocked) {
+      setErrorMessage(a.generationAlreadyProcessing);
+      return;
+    }
+
+    formRef.current?.requestSubmit();
+  }
+
   function getSafeErrorMessage(status: number, apiError?: string) {
     if (status === 401) return a.signInAgain;
     if (status === 402) return a.notEnoughCredits;
@@ -1428,6 +1889,180 @@ export default function AiAgentStudio({
 
     if (submitInFlightRef.current || queuing || agentResult?.status === "processing") {
       setErrorMessage(a.generationAlreadyProcessing);
+      return;
+    }
+
+    if (isLipSyncActive) {
+      if (!lipSyncSourceUrl?.trim() || !lipSyncSourceMediaType) {
+        setErrorMessage(a.lipSyncMissingSource);
+        return;
+      }
+
+      if (!lipSyncAudioUrl?.trim()) {
+        setErrorMessage(a.lipSyncMissingAudio);
+        return;
+      }
+
+      const temporaryGenerationId = `temp-${Date.now()}`;
+      const promptLabel =
+        lipSyncInstructions.trim() || a.imageModes.lipSync.label;
+      submitInFlightRef.current = true;
+
+      try {
+        setQueuing(true);
+        setQueuedGenerationId(null);
+        setErrorMessage(null);
+        setStatusMessage(a.generatingLipSync);
+
+        setAgentResult({
+          id: temporaryGenerationId,
+          prompt: promptLabel,
+          image_url: null,
+          video_url: null,
+          workflow: "lip_sync",
+          status: "processing",
+          error_message: null,
+          output_format: selectedOutputFormat.label,
+          image_size: "",
+        });
+
+        scrollToResult();
+
+        const token = await getAccessToken();
+
+        if (!token) {
+          setAgentResult({
+            id: temporaryGenerationId,
+            prompt: promptLabel,
+            image_url: null,
+            status: "failed",
+            error_message: a.signInAgain,
+            output_format: selectedOutputFormat.label,
+            image_size: "",
+          });
+          setErrorMessage(a.signInAgain);
+          return;
+        }
+
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            imageMode: "lip_sync",
+            sourceMediaUrl: lipSyncSourceUrl,
+            audioUrl: lipSyncAudioUrl,
+            sourceMediaType: lipSyncSourceMediaType,
+            lipSyncInstructions: lipSyncInstructions.trim() || undefined,
+            outputFormat: outputFormatKey,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          if (response.status === 402) {
+            const requiredCredits =
+              typeof data.requiredCredits === "number" ? data.requiredCredits : 30;
+
+            setAgentResult({
+              id: temporaryGenerationId,
+              prompt: promptLabel,
+              image_url: null,
+              status: "insufficient_credits",
+              error_message: null,
+              requiredCredits,
+              output_format: selectedOutputFormat.label,
+              image_size: "",
+            });
+            setErrorMessage(null);
+            setStatusMessage(null);
+            scrollToResult();
+            return;
+          }
+
+          if (
+            response.status === 429 &&
+            data.reason === "active_generation_limit"
+          ) {
+            setAgentResult({
+              id: temporaryGenerationId,
+              prompt: promptLabel,
+              image_url: null,
+              status: "active_generation_limit",
+              error_message: null,
+              output_format: selectedOutputFormat.label,
+              image_size: "",
+            });
+            setErrorMessage(null);
+            setStatusMessage(null);
+            scrollToResult();
+            return;
+          }
+
+          const safeMessage = getSafeErrorMessage(response.status, data.error);
+          setAgentResult({
+            id: temporaryGenerationId,
+            prompt: promptLabel,
+            image_url: null,
+            status: "failed",
+            error_message: safeMessage,
+            output_format: selectedOutputFormat.label,
+            image_size: "",
+          });
+          setErrorMessage(safeMessage);
+          return;
+        }
+
+        const generationId =
+          typeof data.generationId === "string" ? data.generationId : null;
+
+        if (!generationId) {
+          setAgentResult({
+            id: temporaryGenerationId,
+            prompt: promptLabel,
+            image_url: null,
+            status: "failed",
+            error_message: a.noGenerationId,
+            output_format: selectedOutputFormat.label,
+            image_size: "",
+          });
+          setErrorMessage(a.noGenerationId);
+          return;
+        }
+
+        setQueuedGenerationId(generationId);
+        setAgentResult({
+          id: generationId,
+          prompt: promptLabel,
+          image_url: null,
+          video_url: null,
+          workflow: "lip_sync",
+          status: "processing",
+          error_message: null,
+          output_format: selectedOutputFormat.label,
+          image_size: "",
+        });
+        onGenerationQueued?.();
+        scrollToResult();
+      } catch {
+        setAgentResult({
+          id: temporaryGenerationId,
+          prompt: promptLabel,
+          image_url: null,
+          status: "failed",
+          error_message: a.networkError,
+          output_format: selectedOutputFormat.label,
+          image_size: "",
+        });
+        setErrorMessage(a.networkError);
+      } finally {
+        submitInFlightRef.current = false;
+        setQueuing(false);
+      }
+
       return;
     }
 
@@ -1950,13 +2585,22 @@ export default function AiAgentStudio({
                   {a.enterHint}
                 </p>
               </>
-            ) : (
+            ) : studioTab === "video" ? (
               <div className="border-t border-white/10 px-4 py-4 sm:px-6">
                 <p className="text-sm font-semibold text-white/70">
                   {a.imageModes.videoStudio.label}
                 </p>
                 <p className="mt-1 text-xs text-white/40">
                   {a.videoStudioLongerHint}
+                </p>
+              </div>
+            ) : (
+              <div className="border-t border-white/10 px-4 py-4 sm:px-6">
+                <p className="text-sm font-semibold text-white/70">
+                  {a.imageModes.lipSync.label}
+                </p>
+                <p className="mt-1 text-xs text-white/40">
+                  {a.lipSyncLongerHint}
                 </p>
               </div>
             )}
@@ -1999,6 +2643,30 @@ export default function AiAgentStudio({
                       ? a.studioTabVideo
                       : a.studioTabVideoPlanned}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (LIP_SYNC_PUBLIC_ENABLED) {
+                        setStudioTab("lip_sync");
+                      }
+                    }}
+                    disabled={!LIP_SYNC_PUBLIC_ENABLED}
+                    title={
+                      LIP_SYNC_PUBLIC_ENABLED
+                        ? a.imageModes.lipSync.description
+                        : a.studioTabLipSyncPlanned
+                    }
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                      studioTab === "lip_sync" && LIP_SYNC_PUBLIC_ENABLED
+                        ? "bg-violet-500/20 text-violet-100 ring-1 ring-violet-500/30"
+                        : "border border-white/10 bg-black/25 text-white/55"
+                    }`}
+                  >
+                    <Mic className="h-3.5 w-3.5" aria-hidden />
+                    {LIP_SYNC_PUBLIC_ENABLED
+                      ? a.studioTabLipSync
+                      : a.studioTabLipSyncPlanned}
+                  </button>
                 </div>
 
                 {studioTab === "video" ? (
@@ -2013,6 +2681,31 @@ export default function AiAgentStudio({
                     motionPrompt={videoMotionPrompt}
                     onMotionPromptChange={setVideoMotionPrompt}
                     onMotionKeyDown={submitVideoFromMotionPrompt}
+                  />
+                ) : null}
+
+                {studioTab === "lip_sync" ? (
+                  <LipSyncStudioPanel
+                    label={a.imageModes.lipSync.label}
+                    copy={a.imageModes.lipSync.panel}
+                    panelRef={lipSyncPanelRef}
+                    getAccessToken={getAccessToken}
+                    isEnabled={LIP_SYNC_PUBLIC_ENABLED}
+                    sourcePreviewUrl={lipSyncSourceUrl}
+                    sourceMediaType={lipSyncSourceMediaType}
+                    onSourceChange={(url, mediaType) => {
+                      setLipSyncSourceUrl(url);
+                      setLipSyncSourceMediaType(mediaType);
+                    }}
+                    audioPreviewLabel={lipSyncAudioLabel}
+                    audioUrl={lipSyncAudioUrl}
+                    onAudioChange={(url, label) => {
+                      setLipSyncAudioUrl(url);
+                      setLipSyncAudioLabel(label);
+                    }}
+                    instructions={lipSyncInstructions}
+                    onInstructionsChange={setLipSyncInstructions}
+                    onInstructionsKeyDown={submitLipSyncFromInstructions}
                   />
                 ) : null}
 
@@ -2169,11 +2862,14 @@ export default function AiAgentStudio({
                     <p className="mt-1 text-[10px] leading-4 text-white/28">
                       {a.imageModeRoadmapNote}
                     </p>
+                    <p className="mt-1 text-[10px] leading-4 text-white/28">
+                      {a.futureModulesPlannedNote}
+                    </p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {a.studioRoadmapChips.map((chip) => (
                         <span
                           key={chip}
-                          className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[9px] font-semibold text-white/42"
+                          className="pointer-events-none rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[9px] font-semibold text-white/42"
                         >
                           {chip}
                         </span>
@@ -2311,19 +3007,33 @@ export default function AiAgentStudio({
                     disabled={
                       isSubmitBlocked ||
                       referenceEditSubmitBlocked ||
-                      videoSubmitBlocked
+                      videoSubmitBlocked ||
+                      lipSyncSubmitBlocked
                     }
                     title={
-                      isVideoStudioActive ? a.generateVideo : undefined
+                      isLipSyncActive
+                        ? a.generateLipSync
+                        : isVideoStudioActive
+                          ? a.generateVideo
+                          : undefined
                     }
                     className={`inline-flex h-12 shrink-0 items-center justify-center self-end rounded-full shadow-xl transition disabled:opacity-50 sm:self-auto ${
-                      isVideoStudioActive
-                        ? "min-w-[3rem] gap-2 bg-sky-500 px-4 text-black hover:bg-sky-400"
-                        : "w-12 bg-white text-black hover:bg-white/85"
+                      isLipSyncActive
+                        ? "min-w-[3rem] gap-2 bg-violet-500 px-4 text-white hover:bg-violet-400"
+                        : isVideoStudioActive
+                          ? "min-w-[3rem] gap-2 bg-sky-500 px-4 text-black hover:bg-sky-400"
+                          : "w-12 bg-white text-black hover:bg-white/85"
                     }`}
                   >
                     {isSubmitBlocked ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : isLipSyncActive ? (
+                      <>
+                        <Mic className="h-4 w-4" aria-hidden />
+                        <span className="hidden text-xs font-black sm:inline">
+                          {a.generateLipSync}
+                        </span>
+                      </>
                     ) : isVideoStudioActive ? (
                       <>
                         <Clapperboard className="h-4 w-4" aria-hidden />
@@ -2357,9 +3067,11 @@ export default function AiAgentStudio({
 
                     <h3 className="mt-2 text-xl font-black text-white sm:text-2xl">
                       {agentResult.status === "processing"
-                        ? agentResult.workflow === "video_image_to_video"
-                          ? a.generatingVideo
-                          : a.generating
+                        ? isLipSyncWorkflow(agentResult.workflow)
+                          ? a.generatingLipSync
+                          : isVideoStudioWorkflow(agentResult.workflow)
+                            ? a.generatingVideo
+                            : a.generating
                         : agentResult.status === "completed"
                           ? a.completed
                           : agentResult.status === "insufficient_credits"
@@ -2456,15 +3168,19 @@ export default function AiAgentStudio({
 
                       <div>
                         <p className="text-lg font-black text-white">
-                          {agentResult.workflow === "video_image_to_video"
-                            ? a.generatingVideo
-                            : a.generating}
+                          {isLipSyncWorkflow(agentResult.workflow)
+                            ? a.generatingLipSync
+                            : isVideoStudioWorkflow(agentResult.workflow)
+                              ? a.generatingVideo
+                              : a.generating}
                         </p>
 
                         <p className="mt-3 text-sm leading-6 text-white/45">
-                          {agentResult.workflow === "video_image_to_video"
-                            ? a.videoStudioLongerHint
-                            : a.processingStay}
+                          {isLipSyncWorkflow(agentResult.workflow)
+                            ? a.lipSyncLongerHint
+                            : isVideoStudioWorkflow(agentResult.workflow)
+                              ? a.videoStudioLongerHint
+                              : a.processingStay}
                         </p>
                       </div>
 
