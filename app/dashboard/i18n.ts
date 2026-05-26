@@ -45,7 +45,7 @@ const en = {
       "Image, video and lip-sync workflows run in the AI Agent. Credits apply per selected mode.",
     expansionPlanned: "Expansion / Planned",
     expansionPlannedHint:
-      "Image modes run in the AI Agent. Modules below are roadmap previews — not separate pages.",
+      "Image modes run in the AI Agent. Open Tools for the full studio roadmap.",
     creditCostShort: "Credits",
     nav: {
       agent: { label: "AI Agent", description: "Generate campaign visuals" },
@@ -1207,7 +1207,7 @@ const de: DeepString<typeof en> = {
       "Bild-, Video- und Lip-Sync-Workflows laufen im AI Agent. Credits je gewähltem Modus.",
     expansionPlanned: "Expansion / Geplant",
     expansionPlannedHint:
-      "Bildmodi laufen im AI Agent. Module unten sind Roadmap-Vorschau — keine eigenen Seiten.",
+      "Bildmodi laufen im AI Agent. Öffne Werkzeuge für die vollständige Studio-Roadmap.",
     creditCostShort: "Credits",
     nav: {
       agent: {

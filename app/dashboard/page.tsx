@@ -4,19 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Bot,
-  Clapperboard,
   CreditCard,
-  Film,
   GalleryVerticalEnd,
   Home,
   LayoutGrid,
-  Lock,
   LogOut,
   Menu,
-  Mic2,
   Sparkles,
   UserRound,
-  Wand2,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -33,7 +28,6 @@ import { createClient } from "@/lib/supabase/client";
 
 const VIDEO_STUDIO_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO === "true";
-const LIP_SYNC_PUBLIC_ENABLED = false;
 
 type RegenerateDraft = {
   prompt: string;
@@ -64,17 +58,6 @@ type LiveSidebarItem = {
   icon: LucideIcon;
   badge?: string;
   badges?: SidebarBadge[];
-};
-
-type ModeAvailability = "live" | "beta" | "planned";
-
-type RoadmapModule = {
-  id: string;
-  label: string;
-  bestFor: string;
-  icon: LucideIcon;
-  availability: ModeAvailability;
-  onSelect?: () => void;
 };
 
 function getSidebarBadgeClass(variant: SidebarBadgeVariant) {
@@ -192,12 +175,6 @@ function DashboardPageInner() {
     ],
     [copy]
   );
-
-  function getModeAvailabilityLabel(availability: ModeAvailability) {
-    if (availability === "live") return copy.sidebar.live;
-    if (availability === "beta") return copy.sidebar.beta;
-    return copy.sidebar.planned;
-  }
 
   const [activeView, setActiveView] = useState<DashboardView>("agent");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -389,45 +366,6 @@ function DashboardPageInner() {
   }
 
   function SidebarContent() {
-    const expansionRoadmapItems: RoadmapModule[] = [
-      {
-        id: "campaign-planner",
-        label: copy.sidebar.nav.planner.label,
-        bestFor: copy.sidebar.nav.planner.description,
-        icon: Clapperboard,
-        availability: "beta",
-        onSelect: () => openView("planner"),
-      },
-      {
-        id: "video_studio",
-        label: copy.sidebar.expansion.videoStudio.label,
-        bestFor: copy.sidebar.expansion.videoStudio.description,
-        icon: Film,
-        availability: VIDEO_STUDIO_PUBLIC_ENABLED ? "beta" : "planned",
-      },
-      {
-        id: "lip_sync",
-        label: copy.sidebar.expansion.lipSyncStudio.label,
-        bestFor: copy.sidebar.expansion.lipSyncStudio.description,
-        icon: Mic2,
-        availability: LIP_SYNC_PUBLIC_ENABLED ? "beta" : "planned",
-      },
-      {
-        id: "cinema-agent",
-        label: copy.sidebar.expansion.cinemaAgent.label,
-        bestFor: copy.sidebar.expansion.cinemaAgent.description,
-        icon: Clapperboard,
-        availability: "planned",
-      },
-      {
-        id: "omni-campaign-agent",
-        label: copy.sidebar.expansion.omniCampaignAgent.label,
-        bestFor: copy.sidebar.expansion.omniCampaignAgent.description,
-        icon: Wand2,
-        availability: "planned",
-      },
-    ];
-
     return (
       <div className="flex h-full flex-col">
         <div>
@@ -538,90 +476,6 @@ function DashboardPageInner() {
               })}
             </nav>
           </div>
-
-          <details className="mt-5 px-1">
-            <summary className="cursor-pointer list-none px-2 text-[10px] font-black uppercase tracking-[0.28em] text-white/30 marker:content-none [&::-webkit-details-marker]:hidden">
-              {copy.sidebar.expansionPlanned}
-            </summary>
-            <p className="mt-2 px-2 text-[10px] leading-4 text-white/30">
-              {copy.sidebar.expansionPlannedHint}
-            </p>
-
-            <div
-              className="mt-2 space-y-1"
-              role="list"
-              aria-label={copy.sidebar.expansionPlanned}
-            >
-              {expansionRoadmapItems.map((module) => {
-                const Icon = module.icon;
-                const statusLabel = getModeAvailabilityLabel(module.availability);
-                const isClickable = Boolean(module.onSelect);
-
-                if (isClickable) {
-                  return (
-                    <button
-                      key={module.id}
-                      type="button"
-                      onClick={module.onSelect}
-                      className="flex w-full items-start gap-2.5 rounded-xl border border-violet-500/20 bg-violet-500/[0.06] px-2.5 py-2.5 text-left transition hover:border-violet-500/35 hover:bg-violet-500/10"
-                    >
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-100">
-                        <Icon className="h-3.5 w-3.5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <p className="text-[11px] font-bold text-white/80">
-                            {module.label}
-                          </p>
-                          <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.08em] text-violet-100">
-                            {statusLabel}
-                          </span>
-                        </div>
-                        <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-white/35">
-                          {module.bestFor}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                }
-
-                return (
-                  <div
-                    key={module.id}
-                    role="listitem"
-                    aria-disabled="true"
-                    title={`${module.label} — ${statusLabel}. ${copy.sidebar.moduleUnavailable}`}
-                    className="flex items-start gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-2.5 py-2.5"
-                  >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-white/30">
-                      <Icon className="h-3.5 w-3.5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <p className="text-[11px] font-bold text-white/45">
-                          {module.label}
-                        </p>
-                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.08em] text-white/40">
-                          {statusLabel}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-white/28">
-                        {module.bestFor}
-                      </p>
-                    </div>
-                    <Lock
-                      className="mt-1 h-3 w-3 shrink-0 text-white/18"
-                      aria-hidden
-                    />
-                  </div>
-                );
-              })}
-            </div>
-
-            <p className="mt-2 px-2 text-[10px] leading-4 text-white/25">
-              {copy.sidebar.expansionFootnote}
-            </p>
-          </details>
         </div>
 
         <div className="mt-auto space-y-2 pt-6">

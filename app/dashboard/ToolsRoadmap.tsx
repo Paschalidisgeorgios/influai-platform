@@ -94,7 +94,7 @@ export default function ToolsRoadmap({
       icon: Mic2,
       title: t.cards.lipSync.title,
       benefit: t.cards.lipSync.benefit,
-      status: "planned",
+      status: "comingSoon",
     },
     {
       id: "cinema-agent",
