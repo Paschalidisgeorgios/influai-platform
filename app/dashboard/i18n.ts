@@ -304,6 +304,37 @@ const en = {
         },
       },
     },
+    exportPackage: {
+      title: "Export Package Preview",
+      intro:
+        "Export packages are planned. You can currently copy the campaign plan manually.",
+      packageContents: "Package contents",
+      copyFullPlan: "Copy full campaign plan",
+      copyShotPrompts: "Copy shot prompts",
+      copyCaptions: "Copy captions",
+      exportPdfZip: "Export as PDF / ZIP",
+      exportPdfZipHint:
+        "PDF and ZIP export are planned. Future packages will include campaign brief, prompts, captions, schedule and safety checklist.",
+      fullPlanHeader: "InfluExAi — Campaign Plan Export",
+      campaignBriefSection: "Campaign brief",
+      socialScheduleSection: "Social schedule",
+      socialScheduleUnavailable: "Social schedule not available.",
+      brandSafetySection: "Brand safety checklist",
+      shotLabel: "Shot",
+      captionLabel: "Caption",
+      badges: {
+        manualExport: "Manual export",
+        pdfZipPlanned: "PDF/ZIP planned",
+      },
+      contents: {
+        campaignBrief: "Campaign brief",
+        shotPrompts: "Shot prompts",
+        captions: "Captions",
+        hashtags: "Hashtags",
+        socialSchedule: "Social schedule",
+        brandSafetyChecklist: "Brand safety checklist",
+      },
+    },
     fields: {
       campaignIdea: "Campaign idea",
       productBrand: "Product / brand",
@@ -1290,6 +1321,37 @@ const de: DeepString<typeof en> = {
           description:
             "Füge bei Bedarf ein Wasserzeichen oder einen Disclosure-Hinweis hinzu, wenn Brand, Plattform oder Recht dies für AI-Content verlangen.",
         },
+      },
+    },
+    exportPackage: {
+      title: "Export Package Preview",
+      intro:
+        "Export-Pakete sind geplant. Aktuell kannst du den Kampagnenplan manuell kopieren.",
+      packageContents: "Paketinhalt",
+      copyFullPlan: "Vollen Kampagnenplan kopieren",
+      copyShotPrompts: "Shot Prompts kopieren",
+      copyCaptions: "Captions kopieren",
+      exportPdfZip: "Als PDF / ZIP exportieren",
+      exportPdfZipHint:
+        "PDF- und ZIP-Export sind geplant. Zukünftige Pakete enthalten Briefing, Prompts, Captions, Schedule und Safety-Checkliste.",
+      fullPlanHeader: "InfluExAi — Kampagnenplan Export",
+      campaignBriefSection: "Kampagnen-Briefing",
+      socialScheduleSection: "Social Schedule",
+      socialScheduleUnavailable: "Social Schedule nicht verfügbar.",
+      brandSafetySection: "Brand-Safety-Checkliste",
+      shotLabel: "Shot",
+      captionLabel: "Caption",
+      badges: {
+        manualExport: "Manueller Export",
+        pdfZipPlanned: "PDF/ZIP geplant",
+      },
+      contents: {
+        campaignBrief: "Kampagnen-Briefing",
+        shotPrompts: "Shot Prompts",
+        captions: "Captions",
+        hashtags: "Hashtags",
+        socialSchedule: "Social Schedule",
+        brandSafetyChecklist: "Brand-Safety-Checkliste",
       },
     },
     fields: {

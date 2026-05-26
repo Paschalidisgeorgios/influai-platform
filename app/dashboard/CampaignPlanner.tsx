@@ -13,6 +13,7 @@ import {
   ListOrdered,
   Lock,
   Megaphone,
+  Package,
   Send,
   ShieldCheck,
   Sparkles,
@@ -83,6 +84,20 @@ type BrandSafetyChecklistItem = {
   id: string;
   label: string;
   description: string;
+};
+
+type CampaignBrief = {
+  idea: string;
+  brand: string;
+  platform: string;
+  goal: string;
+};
+
+type ExportPackageTexts = {
+  fullPlanText: string;
+  shotPromptsText: string;
+  captionsText: string;
+  contents: Array<{ label: string }>;
 };
 
 type PlatformKey = "instagram" | "tiktok" | "youtube" | "linkedin" | "multi";
@@ -374,6 +389,177 @@ function buildSocialPlannerPreview(
   };
 }
 
+function getBrandSafetyChecklistItems(
+  brandSafetyCopy: ReturnType<
+    typeof useDashboardLanguage
+  >["copy"]["campaignPlanner"]["brandSafety"]
+): BrandSafetyChecklistItem[] {
+  return [
+    {
+      id: "ai-disclosure",
+      label: brandSafetyCopy.items.aiDisclosure.label,
+      description: brandSafetyCopy.items.aiDisclosure.description,
+    },
+    {
+      id: "readable-text",
+      label: brandSafetyCopy.items.readableText.label,
+      description: brandSafetyCopy.items.readableText.description,
+    },
+    {
+      id: "fake-logos",
+      label: brandSafetyCopy.items.fakeLogos.label,
+      description: brandSafetyCopy.items.fakeLogos.description,
+    },
+    {
+      id: "hands-faces",
+      label: brandSafetyCopy.items.handsFaces.label,
+      description: brandSafetyCopy.items.handsFaces.description,
+    },
+    {
+      id: "product-claims",
+      label: brandSafetyCopy.items.productClaims.label,
+      description: brandSafetyCopy.items.productClaims.description,
+    },
+    {
+      id: "usage-rights",
+      label: brandSafetyCopy.items.usageRights.label,
+      description: brandSafetyCopy.items.usageRights.description,
+    },
+    {
+      id: "platform-compliance",
+      label: brandSafetyCopy.items.platformCompliance.label,
+      description: brandSafetyCopy.items.platformCompliance.description,
+    },
+    {
+      id: "watermark-disclosure",
+      label: brandSafetyCopy.items.watermarkDisclosure.label,
+      description: brandSafetyCopy.items.watermarkDisclosure.description,
+    },
+  ];
+}
+
+function buildBrandSafetyChecklistText(
+  items: BrandSafetyChecklistItem[],
+  title: string,
+  checked: Record<string, boolean> = {}
+): string {
+  return [
+    title,
+    "",
+    ...items.map((item) => {
+      const mark = checked[item.id] ? "[x]" : "[ ]";
+      return `${mark} ${item.label} — ${item.description}`;
+    }),
+  ].join("\n");
+}
+
+function buildExportPackageTexts(
+  plan: CampaignPlan,
+  brief: CampaignBrief,
+  socialPreview: SocialPlannerPreview | null,
+  labels: {
+    export: ReturnType<
+      typeof useDashboardLanguage
+    >["copy"]["campaignPlanner"]["exportPackage"];
+    sections: ReturnType<
+      typeof useDashboardLanguage
+    >["copy"]["campaignPlanner"]["sections"];
+    contentSet: ReturnType<
+      typeof useDashboardLanguage
+    >["copy"]["campaignPlanner"]["contentSet"];
+    shotCard: ReturnType<
+      typeof useDashboardLanguage
+    >["copy"]["campaignPlanner"]["shotCard"];
+    fields: ReturnType<
+      typeof useDashboardLanguage
+    >["copy"]["campaignPlanner"]["fields"];
+    brandSafety: ReturnType<
+      typeof useDashboardLanguage
+    >["copy"]["campaignPlanner"]["brandSafety"];
+  }
+): ExportPackageTexts {
+  const brandSafetyItems = getBrandSafetyChecklistItems(labels.brandSafety);
+  const brandSafetyText = buildBrandSafetyChecklistText(
+    brandSafetyItems,
+    labels.brandSafety.checklistTitle
+  );
+
+  const shotPromptsText = plan.shots
+    .map((shot, index) => {
+      const lines = [
+        `${labels.export.shotLabel} ${index + 1}: ${shot.title}`,
+        `${labels.shotCard.imagePrompt}: ${shot.imagePrompt}`,
+        `${labels.shotCard.videoMotion}: ${shot.videoMotionPrompt}`,
+      ];
+      return lines.join("\n");
+    })
+    .join("\n\n");
+
+  const captionsText = [
+    labels.sections.captions,
+    "",
+    ...plan.captions.map(
+      (caption, index) => `${labels.export.captionLabel} ${index + 1}:\n${caption}`
+    ),
+    "",
+    `${labels.sections.hashtags}: ${plan.hashtags.join(" ")}`,
+  ].join("\n");
+
+  const contentSetText = [
+    labels.sections.contentSet,
+    "",
+    labels.contentSet.stories,
+    ...plan.contentSet.stories.map((item, index) => `${index + 1}. ${item}`),
+    "",
+    labels.contentSet.feedPosts,
+    ...plan.contentSet.feedPosts.map((item, index) => `${index + 1}. ${item}`),
+    "",
+    labels.contentSet.reel,
+    plan.contentSet.reelIdea,
+  ].join("\n");
+
+  const fullPlanText = [
+    labels.export.fullPlanHeader,
+    "",
+    labels.export.campaignBriefSection,
+    `${labels.fields.campaignIdea}: ${brief.idea}`,
+    `${labels.fields.productBrand}: ${brief.brand}`,
+    `${labels.fields.platformFocus}: ${brief.platform}`,
+    `${labels.fields.goal}: ${brief.goal}`,
+    "",
+    labels.sections.campaignAngle,
+    plan.campaignAngle,
+    "",
+    contentSetText,
+    "",
+    labels.sections.shotList,
+    "",
+    shotPromptsText,
+    "",
+    captionsText,
+    "",
+    labels.export.socialScheduleSection,
+    socialPreview?.scheduleText ?? labels.export.socialScheduleUnavailable,
+    "",
+    labels.export.brandSafetySection,
+    brandSafetyText,
+  ].join("\n");
+
+  return {
+    fullPlanText,
+    shotPromptsText,
+    captionsText,
+    contents: [
+      { label: labels.export.contents.campaignBrief },
+      { label: labels.export.contents.shotPrompts },
+      { label: labels.export.contents.captions },
+      { label: labels.export.contents.hashtags },
+      { label: labels.export.contents.socialSchedule },
+      { label: labels.export.contents.brandSafetyChecklist },
+    ],
+  };
+}
+
 function CampaignEstimateCard({
   estimate,
   copy,
@@ -590,6 +776,90 @@ function SocialPlannerPreviewCard({
   );
 }
 
+function ExportPackagePreviewCard({
+  exportTexts,
+  copy,
+}: {
+  exportTexts: ExportPackageTexts;
+  copy: ReturnType<typeof useDashboardLanguage>["copy"]["campaignPlanner"];
+}) {
+  const e = copy.exportPackage;
+
+  return (
+    <section className="overflow-hidden rounded-[1.35rem] border border-emerald-500/15 bg-[linear-gradient(165deg,rgba(16,185,129,0.07)_0%,rgba(0,0,0,0.35)_45%)] p-4 sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-200">
+            <Package className="h-5 w-5" aria-hidden />
+          </div>
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-[0.14em] text-emerald-100">
+              {e.title}
+            </h3>
+            <p className="mt-1 max-w-xl text-xs leading-5 text-white/40">{e.intro}</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-violet-100">
+            {copy.badges.planningBeta}
+          </span>
+          <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-emerald-200">
+            {e.badges.manualExport}
+          </span>
+          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-white/45">
+            {e.badges.pdfZipPlanned}
+          </span>
+        </div>
+      </div>
+
+      <p className="mt-4 text-[10px] font-black uppercase tracking-[0.14em] text-white/35">
+        {e.packageContents}
+      </p>
+      <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+        {exportTexts.contents.map((item) => (
+          <li
+            key={item.label}
+            className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-black/25 px-3 py-2"
+          >
+            <Check className="h-3.5 w-3.5 shrink-0 text-emerald-300/80" aria-hidden />
+            <span className="text-[11px] font-semibold text-white/60">{item.label}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <CopyButton
+          value={exportTexts.fullPlanText}
+          label={e.copyFullPlan}
+          copiedLabel={copy.actions.copied}
+        />
+        <CopyButton
+          value={exportTexts.shotPromptsText}
+          label={e.copyShotPrompts}
+          copiedLabel={copy.actions.copied}
+        />
+        <CopyButton
+          value={exportTexts.captionsText}
+          label={e.copyCaptions}
+          copiedLabel={copy.actions.copied}
+        />
+        <button
+          type="button"
+          disabled
+          title={e.exportPdfZipHint}
+          className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[10px] font-bold text-white/35"
+        >
+          <Lock className="h-3 w-3" aria-hidden />
+          {e.exportPdfZip}
+          <span className="rounded-full border border-white/10 bg-white/[0.06] px-1.5 py-0.5 text-[8px] uppercase tracking-[0.08em] text-white/30">
+            {copy.badges.planned}
+          </span>
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function BrandSafetyPreviewCard({
   copy,
 }: {
@@ -598,57 +868,13 @@ function BrandSafetyPreviewCard({
   const b = copy.brandSafety;
   const [checked, setChecked] = useState<Record<string, boolean>>({});
 
-  const items: BrandSafetyChecklistItem[] = [
-    {
-      id: "ai-disclosure",
-      label: b.items.aiDisclosure.label,
-      description: b.items.aiDisclosure.description,
-    },
-    {
-      id: "readable-text",
-      label: b.items.readableText.label,
-      description: b.items.readableText.description,
-    },
-    {
-      id: "fake-logos",
-      label: b.items.fakeLogos.label,
-      description: b.items.fakeLogos.description,
-    },
-    {
-      id: "hands-faces",
-      label: b.items.handsFaces.label,
-      description: b.items.handsFaces.description,
-    },
-    {
-      id: "product-claims",
-      label: b.items.productClaims.label,
-      description: b.items.productClaims.description,
-    },
-    {
-      id: "usage-rights",
-      label: b.items.usageRights.label,
-      description: b.items.usageRights.description,
-    },
-    {
-      id: "platform-compliance",
-      label: b.items.platformCompliance.label,
-      description: b.items.platformCompliance.description,
-    },
-    {
-      id: "watermark-disclosure",
-      label: b.items.watermarkDisclosure.label,
-      description: b.items.watermarkDisclosure.description,
-    },
-  ];
+  const items = getBrandSafetyChecklistItems(b);
 
-  const checklistText = [
-    `${b.checklistTitle}`,
-    "",
-    ...items.map((item) => {
-      const mark = checked[item.id] ? "[x]" : "[ ]";
-      return `${mark} ${item.label} — ${item.description}`;
-    }),
-  ].join("\n");
+  const checklistText = buildBrandSafetyChecklistText(
+    items,
+    b.checklistTitle,
+    checked
+  );
 
   function toggleItem(id: string) {
     setChecked((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -806,6 +1032,37 @@ export default function CampaignPlanner({
 
     return buildSocialPlannerPreview(plan, p.socialPlanner);
   }, [plan, p.socialPlanner]);
+
+  const exportPackageTexts = useMemo(() => {
+    if (!plan) return null;
+
+    return buildExportPackageTexts(
+      plan,
+      {
+        idea: campaignIdea.trim() || p.defaults.ideaFallback,
+        brand: productBrand.trim() || p.defaults.brandFallback,
+        platform: p.platforms[platformFocus],
+        goal: p.goals[goal],
+      },
+      socialPlannerPreview,
+      {
+        export: p.exportPackage,
+        sections: p.sections,
+        contentSet: p.contentSet,
+        shotCard: p.shotCard,
+        fields: p.fields,
+        brandSafety: p.brandSafety,
+      }
+    );
+  }, [
+    plan,
+    campaignIdea,
+    productBrand,
+    platformFocus,
+    goal,
+    socialPlannerPreview,
+    p,
+  ]);
 
   const platformOptions = useMemo(
     () =>
@@ -994,6 +1251,10 @@ export default function CampaignPlanner({
           ) : null}
 
           <BrandSafetyPreviewCard copy={p} />
+
+          {exportPackageTexts ? (
+            <ExportPackagePreviewCard exportTexts={exportPackageTexts} copy={p} />
+          ) : null}
 
           <section className="rounded-[1.35rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
             <div className="flex items-center gap-2">

@@ -16,16 +16,18 @@ This specification describes **Cinema Agent** as a **planning and orchestration 
 | **Navigation** | Dashboard → **Campaign Planner** (Cinema Agent · Planning Beta) |
 | **Credits** | **0** — no `consume_user_credits`, no API routes |
 | **Provider** | **None** — no OpenAI, no fal, no worker changes |
-| **Outputs** | Campaign angle, content set, shot list (5+ cards), captions, hashtags, **Campaign Estimate** preview, **Social Planner Preview**, **Brand Safety Preview** (manual checklist) |
+| **Outputs** | Campaign angle, content set, shot list (5+ cards), captions, hashtags, **Campaign Estimate** preview, **Social Planner Preview**, **Brand Safety Preview** (manual checklist), **Export Package Preview** (manual copy) |
 | **Estimate** | Client-side only: story/feed/shot @ 1 credit, reel @ 25 credits (future). **No credits deducted.** |
 | **Social Planner** | Client-side posting-order preview: days, time windows, captions, hashtags, platform fit. **No social API**, no auto-posting. Copy schedule / copy captions. |
 | **Brand Safety Preview** | Client-side manual checklist: disclosure reminders, logo/text checks, usage rights, platform compliance. **No automated scanning**, no API calls. Copy checklist only. |
+| **Export Package Preview** | Client-side copy bundle: campaign brief, shot prompts, captions, hashtags, social schedule, brand safety checklist. **No PDF/ZIP export yet**, no API calls. Copy full plan / shot prompts / captions. |
 | **Handoff** | **Use in AI Agent** on each shot card → loads `suggestedImagePrompt` into the AI Agent prompt field via `regenerateDraft` (no `/api/generate`, no credits). **Copy prompt** copies text only. |
 | **Generation** | **Manual only** — user picks mode/format in AI Agent and submits. No auto-start. |
 | **Not included** | Auto batch generation, Omni orchestration API, social posting |
 | **Future** | Batch generation with explicit user confirmation, live credit estimate, then `/api/generate` per asset |
 | **Future (Social)** | Scheduling requires platform API review, OAuth, and explicit user authorization before any auto-post |
 | **Future (Safety)** | Automated brand safety scanning requires CV/model evaluation, false-positive review and legal sign-off before activation. |
+| **Future (Export)** | PDF/ZIP export packages should include campaign brief, prompts, captions, social schedule and brand safety checklist — generated client-side or server-side after explicit user action. |
 
 **Omni Campaign Agent** remains a separate roadmap module; full cross-channel orchestration is not in this preview.
 
