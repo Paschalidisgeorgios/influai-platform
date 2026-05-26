@@ -332,6 +332,7 @@ const en = {
     checkoutCancelled: "Checkout was cancelled. No charges were made.",
     generationQueued: "Generation queued successfully.",
     promptLoaded: "Prompt loaded back into the AI Agent.",
+    campaignPromptLoaded: "Campaign prompt loaded into AI Agent.",
     styleProfilesUpdated: "Style profiles updated.",
     gallery: {
       eyebrow: "Creator Assets",
@@ -644,6 +645,7 @@ const en = {
       "Please wait until one finishes before starting another.",
     creditsRefundedHint: "Credits were refunded.",
     promptLoadedRegeneration: "Prompt loaded for regeneration.",
+    campaignPromptLoaded: "Campaign prompt loaded into AI Agent.",
   },
   gallery: {
     loading: "Loading asset gallery...",
@@ -1198,6 +1200,7 @@ const de: DeepString<typeof en> = {
       "Checkout abgebrochen. Es wurde nichts berechnet.",
     generationQueued: "Generierung erfolgreich in die Warteschlange gestellt.",
     promptLoaded: "Prompt wurde in den AI Agent geladen.",
+    campaignPromptLoaded: "Kampagnen-Prompt in den AI Agent geladen.",
     styleProfilesUpdated: "Style Profiles aktualisiert.",
     gallery: {
       eyebrow: "Creator Assets",
@@ -1523,6 +1526,7 @@ const de: DeepString<typeof en> = {
       "Bitte warte, bis eine davon abgeschlossen ist.",
     creditsRefundedHint: "Credits wurden erstattet.",
     promptLoadedRegeneration: "Prompt für Regenerierung geladen.",
+    campaignPromptLoaded: "Kampagnen-Prompt in den AI Agent geladen.",
   },
   gallery: {
     loading: "Asset Gallery wird geladen...",

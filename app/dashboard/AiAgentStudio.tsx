@@ -43,6 +43,8 @@ type Character = {
 type RegenerateDraft = {
   prompt: string;
   characterId: string | null;
+  source?: "gallery" | "campaign_planner";
+  loadedAt?: number;
 };
 
 type Workflow = "standard";
@@ -1673,13 +1675,25 @@ export default function AiAgentStudio({
   useEffect(() => {
     if (!regenerateDraft) return;
 
+    setStudioTab("image");
     setPrompt(regenerateDraft.prompt);
     setSelectedCharacterId(regenerateDraft.characterId ?? "");
     setQueuedGenerationId(null);
     setAgentResult(null);
     setErrorMessage(null);
-    setStatusMessage(a.promptLoadedRegeneration);
-  }, [regenerateDraft]);
+    setStatusMessage(
+      regenerateDraft.source === "campaign_planner"
+        ? a.campaignPromptLoaded
+        : a.promptLoadedRegeneration
+    );
+
+    window.setTimeout(() => {
+      formRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 120);
+  }, [regenerateDraft, a.campaignPromptLoaded, a.promptLoadedRegeneration]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {

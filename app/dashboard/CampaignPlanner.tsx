@@ -35,7 +35,7 @@ export type CampaignPlan = {
 };
 
 type CampaignPlannerProps = {
-  onUsePromptInAgent: (prompt: string) => void;
+  onUsePrompt?: (prompt: string) => void;
 };
 
 type PlatformKey = "instagram" | "tiktok" | "youtube" | "linkedin" | "multi";
@@ -198,7 +198,7 @@ function CopyButton({
 }
 
 export default function CampaignPlanner({
-  onUsePromptInAgent,
+  onUsePrompt,
 }: CampaignPlannerProps) {
   const { copy } = useDashboardLanguage();
   const p = copy.campaignPlanner;
@@ -481,14 +481,16 @@ export default function CampaignPlanner({
                       label={p.actions.copyPrompt}
                       copiedLabel={p.actions.copied}
                     />
-                    <button
-                      type="button"
-                      onClick={() => onUsePromptInAgent(shot.imagePrompt)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-violet-500/25 bg-violet-500/10 px-2.5 py-1.5 text-[10px] font-bold text-violet-100 transition hover:bg-violet-500/20"
-                    >
-                      <Send className="h-3 w-3" aria-hidden />
-                      {p.actions.useInAgent}
-                    </button>
+                    {onUsePrompt ? (
+                      <button
+                        type="button"
+                        onClick={() => onUsePrompt(shot.imagePrompt)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-violet-500/25 bg-violet-500/10 px-2.5 py-1.5 text-[10px] font-bold text-violet-100 transition hover:bg-violet-500/20"
+                      >
+                        <Send className="h-3 w-3" aria-hidden />
+                        {p.actions.useInAgent}
+                      </button>
+                    ) : null}
                   </div>
                 </article>
               ))}
@@ -557,16 +559,18 @@ export default function CampaignPlanner({
               ))}
             </ul>
             <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  onUsePromptInAgent(plan.shots[0]?.imagePrompt ?? campaignIdea)
-                }
-                className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/15 px-4 py-2.5 text-xs font-black text-violet-100 transition hover:bg-violet-500/25"
-              >
-                <Send className="h-3.5 w-3.5" aria-hidden />
-                {p.actions.useInAgent}
-              </button>
+              {onUsePrompt ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    onUsePrompt(plan.shots[0]?.imagePrompt ?? campaignIdea.trim())
+                  }
+                  className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/15 px-4 py-2.5 text-xs font-black text-violet-100 transition hover:bg-violet-500/25"
+                >
+                  <Send className="h-3.5 w-3.5" aria-hidden />
+                  {p.actions.useInAgent}
+                </button>
+              ) : null}
               <button
                 type="button"
                 disabled

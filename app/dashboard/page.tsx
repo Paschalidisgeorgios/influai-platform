@@ -54,6 +54,8 @@ const LIP_SYNC_PUBLIC_ENABLED =
 type RegenerateDraft = {
   prompt: string;
   characterId: string | null;
+  source?: "gallery" | "campaign_planner";
+  loadedAt?: number;
 };
 
 type DashboardView = "agent" | "planner" | "gallery" | "characters" | "credits";
@@ -349,10 +351,25 @@ function DashboardPageInner() {
     setRegenerateDraft({
       prompt,
       characterId,
+      source: "gallery",
+      loadedAt: Date.now(),
     });
 
     setActiveView("agent");
+    setMobileSidebarOpen(false);
     showStatus(copy.page.promptLoaded);
+  }
+
+  function handleUseCampaignPrompt(prompt: string) {
+    setRegenerateDraft({
+      prompt,
+      characterId: null,
+      source: "campaign_planner",
+      loadedAt: Date.now(),
+    });
+
+    setActiveView("agent");
+    setMobileSidebarOpen(false);
   }
 
   function handleClearRegenerateDraft() {
@@ -420,13 +437,7 @@ function DashboardPageInner() {
           title={copy.page.planner.title}
           description={copy.page.planner.description}
         >
-          <CampaignPlanner
-            onUsePromptInAgent={(prompt) => {
-              setRegenerateDraft({ prompt, characterId: null });
-              setActiveView("agent");
-              showStatus(copy.page.promptLoaded);
-            }}
-          />
+          <CampaignPlanner onUsePrompt={handleUseCampaignPrompt} />
         </ViewShell>
       );
     }
