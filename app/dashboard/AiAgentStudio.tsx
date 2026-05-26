@@ -70,8 +70,11 @@ const UGC_LOOK_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_UGC_LOOK === "true";
 const VIDEO_STUDIO_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO === "true";
-const LIP_SYNC_PUBLIC_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC === "true";
+/**
+ * Lip Sync stays Planned for this release cycle.
+ * Keep UI visible as roadmap-only and prevent generation triggers.
+ */
+const LIP_SYNC_PUBLIC_ENABLED = false;
 
 type StudioTab = "image" | "video" | "lip_sync";
 

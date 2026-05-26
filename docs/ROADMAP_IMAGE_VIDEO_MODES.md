@@ -95,20 +95,21 @@ These modes are prepared in the **UI** (Image Mode selector) as disabled / Plann
 
 ---
 
-## 3. Planned video modes
+## 3. Video and future modes
 
-Video capabilities are **not live**. UI modules (Video Studio, Cinema Agent) are roadmap-only.
+Video Studio image-to-video is available as a **feature-flagged beta**. Lip Sync, Cinema Agent and Omni Campaign Agent remain planned.
 
-### 3.1 Video Studio
+### 3.1 Video Studio (Beta, flag-gated)
 
 | Field | Value |
 |-------|--------|
 | **Module** | Video Studio |
-| **Future provider candidates** | Seedance, Kling, Runway-class providers (evaluate ToS, latency, cost, regional compliance) |
-| **Intended use** | Text-to-video, image-to-video, short-form creator ads, product clips |
-| **Suggested credit cost** | Short clip: **15–30 credits**; longer/premium clip: **40–80 credits** ([strategy doc](./CREDIT_AND_MODE_STRATEGY.md) §6) |
-| **Status** | Planned |
-| **User-visible status** | Coming soon / Planned — **not Live** |
+| **Provider / model** | fal.ai / `fal-ai/kling-video/v2.1/standard/image-to-video` |
+| **Workflow** | `video_image_to_video` |
+| **Intended use** | Image-to-video short-form creator ads and campaign clips |
+| **Credit cost** | **25 credits** per clip |
+| **Status** | Beta (feature-flagged) |
+| **User-visible status** | Live tab only when `NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO=true` |
 
 **Implementation spec:** [VIDEO_STUDIO_IMPLEMENTATION_PLAN.md](./VIDEO_STUDIO_IMPLEMENTATION_PLAN.md).
 
@@ -130,19 +131,17 @@ Video capabilities are **not live**. UI modules (Video Studio, Cinema Agent) are
 
 ---
 
-## 4. Lip Sync Studio (Beta)
+## 4. Lip Sync Studio (Planned)
 
 ### 4.1 Lip Sync Studio
 
 | Field | Value |
 |-------|--------|
 | **Module** | Lip Sync Studio |
-| **Provider** | fal.ai (`fal-ai/ai-avatar` image+audio, `fal-ai/sync-lipsync/v2/pro` video+audio) |
-| **Intended use** | Talking creator clips from source media + uploaded audio |
-| **Credit cost** | **30 credits** — [strategy doc](./CREDIT_AND_MODE_STRATEGY.md) §7 |
-| **Feature flags** | `ENABLE_FAL_LIP_SYNC`, `NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC` |
-| **Status** | **Beta** when flags enabled |
-| **User-visible status** | Beta tab in AI Agent; disabled when flags off |
+| **Intended use** | Talking creator clips from scripts, audio and visual assets |
+| **Estimated credit band** | **20–80 credits** (duration-based, planned) |
+| **Status** | **Planned / disabled** |
+| **User-visible status** | Coming soon only; no runtime generation calls |
 
 **Not in scope:** TTS, script-only lip sync, social posting APIs.
 

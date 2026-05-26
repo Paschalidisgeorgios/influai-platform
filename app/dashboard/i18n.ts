@@ -670,12 +670,12 @@ const en = {
       lipSync: {
         label: "Lip Sync Studio",
         description:
-          "Sync a talking creator clip from source media and your audio track.",
+          "Generate talking creator clips from scripts, voice and visual assets.",
         panel: {
           statusPlanned: "Coming soon · Planned",
           statusActive: "Beta",
           introPlanned:
-            "Lip Sync Studio is being prepared for talking creator videos.",
+            "Lip Sync Studio is planned. Estimated 20–80 credits depending on duration.",
           introActive:
             "Upload source media and audio. Your lip-synced video appears in the agent and gallery.",
           sourceLabel: "Source media",
@@ -969,7 +969,7 @@ const en = {
       referenceEdit: "Reference Edit: 5 Credits",
       brandAssets: "Brand Assets: 4 Credits",
       videoStudio: "Video Studio: 25 Credits",
-      lipSync: "Lip Sync Studio: 30 Credits",
+      lipSync: "Lip Sync Studio: Planned (20–80 Credits)",
     },
     lipSyncUsageNote: "Lip Sync uses source media and audio input.",
     oneCreditRule: "1 standard image = 1 credit",
@@ -1752,12 +1752,12 @@ const de: DeepString<typeof en> = {
       lipSync: {
         label: "Lip Sync Studio",
         description:
-          "Erstelle ein Talking-Creator-Video aus Quellmedien und deiner Audiospur.",
+          "Erstelle sprechende Creator-Clips aus Skripten, Stimme und Visuals.",
         panel: {
           statusPlanned: "Demnächst · Geplant",
           statusActive: "Beta",
           introPlanned:
-            "Lip Sync Studio wird für Talking-Creator-Videos vorbereitet.",
+            "Lip Sync Studio ist geplant. Geschätzte 20–80 Credits je nach Dauer.",
           introActive:
             "Lade Quellmedien und Audio hoch. Dein Lip-Sync-Video erscheint im Agent und in der Galerie.",
           sourceLabel: "Quellmedien",
@@ -2062,7 +2062,7 @@ const de: DeepString<typeof en> = {
       referenceEdit: "Reference Edit: 5 Credits",
       brandAssets: "Brand Assets: 4 Credits",
       videoStudio: "Video Studio: 25 Credits",
-      lipSync: "Lip Sync Studio: 30 Credits",
+      lipSync: "Lip Sync Studio: Geplant (20–80 Credits)",
     },
     lipSyncUsageNote:
       "Lip Sync nutzt Quellmedien und Audio als Eingabe.",

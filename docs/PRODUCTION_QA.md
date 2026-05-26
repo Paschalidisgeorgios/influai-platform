@@ -206,19 +206,20 @@ Run on a test account with sufficient credits. Record starting balance: ________
 
 ---
 
-## 15. Lip Sync Studio (Beta, flags required)
+## 15. Video Studio (Beta) + Lip Sync planned checks
 
-Prerequisites: `ENABLE_FAL_LIP_SYNC=true`, `NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC=true`, `FAL_KEY` set, buckets from `LIP_SYNC_STORAGE_SQL.md`, columns from `LIP_SYNC_REQUIRED_SQL.md`.
+Prerequisites for Video Studio: `ENABLE_FAL_VIDEO_STUDIO=true`, `NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO=true`, `FAL_KEY` set, DB columns from `VIDEO_STUDIO_REQUIRED_SQL.md`.
 
 | Step | Action | Expected | Pass |
 |------|--------|----------|------|
-| 15.1 | Open AI Agent → Lip Sync tab | Tab visible; Coming soon when flags off | ☐ |
-| 15.2 | Generate without source media | Blocked in UI; API 400 if forced | ☐ |
-| 15.3 | Generate without audio | Blocked in UI; API 400 if forced | ☐ |
-| 15.4 | Upload source + audio, submit | 30 credits debited; `workflow = lip_sync` | ☐ |
-| 15.5 | Completed job | `video_url` set; Agent + Gallery play `<video>` | ☐ |
+| 15.1 | Open AI Agent → Video Studio tab | Visible only when public flag is on | ☐ |
+| 15.2 | Submit without source image | Blocked in UI; API 400 if forced | ☐ |
+| 15.3 | Submit without motion prompt | Blocked in UI; API 400 if forced | ☐ |
+| 15.4 | Upload source image + motion prompt and submit | 25 credits debited; `workflow = video_image_to_video` | ☐ |
+| 15.5 | Completed video job | `video_url` set; Agent + Gallery play `<video>` | ☐ |
 | 15.6 | Provider failure (test env) | `failed`, refund, `credits_used = 0` | ☐ |
-| 15.7 | Cinema / Omni / Social chips | Roadmap only — not clickable, no API | ☐ |
+| 15.7 | Lip Sync tab | Shows Coming soon / Planned; no generation request fired | ☐ |
+| 15.8 | Cinema / Omni / Social chips | Roadmap only — not clickable, no API | ☐ |
 
 ---
 

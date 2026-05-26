@@ -21,7 +21,7 @@ Modes are enabled per environment via feature flags. The dashboard **Studio Suit
 | Reference Edit | Beta (flag) | 5 |
 | Brand Assets | Beta (flag) | 4 |
 | Video Studio | Beta (flag) | 25 |
-| Lip Sync Studio | Beta (flag) | 30 |
+| Lip Sync Studio | Planned | 20–80 (estimated) |
 
 ### Planned modules (no generation API)
 
@@ -131,38 +131,38 @@ Video, Lip Sync, LoRA, Face Consistency, Character Pro, and Replicate remain **n
 
 ---
 
-## 6. Planned Video Studio
+## 6. Video Studio (Beta)
 
 | Field | Value |
 |-------|--------|
-| **Future provider candidates** | Seedance, Kling, and other video providers (evaluate per launch) |
-| **Suggested cost model** | |
-| — Short clip | 15–30 credits |
-| — Longer / premium clip | 40–80 credits |
+| **Provider / model** | fal.ai / `fal-ai/kling-video/v2.1/standard/image-to-video` |
+| **Workflow** | `video_image_to_video` |
+| **Cost model (MVP)** | **25 credits** per clip |
 | **Purpose** | Text-to-video, image-to-video, creator ads, product videos |
-| **Status** | Planned |
+| **Status** | Beta (feature-flagged) |
 
-Billing unit (per clip vs per second) must be fixed before UI goes Live. Store `video_url` and `duration_seconds` for audit and support.
+Video Studio is currently image-to-video only and feature-flagged with:
+
+- `ENABLE_FAL_VIDEO_STUDIO=true`
+- `NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO=true`
+
+Required DB columns are documented in `docs/VIDEO_STUDIO_REQUIRED_SQL.md`.
 
 **Implementation spec:** [VIDEO_STUDIO_IMPLEMENTATION_PLAN.md](./VIDEO_STUDIO_IMPLEMENTATION_PLAN.md) (planning only, **not Live**).
 
 ---
 
-## 7. Lip Sync Studio (Beta)
+## 7. Lip Sync Studio (Planned)
 
 | Field | Value |
 |-------|--------|
-| **Mode key** | `lip_sync` |
-| **Provider** | fal.ai |
-| **Models** | Image + audio: `fal-ai/ai-avatar` · Video + audio: `fal-ai/sync-lipsync/v2/pro` |
-| **Credit cost** | **30 credits** per job |
-| **Inputs** | Source media URL (image or video) + audio URL; optional instructions (no TTS) |
-| **Output** | `generations.video_url` |
-| **Feature flags** | `ENABLE_FAL_LIP_SYNC=true`, `NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC=true` |
-| **Refund** | Idempotent refund on worker failure (`markFailedAndRefund`) |
-| **Status** | **Beta** when flags enabled |
+| **Mode key** | `lip_sync` (reserved) |
+| **Status** | **Planned** (disabled in release UI/API) |
+| **Estimated cost band** | **20–80 credits** depending on duration |
+| **Required inputs (future)** | Source image/video + script/audio + target duration |
+| **Safety rule** | No expensive provider call without explicit user confirmation and shown estimate |
 
-**Implementation spec:** [LIP_SYNC_IMPLEMENTATION_PLAN.md](./LIP_SYNC_IMPLEMENTATION_PLAN.md). SQL: [LIP_SYNC_REQUIRED_SQL.md](./LIP_SYNC_REQUIRED_SQL.md), storage: [LIP_SYNC_STORAGE_SQL.md](./LIP_SYNC_STORAGE_SQL.md).
+**Implementation spec:** [LIP_SYNC_IMPLEMENTATION_PLAN.md](./LIP_SYNC_IMPLEMENTATION_PLAN.md).
 
 ---
 

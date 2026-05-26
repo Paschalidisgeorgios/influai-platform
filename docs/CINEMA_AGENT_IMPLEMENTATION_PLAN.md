@@ -2,19 +2,19 @@
 
 **Document type:** Technical implementation specification  
 **Audience:** Engineering, product, operations  
-**Status:** **Planning Beta (client preview live)** — no provider API, no credits, no batch generation  
+**Status:** **Planned (disabled)** — no provider API, no credits, no batch generation  
 **Last updated:** 2026-05-22  
 **Related:** [CREDIT_AND_MODE_STRATEGY.md](./CREDIT_AND_MODE_STRATEGY.md), [ROADMAP_IMAGE_VIDEO_MODES.md](./ROADMAP_IMAGE_VIDEO_MODES.md), [VIDEO_STUDIO_IMPLEMENTATION_PLAN.md](./VIDEO_STUDIO_IMPLEMENTATION_PLAN.md)
 
 This specification describes **Cinema Agent** as a **planning and orchestration layer** above image and video generation—not a single media provider.
 
-### Planning preview (shipped in dashboard)
+### Planning preview (roadmap state)
 
 | Item | Detail |
 |------|--------|
 | **UI** | `app/dashboard/CampaignPlanner.tsx` — client-side rule-based plan |
-| **Navigation** | Dashboard → **Live Studio** → **Campaign Planner** — active planning preview module (not roadmap-only) |
-| **Visibility** | Promoted as **Planning Beta** with **No credits used** badge; Cinema Agent / Omni remain planned expansion modules |
+| **Navigation** | Roadmap / planned modules only |
+| **Visibility** | Planned-only module; no active generation actions |
 | **Credits** | **0** — no `consume_user_credits`, no API routes |
 | **Provider** | **None** — no OpenAI, no fal, no worker changes |
 | **Outputs** | Campaign angle, content set, shot list (5+ cards), captions, hashtags, **Campaign Estimate** preview, **Social Planner Preview**, **Brand Safety Preview** (manual checklist), **Export Package Preview** (manual copy) |

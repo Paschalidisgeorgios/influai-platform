@@ -2,7 +2,7 @@
 
 **Document type:** Technical implementation specification  
 **Audience:** Engineering, product, operations, legal/compliance (review before Live)  
-**Status:** **Beta live** when `ENABLE_FAL_LIP_SYNC` + `NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC` are `true`  
+**Status:** **Planned** (disabled for current release)  
 **Last updated:** 2026-05-22  
 **Related:** [CREDIT_AND_MODE_STRATEGY.md](./CREDIT_AND_MODE_STRATEGY.md), [ROADMAP_IMAGE_VIDEO_MODES.md](./ROADMAP_IMAGE_VIDEO_MODES.md), [VIDEO_STUDIO_IMPLEMENTATION_PLAN.md](./VIDEO_STUDIO_IMPLEMENTATION_PLAN.md)
 
@@ -18,7 +18,7 @@ Lip Sync Studio produces **talking creator clips** from **source media + uploade
 |-----------|--------|
 | Core output | Lip-synced video in `generations.video_url` |
 | Inputs | Source image or video URL + audio URL; optional instructions |
-| Credits | **30** per job (`lip_sync_generation_job`) |
+| Credits | **Estimated 20–80** per job depending on duration |
 | MVP scope | **No** script-only, **no** TTS, **no** auto social posting |
 
 ---

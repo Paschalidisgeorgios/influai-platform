@@ -342,19 +342,20 @@ If duplicates appear, stop manual refunds and inspect Vercel worker logs for rep
 
 ---
 
-## 10b. Lip Sync Studio (Beta)
+## 10b. Video Studio and Lip Sync status
 
 | Item | Value |
 |------|--------|
-| Flags | `ENABLE_FAL_LIP_SYNC`, `NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC` |
-| Credits | 30 per job |
-| Upload API | `POST /api/lip-sync/upload` (`type=source` \| `audio`) |
-| Generate | `imageMode: lip_sync`, `sourceMediaUrl`, `audioUrl`, `sourceMediaType` |
-| Worker | `workflow === lip_sync` → fal image (`fal-ai/ai-avatar`) or video (`fal-ai/sync-lipsync/v2/pro`) |
-| Output | `generations.video_url` |
-| Refund | Same idempotent `markFailedAndRefund` as other modes |
+| Video Studio status | **Beta** (feature-flagged) |
+| Video flags | `ENABLE_FAL_VIDEO_STUDIO`, `NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO` |
+| Video workflow | `video_image_to_video` |
+| Video credits | **25** per job |
+| Video output | `generations.video_url` (+ `duration_seconds` when available) |
+| Video refund | Same idempotent `markFailedAndRefund` as image modes |
+| Lip Sync status | **Planned / disabled** in current release |
+| Lip Sync estimate | **20–80 credits** (future duration model) |
 
-**Enable checklist:** run `LIP_SYNC_REQUIRED_SQL.md` + `LIP_SYNC_STORAGE_SQL.md`, set flags on Vercel, redeploy, run `PRODUCTION_QA.md` §15.
+For Video Studio DB prerequisites run `docs/VIDEO_STUDIO_REQUIRED_SQL.md` before live testing if columns are missing.
 
 **Planned-only modules (no ops action):** Cinema Agent, Omni Campaign Agent, Social Planner, Brand Safety — UI roadmap chips only.
 
