@@ -2613,7 +2613,7 @@ export default function AiAgentStudio({
   return (
     <section
       id="agent"
-      className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#06060a] px-3 pb-28 pt-[4.75rem] sm:px-6 sm:pb-16 sm:pt-10 lg:px-10 lg:pb-10 lg:pt-10"
+      className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#06060a] px-3 pb-20 pt-[4.25rem] sm:px-6 sm:pb-12 sm:pt-8 lg:px-8 lg:pb-8 lg:pt-6"
     >
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="agent-film-bg absolute inset-0 overflow-hidden" />
@@ -2664,13 +2664,13 @@ export default function AiAgentStudio({
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(6,6,10,0.92)_0%,rgba(6,6,10,0.68)_36%,rgba(38,30,36,0.34)_60%,rgba(18,15,24,0.72)_100%)]" />
       </div>
 
-      <div className="relative z-10 mx-auto w-full min-w-0 max-w-7xl py-4 sm:py-6 lg:py-8">
-        <div className="mb-5 sm:mb-6 lg:mb-8">
+      <div className="relative z-10 mx-auto w-full min-w-0 max-w-7xl py-2 sm:py-4 lg:py-4">
+        <div className="mb-3 sm:mb-4 lg:mb-4">
           <motion.p
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="text-xs font-semibold text-white/45"
+            className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d8ad5f]/80"
           >
             InfluExAi Agent
           </motion.p>
@@ -2679,7 +2679,7 @@ export default function AiAgentStudio({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.05 }}
-            className="mt-2 text-2xl font-black tracking-[-0.055em] text-white sm:text-3xl lg:text-4xl"
+            className="mt-1.5 text-xl font-black tracking-[-0.04em] text-white sm:text-2xl lg:text-3xl"
           >
             {a.title}
           </motion.h2>
@@ -2688,7 +2688,7 @@ export default function AiAgentStudio({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="mt-3 max-w-2xl text-xs leading-6 text-white/50 sm:text-sm"
+            className="mt-2 hidden max-w-2xl text-xs leading-6 text-white/45 sm:block sm:text-sm"
           >
             {a.subtitle}
           </motion.p>

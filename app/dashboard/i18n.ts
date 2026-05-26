@@ -26,7 +26,7 @@ const en = {
       "Planned modules stay disabled until a future release.",
     roadmap: "Roadmap",
     roadmapBody:
-      "Live and beta creative modes run in the AI Agent. Campaign Planner is the active Cinema Agent planning preview — expansion modules below ship later.",
+      "Pick an image mode inside the AI Agent. Video, lip sync and campaign agents ship in later expansion releases.",
     watermarkedPromoTitle: "Watermarked Promo Package",
     watermarkedPromoBadge: "Planned",
     watermarkedPromoBody:
@@ -45,7 +45,7 @@ const en = {
       "Image, video and lip-sync workflows run in the AI Agent. Credits apply per selected mode.",
     expansionPlanned: "Expansion / Planned",
     expansionPlannedHint:
-      "Campaign Planner in Live Studio is the active first step. Modules below are planned — not connected to generation, credits or billing.",
+      "Image modes run in the AI Agent. Modules below are roadmap previews — not separate pages.",
     creditCostShort: "Credits",
     nav: {
       agent: { label: "AI Agent", description: "Generate campaign visuals" },
@@ -1074,7 +1074,7 @@ const de: DeepString<typeof en> = {
       "Geplante Module bleiben bis zu einem späteren Release deaktiviert.",
     roadmap: "Roadmap",
     roadmapBody:
-      "Live- und Beta-Modi laufen im AI Agent. Campaign Planner ist die aktive Cinema-Agent-Planning-Vorschau — Erweiterungsmodule unten folgen später.",
+      "Bildmodi wählst du im AI Agent. Video, Lip Sync und Campaign Agents folgen in späteren Expansion-Releases.",
     watermarkedPromoTitle: "Watermarked Promo-Paket",
     watermarkedPromoBadge: "Geplant",
     watermarkedPromoBody:
@@ -1093,7 +1093,7 @@ const de: DeepString<typeof en> = {
       "Bild-, Video- und Lip-Sync-Workflows laufen im AI Agent. Credits je gewähltem Modus.",
     expansionPlanned: "Expansion / Geplant",
     expansionPlannedHint:
-      "Campaign Planner im Live Studio ist der aktive erste Schritt. Module unten sind geplant — nicht an Generierung, Credits oder Abrechnung angebunden.",
+      "Bildmodi laufen im AI Agent. Module unten sind Roadmap-Vorschau — keine eigenen Seiten.",
     creditCostShort: "Credits",
     nav: {
       agent: {

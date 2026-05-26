@@ -4,27 +4,19 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Bot,
-  Calendar,
   Clapperboard,
   CreditCard,
   Film,
   GalleryVerticalEnd,
   Home,
-  ImageIcon,
   Lock,
   LogOut,
-  Megaphone,
   Menu,
   Mic2,
-  PenLine,
-  Rocket,
-  Shield,
   Sparkles,
-  Tag,
   UserRound,
   Wand2,
   X,
-  Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import AiAgentStudio from "./AiAgentStudio";
@@ -35,17 +27,8 @@ import { DashboardLanguageProvider, useDashboardLanguage } from "./DashboardLang
 import CreditsCard from "./CreditsCard";
 import GenerationGallery from "./GenerationGallery";
 import LanguageSelector from "./LanguageSelector";
-import StudioModesOverview from "./StudioModesOverview";
 import { createClient } from "@/lib/supabase/client";
 
-const FAST_DRAFT_PUBLIC_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_FAL_FAST_DRAFT === "true";
-const PREMIUM_IMAGE_PUBLIC_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_FAL_PREMIUM_IMAGE === "true";
-const REFERENCE_EDIT_PUBLIC_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_FAL_REFERENCE_EDIT === "true";
-const BRAND_ASSETS_PUBLIC_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_FAL_BRAND_ASSETS === "true";
 const VIDEO_STUDIO_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO === "true";
 const LIP_SYNC_PUBLIC_ENABLED =
@@ -78,34 +61,14 @@ type LiveSidebarItem = {
 
 type ModeAvailability = "live" | "beta" | "planned";
 
-type CreativeModeSidebarItem = {
+type RoadmapModule = {
   id: string;
   label: string;
-  credits: string;
   bestFor: string;
+  icon: LucideIcon;
   availability: ModeAvailability;
-  icon: LucideIcon;
+  onSelect?: () => void;
 };
-
-type PlannedModule = {
-  id: string;
-  label: string;
-  description: string;
-  bestFor: string;
-  icon: LucideIcon;
-};
-
-function getModeAvailabilityBadgeClass(availability: ModeAvailability) {
-  if (availability === "live") {
-    return "border-emerald-500/25 bg-emerald-500/10 text-emerald-200";
-  }
-
-  if (availability === "beta") {
-    return "border-amber-400/25 bg-amber-500/10 text-amber-100";
-  }
-
-  return "border-white/12 bg-white/[0.06] text-white/45";
-}
 
 function getSidebarBadgeClass(variant: SidebarBadgeVariant) {
   if (variant === "beta") {
@@ -196,22 +159,6 @@ function DashboardPageInner() {
         badge: copy.sidebar.live,
       },
       {
-        id: "planner",
-        label: copy.sidebar.nav.planner.label,
-        description: copy.sidebar.nav.planner.description,
-        icon: Clapperboard,
-        badges: [
-          {
-            label: copy.campaignPlanner.badges.planningBeta,
-            variant: "beta",
-          },
-          {
-            label: copy.campaignPlanner.badges.noCredits,
-            variant: "credits",
-          },
-        ],
-      },
-      {
         id: "gallery",
         label: copy.sidebar.nav.gallery.label,
         description: copy.sidebar.nav.gallery.description,
@@ -228,109 +175,6 @@ function DashboardPageInner() {
         label: copy.sidebar.nav.credits.label,
         description: copy.sidebar.nav.credits.description,
         icon: CreditCard,
-      },
-    ],
-    [copy]
-  );
-
-  const creativeModeItems: CreativeModeSidebarItem[] = useMemo(
-    () => [
-      {
-        id: "standard",
-        label: copy.studioSuite.modes.standard.label,
-        credits: copy.studioSuite.modes.standard.credits,
-        bestFor: copy.studioSuite.modes.standard.bestFor,
-        availability: "live",
-        icon: ImageIcon,
-      },
-      {
-        id: "fast_draft",
-        label: copy.studioSuite.modes.fastDraft.label,
-        credits: copy.studioSuite.modes.fastDraft.credits,
-        bestFor: copy.studioSuite.modes.fastDraft.bestFor,
-        availability: FAST_DRAFT_PUBLIC_ENABLED ? "beta" : "planned",
-        icon: Zap,
-      },
-      {
-        id: "premium_image",
-        label: copy.studioSuite.modes.premium.label,
-        credits: copy.studioSuite.modes.premium.credits,
-        bestFor: copy.studioSuite.modes.premium.bestFor,
-        availability: PREMIUM_IMAGE_PUBLIC_ENABLED ? "beta" : "planned",
-        icon: Sparkles,
-      },
-      {
-        id: "reference_edit",
-        label: copy.studioSuite.modes.referenceEdit.label,
-        credits: copy.studioSuite.modes.referenceEdit.credits,
-        bestFor: copy.studioSuite.modes.referenceEdit.bestFor,
-        availability: REFERENCE_EDIT_PUBLIC_ENABLED ? "beta" : "planned",
-        icon: PenLine,
-      },
-      {
-        id: "brand_assets",
-        label: copy.studioSuite.modes.brandAssets.label,
-        credits: copy.studioSuite.modes.brandAssets.credits,
-        bestFor: copy.studioSuite.modes.brandAssets.bestFor,
-        availability: BRAND_ASSETS_PUBLIC_ENABLED ? "beta" : "planned",
-        icon: Megaphone,
-      },
-      {
-        id: "video_studio",
-        label: copy.studioSuite.modes.videoStudio.label,
-        credits: copy.studioSuite.modes.videoStudio.credits,
-        bestFor: copy.studioSuite.modes.videoStudio.bestFor,
-        availability: VIDEO_STUDIO_PUBLIC_ENABLED ? "beta" : "planned",
-        icon: Film,
-      },
-      {
-        id: "lip_sync",
-        label: copy.studioSuite.modes.lipSync.label,
-        credits: copy.studioSuite.modes.lipSync.credits,
-        bestFor: copy.studioSuite.modes.lipSync.bestFor,
-        availability: LIP_SYNC_PUBLIC_ENABLED ? "beta" : "planned",
-        icon: Mic2,
-      },
-    ],
-    [copy]
-  );
-
-  const plannedModules: PlannedModule[] = useMemo(
-    () => [
-      {
-        id: "cinema-agent",
-        label: copy.sidebar.expansion.cinemaAgent.label,
-        description: copy.sidebar.expansion.cinemaAgent.description,
-        bestFor: copy.sidebar.expansion.cinemaAgent.activeNote,
-        icon: Clapperboard,
-      },
-      {
-        id: "omni-campaign-agent",
-        label: copy.studioSuite.planned.omniCampaignAgent.label,
-        description: copy.sidebar.expansion.omniCampaignAgent.description,
-        bestFor: copy.studioSuite.planned.omniCampaignAgent.bestFor,
-        icon: Wand2,
-      },
-      {
-        id: "social-planner",
-        label: copy.studioSuite.planned.socialPlanner.label,
-        description: copy.sidebar.expansion.socialPlanner.description,
-        bestFor: copy.studioSuite.planned.socialPlanner.bestFor,
-        icon: Calendar,
-      },
-      {
-        id: "brand-safety",
-        label: copy.studioSuite.planned.brandSafety.label,
-        description: copy.sidebar.expansion.brandSafety.description,
-        bestFor: copy.studioSuite.planned.brandSafety.bestFor,
-        icon: Shield,
-      },
-      {
-        id: "watermarked-promo",
-        label: copy.studioSuite.planned.watermarkedPromo.label,
-        description: copy.sidebar.watermarkedPromoBody,
-        bestFor: copy.studioSuite.planned.watermarkedPromo.bestFor,
-        icon: Tag,
       },
     ],
     [copy]
@@ -438,7 +282,6 @@ function DashboardPageInner() {
     if (activeView === "agent") {
       return (
         <>
-          <StudioModesOverview />
           <AiAgentStudio
             charactersRefreshKey={charactersRefreshKey}
             regenerateDraft={regenerateDraft}
@@ -517,6 +360,45 @@ function DashboardPageInner() {
   }
 
   function SidebarContent() {
+    const expansionRoadmapItems: RoadmapModule[] = [
+      {
+        id: "campaign-planner",
+        label: copy.sidebar.nav.planner.label,
+        bestFor: copy.sidebar.nav.planner.description,
+        icon: Clapperboard,
+        availability: "beta",
+        onSelect: () => openView("planner"),
+      },
+      {
+        id: "video_studio",
+        label: copy.sidebar.expansion.videoStudio.label,
+        bestFor: copy.sidebar.expansion.videoStudio.description,
+        icon: Film,
+        availability: VIDEO_STUDIO_PUBLIC_ENABLED ? "beta" : "planned",
+      },
+      {
+        id: "lip_sync",
+        label: copy.sidebar.expansion.lipSyncStudio.label,
+        bestFor: copy.sidebar.expansion.lipSyncStudio.description,
+        icon: Mic2,
+        availability: LIP_SYNC_PUBLIC_ENABLED ? "beta" : "planned",
+      },
+      {
+        id: "cinema-agent",
+        label: copy.sidebar.expansion.cinemaAgent.label,
+        bestFor: copy.sidebar.expansion.cinemaAgent.description,
+        icon: Clapperboard,
+        availability: "planned",
+      },
+      {
+        id: "omni-campaign-agent",
+        label: copy.sidebar.expansion.omniCampaignAgent.label,
+        bestFor: copy.sidebar.expansion.omniCampaignAgent.description,
+        icon: Wand2,
+        availability: "planned",
+      },
+    ];
+
     return (
       <div className="flex h-full flex-col">
         <div>
@@ -628,125 +510,94 @@ function DashboardPageInner() {
             </nav>
           </div>
 
-          <div className="mt-7">
-            <div className="mb-3 px-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/25">
-                {copy.sidebar.creativeModes}
-              </p>
-              <p className="mt-2 text-[11px] leading-5 text-white/35">
-                {copy.sidebar.creativeModesHint}
-              </p>
-            </div>
-
-            <div className="space-y-1.5" role="list">
-              {creativeModeItems.map((mode) => {
-                const Icon = mode.icon;
-                const statusLabel = getModeAvailabilityLabel(mode.availability);
-
-                return (
-                  <div
-                    key={mode.id}
-                    role="listitem"
-                    className="flex items-start gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-2.5 py-2.5"
-                  >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-white/45">
-                      <Icon className="h-3.5 w-3.5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <p className="text-[11px] font-bold text-white/70">
-                          {mode.label}
-                        </p>
-                        <span
-                          className={`rounded-full border px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.08em] ${getModeAvailabilityBadgeClass(
-                            mode.availability
-                          )}`}
-                        >
-                          {statusLabel}
-                        </span>
-                        <span className="text-[8px] font-bold uppercase tracking-[0.06em] text-[#d8ad5f]/90">
-                          {mode.credits}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-white/30">
-                        {mode.bestFor}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="mt-7">
-            <div className="mb-3 px-3">
+          <div className="mt-6">
+            <div className="mb-2 px-3">
               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/25">
                 {copy.sidebar.expansionPlanned}
               </p>
-              <p className="mt-2 text-[11px] leading-5 text-white/35">
+              <p className="mt-1.5 text-[11px] leading-5 text-white/35">
                 {copy.sidebar.expansionPlannedHint}
               </p>
             </div>
 
             <div
-              className="space-y-2"
+              className="space-y-1.5"
               role="list"
               aria-label={copy.sidebar.expansionPlanned}
             >
-              {plannedModules.map((module) => (
-                <div
-                  key={module.id}
-                  role="listitem"
-                  aria-disabled="true"
-                  title={`${module.label} — ${copy.sidebar.planned}. ${copy.sidebar.moduleUnavailable}`}
-                  className="relative flex w-full cursor-not-allowed items-start gap-3 rounded-[1.3rem] border border-white/[0.06] bg-white/[0.02] px-3 py-3 text-left"
-                >
-                  <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.06] bg-black/30 text-white/30">
-                    <module.icon className="h-4 w-4" />
-                  </div>
+              {expansionRoadmapItems.map((module) => {
+                const Icon = module.icon;
+                const statusLabel = getModeAvailabilityLabel(module.availability);
+                const isClickable = Boolean(module.onSelect);
 
-                  <div className="relative min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <p className="text-[11px] font-bold text-white/40">
-                        {module.label}
-                      </p>
-                      <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.1em] text-white/40">
-                        {copy.sidebar.planned}
-                      </span>
+                if (isClickable) {
+                  return (
+                    <button
+                      key={module.id}
+                      type="button"
+                      onClick={module.onSelect}
+                      className="flex w-full items-start gap-2.5 rounded-xl border border-violet-500/20 bg-violet-500/[0.06] px-2.5 py-2.5 text-left transition hover:border-violet-500/35 hover:bg-violet-500/10"
+                    >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-100">
+                        <Icon className="h-3.5 w-3.5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <p className="text-[11px] font-bold text-white/80">
+                            {module.label}
+                          </p>
+                          <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.08em] text-violet-100">
+                            {statusLabel}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-white/35">
+                          {module.bestFor}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                }
+
+                return (
+                  <div
+                    key={module.id}
+                    role="listitem"
+                    aria-disabled="true"
+                    title={`${module.label} — ${statusLabel}. ${copy.sidebar.moduleUnavailable}`}
+                    className="flex items-start gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-2.5 py-2.5"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-white/30">
+                      <Icon className="h-3.5 w-3.5" />
                     </div>
-                    <p className="mt-0.5 text-[10px] leading-4 text-white/28">
-                      {module.bestFor}
-                    </p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="text-[11px] font-bold text-white/45">
+                          {module.label}
+                        </p>
+                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.08em] text-white/40">
+                          {statusLabel}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-white/28">
+                        {module.bestFor}
+                      </p>
+                    </div>
+                    <Lock
+                      className="mt-1 h-3 w-3 shrink-0 text-white/18"
+                      aria-hidden
+                    />
                   </div>
-
-                  <Lock
-                    className="relative mt-0.5 h-3.5 w-3.5 shrink-0 text-white/18"
-                    aria-hidden
-                  />
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            <p className="mt-3 px-3 text-[10px] leading-4 text-white/25">
+            <p className="mt-2 px-3 text-[10px] leading-4 text-white/25">
               {copy.sidebar.expansionFootnote}
             </p>
           </div>
         </div>
 
-        <div className="mt-auto space-y-2 pt-8">
-          <div className="rounded-[1.3rem] border border-[#d8ad5f]/20 bg-[#d8ad5f]/10 p-4">
-            <div className="flex items-center gap-2 text-[#d8ad5f]">
-              <Rocket className="h-4 w-4" />
-              <p className="text-xs font-black uppercase tracking-[0.18em]">
-                {copy.sidebar.roadmap}
-              </p>
-            </div>
-
-            <p className="mt-2 text-xs leading-5 text-white/40">
-              {copy.sidebar.roadmapBody}
-            </p>
-          </div>
-
+        <div className="mt-auto space-y-2 pt-6">
           <Link
             href="/"
             className="flex items-center gap-3 rounded-[1.3rem] border border-white/10 bg-white/[0.035] px-4 py-3 text-sm font-bold text-white/65 transition hover:border-white/20 hover:text-white"
