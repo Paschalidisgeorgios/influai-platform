@@ -532,6 +532,8 @@ const en = {
       "Generate premium creator visuals, product shots and social media campaign assets. Use style profiles for reusable creative direction.",
     enterHint: "Enter to generate · Shift+Enter for a new line",
     workspacePromptHeadline: "What do you want to create?",
+    searchHeadline: "Hey, what do you want to create?",
+    imageStudioTab: "Image Studio",
     resultPlaceholderTitle: "Your result will appear here.",
     resultPlaceholderHint:
       "Generate a visual to preview it live. Completed assets are saved to your gallery automatically.",
@@ -1588,6 +1590,8 @@ const de: DeepString<typeof en> = {
       "Erzeuge Premium-Creator-Visuals, Produktshots und Social-Media-Kampagnen-Assets. Nutze Style Profiles für wiederverwendbare Creative Direction.",
     enterHint: "Enter zum Generieren · Shift+Enter für neue Zeile",
     workspacePromptHeadline: "Was möchtest du erstellen?",
+    searchHeadline: "Hey, was möchtest du erschaffen?",
+    imageStudioTab: "Bild Studio",
     resultPlaceholderTitle: "Dein Ergebnis erscheint hier.",
     resultPlaceholderHint:
       "Generiere ein Visual für die Live-Vorschau. Fertige Assets werden automatisch in deiner Gallery gespeichert.",

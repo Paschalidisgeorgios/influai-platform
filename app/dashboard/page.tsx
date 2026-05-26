@@ -510,18 +510,16 @@ function DashboardPageInner() {
             </nav>
           </div>
 
-          <div className="mt-6">
-            <div className="mb-2 px-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/25">
-                {copy.sidebar.expansionPlanned}
-              </p>
-              <p className="mt-1.5 text-[11px] leading-5 text-white/35">
-                {copy.sidebar.expansionPlannedHint}
-              </p>
-            </div>
+          <details className="mt-5 px-1">
+            <summary className="cursor-pointer list-none px-2 text-[10px] font-black uppercase tracking-[0.28em] text-white/30 marker:content-none [&::-webkit-details-marker]:hidden">
+              {copy.sidebar.expansionPlanned}
+            </summary>
+            <p className="mt-2 px-2 text-[10px] leading-4 text-white/30">
+              {copy.sidebar.expansionPlannedHint}
+            </p>
 
             <div
-              className="space-y-1.5"
+              className="mt-2 space-y-1"
               role="list"
               aria-label={copy.sidebar.expansionPlanned}
             >
@@ -591,10 +589,10 @@ function DashboardPageInner() {
               })}
             </div>
 
-            <p className="mt-2 px-3 text-[10px] leading-4 text-white/25">
+            <p className="mt-2 px-2 text-[10px] leading-4 text-white/25">
               {copy.sidebar.expansionFootnote}
             </p>
-          </div>
+          </details>
         </div>
 
         <div className="mt-auto space-y-2 pt-6">
@@ -620,15 +618,15 @@ function DashboardPageInner() {
   }
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
+    <main className="flex h-screen flex-col overflow-hidden bg-[#050505] text-white">
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute left-[18%] top-[14%] h-[360px] w-[360px] rounded-full bg-[#d8ad5f]/8 blur-[120px]" />
         <div className="absolute bottom-[8%] left-[22%] h-[280px] w-[280px] rounded-full bg-violet-700/10 blur-[130px]" />
         <div className="absolute right-[10%] top-[20%] h-[300px] w-[300px] rounded-full bg-white/[0.03] blur-[120px]" />
       </div>
 
-      <div className="relative z-10 flex min-h-screen">
-        <aside className="hidden w-[320px] border-r border-white/10 bg-black/75 p-4 backdrop-blur-2xl lg:block">
+      <div className="relative z-10 flex min-h-0 flex-1 overflow-hidden">
+        <aside className="hidden h-full w-[280px] shrink-0 border-r border-white/10 bg-black/75 p-4 backdrop-blur-2xl lg:block">
           <div className="sticky top-4 h-[calc(100vh-32px)] overflow-y-auto overscroll-contain pr-1">
             <SidebarContent />
           </div>
@@ -663,7 +661,7 @@ function DashboardPageInner() {
           </div>
         )}
 
-        <section className="relative min-w-0 flex-1">
+        <section className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <div className="fixed right-5 top-5 z-50 hidden items-center gap-2 lg:flex">
             <LanguageSelector />
             <CompactCredits refreshKey={creditsRefreshKey} />

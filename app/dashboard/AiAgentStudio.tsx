@@ -2609,880 +2609,679 @@ export default function AiAgentStudio({
   }
 
   const FormatIcon = selectedOutputFormat.icon;
+  const showSplitWorkspace = Boolean(agentResult);
+
+  const selectedImageModeEntry = useMemo(
+    () => imageModes.find((mode) => mode.key === imageMode),
+    [imageModes, imageMode]
+  );
+
+  const activeModeShortLine = useMemo(() => {
+    if (!selectedImageModeEntry) return "";
+    if ("hoverHint" in selectedImageModeEntry && selectedImageModeEntry.hoverHint) {
+      return selectedImageModeEntry.hoverHint;
+    }
+    return selectedImageModeEntry.description;
+  }, [selectedImageModeEntry]);
+
+  const formSurfaceClass = showSplitWorkspace
+    ? "relative isolate flex h-full min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+    : "relative isolate w-full max-w-3xl overflow-visible rounded-[1.75rem] border border-white/10 bg-white/[0.05] shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl";
+
+  function renderComposerContent() {
+    return (
+      <>
+        {studioTab === "image" ? (
+          <>
+            <textarea
+              value={prompt}
+              onChange={(event) => setPrompt(event.target.value)}
+              onKeyDown={submitFromTextarea}
+              placeholder={typedExample || a.promptPlaceholder}
+              className={`w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-4 text-white outline-none placeholder:text-white/30 focus-visible:ring-2 focus-visible:ring-[#d8ad5f]/35 ${
+                showSplitWorkspace
+                  ? "min-h-[88px] text-sm leading-relaxed"
+                  : "min-h-[132px] text-base leading-relaxed sm:min-h-[148px] sm:text-lg"
+              }`}
+            />
+            <p className="mt-2 text-[10px] font-medium text-white/32">{a.enterHint}</p>
+          </>
+        ) : studioTab === "video" ? (
+          <p className="text-sm leading-6 text-white/50">{a.videoStudioLongerHint}</p>
+        ) : (
+          <p className="text-sm leading-6 text-white/50">{a.lipSyncLongerHint}</p>
+        )}
+
+        <div className="mt-4 space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setStudioTab("image")}
+              className={`rounded-full px-4 py-2 text-xs font-black transition ${
+                studioTab === "image"
+                  ? "bg-white text-black"
+                  : "border border-white/10 bg-black/25 text-white/55"
+              }`}
+            >
+              {a.imageStudioTab}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (VIDEO_STUDIO_PUBLIC_ENABLED) {
+                  setStudioTab("video");
+                }
+              }}
+              disabled={!VIDEO_STUDIO_PUBLIC_ENABLED}
+              title={
+                VIDEO_STUDIO_PUBLIC_ENABLED
+                  ? a.imageModes.videoStudio.description
+                  : a.studioTabVideoPlanned
+              }
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                studioTab === "video" && VIDEO_STUDIO_PUBLIC_ENABLED
+                  ? "bg-sky-500/20 text-sky-100 ring-1 ring-sky-500/30"
+                  : "border border-white/10 bg-black/25 text-white/55"
+              }`}
+            >
+              <Clapperboard className="h-3.5 w-3.5" aria-hidden />
+              <span>
+                {VIDEO_STUDIO_PUBLIC_ENABLED
+                  ? a.studioTabVideo
+                  : a.studioTabVideoPlanned}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (LIP_SYNC_PUBLIC_ENABLED) {
+                  setStudioTab("lip_sync");
+                }
+              }}
+              disabled={!LIP_SYNC_PUBLIC_ENABLED}
+              title={
+                LIP_SYNC_PUBLIC_ENABLED
+                  ? a.imageModes.lipSync.description
+                  : a.studioTabLipSyncPlanned
+              }
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                studioTab === "lip_sync" && LIP_SYNC_PUBLIC_ENABLED
+                  ? "bg-violet-500/20 text-violet-100 ring-1 ring-violet-500/30"
+                  : "border border-white/10 bg-black/25 text-white/55"
+              }`}
+            >
+              <Mic className="h-3.5 w-3.5" aria-hidden />
+              <span>
+                {LIP_SYNC_PUBLIC_ENABLED
+                  ? a.studioTabLipSync
+                  : a.studioTabLipSyncPlanned}
+              </span>
+            </button>
+          </div>
+
+          {studioTab === "video" ? (
+            <VideoStudioPanel
+              label={a.imageModes.videoStudio.label}
+              copy={a.imageModes.videoStudio.panel}
+              panelRef={videoStudioPanelRef}
+              getAccessToken={getAccessToken}
+              isEnabled={VIDEO_STUDIO_PUBLIC_ENABLED}
+              sourcePreviewUrl={videoSourceUrl}
+              onSourcePreviewUrlChange={setVideoSourceUrl}
+              motionPrompt={videoMotionPrompt}
+              onMotionPromptChange={setVideoMotionPrompt}
+              onMotionKeyDown={submitVideoFromMotionPrompt}
+            />
+          ) : null}
+
+          {studioTab === "lip_sync" ? (
+            <LipSyncStudioPanel
+              label={a.imageModes.lipSync.label}
+              copy={a.imageModes.lipSync.panel}
+              panelRef={lipSyncPanelRef}
+              getAccessToken={getAccessToken}
+              isEnabled={LIP_SYNC_PUBLIC_ENABLED}
+              sourcePreviewUrl={lipSyncSourceUrl}
+              sourceMediaType={lipSyncSourceMediaType}
+              onSourceChange={(url, mediaType) => {
+                setLipSyncSourceUrl(url);
+                setLipSyncSourceMediaType(mediaType);
+              }}
+              audioPreviewLabel={lipSyncAudioLabel}
+              audioUrl={lipSyncAudioUrl}
+              onAudioChange={(url, label) => {
+                setLipSyncAudioUrl(url);
+                setLipSyncAudioLabel(label);
+              }}
+              instructions={lipSyncInstructions}
+              onInstructionsChange={setLipSyncInstructions}
+              onInstructionsKeyDown={submitLipSyncFromInstructions}
+            />
+          ) : null}
+
+          {studioTab === "image" ? (
+            <>
+              <div className="flex flex-wrap gap-2">
+                {imageModes.map((mode) => {
+                  const isSelectable =
+                    mode.status === "live" || mode.status === "beta";
+                  const isSelected = isSelectable && imageMode === mode.key;
+                  const chipLabel = getImageModeChipLabel(
+                    mode.key,
+                    a.imageModeChips
+                  );
+                  const chipTitle =
+                    "hoverHint" in mode && mode.hoverHint
+                      ? `${mode.description} — ${mode.hoverHint}`
+                      : mode.description;
+
+                  return (
+                    <ImageModeChip
+                      key={mode.key}
+                      label={chipLabel}
+                      selected={isSelected}
+                      disabled={!isSelectable}
+                      title={chipTitle}
+                      onClick={
+                        isSelectable
+                          ? () => setImageMode(mode.key)
+                          : undefined
+                      }
+                    />
+                  );
+                })}
+              </div>
+              {activeModeShortLine ? (
+                <p className="text-xs leading-5 text-white/42">{activeModeShortLine}</p>
+              ) : null}
+              {isReferenceEditActive ? (
+                <ReferenceEditPanel
+                  label={a.imageModes.referenceEdit.label}
+                  copy={a.imageModes.referenceEdit.panel}
+                  panelRef={referenceEditPanelRef}
+                  getAccessToken={getAccessToken}
+                  isEnabled={REFERENCE_EDIT_PUBLIC_ENABLED}
+                  sourcePreviewUrl={referenceEditSourceUrl}
+                  onSourcePreviewUrlChange={setReferenceEditSourceUrl}
+                  editInstruction={referenceEditInstruction}
+                  onEditInstructionChange={setReferenceEditInstruction}
+                />
+              ) : null}
+            </>
+          ) : null}
+
+          <div className="space-y-2">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/35">
+              {a.styleProfile}
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <select
+                value={selectedCharacterId}
+                onChange={(event) => {
+                  setSelectedCharacterId(event.target.value);
+                }}
+                aria-label={a.styleProfileAria}
+                className="w-full max-w-full rounded-full border border-white/10 bg-black/35 px-3 py-2.5 text-xs font-bold text-white outline-none sm:w-auto sm:min-w-[200px] sm:max-w-[280px]"
+              >
+                <option value="">
+                  {loadingCharacters
+                    ? a.loadingStyleProfiles
+                    : a.styleProfileNone}
+                </option>
+                {characters.map((character) => (
+                  <option key={character.id} value={character.id}>
+                    {character.name}
+                  </option>
+                ))}
+              </select>
+
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setFormatMenuOpen((current) => !current)}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-xs font-bold text-white transition hover:border-white/20"
+                >
+                  <FormatIcon className="h-3.5 w-3.5 shrink-0" />
+                  <span>{a.socialFormat}</span>
+                  <span className="shrink-0 text-white/40">
+                    {selectedOutputFormat.ratio}
+                  </span>
+                </button>
+
+                {formatMenuOpen ? (
+                  <div className="absolute left-0 right-0 top-12 z-50 max-h-[min(60vh,320px)] overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-[#101014] p-1.5 shadow-2xl sm:right-auto sm:w-64">
+                    <div className="space-y-1">
+                      {localizedOutputFormats.map((formatOption) => {
+                        const Icon = formatOption.icon;
+                        const active = outputFormatKey === formatOption.key;
+
+                        return (
+                          <button
+                            key={formatOption.key}
+                            type="button"
+                            onClick={() => {
+                              setOutputFormatKey(formatOption.key);
+                              setFormatMenuOpen(false);
+                            }}
+                            className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition ${
+                              active
+                                ? "bg-white text-black"
+                                : "text-white/70 hover:bg-white/[0.06] hover:text-white"
+                            }`}
+                          >
+                            <span className="flex min-w-0 items-center gap-2.5">
+                              <Icon className="h-3.5 w-3.5 shrink-0" />
+                              <span className="min-w-0">
+                                <span className="block truncate text-xs font-black">
+                                  {formatOption.label}
+                                </span>
+                                <span
+                                  className={`block truncate text-[11px] ${
+                                    active ? "text-black/55" : "text-white/35"
+                                  }`}
+                                >
+                                  {formatOption.platform}
+                                </span>
+                              </span>
+                            </span>
+                            <span
+                              className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-black ${
+                                active
+                                  ? "bg-black/10 text-black"
+                                  : "bg-white/[0.06] text-white/55"
+                              }`}
+                            >
+                              {formatOption.ratio}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          <motion.button
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            type="submit"
+            disabled={
+              isSubmitBlocked ||
+              referenceEditSubmitBlocked ||
+              videoSubmitBlocked ||
+              lipSyncSubmitBlocked
+            }
+            title={
+              isLipSyncActive
+                ? a.generateLipSync
+                : isVideoStudioActive
+                  ? a.generateVideo
+                  : undefined
+            }
+            className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 text-sm font-black shadow-xl transition disabled:opacity-50 ${
+              isLipSyncActive
+                ? "bg-violet-500 text-white hover:bg-violet-400"
+                : isVideoStudioActive
+                  ? "bg-sky-500 text-black hover:bg-sky-400"
+                  : "bg-[#d8ad5f] text-black hover:bg-[#efc777]"
+            }`}
+          >
+            {isSubmitBlocked ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : isLipSyncActive ? (
+              <>
+                <Mic className="h-4 w-4" aria-hidden />
+                <span>{a.generateLipSync}</span>
+              </>
+            ) : isVideoStudioActive ? (
+              <>
+                <Clapperboard className="h-4 w-4" aria-hidden />
+                <span>{a.generateVideo}</span>
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4" aria-hidden />
+                <span>{a.generateButton}</span>
+              </>
+            )}
+          </motion.button>
+        </div>
+      </>
+    );
+  }
+
+  function renderResultPanel() {
+    if (!agentResult) return null;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur-xl"
+      >
+        <div className="shrink-0 border-b border-white/10 px-4 py-4 sm:px-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d8ad5f]">
+                {a.latestResult}
+              </p>
+              <h3 className="mt-2 text-lg font-black text-white sm:text-xl">
+                {agentResult.status === "processing"
+                  ? isLipSyncWorkflow(agentResult.workflow)
+                    ? a.generatingLipSync
+                    : isVideoStudioWorkflow(agentResult.workflow)
+                      ? a.generatingVideo
+                      : a.generating
+                  : agentResult.status === "completed"
+                    ? a.completed
+                    : agentResult.status === "insufficient_credits"
+                      ? a.insufficientCreditsTitle
+                      : agentResult.status === "active_generation_limit"
+                        ? a.activeGenerationLimitTitle
+                        : a.failed}
+              </h3>
+            </div>
+
+            <span
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black ${
+                agentResult.status === "completed"
+                  ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-200"
+                  : agentResult.status === "insufficient_credits"
+                    ? "border-amber-500/25 bg-amber-500/10 text-amber-100"
+                    : agentResult.status === "active_generation_limit"
+                      ? "border-sky-500/25 bg-sky-500/10 text-sky-100"
+                      : agentResult.status === "failed"
+                        ? "border-red-500/20 bg-red-500/10 text-red-200"
+                        : "border-[#d8ad5f]/25 bg-[#d8ad5f]/10 text-[#d8ad5f]"
+              }`}
+            >
+              {agentResult.status === "processing" && (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              )}
+              {agentResult.status === "completed" && (
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              )}
+              {agentResult.status === "insufficient_credits" && (
+                <CreditCard className="h-3.5 w-3.5" />
+              )}
+              {agentResult.status === "active_generation_limit" && (
+                <Clock className="h-3.5 w-3.5" />
+              )}
+              {agentResult.status === "failed" && (
+                <AlertCircle className="h-3.5 w-3.5" />
+              )}
+              {resultStatusLabel}
+            </span>
+          </div>
+
+          {agentResult.status === "processing" ? (
+            <div className="mt-4 space-y-3">
+              <div className="h-2 overflow-hidden rounded-full bg-white/[0.08]">
+                <motion.div
+                  className="h-full rounded-full bg-[#d8ad5f]"
+                  initial={{ width: "12%" }}
+                  animate={{ width: ["12%", "68%", "42%", "88%"] }}
+                  transition={{
+                    duration: 3.2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
+              </div>
+              <p className="text-sm font-bold text-[#d8ad5f]">
+                {activeProcessingStep}
+              </p>
+              <p className="text-xs leading-5 text-white/40">{a.processingHint}</p>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black/45">
+          {agentResult.status === "processing" ? (
+            <div className="flex w-full max-w-md flex-col items-center justify-center gap-5 p-8 text-center sm:p-10">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-[#d8ad5f]/30 blur-2xl" />
+                <div className="relative flex h-24 w-24 items-center justify-center rounded-full border border-[#d8ad5f]/25 bg-[#d8ad5f]/10">
+                  <Loader2 className="h-10 w-10 animate-spin text-[#d8ad5f]" />
+                </div>
+              </div>
+              <div>
+                <p className="text-lg font-black text-white">
+                  {activeProcessingStep}
+                </p>
+                <p className="mt-3 text-sm leading-6 text-white/45">
+                  {isLipSyncWorkflow(agentResult.workflow)
+                    ? a.lipSyncLongerHint
+                    : isVideoStudioWorkflow(agentResult.workflow)
+                      ? a.videoStudioLongerHint
+                      : a.processingStay}
+                </p>
+              </div>
+            </div>
+          ) : null}
+
+          {agentResult.status === "insufficient_credits" ? (
+            <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
+              <CreditCard className="h-12 w-12 text-amber-100" />
+              <p className="text-base font-black text-white">
+                {a.insufficientCreditsIntro}
+              </p>
+              <p className="text-sm text-white/55">
+                {format(a.insufficientCreditsModeRequires, {
+                  count:
+                    agentResult.requiredCredits ??
+                    getRequiredCreditsForStudio(studioTab, imageMode),
+                })}
+              </p>
+              {onOpenCredits ? (
+                <button
+                  type="button"
+                  onClick={onOpenCredits}
+                  className="inline-flex items-center justify-center rounded-full bg-[#d8ad5f] px-5 py-3 text-sm font-black text-black"
+                >
+                  {a.buyCredits}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
+          {agentResult.status === "active_generation_limit" ? (
+            <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
+              <Clock className="h-12 w-12 text-sky-100" />
+              <p className="text-base font-black text-white">
+                {a.activeGenerationLimitTitle}
+              </p>
+              <p className="text-sm text-white/55">
+                {a.activeGenerationLimitIntro}
+              </p>
+            </div>
+          ) : null}
+
+          {agentResult.status === "failed" ? (
+            <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
+              <AlertCircle className="h-12 w-12 text-red-200" />
+              <p className="text-sm font-bold text-red-100">{a.failed}</p>
+              {shouldShowCreditsRefundedHint(
+                agentResult.error_message,
+                Boolean(agentResult.id),
+                a.signInAgain,
+                a.networkError
+              ) ? (
+                <p className="text-xs font-semibold text-red-100/80">
+                  {a.creditsRefundedHint}
+                </p>
+              ) : null}
+              <p className="max-w-md text-xs leading-6 text-red-100/60">
+                {agentResult.error_message ?? copy.gallery.unknownError}
+              </p>
+            </div>
+          ) : null}
+
+          {agentResult.status === "completed" && agentResult.video_url ? (
+            <video
+              src={agentResult.video_url}
+              controls
+              playsInline
+              className="max-h-full w-full object-contain"
+            />
+          ) : null}
+
+          {agentResult.status === "completed" &&
+          !agentResult.video_url &&
+          agentResult.image_url ? (
+            <img
+              src={agentResult.image_url}
+              alt={agentResult.prompt}
+              className="max-h-full w-full object-contain"
+              referrerPolicy="no-referrer"
+            />
+          ) : null}
+
+          {agentResult.status === "completed" &&
+          !agentResult.video_url &&
+          !agentResult.image_url ? (
+            <div className="flex flex-col items-center gap-3 p-8 text-center">
+              <ImageOff className="h-12 w-12 text-white/45" />
+              <p className="text-sm font-bold text-white">{a.imageUrlMissing}</p>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="shrink-0 space-y-3 border-t border-white/10 p-4 sm:p-5">
+          <p className="line-clamp-2 text-xs leading-5 text-white/45">
+            {agentResult.prompt}
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            {agentResult.video_url ? (
+              <a
+                href={agentResult.video_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex flex-1 items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-black text-black"
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                {a.openVideo}
+              </a>
+            ) : null}
+            {agentResult.image_url && !agentResult.video_url ? (
+              <a
+                href={agentResult.image_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex flex-1 items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-black text-black"
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                {a.openImage}
+              </a>
+            ) : null}
+            {agentResult.status === "completed" && onOpenGallery ? (
+              <button
+                type="button"
+                onClick={onOpenGallery}
+                className="inline-flex flex-1 items-center justify-center rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-5 py-3 text-sm font-bold text-[#d8ad5f]"
+              >
+                <GalleryVerticalEnd className="mr-2 h-4 w-4" />
+                {a.viewInGallery}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => {
+                setQueuedGenerationId(null);
+                setAgentResult(null);
+                setStatusMessage(null);
+                setErrorMessage(null);
+              }}
+              className="inline-flex flex-1 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-bold text-white/70"
+            >
+              {a.createAnother}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <section
       id="agent"
-      className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#06060a] px-3 pb-20 pt-[4.25rem] sm:px-6 sm:pb-12 sm:pt-8 lg:px-8 lg:pb-8 lg:pt-6"
+      className="relative flex h-full min-h-0 flex-col overflow-hidden bg-[#06060a]"
     >
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="agent-film-bg absolute inset-0 overflow-hidden" />
-        <div className="agent-film-noise absolute inset-0" />
-
-        <motion.div
-          className="absolute left-1/2 top-[66%] h-[38rem] w-[80rem] -translate-x-1/2 rounded-[100%] bg-[#d8ad5f]/22 blur-[120px]"
-          animate={{
-            x: ["-50%", "-48%", "-52%", "-50%"],
-            scale: [1, 1.08, 0.98, 1],
-            opacity: [0.3, 0.62, 0.38, 0.3],
-          }}
-          transition={{
-            duration: 9,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-
-        <motion.div
-          className="absolute left-[10%] bottom-[8%] h-[28rem] w-[28rem] rounded-full bg-white/12 blur-[120px]"
-          animate={{
-            x: [0, 80, -40, 0],
-            y: [0, -55, 30, 0],
-            opacity: [0.16, 0.36, 0.2, 0.16],
-          }}
-          transition={{
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-
-        <motion.div
-          className="absolute right-[12%] bottom-[18%] h-[28rem] w-[28rem] rounded-full bg-[#d8ad5f]/18 blur-[120px]"
-          animate={{
-            x: [0, -70, 40, 0],
-            y: [0, 35, -25, 0],
-            opacity: [0.2, 0.48, 0.28, 0.2],
-          }}
-          transition={{
-            duration: 13,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(6,6,10,0.92)_0%,rgba(6,6,10,0.68)_36%,rgba(38,30,36,0.34)_60%,rgba(18,15,24,0.72)_100%)]" />
+      <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-50">
+        <div className="agent-film-bg absolute inset-0" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(6,6,10,0.95),rgba(6,6,10,0.88))]" />
       </div>
 
-      <div className="relative z-10 mx-auto w-full min-w-0 max-w-7xl py-2 sm:py-4 lg:py-4">
-        <div className="mb-3 sm:mb-4 lg:mb-4">
-          <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d8ad5f]/80"
-          >
-            InfluExAi Agent
-          </motion.p>
-
-          <motion.h2
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.05 }}
-            className="mt-1.5 text-xl font-black tracking-[-0.04em] text-white sm:text-2xl lg:text-3xl"
-          >
-            {a.title}
-          </motion.h2>
-
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="mt-2 hidden max-w-2xl text-xs leading-6 text-white/45 sm:block sm:text-sm"
-          >
-            {a.subtitle}
-          </motion.p>
-        </div>
-
-        {statusMessage && (
-          <div className="mb-4 w-full rounded-2xl border border-white/10 bg-white/[0.08] px-4 py-3 text-sm font-bold text-white">
+      <div className="relative z-10 flex h-full min-h-0 flex-col overflow-hidden px-3 py-3 sm:px-5 sm:py-4">
+        {statusMessage ? (
+          <div className="mb-2 shrink-0 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-xs font-bold text-white">
             {statusMessage}
           </div>
-        )}
+        ) : null}
 
-        {errorMessage && (
-          <div className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-100">
-            <AlertCircle className="h-4 w-4 shrink-0" />
+        {errorMessage ? (
+          <div className="mb-2 flex shrink-0 items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-100">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
             <span>{errorMessage}</span>
           </div>
-        )}
+        ) : null}
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start lg:gap-8">
-        <motion.form
-          ref={formRef}
-          initial={{ opacity: 0, y: 22, scale: 0.985 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.16 }}
-          onSubmit={queueGeneration}
-          className="relative isolate w-full min-w-0 overflow-visible rounded-[1.35rem] border border-white/12 bg-white/[0.075] shadow-[0_30px_110px_rgba(0,0,0,0.55)] backdrop-blur-2xl sm:rounded-[1.7rem]"
-        >
-          <div className="pointer-events-none absolute inset-0 rounded-[1.7rem] bg-[radial-gradient(circle_at_50%_100%,rgba(216,173,95,0.16),transparent_42%)]" />
-          <div className="pointer-events-none absolute inset-0 rounded-[1.7rem] bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.08),transparent_38%)]" />
+        {!showSplitWorkspace ? (
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto overscroll-contain lg:overflow-hidden">
+            <motion.h1
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-3xl text-center text-2xl font-black tracking-[-0.04em] text-white sm:text-3xl lg:text-4xl"
+            >
+              {a.searchHeadline}
+            </motion.h1>
 
-          <div className="relative z-10">
-            {studioTab === "image" ? (
-              <>
-                <div className="border-b border-white/10 px-4 py-4 sm:px-6 sm:py-5">
-                  <h3 className="text-base font-black text-white sm:text-lg">
-                    {a.workspacePromptHeadline}
-                  </h3>
-                  <textarea
-                    value={prompt}
-                    onChange={(event) => setPrompt(event.target.value)}
-                    onKeyDown={submitFromTextarea}
-                    placeholder={typedExample || a.promptPlaceholder}
-                    className="mt-3 min-h-[120px] w-full resize-y rounded-2xl border border-white/10 bg-black/30 px-4 py-4 text-base leading-relaxed text-white outline-none placeholder:text-white/32 focus-visible:ring-2 focus-visible:ring-[#d8ad5f]/30 sm:min-h-[140px] sm:text-lg"
-                  />
-
-                  <p className="mt-2 text-[11px] font-medium text-white/35">
-                    {a.enterHint}
-                  </p>
-                </div>
-              </>
-            ) : studioTab === "video" ? (
-              <div className="border-t border-white/10 px-4 py-4 sm:px-6">
-                <p className="text-sm font-semibold text-white/70">
-                  {a.imageModes.videoStudio.label}
-                </p>
-                <p className="mt-1 text-xs text-white/40">
-                  {a.videoStudioLongerHint}
-                </p>
+            <motion.form
+              ref={formRef}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.05 }}
+              onSubmit={queueGeneration}
+              className={`${formSurfaceClass} mt-6 w-full`}
+            >
+              <div className="relative z-10 flex flex-col p-4 sm:p-5">
+                {renderComposerContent()}
               </div>
-            ) : (
-              <div className="border-t border-white/10 px-4 py-4 sm:px-6">
-                <p className="text-sm font-semibold text-white/70">
-                  {a.imageModes.lipSync.label}
-                </p>
-                <p className="mt-1 text-xs text-white/40">
-                  {a.lipSyncLongerHint}
-                </p>
+            </motion.form>
+          </div>
+        ) : (
+          <div className="grid h-full min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[2fr_3fr] lg:gap-5">
+            <motion.form
+              ref={formRef}
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.35 }}
+              onSubmit={queueGeneration}
+              className={formSurfaceClass}
+            >
+              <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4">
+                {renderComposerContent()}
               </div>
-            )}
+            </motion.form>
 
-            <div className="border-t border-white/10 px-3 py-3 sm:px-4 sm:py-4">
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setStudioTab("image")}
-                    className={`rounded-full px-4 py-2 text-xs font-black transition ${
-                      studioTab === "image"
-                        ? "bg-white text-black"
-                        : "border border-white/10 bg-black/25 text-white/55"
-                    }`}
-                  >
-                    {a.studioTabImage}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (VIDEO_STUDIO_PUBLIC_ENABLED) {
-                        setStudioTab("video");
-                      }
-                    }}
-                    disabled={!VIDEO_STUDIO_PUBLIC_ENABLED}
-                    title={
-                      VIDEO_STUDIO_PUBLIC_ENABLED
-                        ? a.imageModes.videoStudio.description
-                        : a.studioTabVideoPlanned
-                    }
-                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
-                      studioTab === "video" && VIDEO_STUDIO_PUBLIC_ENABLED
-                        ? "bg-sky-500/20 text-sky-100 ring-1 ring-sky-500/30"
-                        : "border border-white/10 bg-black/25 text-white/55"
-                    }`}
-                  >
-                    <Clapperboard className="h-3.5 w-3.5" aria-hidden />
-                    <span className="flex flex-col items-start sm:flex-row sm:items-center sm:gap-1.5">
-                      <span>
-                        {VIDEO_STUDIO_PUBLIC_ENABLED
-                          ? a.studioTabVideo
-                          : a.studioTabVideoPlanned}
-                      </span>
-                      {VIDEO_STUDIO_PUBLIC_ENABLED ? (
-                        <span className="text-[9px] font-bold text-sky-200/80">
-                          · {suite.modes.videoStudio.credits}
-                        </span>
-                      ) : null}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (LIP_SYNC_PUBLIC_ENABLED) {
-                        setStudioTab("lip_sync");
-                      }
-                    }}
-                    disabled={!LIP_SYNC_PUBLIC_ENABLED}
-                    title={
-                      LIP_SYNC_PUBLIC_ENABLED
-                        ? a.imageModes.lipSync.description
-                        : a.studioTabLipSyncPlanned
-                    }
-                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
-                      studioTab === "lip_sync" && LIP_SYNC_PUBLIC_ENABLED
-                        ? "bg-violet-500/20 text-violet-100 ring-1 ring-violet-500/30"
-                        : "border border-white/10 bg-black/25 text-white/55"
-                    }`}
-                  >
-                    <Mic className="h-3.5 w-3.5" aria-hidden />
-                    <span className="flex flex-col items-start sm:flex-row sm:items-center sm:gap-1.5">
-                      <span>
-                        {LIP_SYNC_PUBLIC_ENABLED
-                          ? a.studioTabLipSync
-                          : a.studioTabLipSyncPlanned}
-                      </span>
-                      {LIP_SYNC_PUBLIC_ENABLED ? (
-                        <span className="text-[9px] font-bold text-violet-200/80">
-                          · {suite.modes.lipSync.credits}
-                        </span>
-                      ) : null}
-                    </span>
-                  </button>
-                </div>
-
-                {studioTab === "video" ? (
-                  <VideoStudioPanel
-                    label={a.imageModes.videoStudio.label}
-                    copy={a.imageModes.videoStudio.panel}
-                    panelRef={videoStudioPanelRef}
-                    getAccessToken={getAccessToken}
-                    isEnabled={VIDEO_STUDIO_PUBLIC_ENABLED}
-                    sourcePreviewUrl={videoSourceUrl}
-                    onSourcePreviewUrlChange={setVideoSourceUrl}
-                    motionPrompt={videoMotionPrompt}
-                    onMotionPromptChange={setVideoMotionPrompt}
-                    onMotionKeyDown={submitVideoFromMotionPrompt}
-                  />
-                ) : null}
-
-                {studioTab === "lip_sync" ? (
-                  <LipSyncStudioPanel
-                    label={a.imageModes.lipSync.label}
-                    copy={a.imageModes.lipSync.panel}
-                    panelRef={lipSyncPanelRef}
-                    getAccessToken={getAccessToken}
-                    isEnabled={LIP_SYNC_PUBLIC_ENABLED}
-                    sourcePreviewUrl={lipSyncSourceUrl}
-                    sourceMediaType={lipSyncSourceMediaType}
-                    onSourceChange={(url, mediaType) => {
-                      setLipSyncSourceUrl(url);
-                      setLipSyncSourceMediaType(mediaType);
-                    }}
-                    audioPreviewLabel={lipSyncAudioLabel}
-                    audioUrl={lipSyncAudioUrl}
-                    onAudioChange={(url, label) => {
-                      setLipSyncAudioUrl(url);
-                      setLipSyncAudioLabel(label);
-                    }}
-                    instructions={lipSyncInstructions}
-                    onInstructionsChange={setLipSyncInstructions}
-                    onInstructionsKeyDown={submitLipSyncFromInstructions}
-                  />
-                ) : null}
-
-                {studioTab === "image" ? (
-                <fieldset className="rounded-2xl border border-white/10 bg-black/20 p-3 sm:p-4">
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                    <legend className="text-[10px] font-black uppercase tracking-[0.22em] text-white/40">
-                      {a.imageMode}
-                    </legend>
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] ${
-                        imageModeUsesBetaBadge
-                          ? "border border-amber-400/25 bg-amber-500/10 text-amber-100"
-                          : "border border-emerald-500/25 bg-emerald-500/10 text-emerald-200"
-                      }`}
-                    >
-                      {imageModeActiveNote}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {imageModes.map((mode) => {
-                      const isSelectable =
-                        mode.status === "live" || mode.status === "beta";
-                      const isSelected = isSelectable && imageMode === mode.key;
-                      const chipLabel = getImageModeChipLabel(
-                        mode.key,
-                        a.imageModeChips
-                      );
-                      const chipTitle =
-                        "hoverHint" in mode && mode.hoverHint
-                          ? `${mode.description} — ${mode.hoverHint}`
-                          : mode.description;
-
-                      return (
-                        <ImageModeChip
-                          key={mode.key}
-                          label={chipLabel}
-                          selected={isSelected}
-                          disabled={!isSelectable}
-                          title={chipTitle}
-                          onClick={
-                            isSelectable
-                              ? () => setImageMode(mode.key)
-                              : undefined
-                          }
-                        />
-                      );
-                    })}
-                  </div>
-
-                  {isReferenceEditActive ? (
-                    <div className="mt-4">
-                      <ReferenceEditPanel
-                        label={a.imageModes.referenceEdit.label}
-                        copy={a.imageModes.referenceEdit.panel}
-                        panelRef={referenceEditPanelRef}
-                        getAccessToken={getAccessToken}
-                        isEnabled={REFERENCE_EDIT_PUBLIC_ENABLED}
-                        sourcePreviewUrl={referenceEditSourceUrl}
-                        onSourcePreviewUrlChange={setReferenceEditSourceUrl}
-                        editInstruction={referenceEditInstruction}
-                        onEditInstructionChange={setReferenceEditInstruction}
-                      />
-                    </div>
-                  ) : null}
-                </fieldset>
-                ) : null}
-
-                <div className="space-y-3">
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/35">
-                    {a.styleProfile}
-                  </p>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                  <select
-                    value={selectedCharacterId}
-                    onChange={(event) => {
-                      setSelectedCharacterId(event.target.value);
-                    }}
-                    aria-label={a.styleProfileAria}
-                    className="w-full max-w-full rounded-full border border-white/10 bg-black/35 px-3 py-2.5 text-xs font-bold text-white outline-none sm:w-auto sm:min-w-[200px] sm:max-w-[280px]"
-                  >
-                    <option value="">
-                      {loadingCharacters
-                        ? a.loadingStyleProfiles
-                        : a.styleProfileNone}
-                    </option>
-
-                    {characters.map((character) => (
-                      <option key={character.id} value={character.id}>
-                        {character.name}
-                      </option>
-                    ))}
-                  </select>
-
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setFormatMenuOpen((current) => !current)}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-xs font-bold text-white transition hover:border-white/20"
-                    >
-                      <FormatIcon className="h-3.5 w-3.5 shrink-0" />
-                      <span>{a.socialFormat}</span>
-                      <span className="shrink-0 text-white/40">
-                        {selectedOutputFormat.ratio}
-                      </span>
-                    </button>
-
-                    {formatMenuOpen && (
-                      <div className="absolute left-0 right-0 top-12 z-50 max-h-[min(60vh,320px)] overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-[#101014] p-1.5 shadow-2xl sm:right-auto sm:w-64">
-                        <div className="space-y-1">
-                          {localizedOutputFormats.map((format) => {
-                            const Icon = format.icon;
-                            const active = outputFormatKey === format.key;
-
-                            return (
-                              <button
-                                key={format.key}
-                                type="button"
-                                onClick={() => {
-                                  setOutputFormatKey(format.key);
-                                  setFormatMenuOpen(false);
-                                }}
-                                className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition ${
-                                  active
-                                    ? "bg-white text-black"
-                                    : "text-white/70 hover:bg-white/[0.06] hover:text-white"
-                                }`}
-                              >
-                                <span className="flex min-w-0 items-center gap-2.5">
-                                  <Icon className="h-3.5 w-3.5 shrink-0" />
-
-                                  <span className="min-w-0">
-                                    <span className="block truncate text-xs font-black">
-                                      {format.label}
-                                    </span>
-                                    <span
-                                      className={`block truncate text-[11px] ${
-                                        active
-                                          ? "text-black/55"
-                                          : "text-white/35"
-                                      }`}
-                                    >
-                                      {format.platform}
-                                    </span>
-                                  </span>
-                                </span>
-
-                                <span
-                                  className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-black ${
-                                    active
-                                      ? "bg-black/10 text-black"
-                                      : "bg-white/[0.06] text-white/55"
-                                  }`}
-                                >
-                                  {format.ratio}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  </div>
-                </div>
-
-                {studioTab === "image" ? (
-                  <div className="flex flex-wrap gap-2">
-                    {agentModes.map((mode) => (
-                      <button
-                        key={mode.key}
-                        type="button"
-                        onClick={() => setAgentMode(mode.key)}
-                        className={`rounded-full px-3 py-2 text-xs font-bold transition sm:px-4 ${
-                          agentMode === mode.key
-                            ? "bg-white text-black"
-                            : "border border-white/10 bg-black/25 text-white/55"
-                        }`}
-                        title={a.modes[mode.key].description}
-                      >
-                        {a.modes[mode.key].label}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-
-                <motion.button
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="submit"
-                  disabled={
-                    isSubmitBlocked ||
-                    referenceEditSubmitBlocked ||
-                    videoSubmitBlocked ||
-                    lipSyncSubmitBlocked
-                  }
-                  title={
-                    isLipSyncActive
-                      ? a.generateLipSync
-                      : isVideoStudioActive
-                        ? a.generateVideo
-                        : undefined
-                  }
-                  className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 text-sm font-black shadow-xl transition disabled:opacity-50 ${
-                    isLipSyncActive
-                      ? "bg-violet-500 text-white hover:bg-violet-400"
-                      : isVideoStudioActive
-                        ? "bg-sky-500 text-black hover:bg-sky-400"
-                        : "bg-[#d8ad5f] text-black hover:bg-[#efc777]"
-                  }`}
-                >
-                  {isSubmitBlocked ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : isLipSyncActive ? (
-                    <>
-                      <Mic className="h-4 w-4" aria-hidden />
-                      <span>{a.generateLipSync}</span>
-                    </>
-                  ) : isVideoStudioActive ? (
-                    <>
-                      <Clapperboard className="h-4 w-4" aria-hidden />
-                      <span>{a.generateVideo}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-4 w-4" aria-hidden />
-                      <span>{a.generateButton}</span>
-                    </>
-                  )}
-                </motion.button>
-              </div>
+            <div
+              ref={resultRef}
+              className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden"
+            >
+              {renderResultPanel()}
             </div>
           </div>
-        </motion.form>
-
-        <div
-          ref={resultRef}
-          className="w-full min-w-0 scroll-mt-24 lg:sticky lg:top-24"
-        >
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.1 }}
-            className="flex min-h-[min(420px,72dvh)] flex-col overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.06] shadow-[0_30px_110px_rgba(0,0,0,0.45)] backdrop-blur-2xl sm:min-h-[480px] sm:rounded-[1.7rem] lg:min-h-[min(560px,78dvh)]"
-          >
-            {!agentResult ? (
-              <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center sm:px-10">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/[0.04]">
-                  <ImageIcon className="h-7 w-7 text-white/25" aria-hidden />
-                </div>
-                <h3 className="mt-5 text-lg font-black text-white sm:text-xl">
-                  {a.resultPlaceholderTitle}
-                </h3>
-                <p className="mt-3 max-w-sm text-sm leading-6 text-white/40">
-                  {a.resultPlaceholderHint}
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="border-b border-white/10 px-4 py-4 sm:px-5 sm:py-5">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d8ad5f]">
-                        {a.latestResult}
-                      </p>
-                      <h3 className="mt-2 text-lg font-black text-white sm:text-xl">
-                        {agentResult.status === "processing"
-                          ? isLipSyncWorkflow(agentResult.workflow)
-                            ? a.generatingLipSync
-                            : isVideoStudioWorkflow(agentResult.workflow)
-                              ? a.generatingVideo
-                              : a.generating
-                          : agentResult.status === "completed"
-                            ? a.completed
-                            : agentResult.status === "insufficient_credits"
-                              ? a.insufficientCreditsTitle
-                              : agentResult.status === "active_generation_limit"
-                                ? a.activeGenerationLimitTitle
-                                : a.failed}
-                      </h3>
-                    </div>
-
-                    <span
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black ${
-                        agentResult.status === "completed"
-                          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-200"
-                          : agentResult.status === "insufficient_credits"
-                            ? "border-amber-500/25 bg-amber-500/10 text-amber-100"
-                            : agentResult.status === "active_generation_limit"
-                              ? "border-sky-500/25 bg-sky-500/10 text-sky-100"
-                              : agentResult.status === "failed"
-                                ? "border-red-500/20 bg-red-500/10 text-red-200"
-                                : "border-[#d8ad5f]/25 bg-[#d8ad5f]/10 text-[#d8ad5f]"
-                      }`}
-                    >
-                      {agentResult.status === "processing" && (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      )}
-                      {agentResult.status === "completed" && (
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                      )}
-                      {agentResult.status === "insufficient_credits" && (
-                        <CreditCard className="h-3.5 w-3.5" />
-                      )}
-                      {agentResult.status === "active_generation_limit" && (
-                        <Clock className="h-3.5 w-3.5" />
-                      )}
-                      {agentResult.status === "failed" && (
-                        <AlertCircle className="h-3.5 w-3.5" />
-                      )}
-                      {resultStatusLabel}
-                    </span>
-                  </div>
-
-                  {agentResult.status === "processing" && (
-                    <div className="mt-4 space-y-3">
-                      <div className="h-2 overflow-hidden rounded-full bg-white/[0.08]">
-                        <motion.div
-                          className="h-full rounded-full bg-[#d8ad5f]"
-                          initial={{ width: "12%" }}
-                          animate={{ width: ["12%", "68%", "42%", "88%"] }}
-                          transition={{
-                            duration: 3.2,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                          }}
-                        />
-                      </div>
-                      <p className="text-sm font-bold text-[#d8ad5f]">
-                        {activeProcessingStep}
-                      </p>
-                      <p className="text-xs leading-5 text-white/40">
-                        {a.processingHint}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="relative flex flex-1 items-center justify-center bg-black/45">
-                  {agentResult.status === "processing" && (
-                    <div className="flex w-full max-w-md flex-col items-center justify-center gap-5 p-8 text-center sm:p-10">
-                      <div className="relative">
-                        <div className="absolute inset-0 rounded-full bg-[#d8ad5f]/30 blur-2xl" />
-                        <div className="relative flex h-24 w-24 items-center justify-center rounded-full border border-[#d8ad5f]/25 bg-[#d8ad5f]/10">
-                          <Loader2 className="h-10 w-10 animate-spin text-[#d8ad5f]" />
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-lg font-black text-white">
-                          {activeProcessingStep}
-                        </p>
-                        <p className="mt-3 text-sm leading-6 text-white/45">
-                          {isLipSyncWorkflow(agentResult.workflow)
-                            ? a.lipSyncLongerHint
-                            : isVideoStudioWorkflow(agentResult.workflow)
-                              ? a.videoStudioLongerHint
-                              : a.processingStay}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {agentResult.status === "insufficient_credits" && (
-                    <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
-                      <CreditCard className="h-12 w-12 text-amber-100" />
-                      <p className="text-base font-black text-white">
-                        {a.insufficientCreditsIntro}
-                      </p>
-                      <p className="text-sm text-white/55">
-                        {format(a.insufficientCreditsModeRequires, {
-                          count:
-                            agentResult.requiredCredits ??
-                            getRequiredCreditsForStudio(studioTab, imageMode),
-                        })}
-                      </p>
-                      {onOpenCredits ? (
-                        <button
-                          type="button"
-                          onClick={onOpenCredits}
-                          className="inline-flex items-center justify-center rounded-full bg-[#d8ad5f] px-5 py-3 text-sm font-black text-black"
-                        >
-                          {a.buyCredits}
-                        </button>
-                      ) : null}
-                    </div>
-                  )}
-
-                  {agentResult.status === "active_generation_limit" && (
-                    <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
-                      <Clock className="h-12 w-12 text-sky-100" />
-                      <p className="text-base font-black text-white">
-                        {a.activeGenerationLimitTitle}
-                      </p>
-                      <p className="text-sm text-white/55">
-                        {a.activeGenerationLimitIntro}
-                      </p>
-                    </div>
-                  )}
-
-                  {agentResult.status === "failed" && (
-                    <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
-                      <AlertCircle className="h-12 w-12 text-red-200" />
-                      <p className="text-sm font-bold text-red-100">{a.failed}</p>
-                      {shouldShowCreditsRefundedHint(
-                        agentResult.error_message,
-                        Boolean(agentResult.id),
-                        a.signInAgain,
-                        a.networkError
-                      ) && (
-                        <p className="text-xs font-semibold text-red-100/80">
-                          {a.creditsRefundedHint}
-                        </p>
-                      )}
-                      <p className="max-w-md text-xs leading-6 text-red-100/60">
-                        {agentResult.error_message ?? copy.gallery.unknownError}
-                      </p>
-                    </div>
-                  )}
-
-                  {agentResult.status === "completed" && agentResult.video_url && (
-                    <video
-                      src={agentResult.video_url}
-                      controls
-                      playsInline
-                      className="max-h-full w-full object-contain"
-                    />
-                  )}
-
-                  {agentResult.status === "completed" &&
-                    !agentResult.video_url &&
-                    agentResult.image_url && (
-                      <img
-                        src={agentResult.image_url}
-                        alt={agentResult.prompt}
-                        className="max-h-full w-full object-contain"
-                        referrerPolicy="no-referrer"
-                      />
-                    )}
-
-                  {agentResult.status === "completed" &&
-                    !agentResult.video_url &&
-                    !agentResult.image_url && (
-                      <div className="flex flex-col items-center gap-3 p-8 text-center">
-                        <ImageOff className="h-12 w-12 text-white/45" />
-                        <p className="text-sm font-bold text-white">
-                          {a.imageUrlMissing}
-                        </p>
-                      </div>
-                    )}
-                </div>
-
-                <div className="space-y-3 border-t border-white/10 p-4 sm:p-5">
-                  <p className="line-clamp-2 text-xs leading-5 text-white/45">
-                    {agentResult.prompt}
-                  </p>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                    {agentResult.video_url && (
-                      <a
-                        href={agentResult.video_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex flex-1 items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-black text-black"
-                      >
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        {a.openVideo}
-                      </a>
-                    )}
-                    {agentResult.image_url && !agentResult.video_url && (
-                      <a
-                        href={agentResult.image_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex flex-1 items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-black text-black"
-                      >
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        {a.openImage}
-                      </a>
-                    )}
-                    {agentResult.status === "completed" && onOpenGallery ? (
-                      <button
-                        type="button"
-                        onClick={onOpenGallery}
-                        className="inline-flex flex-1 items-center justify-center rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-5 py-3 text-sm font-bold text-[#d8ad5f]"
-                      >
-                        <GalleryVerticalEnd className="mr-2 h-4 w-4" />
-                        {a.viewInGallery}
-                      </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setQueuedGenerationId(null);
-                        setAgentResult(null);
-                        setStatusMessage(null);
-                        setErrorMessage(null);
-                        formRef.current?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "start",
-                        });
-                      }}
-                      className="inline-flex flex-1 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-bold text-white/70"
-                    >
-                      {a.createAnother}
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </motion.div>
-        </div>
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.28 }}
-          className="mt-6 flex w-full flex-wrap gap-2 sm:gap-3"
-        >
-          {quickPrompts.slice(0, 4).map((quickPrompt) => {
-            const Icon = quickPrompt.icon;
-
-            return (
-              <motion.button
-                key={quickPrompt.label}
-                whileHover={{ y: -3, scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="button"
-                onClick={() =>
-                  insertQuickPrompt(quickPrompt.prompt, quickPrompt.format)
-                }
-                className="inline-flex max-w-full items-center gap-2 rounded-xl border border-white/12 bg-white/[0.07] px-3 py-2 text-xs font-bold text-white/68 transition hover:border-[#d8ad5f]/35 hover:text-[#d8ad5f] sm:px-4 sm:py-2.5"
-              >
-                <Icon className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{quickPrompt.label}</span>
-              </motion.button>
-            );
-          })}
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.38 }}
-          className="mt-6 flex max-w-3xl items-center justify-center gap-2 text-center text-xs text-white/28"
-        >
-          <Wand2 className="h-3.5 w-3.5 shrink-0" />
-          <span>
-            {a.styleProfilesFooter}
-          </span>
-        </motion.div>
+        )}
       </div>
 
       <style jsx global>{`
         .agent-film-bg {
           background:
-            radial-gradient(circle at 50% 100%, rgba(216, 173, 95, 0.38), transparent 34%),
-            radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.16), transparent 30%),
-            radial-gradient(circle at 0% 55%, rgba(216, 173, 95, 0.22), transparent 32%),
-            radial-gradient(circle at 100% 55%, rgba(255, 255, 255, 0.12), transparent 34%),
-            radial-gradient(circle at 42% 78%, rgba(93, 72, 255, 0.22), transparent 38%),
-            linear-gradient(to bottom, #07070a 0%, #111014 40%, #2b2131 65%, #13103d 100%);
-          filter: saturate(1.25);
-          animation: agentBaseGlow 14s ease-in-out infinite alternate;
-        }
-
-        .agent-film-noise {
-          background-image:
-            linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
-          background-size: 72px 72px;
-          mask-image: linear-gradient(to bottom, transparent, black 38%, black 100%);
-          opacity: 0.14;
-          animation: agentGridDrift 18s linear infinite;
-        }
-
-        @keyframes agentBaseGlow {
-          0% {
-            transform: scale(1.05);
-            filter: saturate(1.1) hue-rotate(0deg);
-            opacity: 0.78;
-          }
-
-          50% {
-            transform: scale(1.11);
-            filter: saturate(1.35) hue-rotate(5deg);
-            opacity: 1;
-          }
-
-          100% {
-            transform: scale(1.08);
-            filter: saturate(1.22) hue-rotate(-4deg);
-            opacity: 0.86;
-          }
-        }
-
-        @keyframes agentGridDrift {
-          from {
-            background-position: 0 0;
-          }
-
-          to {
-            background-position: 72px 72px;
-          }
+            radial-gradient(circle at 50% 0%, rgba(216, 173, 95, 0.12), transparent 42%),
+            linear-gradient(to bottom, #07070a 0%, #0a0a0e 100%);
         }
       `}</style>
     </section>
