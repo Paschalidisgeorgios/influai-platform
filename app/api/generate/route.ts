@@ -15,6 +15,10 @@ type ImageMode =
   | "reference_edit"
   | "brand_assets";
 
+type GenerateMode = ImageMode | "video_image_to_video";
+
+const FAL_KLING_I2V_MODEL = "fal-ai/kling-video/v2.1/standard/image-to-video";
+
 /** Brand Assets — FLUX Dev via fal.ai (stable; Recraft endpoint returned 422) */
 const FAL_BRAND_ASSETS_MODEL = "fal-ai/flux/dev";
 
@@ -26,6 +30,14 @@ const PLANNED_IMAGE_MODES = new Set([
   "video_studio",
   "lip_sync_studio",
 ]);
+
+function getCreditCostForMode(mode: GenerateMode): number {
+  if (mode === "video_image_to_video") {
+    return 25;
+  }
+
+  return getCreditCostForImageMode(mode);
+}
 
 function getCreditCostForImageMode(imageMode: ImageMode): number {
   switch (imageMode) {
@@ -41,6 +53,11 @@ function getCreditCostForImageMode(imageMode: ImageMode): number {
     default:
       return 1;
   }
+}
+
+function parseGenerateMode(value: unknown): GenerateMode {
+  if (value === "video_image_to_video") return "video_image_to_video";
+  return parseImageMode(value);
 }
 
 function parseImageMode(value: unknown): ImageMode {
@@ -75,9 +92,32 @@ type GenerationJobConfig = {
   transactionSource: string;
 };
 
-function resolveGenerationJobConfig(imageMode: ImageMode):
+function resolveGenerationJobConfig(mode: GenerateMode):
   | { ok: true; config: GenerationJobConfig }
   | { ok: false; error: string } {
+  if (mode === "video_image_to_video") {
+    if (process.env.ENABLE_FAL_VIDEO_STUDIO !== "true") {
+      return {
+        ok: false,
+        error:
+          "Video Studio is not enabled. Set ENABLE_FAL_VIDEO_STUDIO=true on the server.",
+      };
+    }
+
+    return {
+      ok: true,
+      config: {
+        provider: "fal",
+        model: FAL_KLING_I2V_MODEL,
+        workflow: "video_image_to_video",
+        creditsUsed: getCreditCostForMode("video_image_to_video"),
+        transactionSource: "video_image_to_video_generation_job",
+      },
+    };
+  }
+
+  const imageMode = mode as ImageMode;
+
   if (imageMode === "fast_draft") {
     if (process.env.ENABLE_FAL_FAST_DRAFT !== "true") {
       return {
@@ -835,6 +875,18 @@ function assembleFinalPrompt(sections: string[]) {
   return sections.filter((section) => section.trim().length > 0).join("\n\n");
 }
 
+function buildVideoImageToVideoFinalPrompt(motionInstruction: string) {
+  return assembleFinalPrompt([
+    `Animate the provided source image into a short cinematic social media video.`,
+    `Keep the main subject recognizable.`,
+    `Use smooth camera motion.`,
+    `Premium creator campaign look.`,
+    `No text, no logo, no watermark.`,
+    `User motion direction (preserve intent — do not replace):
+${motionInstruction.trim()}`,
+  ]);
+}
+
 function buildReferenceEditFinalPrompt(editInstruction: string) {
   return assembleFinalPrompt([
     `Edit the provided source image according to the instructions below.
@@ -1076,7 +1128,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: plannedModeError }, { status: 400 });
     }
 
-    const imageMode = parseImageMode(body.imageMode);
+    const imageMode = parseGenerateMode(body.imageMode);
     const outputFormat = getOutputFormat(body.outputFormat);
     const sourceImageUrl =
       typeof body.sourceImageUrl === "string"
@@ -1086,6 +1138,213 @@ export async function POST(req: Request) {
       typeof body.editInstruction === "string"
         ? body.editInstruction.trim()
         : "";
+    const motionInstruction =
+      typeof body.motionInstruction === "string"
+        ? body.motionInstruction.trim()
+        : "";
+
+    if (imageMode === "video_image_to_video") {
+      if (!sourceImageUrl) {
+        return NextResponse.json(
+          { error: "Source image is required for Video Studio." },
+          { status: 400 }
+        );
+      }
+
+      if (!motionInstruction) {
+        return NextResponse.json(
+          { error: "Motion prompt is required for Video Studio." },
+          { status: 400 }
+        );
+      }
+
+      const videoJobConfigResult = resolveGenerationJobConfig(imageMode);
+
+      if (!videoJobConfigResult.ok) {
+        return NextResponse.json(
+          { error: videoJobConfigResult.error },
+          { status: 400 }
+        );
+      }
+
+      const videoJobConfig = videoJobConfigResult.config;
+      const finalPrompt = buildVideoImageToVideoFinalPrompt(motionInstruction);
+
+      const { count: videoActiveCount, error: videoActiveError } =
+        await supabaseAdmin
+          .from("generations")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("status", "processing");
+
+      if (videoActiveError) {
+        console.error("Active generation count error:", videoActiveError);
+
+        return NextResponse.json(
+          { error: "Could not verify active generations" },
+          { status: 500 }
+        );
+      }
+
+      if ((videoActiveCount ?? 0) >= ACTIVE_GENERATION_LIMIT) {
+        return NextResponse.json(
+          {
+            error: "Too many active generations",
+            reason: "active_generation_limit",
+            limit: ACTIVE_GENERATION_LIMIT,
+          },
+          { status: 429 }
+        );
+      }
+
+      const { data: videoCreditSuccess, error: videoCreditError } =
+        await supabaseAdmin.rpc("consume_user_credits", {
+          target_user_id: user.id,
+          credits_to_consume: videoJobConfig.creditsUsed,
+        });
+
+      if (videoCreditError) {
+        console.error("Credit consume error:", videoCreditError);
+
+        return NextResponse.json(
+          { error: "Credit check failed" },
+          { status: 500 }
+        );
+      }
+
+      if (!videoCreditSuccess) {
+        return NextResponse.json(
+          {
+            error: "Not enough credits",
+            requiredCredits: videoJobConfig.creditsUsed,
+            reason: "insufficient_credits",
+          },
+          { status: 402 }
+        );
+      }
+
+      const videoInsertBase = {
+        user_id: user.id,
+        prompt: motionInstruction,
+        final_prompt: finalPrompt,
+        image_url: null,
+        video_url: null,
+        status: "processing",
+        provider: videoJobConfig.provider,
+        model: videoJobConfig.model,
+        workflow: videoJobConfig.workflow,
+        reference_image_url: sourceImageUrl,
+        source_image_url: sourceImageUrl,
+        social_platform: outputFormat.platform,
+        output_format: outputFormat.label,
+        image_size: outputFormat.imageSize,
+        output_width: outputFormat.width,
+        output_height: outputFormat.height,
+        credits_used: videoJobConfig.creditsUsed,
+        duration_seconds: 5,
+        character_id: null,
+        error_message: null,
+        started_at: new Date().toISOString(),
+      };
+
+      let videoGenerationError: { message?: string; code?: string } | null =
+        null;
+      let videoGeneration: { id: string } | null = null;
+
+      const videoInsertAttempt = await supabaseAdmin
+        .from("generations")
+        .insert(videoInsertBase)
+        .select("id")
+        .single();
+
+      if (
+        videoInsertAttempt.error &&
+        isMissingColumnError(videoInsertAttempt.error)
+      ) {
+        const videoFallback = await supabaseAdmin
+          .from("generations")
+          .insert({
+            user_id: videoInsertBase.user_id,
+            prompt: videoInsertBase.prompt,
+            final_prompt: videoInsertBase.final_prompt,
+            image_url: null,
+            status: "processing",
+            provider: videoInsertBase.provider,
+            model: videoJobConfig.model,
+            workflow: videoInsertBase.workflow,
+            reference_image_url: sourceImageUrl,
+            social_platform: videoInsertBase.social_platform,
+            output_format: videoInsertBase.output_format,
+            image_size: videoInsertBase.image_size,
+            output_width: videoInsertBase.output_width,
+            output_height: videoInsertBase.output_height,
+            credits_used: videoInsertBase.credits_used,
+            character_id: null,
+            error_message: null,
+            started_at: videoInsertBase.started_at,
+          })
+          .select("id")
+          .single();
+
+        videoGenerationError = videoFallback.error;
+        videoGeneration = videoFallback.data;
+      } else {
+        videoGenerationError = videoInsertAttempt.error;
+        videoGeneration = videoInsertAttempt.data;
+      }
+
+      if (videoGenerationError || !videoGeneration) {
+        console.error(
+          "Video generation create error:",
+          JSON.stringify(videoGenerationError, null, 2)
+        );
+
+        await refundCredits(user.id, videoJobConfig.creditsUsed);
+
+        return NextResponse.json(
+          { error: "Failed to create video job. Credits refunded." },
+          { status: 500 }
+        );
+      }
+
+      const { error: videoTxError } = await supabaseAdmin
+        .from("credit_transactions")
+        .insert({
+          user_id: user.id,
+          amount: -videoJobConfig.creditsUsed,
+          type: "usage",
+          source: videoJobConfig.transactionSource,
+        });
+
+      if (videoTxError) {
+        console.error("Credit transaction log error:", videoTxError);
+      }
+
+      const videoOrigin =
+        req.headers.get("origin") ??
+        process.env.NEXT_PUBLIC_APP_URL ??
+        new URL(req.url).origin;
+
+      try {
+        await triggerWorker(videoGeneration.id, videoOrigin);
+      } catch (error) {
+        console.error("Worker trigger exception:", error);
+      }
+
+      return NextResponse.json({
+        success: true,
+        queued: true,
+        generationId: videoGeneration.id,
+        creditsUsed: videoJobConfig.creditsUsed,
+        characterId: null,
+        imageMode,
+        workflow: videoJobConfig.workflow,
+        provider: videoJobConfig.provider,
+        model: videoJobConfig.model,
+        sourceImageUrl,
+        outputFormat,
+      });
+    }
 
     const jobConfigResult = resolveGenerationJobConfig(imageMode);
 

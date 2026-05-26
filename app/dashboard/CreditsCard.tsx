@@ -202,6 +202,7 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                     copy.credits.modeCosts.premium,
                     copy.credits.modeCosts.referenceEdit,
                     copy.credits.modeCosts.brandAssets,
+                    copy.credits.modeCosts.videoStudio,
                   ].map((item) => (
                     <li
                       key={item}

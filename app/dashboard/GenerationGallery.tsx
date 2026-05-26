@@ -29,6 +29,8 @@ type Generation = {
   prompt: string;
   final_prompt: string | null;
   image_url: string | null;
+  video_url?: string | null;
+  duration_seconds?: number | null;
   created_at: string;
   provider: string | null;
   model: string | null;
@@ -74,12 +76,26 @@ function getStatusLabel(
   return labels.failed;
 }
 
-function getWorkflowLabel(workflow: string | null | undefined, standardLabel: string) {
-  if (!workflow || workflow === "standard" || workflow === "openai") {
-    return standardLabel;
+function getWorkflowLabel(
+  workflow: string | null | undefined,
+  labels: { standard: string; video: string }
+) {
+  if (workflow === "video_image_to_video") {
+    return labels.video;
   }
 
-  return standardLabel;
+  if (!workflow || workflow === "standard" || workflow === "openai") {
+    return labels.standard;
+  }
+
+  return labels.standard;
+}
+
+function isVideoGeneration(generation: Generation) {
+  return (
+    generation.workflow === "video_image_to_video" ||
+    Boolean(generation.video_url)
+  );
 }
 
 function getImageAspectClass(generation: Generation) {
@@ -420,12 +436,29 @@ export default function GenerationGallery({
       );
     }
 
+    if (generation.video_url) {
+      return (
+        <video
+          key={generation.video_url}
+          src={generation.video_url}
+          controls
+          playsInline
+          className="h-full w-full object-contain"
+          onClick={(event) => event.stopPropagation()}
+        />
+      );
+    }
+
     if (!generation.image_url) {
       return (
         <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-white/[0.04] p-6 text-center">
           <ImageOff className="h-8 w-8 text-white/50" />
-          <p className="text-sm font-bold text-white">{g.imageUnavailable}</p>
-          <p className="line-clamp-3 text-xs text-white/40">{g.noImageUrl}</p>
+          <p className="text-sm font-bold text-white">
+            {isVideoGeneration(generation) ? g.videoUnavailable : g.imageUnavailable}
+          </p>
+          <p className="line-clamp-3 text-xs text-white/40">
+            {isVideoGeneration(generation) ? g.noVideoUrl : g.noImageUrl}
+          </p>
         </div>
       );
     }
@@ -615,7 +648,15 @@ export default function GenerationGallery({
                     </span>
 
                     <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/45">
-                      {getWorkflowLabel(generation.workflow, g.standard)}
+                      {getWorkflowLabel(generation.workflow, {
+                        standard: g.standard,
+                        video: g.videoBadge,
+                      })}
+                      {isVideoGeneration(generation) ? (
+                        <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.08em] text-sky-100">
+                          {g.videoBadge}
+                        </span>
+                      ) : null}
                     </span>
 
                     {(generation.output_format ||
@@ -707,6 +748,13 @@ export default function GenerationGallery({
                     {selectedGeneration.error_message ?? g.unknownError}
                   </p>
                 </div>
+              ) : selectedGeneration.video_url ? (
+                <video
+                  src={selectedGeneration.video_url}
+                  controls
+                  playsInline
+                  className="h-full max-h-[92vh] w-full object-contain"
+                />
               ) : selectedGeneration.image_url &&
                 !imageErrors[selectedGeneration.id] ? (
                 <img
@@ -727,7 +775,18 @@ export default function GenerationGallery({
                     {g.modalUnavailableBody}
                   </p>
 
-                  {selectedGeneration.image_url && (
+                  {selectedGeneration.video_url && (
+                    <a
+                      href={selectedGeneration.video_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-full bg-white px-5 py-3 text-sm font-black text-black"
+                    >
+                      {g.openVideoDirectly}
+                    </a>
+                  )}
+
+                  {!selectedGeneration.video_url && selectedGeneration.image_url && (
                     <a
                       href={selectedGeneration.image_url}
                       target="_blank"
@@ -757,7 +816,10 @@ export default function GenerationGallery({
                   </span>
 
                   <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/45">
-                    {getWorkflowLabel(selectedGeneration.workflow, g.standard)}
+                    {getWorkflowLabel(selectedGeneration.workflow, {
+                      standard: g.standard,
+                      video: g.videoBadge,
+                    })}
                   </span>
 
                   {selectedGeneration.output_format && (

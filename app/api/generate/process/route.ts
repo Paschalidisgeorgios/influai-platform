@@ -24,8 +24,11 @@ const FAL_REQUEST_TIMEOUT_MS = 120_000;
 const FAL_PREMIUM_REQUEST_TIMEOUT_MS = 180_000;
 const FAL_REFERENCE_EDIT_TIMEOUT_MS = 180_000;
 const FAL_BRAND_ASSETS_TIMEOUT_MS = 180_000;
+const FAL_KLING_I2V_MODEL = "fal-ai/kling-video/v2.1/standard/image-to-video";
+const FAL_VIDEO_REQUEST_TIMEOUT_MS = 300_000;
 
 const ERR_PROVIDER_NO_IMAGE_URL = "Provider did not return an image URL.";
+const ERR_PROVIDER_NO_VIDEO_URL = "Provider did not return a video URL.";
 const REFUND_TRANSACTION_SOURCE = "generation_worker_failure";
 
 type ImageSize = "1024x1024" | "1024x1536" | "1536x1024";
@@ -248,6 +251,74 @@ async function completeGeneration({
   }
 }
 
+async function completeVideoGeneration({
+  generationId,
+  publicUrl,
+  durationSeconds = 5,
+}: {
+  generationId: string;
+  publicUrl: string;
+  durationSeconds?: number;
+}) {
+  const updatePayload: Record<string, unknown> = {
+    video_url: publicUrl,
+    status: "completed",
+    error_message: null,
+    completed_at: new Date().toISOString(),
+    duration_seconds: durationSeconds,
+  };
+
+  const { data: updated, error: updateError } = await supabaseAdmin
+    .from("generations")
+    .update(updatePayload)
+    .eq("id", generationId)
+    .eq("status", "processing")
+    .select("id")
+    .maybeSingle();
+
+  if (updateError && isMissingColumnError(updateError)) {
+    const { data: fallbackUpdated, error: fallbackError } = await supabaseAdmin
+      .from("generations")
+      .update({
+        status: "completed",
+        error_message: null,
+        completed_at: new Date().toISOString(),
+        image_url: publicUrl,
+      })
+      .eq("id", generationId)
+      .eq("status", "processing")
+      .select("id")
+      .maybeSingle();
+
+    if (fallbackError) {
+      throw new Error(fallbackError.message);
+    }
+
+    if (!fallbackUpdated) {
+      throw new Error("Generation is no longer processing.");
+    }
+
+    return;
+  }
+
+  if (updateError) {
+    throw new Error(updateError.message);
+  }
+
+  if (!updated) {
+    throw new Error("Generation is no longer processing.");
+  }
+}
+
+function isMissingColumnError(error: { message?: string; code?: string } | null) {
+  if (!error?.message) return false;
+
+  return (
+    error.code === "PGRST204" ||
+    /column.*does not exist|Could not find the .* column/i.test(error.message)
+  );
+}
+
 function getFalResultImageUrl(data: unknown): string | null {
   if (!data || typeof data !== "object") return null;
 
@@ -271,6 +342,59 @@ function getFalResultImageUrl(data: unknown): string | null {
   return null;
 }
 
+function getFalResultVideoUrl(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+
+  const record = data as Record<string, unknown>;
+
+  const video = record.video;
+  if (video && typeof video === "object" && video !== null) {
+    const url = (video as { url?: unknown }).url;
+    if (typeof url === "string" && url.trim()) return url.trim();
+  }
+
+  const videos = record.videos;
+  if (Array.isArray(videos) && videos.length > 0) {
+    const first = videos[0];
+    if (typeof first === "string" && first.trim()) return first.trim();
+    if (
+      first &&
+      typeof first === "object" &&
+      "url" in first &&
+      typeof (first as { url?: unknown }).url === "string"
+    ) {
+      return (first as { url: string }).url.trim();
+    }
+  }
+
+  return null;
+}
+
+function resolveVideoAspectRatio({
+  imageSize,
+  outputWidth,
+  outputHeight,
+}: {
+  imageSize: unknown;
+  outputWidth: unknown;
+  outputHeight: unknown;
+}): "16:9" | "9:16" | "1:1" {
+  if (imageSize === "1536x1024") return "16:9";
+  if (imageSize === "1024x1536") return "9:16";
+
+  const width =
+    typeof outputWidth === "number" && outputWidth > 0 ? outputWidth : null;
+  const height =
+    typeof outputHeight === "number" && outputHeight > 0 ? outputHeight : null;
+
+  if (width && height) {
+    if (width > height) return "16:9";
+    if (height > width) return "9:16";
+  }
+
+  return "1:1";
+}
+
 async function downloadImageFromUrl(imageUrl: string) {
   const response = await fetch(imageUrl);
 
@@ -282,6 +406,49 @@ async function downloadImageFromUrl(imageUrl: string) {
   const imageBuffer = Buffer.from(await response.arrayBuffer());
 
   return { imageBuffer, contentType };
+}
+
+async function downloadVideoFromUrl(videoUrl: string) {
+  const response = await fetch(videoUrl);
+
+  if (!response.ok) {
+    throw new Error(`Failed to download generated video (${response.status}).`);
+  }
+
+  const contentType = response.headers.get("content-type") || "video/mp4";
+  const videoBuffer = Buffer.from(await response.arrayBuffer());
+
+  return { videoBuffer, contentType };
+}
+
+async function uploadVideoBuffer({
+  userId,
+  videoBuffer,
+  contentType = "video/mp4",
+}: {
+  userId: string;
+  videoBuffer: Buffer;
+  contentType?: string;
+}) {
+  const extension = contentType.includes("webm") ? "webm" : "mp4";
+  const filePath = `${userId}/${crypto.randomUUID()}.${extension}`;
+
+  const { error: uploadError } = await supabaseAdmin.storage
+    .from(STORAGE_BUCKET)
+    .upload(filePath, videoBuffer, {
+      contentType,
+      upsert: false,
+    });
+
+  if (uploadError) {
+    throw new Error(uploadError.message);
+  }
+
+  const {
+    data: { publicUrl },
+  } = supabaseAdmin.storage.from(STORAGE_BUCKET).getPublicUrl(filePath);
+
+  return publicUrl;
 }
 
 type FalFluxJobOptions = {
@@ -621,6 +788,163 @@ async function processBrandAssetsImage(args: {
   });
 }
 
+async function processVideoImageToVideo({
+  generationId,
+  userId,
+  finalPrompt,
+  creditsUsed,
+  sourceImageUrl,
+  imageSize,
+  outputWidth,
+  outputHeight,
+}: {
+  generationId: string;
+  userId: string;
+  finalPrompt: string;
+  creditsUsed: number;
+  sourceImageUrl: string | null;
+  imageSize: unknown;
+  outputWidth: unknown;
+  outputHeight: unknown;
+}) {
+  if (process.env.ENABLE_FAL_VIDEO_STUDIO !== "true") {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "Video Studio is not enabled on the server.",
+    });
+
+    return NextResponse.json(
+      { error: "Video Studio is not enabled. Credits refunded." },
+      { status: 400 }
+    );
+  }
+
+  if (!process.env.FAL_KEY) {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "FAL_KEY is not configured.",
+    });
+
+    return NextResponse.json(
+      { error: "Video provider is not configured. Credits refunded." },
+      { status: 500 }
+    );
+  }
+
+  if (!sourceImageUrl) {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "Video Studio source image is missing.",
+    });
+
+    return NextResponse.json(
+      { error: "Video Studio source image is missing. Credits refunded." },
+      { status: 400 }
+    );
+  }
+
+  fal.config({
+    credentials: process.env.FAL_KEY,
+  });
+
+  const aspectRatio = resolveVideoAspectRatio({
+    imageSize,
+    outputWidth,
+    outputHeight,
+  });
+
+  try {
+    const result = await Promise.race([
+      fal.subscribe(FAL_KLING_I2V_MODEL, {
+        input: {
+          prompt: finalPrompt,
+          image_url: sourceImageUrl,
+          duration: "5",
+          aspect_ratio: aspectRatio,
+          negative_prompt: "blur, distort, and low quality",
+          cfg_scale: 0.5,
+        } as {
+          prompt: string;
+          image_url: string;
+          duration: "5" | "10";
+          aspect_ratio?: "16:9" | "9:16" | "1:1";
+          negative_prompt?: string;
+          cfg_scale?: number;
+        },
+        logs: false,
+      }),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Video Studio provider timed out."));
+        }, FAL_VIDEO_REQUEST_TIMEOUT_MS);
+      }),
+    ]);
+
+    const remoteVideoUrl =
+      getFalResultVideoUrl(result.data) ??
+      getFalResultVideoUrl(result);
+
+    if (!remoteVideoUrl) {
+      await markFailedAndRefund({
+        generationId,
+        userId,
+        creditsUsed,
+        errorMessage: ERR_PROVIDER_NO_VIDEO_URL,
+      });
+
+      return NextResponse.json(
+        { error: "Video generation failed. Credits refunded." },
+        { status: 500 }
+      );
+    }
+
+    const { videoBuffer, contentType } =
+      await downloadVideoFromUrl(remoteVideoUrl);
+
+    const publicUrl = await uploadVideoBuffer({
+      userId,
+      videoBuffer,
+      contentType,
+    });
+
+    await completeVideoGeneration({
+      generationId,
+      publicUrl,
+      durationSeconds: 5,
+    });
+
+    return NextResponse.json({
+      success: true,
+      generationId,
+      video: publicUrl,
+      workflow: "video_image_to_video",
+    });
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Video Studio generation failed.";
+
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage,
+    });
+
+    return NextResponse.json(
+      { error: "Video generation failed. Credits refunded." },
+      { status: 500 }
+    );
+  }
+}
+
 async function processOpenAIImage({
   generationId,
   userId,
@@ -730,7 +1054,8 @@ export async function POST(req: Request) {
         image_size,
         output_width,
         output_height,
-        reference_image_url
+        reference_image_url,
+        source_image_url
       `
       )
       .eq("id", generationId)
@@ -820,6 +1145,28 @@ export async function POST(req: Request) {
         userId: generation.user_id,
         finalPrompt,
         creditsUsed,
+        imageSize: generation.image_size,
+        outputWidth: generation.output_width,
+        outputHeight: generation.output_height,
+      });
+    }
+
+    if (workflow === "video_image_to_video" && provider === "fal") {
+      const sourceImageUrl =
+        typeof generation.source_image_url === "string" &&
+        generation.source_image_url.trim().length > 0
+          ? generation.source_image_url.trim()
+          : typeof generation.reference_image_url === "string" &&
+              generation.reference_image_url.trim().length > 0
+            ? generation.reference_image_url.trim()
+            : null;
+
+      return processVideoImageToVideo({
+        generationId,
+        userId: generation.user_id,
+        finalPrompt,
+        creditsUsed,
+        sourceImageUrl,
         imageSize: generation.image_size,
         outputWidth: generation.output_width,
         outputHeight: generation.output_height,

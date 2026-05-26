@@ -64,6 +64,8 @@ export async function GET(req: Request) {
         prompt,
         final_prompt,
         image_url,
+        video_url,
+        duration_seconds,
         created_at,
         provider,
         model,
@@ -108,7 +110,76 @@ export async function GET(req: Request) {
       query = query.ilike("prompt", `%${search.trim()}%`);
     }
 
-    const { data: generations, error, count } = await query;
+    let { data: generations, error, count } = await query;
+
+    if (
+      error &&
+      /video_url|duration_seconds|Could not find the .* column/i.test(
+        error.message ?? ""
+      )
+    ) {
+      let fallbackQuery = supabaseAdmin
+        .from("generations")
+        .select(
+          `
+        id,
+        user_id,
+        prompt,
+        final_prompt,
+        image_url,
+        created_at,
+        provider,
+        model,
+        status,
+        error_message,
+        is_favorite,
+        character_id,
+        workflow,
+        social_platform,
+        output_format,
+        image_size,
+        output_width,
+        output_height
+      `,
+          { count: "exact" }
+        )
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (favorite === "true") {
+        fallbackQuery = fallbackQuery.eq("is_favorite", true);
+      }
+
+      if (
+        status === "processing" ||
+        status === "completed" ||
+        status === "failed"
+      ) {
+        fallbackQuery = fallbackQuery.eq("status", status);
+      }
+
+      if (characterId && characterId !== "all" && characterId !== "free") {
+        fallbackQuery = fallbackQuery.eq("character_id", characterId);
+      }
+
+      if (characterId === "free") {
+        fallbackQuery = fallbackQuery.is("character_id", null);
+      }
+
+      if (search && search.trim()) {
+        fallbackQuery = fallbackQuery.ilike("prompt", `%${search.trim()}%`);
+      }
+
+      const fallbackResult = await fallbackQuery;
+      generations = (fallbackResult.data ?? []).map((row) => ({
+        ...row,
+        video_url: null,
+        duration_seconds: null,
+      }));
+      error = fallbackResult.error;
+      count = fallbackResult.count;
+    }
 
     if (error) {
       console.error("Generations fetch error:", error);

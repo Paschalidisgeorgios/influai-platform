@@ -62,6 +62,10 @@ const REFERENCE_EDIT_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_REFERENCE_EDIT === "true";
 const BRAND_ASSETS_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_BRAND_ASSETS === "true";
+const VIDEO_STUDIO_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO === "true";
+
+type StudioTab = "image" | "video";
 
 function resolveSubmitImageMode(imageMode: ImageModeKey): ImageModeKey {
   if (imageMode === "brand_assets" && BRAND_ASSETS_PUBLIC_ENABLED) {
@@ -105,6 +109,8 @@ type AgentResult = {
   id: string;
   prompt: string;
   image_url: string | null;
+  video_url?: string | null;
+  workflow?: string | null;
   status: "processing" | "completed" | "failed" | "insufficient_credits" | "active_generation_limit";
   error_message: string | null;
   requiredCredits?: number | null;
@@ -154,6 +160,17 @@ function getRequiredCreditsForImageMode(imageMode: ImageModeKey): number {
     default:
       return 1;
   }
+}
+
+function getRequiredCreditsForStudio(
+  studioTab: StudioTab,
+  imageMode: ImageModeKey
+): number {
+  if (studioTab === "video" && VIDEO_STUDIO_PUBLIC_ENABLED) {
+    return 25;
+  }
+
+  return getRequiredCreditsForImageMode(resolveSubmitImageMode(imageMode));
 }
 
 const agentModes: {
@@ -707,6 +724,272 @@ function ReferenceEditPanel({
   );
 }
 
+function VideoStudioPanel({
+  label,
+  copy,
+  panelRef,
+  getAccessToken,
+  isEnabled,
+  sourcePreviewUrl,
+  onSourcePreviewUrlChange,
+  motionPrompt,
+  onMotionPromptChange,
+  onMotionKeyDown,
+}: {
+  label: string;
+  copy: {
+    statusPlanned: string;
+    statusActive: string;
+    introPlanned: string;
+    introActive: string;
+    sourceLabel: string;
+    sourcePlaceholder: string;
+    sourceHint: string;
+    uploadSourceImage: string;
+    uploading: string;
+    clearImage: string;
+    invalidFile: string;
+    fileTooLarge: string;
+    uploadFailed: string;
+    motionLabel: string;
+    motionPlaceholder: string;
+    motionHint: string;
+    activeNote: string;
+  };
+  panelRef: React.RefObject<HTMLDivElement | null>;
+  getAccessToken: () => Promise<string | null>;
+  isEnabled: boolean;
+  sourcePreviewUrl: string | null;
+  onSourcePreviewUrlChange: (url: string | null) => void;
+  motionPrompt: string;
+  onMotionPromptChange: (value: string) => void;
+  onMotionKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const blobPreviewRef = useRef<string | null>(null);
+  const [localFileError, setLocalFileError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (blobPreviewRef.current) {
+        URL.revokeObjectURL(blobPreviewRef.current);
+      }
+    };
+  }, []);
+
+  function revokeBlobPreview() {
+    if (blobPreviewRef.current) {
+      URL.revokeObjectURL(blobPreviewRef.current);
+      blobPreviewRef.current = null;
+    }
+  }
+
+  function clearSourceImage() {
+    revokeBlobPreview();
+    onSourcePreviewUrlChange(null);
+    setLocalFileError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }
+
+  async function handleSourceFileChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const mime = file.type.toLowerCase();
+    const allowedMime = new Set([
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/webp",
+    ]);
+    const allowedByName = /\.(png|jpe?g|webp)$/i.test(file.name);
+
+    if (!(allowedMime.has(mime) || (allowedByName && file.type.startsWith("image/")))) {
+      setLocalFileError(copy.invalidFile);
+      return;
+    }
+
+    if (file.size > REFERENCE_EDIT_MAX_BYTES) {
+      setLocalFileError(copy.fileTooLarge);
+      return;
+    }
+
+    setLocalFileError(null);
+    revokeBlobPreview();
+
+    const blobUrl = URL.createObjectURL(file);
+    blobPreviewRef.current = blobUrl;
+    onSourcePreviewUrlChange(blobUrl);
+    setUploading(true);
+
+    try {
+      const token = await getAccessToken();
+
+      if (!token) {
+        setLocalFileError(copy.uploadFailed);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/reference-sources/upload", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = (await response.json()) as {
+        imageUrl?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !data.imageUrl) {
+        setLocalFileError(data.error ?? copy.uploadFailed);
+        return;
+      }
+
+      revokeBlobPreview();
+      onSourcePreviewUrlChange(data.imageUrl);
+    } catch {
+      setLocalFileError(copy.uploadFailed);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }
+
+  const panelStatus = isEnabled ? copy.statusActive : copy.statusPlanned;
+  const panelIntro = isEnabled ? copy.introActive : copy.introPlanned;
+
+  return (
+    <motion.div
+      ref={panelRef}
+      id="video-studio-panel"
+      aria-label={label}
+      initial={false}
+      className="mt-2.5 rounded-xl border border-sky-500/15 bg-[linear-gradient(165deg,rgba(56,189,248,0.08)_0%,rgba(0,0,0,0.35)_45%)] p-2.5 sm:p-3"
+    >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+        onChange={handleSourceFileChange}
+      />
+
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-black text-white/85 sm:text-xs">{label}</p>
+          <p className="mt-0.5 text-[9px] leading-4 text-white/38">{panelIntro}</p>
+        </div>
+        <span className="shrink-0 rounded-full border border-sky-500/25 bg-sky-500/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.1em] text-sky-100/90">
+          {panelStatus}
+        </span>
+      </div>
+
+      <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5">
+        <div className="flex min-h-[7rem] flex-col rounded-lg border border-dashed border-white/12 bg-black/30 p-2 sm:min-h-[7.5rem]">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
+              {copy.sourceLabel}
+            </p>
+            {sourcePreviewUrl ? (
+              <button
+                type="button"
+                onClick={clearSourceImage}
+                disabled={uploading}
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white/45 transition hover:bg-white/[0.06] hover:text-white/70 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <X className="h-3 w-3" aria-hidden />
+                {copy.clearImage}
+              </button>
+            ) : null}
+          </div>
+
+          {sourcePreviewUrl ? (
+            <div className="relative mt-2 flex flex-1 overflow-hidden rounded-lg border border-white/10 bg-black/50">
+              <img
+                src={sourcePreviewUrl}
+                alt=""
+                className="h-full max-h-[5.5rem] w-full object-contain sm:max-h-[6rem]"
+              />
+            </div>
+          ) : (
+            <div className="mt-2 flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-white/35">
+                <Upload className="h-4 w-4" aria-hidden />
+              </div>
+              <p className="text-[10px] font-semibold text-white/50">
+                {copy.sourcePlaceholder}
+              </p>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading || !isEnabled}
+                className="mt-0.5 inline-flex items-center justify-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.08em] text-sky-100/90 transition hover:bg-sky-500/18 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                    {copy.uploading}
+                  </>
+                ) : (
+                  copy.uploadSourceImage
+                )}
+              </button>
+            </div>
+          )}
+
+          <p className="mt-1.5 text-center text-[9px] text-white/28">{copy.sourceHint}</p>
+          {localFileError ? (
+            <p className="mt-1 text-center text-[9px] font-medium text-amber-200/80">
+              {localFileError}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="flex min-h-[7rem] flex-col sm:min-h-[7.5rem]">
+          <label
+            htmlFor="video-studio-motion"
+            className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40"
+          >
+            {copy.motionLabel}
+          </label>
+          <textarea
+            id="video-studio-motion"
+            value={motionPrompt}
+            onChange={(event) => onMotionPromptChange(event.target.value)}
+            onKeyDown={onMotionKeyDown}
+            rows={5}
+            disabled={!isEnabled}
+            placeholder={copy.motionPlaceholder}
+            className="mt-1.5 min-h-[5rem] flex-1 resize-y rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] leading-4 text-white/70 placeholder:text-white/22 outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 disabled:opacity-50 sm:min-h-[5.5rem]"
+          />
+          <p className="mt-1.5 text-[9px] text-white/28">{copy.motionHint}</p>
+        </div>
+      </div>
+
+      {isEnabled ? (
+        <p className="mt-2.5 text-[9px] leading-4 text-white/32">{copy.activeNote}</p>
+      ) : (
+        <p className="mt-2.5 text-[9px] leading-4 text-white/32">{copy.introPlanned}</p>
+      )}
+    </motion.div>
+  );
+}
+
 export default function AiAgentStudio({
   charactersRefreshKey = 0,
   regenerateDraft = null,
@@ -798,6 +1081,11 @@ export default function AiAgentStudio({
   const resultRef = useRef<HTMLDivElement | null>(null);
   const submitInFlightRef = useRef(false);
   const referenceEditPanelRef = useRef<HTMLDivElement | null>(null);
+  const videoStudioPanelRef = useRef<HTMLDivElement | null>(null);
+
+  const [studioTab, setStudioTab] = useState<StudioTab>("image");
+  const [videoSourceUrl, setVideoSourceUrl] = useState<string | null>(null);
+  const [videoMotionPrompt, setVideoMotionPrompt] = useState("");
 
   const [prompt, setPrompt] = useState("");
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -808,7 +1096,18 @@ export default function AiAgentStudio({
     string | null
   >(null);
   const [referenceEditInstruction, setReferenceEditInstruction] = useState("");
+
+  const isVideoStudioActive =
+    studioTab === "video" && VIDEO_STUDIO_PUBLIC_ENABLED;
+  const videoStudioReady =
+    Boolean(videoSourceUrl?.trim()) && Boolean(videoMotionPrompt.trim());
+  const videoSubmitBlocked = isVideoStudioActive && !videoStudioReady;
+
   const imageModeActiveNote = useMemo(() => {
+    if (isVideoStudioActive) {
+      return a.imageModeVideoStudioActiveNote;
+    }
+
     if (imageMode === "brand_assets" && BRAND_ASSETS_PUBLIC_ENABLED) {
       return a.imageModeBrandAssetsActiveNote;
     }
@@ -826,9 +1125,10 @@ export default function AiAgentStudio({
     }
 
     return a.imageModeStandardActiveNote;
-  }, [a, imageMode]);
+  }, [a, imageMode, isVideoStudioActive]);
 
   const imageModeUsesBetaBadge =
+    isVideoStudioActive ||
     (imageMode === "brand_assets" && BRAND_ASSETS_PUBLIC_ENABLED) ||
     (imageMode === "reference_edit" && REFERENCE_EDIT_PUBLIC_ENABLED) ||
     (imageMode === "fast_draft" && FAST_DRAFT_PUBLIC_ENABLED) ||
@@ -991,6 +1291,8 @@ export default function AiAgentStudio({
           id: found.id,
           prompt: found.prompt,
           image_url: found.image_url,
+          video_url: found.video_url ?? null,
+          workflow: found.workflow ?? null,
           status: found.status,
           error_message: found.error_message,
           output_format: found.output_format,
@@ -1082,6 +1384,28 @@ export default function AiAgentStudio({
 
     event.preventDefault();
 
+    if (studioTab === "video") {
+      return;
+    }
+
+    if (isSubmitBlocked) {
+      setErrorMessage(a.generationAlreadyProcessing);
+      return;
+    }
+
+    formRef.current?.requestSubmit();
+  }
+
+  function submitVideoFromMotionPrompt(
+    event: React.KeyboardEvent<HTMLTextAreaElement>
+  ) {
+    if (event.key !== "Enter") return;
+    if (event.shiftKey) return;
+
+    event.preventDefault();
+
+    if (!isVideoStudioActive) return;
+
     if (isSubmitBlocked) {
       setErrorMessage(a.generationAlreadyProcessing);
       return;
@@ -1104,6 +1428,182 @@ export default function AiAgentStudio({
 
     if (submitInFlightRef.current || queuing || agentResult?.status === "processing") {
       setErrorMessage(a.generationAlreadyProcessing);
+      return;
+    }
+
+    if (isVideoStudioActive) {
+      if (!videoSourceUrl?.trim()) {
+        setErrorMessage(a.videoStudioMissingSource);
+        return;
+      }
+
+      if (!videoMotionPrompt.trim()) {
+        setErrorMessage(a.videoStudioMissingMotion);
+        return;
+      }
+
+      const temporaryGenerationId = `temp-${Date.now()}`;
+      submitInFlightRef.current = true;
+
+      try {
+        setQueuing(true);
+        setQueuedGenerationId(null);
+        setErrorMessage(null);
+        setStatusMessage(
+          format(a.preparingFormat, {
+            format: selectedOutputFormat.label,
+            ratio: selectedOutputFormat.ratio,
+          })
+        );
+
+        setAgentResult({
+          id: temporaryGenerationId,
+          prompt: videoMotionPrompt.trim(),
+          image_url: null,
+          video_url: null,
+          workflow: "video_image_to_video",
+          status: "processing",
+          error_message: null,
+          output_format: selectedOutputFormat.label,
+          image_size: "",
+        });
+
+        scrollToResult();
+
+        const token = await getAccessToken();
+
+        if (!token) {
+          setAgentResult({
+            id: temporaryGenerationId,
+            prompt: videoMotionPrompt.trim(),
+            image_url: null,
+            status: "failed",
+            error_message: a.signInAgain,
+            output_format: selectedOutputFormat.label,
+            image_size: "",
+          });
+          setErrorMessage(a.signInAgain);
+          return;
+        }
+
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            imageMode: "video_image_to_video",
+            motionInstruction: videoMotionPrompt.trim(),
+            sourceImageUrl: videoSourceUrl,
+            outputFormat: outputFormatKey,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          if (response.status === 402) {
+            const requiredCredits =
+              typeof data.requiredCredits === "number" ? data.requiredCredits : 25;
+
+            setAgentResult({
+              id: temporaryGenerationId,
+              prompt: videoMotionPrompt.trim(),
+              image_url: null,
+              status: "insufficient_credits",
+              error_message: null,
+              requiredCredits,
+              output_format: selectedOutputFormat.label,
+              image_size: "",
+            });
+            setErrorMessage(null);
+            setStatusMessage(null);
+            scrollToResult();
+            return;
+          }
+
+          if (
+            response.status === 429 &&
+            data.reason === "active_generation_limit"
+          ) {
+            setAgentResult({
+              id: temporaryGenerationId,
+              prompt: videoMotionPrompt.trim(),
+              image_url: null,
+              status: "active_generation_limit",
+              error_message: null,
+              output_format: selectedOutputFormat.label,
+              image_size: "",
+            });
+            setErrorMessage(null);
+            setStatusMessage(null);
+            scrollToResult();
+            return;
+          }
+
+          const safeMessage = getSafeErrorMessage(response.status, data.error);
+          setAgentResult({
+            id: temporaryGenerationId,
+            prompt: videoMotionPrompt.trim(),
+            image_url: null,
+            status: "failed",
+            error_message: safeMessage,
+            output_format: selectedOutputFormat.label,
+            image_size: "",
+          });
+          setErrorMessage(safeMessage);
+          return;
+        }
+
+        const generationId =
+          typeof data.generationId === "string" ? data.generationId : null;
+
+        if (!generationId) {
+          setAgentResult({
+            id: temporaryGenerationId,
+            prompt: videoMotionPrompt.trim(),
+            image_url: null,
+            status: "failed",
+            error_message: a.noGenerationId,
+            output_format: selectedOutputFormat.label,
+            image_size: "",
+          });
+          setErrorMessage(a.noGenerationId);
+          return;
+        }
+
+        setQueuedGenerationId(generationId);
+        setAgentResult({
+          id: generationId,
+          prompt: videoMotionPrompt.trim(),
+          image_url: null,
+          video_url: null,
+          workflow: "video_image_to_video",
+          status: "processing",
+          error_message: null,
+          output_format: selectedOutputFormat.label,
+          image_size: "",
+        });
+        setVideoMotionPrompt("");
+        onGenerationQueued?.();
+        scrollToResult();
+      } catch {
+        setAgentResult({
+          id: temporaryGenerationId,
+          prompt: videoMotionPrompt.trim(),
+          image_url: null,
+          status: "failed",
+          error_message: a.networkError,
+          output_format: selectedOutputFormat.label,
+          image_size: "",
+        });
+        setErrorMessage(a.networkError);
+      } finally {
+        submitInFlightRef.current = false;
+        setQueuing(false);
+      }
+
       return;
     }
 
@@ -1208,9 +1708,7 @@ export default function AiAgentStudio({
           const requiredCredits =
             typeof data.requiredCredits === "number"
               ? data.requiredCredits
-              : getRequiredCreditsForImageMode(
-                  resolveSubmitImageMode(imageMode)
-                );
+              : getRequiredCreditsForStudio(studioTab, imageMode);
 
           setAgentResult({
             id: temporaryGenerationId,
@@ -1438,22 +1936,87 @@ export default function AiAgentStudio({
           <div className="pointer-events-none absolute inset-0 rounded-[1.7rem] bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.08),transparent_38%)]" />
 
           <div className="relative z-10">
-            <textarea
-              value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
-              onKeyDown={submitFromTextarea}
-              placeholder={
-                typedExample || a.promptPlaceholder
-              }
-              className="min-h-[104px] w-full resize-y bg-transparent px-4 py-4 text-base leading-relaxed text-white outline-none placeholder:text-white/32 sm:min-h-[78px] sm:resize-none sm:px-6 sm:py-5 sm:text-lg"
-            />
+            {studioTab === "image" ? (
+              <>
+                <textarea
+                  value={prompt}
+                  onChange={(event) => setPrompt(event.target.value)}
+                  onKeyDown={submitFromTextarea}
+                  placeholder={typedExample || a.promptPlaceholder}
+                  className="min-h-[104px] w-full resize-y bg-transparent px-4 py-4 text-base leading-relaxed text-white outline-none placeholder:text-white/32 sm:min-h-[78px] sm:resize-none sm:px-6 sm:py-5 sm:text-lg"
+                />
 
-            <p className="border-t border-white/10 px-4 py-2 text-[11px] font-medium text-white/35 sm:px-6">
-              {a.enterHint}
-            </p>
+                <p className="border-t border-white/10 px-4 py-2 text-[11px] font-medium text-white/35 sm:px-6">
+                  {a.enterHint}
+                </p>
+              </>
+            ) : (
+              <div className="border-t border-white/10 px-4 py-4 sm:px-6">
+                <p className="text-sm font-semibold text-white/70">
+                  {a.imageModes.videoStudio.label}
+                </p>
+                <p className="mt-1 text-xs text-white/40">
+                  {a.videoStudioLongerHint}
+                </p>
+              </div>
+            )}
 
             <div className="border-t border-white/10 px-3 py-3 sm:px-4 sm:py-4">
               <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setStudioTab("image")}
+                    className={`rounded-full px-4 py-2 text-xs font-black transition ${
+                      studioTab === "image"
+                        ? "bg-white text-black"
+                        : "border border-white/10 bg-black/25 text-white/55"
+                    }`}
+                  >
+                    {a.studioTabImage}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (VIDEO_STUDIO_PUBLIC_ENABLED) {
+                        setStudioTab("video");
+                      }
+                    }}
+                    disabled={!VIDEO_STUDIO_PUBLIC_ENABLED}
+                    title={
+                      VIDEO_STUDIO_PUBLIC_ENABLED
+                        ? a.imageModes.videoStudio.description
+                        : a.studioTabVideoPlanned
+                    }
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                      studioTab === "video" && VIDEO_STUDIO_PUBLIC_ENABLED
+                        ? "bg-sky-500/20 text-sky-100 ring-1 ring-sky-500/30"
+                        : "border border-white/10 bg-black/25 text-white/55"
+                    }`}
+                  >
+                    <Clapperboard className="h-3.5 w-3.5" aria-hidden />
+                    {VIDEO_STUDIO_PUBLIC_ENABLED
+                      ? a.studioTabVideo
+                      : a.studioTabVideoPlanned}
+                  </button>
+                </div>
+
+                {studioTab === "video" ? (
+                  <VideoStudioPanel
+                    label={a.imageModes.videoStudio.label}
+                    copy={a.imageModes.videoStudio.panel}
+                    panelRef={videoStudioPanelRef}
+                    getAccessToken={getAccessToken}
+                    isEnabled={VIDEO_STUDIO_PUBLIC_ENABLED}
+                    sourcePreviewUrl={videoSourceUrl}
+                    onSourcePreviewUrlChange={setVideoSourceUrl}
+                    motionPrompt={videoMotionPrompt}
+                    onMotionPromptChange={setVideoMotionPrompt}
+                    onMotionKeyDown={submitVideoFromMotionPrompt}
+                  />
+                ) : null}
+
+                {studioTab === "image" ? (
                 <fieldset className="rounded-2xl border border-white/10 bg-black/20 p-2.5 sm:p-3">
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-0.5">
                     <legend className="text-[10px] font-black uppercase tracking-[0.22em] text-white/40">
@@ -1618,6 +2181,7 @@ export default function AiAgentStudio({
                     </div>
                   </div>
                 </fieldset>
+                ) : null}
 
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-3 py-2 text-xs font-bold text-white/65">
@@ -1744,11 +2308,29 @@ export default function AiAgentStudio({
                     whileHover={{ scale: 1.06 }}
                     whileTap={{ scale: 0.96 }}
                     type="submit"
-                    disabled={isSubmitBlocked || referenceEditSubmitBlocked}
-                    className="inline-flex h-12 w-12 shrink-0 items-center justify-center self-end rounded-full bg-white text-black shadow-xl transition hover:bg-white/85 disabled:opacity-50 sm:self-auto"
+                    disabled={
+                      isSubmitBlocked ||
+                      referenceEditSubmitBlocked ||
+                      videoSubmitBlocked
+                    }
+                    title={
+                      isVideoStudioActive ? a.generateVideo : undefined
+                    }
+                    className={`inline-flex h-12 shrink-0 items-center justify-center self-end rounded-full shadow-xl transition disabled:opacity-50 sm:self-auto ${
+                      isVideoStudioActive
+                        ? "min-w-[3rem] gap-2 bg-sky-500 px-4 text-black hover:bg-sky-400"
+                        : "w-12 bg-white text-black hover:bg-white/85"
+                    }`}
                   >
                     {isSubmitBlocked ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : isVideoStudioActive ? (
+                      <>
+                        <Clapperboard className="h-4 w-4" aria-hidden />
+                        <span className="hidden text-xs font-black sm:inline">
+                          {a.generateVideo}
+                        </span>
+                      </>
                     ) : (
                       <Send className="h-4 w-4" />
                     )}
@@ -1775,7 +2357,9 @@ export default function AiAgentStudio({
 
                     <h3 className="mt-2 text-xl font-black text-white sm:text-2xl">
                       {agentResult.status === "processing"
-                        ? a.generating
+                        ? agentResult.workflow === "video_image_to_video"
+                          ? a.generatingVideo
+                          : a.generating
                         : agentResult.status === "completed"
                           ? a.completed
                           : agentResult.status === "insufficient_credits"
@@ -1872,11 +2456,15 @@ export default function AiAgentStudio({
 
                       <div>
                         <p className="text-lg font-black text-white">
-                          {a.generating}
+                          {agentResult.workflow === "video_image_to_video"
+                            ? a.generatingVideo
+                            : a.generating}
                         </p>
 
                         <p className="mt-3 text-sm leading-6 text-white/45">
-                          {a.processingStay}
+                          {agentResult.workflow === "video_image_to_video"
+                            ? a.videoStudioLongerHint
+                            : a.processingStay}
                         </p>
                       </div>
 
@@ -1906,9 +2494,7 @@ export default function AiAgentStudio({
                           {format(a.insufficientCreditsModeRequires, {
                             count:
                               agentResult.requiredCredits ??
-                              getRequiredCreditsForImageMode(
-                                resolveSubmitImageMode(imageMode)
-                              ),
+                              getRequiredCreditsForStudio(studioTab, imageMode),
                           })}
                         </p>
                         <p className="text-sm leading-6 text-white/45">
@@ -1972,6 +2558,17 @@ export default function AiAgentStudio({
                   )}
 
                   {agentResult.status === "completed" &&
+                    agentResult.video_url && (
+                      <video
+                        src={agentResult.video_url}
+                        controls
+                        playsInline
+                        className="max-h-[640px] w-full object-contain"
+                      />
+                    )}
+
+                  {agentResult.status === "completed" &&
+                    !agentResult.video_url &&
                     agentResult.image_url && (
                       <img
                         src={agentResult.image_url}
@@ -1982,6 +2579,7 @@ export default function AiAgentStudio({
                     )}
 
                   {agentResult.status === "completed" &&
+                    !agentResult.video_url &&
                     !agentResult.image_url && (
                       <div className="flex flex-col items-center justify-center gap-4 p-10 text-center">
                         <ImageOff className="h-12 w-12 text-white/45" />
@@ -2005,7 +2603,19 @@ export default function AiAgentStudio({
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-1">
-                    {agentResult.image_url && (
+                    {agentResult.video_url && (
+                      <a
+                        href={agentResult.video_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-black text-black transition hover:bg-white/85"
+                      >
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        {a.openVideo}
+                      </a>
+                    )}
+
+                    {agentResult.image_url && !agentResult.video_url && (
                       <a
                         href={agentResult.image_url}
                         target="_blank"
