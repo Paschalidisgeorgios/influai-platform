@@ -126,6 +126,89 @@ function isOpenAiImageWorkflow(workflow: string, provider: string) {
   return provider === "openai" && OPENAI_IMAGE_WORKFLOWS.has(workflow);
 }
 
+function isMissingColumnError(error: { message?: string; code?: string } | null) {
+  if (!error?.message) return false;
+
+  return (
+    error.code === "PGRST204" ||
+    /column.*does not exist|Could not find the .* column/i.test(error.message)
+  );
+}
+
+type GenerationWorkerRow = {
+  id: string;
+  user_id: string;
+  prompt: string | null;
+  final_prompt: string | null;
+  status: string;
+  provider: string | null;
+  model: string | null;
+  workflow: string | null;
+  credits_used: number | null;
+  image_size: unknown;
+  output_width: unknown;
+  output_height: unknown;
+  reference_image_url: string | null;
+  source_image_url: string | null;
+  source_video_url: string | null;
+  audio_url: string | null;
+};
+
+function normalizeGenerationRow(data: Record<string, unknown>): GenerationWorkerRow {
+  return {
+    id: String(data.id),
+    user_id: String(data.user_id),
+    prompt: typeof data.prompt === "string" ? data.prompt : null,
+    final_prompt:
+      typeof data.final_prompt === "string" ? data.final_prompt : null,
+    status: typeof data.status === "string" ? data.status : "processing",
+    provider: typeof data.provider === "string" ? data.provider : null,
+    model: typeof data.model === "string" ? data.model : null,
+    workflow: typeof data.workflow === "string" ? data.workflow : null,
+    credits_used:
+      typeof data.credits_used === "number" ? data.credits_used : null,
+    image_size: data.image_size ?? null,
+    output_width: data.output_width ?? null,
+    output_height: data.output_height ?? null,
+    reference_image_url:
+      typeof data.reference_image_url === "string"
+        ? data.reference_image_url
+        : null,
+    source_image_url:
+      typeof data.source_image_url === "string" ? data.source_image_url : null,
+    source_video_url:
+      typeof data.source_video_url === "string" ? data.source_video_url : null,
+    audio_url: typeof data.audio_url === "string" ? data.audio_url : null,
+  };
+}
+
+async function fetchGenerationForProcessing(generationId: string): Promise<{
+  generation: GenerationWorkerRow | null;
+  fetchError: string | null;
+}> {
+  const { data, error } = await supabaseAdmin
+    .from("generations")
+    .select("*")
+    .eq("id", generationId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Generation worker fetch error:", { generationId, error });
+    return { generation: null, fetchError: error.message };
+  }
+
+  if (!data) {
+    return { generation: null, fetchError: "Generation not found" };
+  }
+
+  return {
+    generation: normalizeGenerationRow(
+      data as unknown as Record<string, unknown>
+    ),
+    fetchError: null,
+  };
+}
+
 async function refundCredits(userId: string, creditsToRefund: number) {
   if (creditsToRefund <= 0) return;
 
@@ -369,15 +452,6 @@ async function completeVideoGeneration({
   if (!updated) {
     throw new Error("Generation is no longer processing.");
   }
-}
-
-function isMissingColumnError(error: { message?: string; code?: string } | null) {
-  if (!error?.message) return false;
-
-  return (
-    error.code === "PGRST204" ||
-    /column.*does not exist|Could not find the .* column/i.test(error.message)
-  );
 }
 
 function getFalResultImageUrl(data: unknown): string | null {
@@ -1357,32 +1431,15 @@ export async function POST(req: Request) {
       );
     }
 
-    const { data: generation, error: fetchError } = await supabaseAdmin
-      .from("generations")
-      .select(
-        `
-        id,
-        user_id,
-        prompt,
-        final_prompt,
-        status,
-        provider,
-        model,
-        workflow,
-        credits_used,
-        image_size,
-        output_width,
-        output_height,
-        reference_image_url,
-        source_image_url,
-        source_video_url,
-        audio_url
-      `
-      )
-      .eq("id", generationId)
-      .single();
+    const { generation, fetchError } =
+      await fetchGenerationForProcessing(generationId);
 
-    if (fetchError || !generation) {
+    if (!generation) {
+      console.error("Generation worker could not load row:", {
+        generationId,
+        fetchError,
+      });
+
       return NextResponse.json(
         { error: "Generation not found" },
         { status: 404 }
@@ -1412,7 +1469,25 @@ export async function POST(req: Request) {
         ? "openai"
         : normalizeProvider(generation.provider);
 
-    const finalPrompt = generation.final_prompt || generation.prompt;
+    const finalPrompt = (
+      generation.final_prompt?.trim() ||
+      generation.prompt?.trim() ||
+      ""
+    ).trim();
+
+    if (!finalPrompt) {
+      await markFailedAndRefund({
+        generationId,
+        userId: generation.user_id,
+        creditsUsed,
+        errorMessage: "Prompt is missing.",
+      });
+
+      return NextResponse.json(
+        { error: "Prompt is missing. Credits refunded." },
+        { status: 400 }
+      );
+    }
 
     if (isOpenAiImageWorkflow(workflow, provider)) {
       const imageSize = normalizeImageSize(generation.image_size);

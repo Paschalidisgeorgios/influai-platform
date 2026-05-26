@@ -1651,24 +1651,52 @@ async function refundCredits(
   }
 }
 
-async function triggerWorker(generationId: string, origin: string) {
-  const response = await fetch(`${origin}/api/generate/process`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-worker-secret": process.env.GENERATION_WORKER_SECRET!,
-    },
-    body: JSON.stringify({
-      generationId,
-    }),
-  });
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    console.error("Worker trigger failed:", {
-      status: response.status,
-      body: text,
-    });
+async function triggerWorker(generationId: string, origin: string) {
+  const maxAttempts = 5;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await fetch(`${origin}/api/generate/process`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-worker-secret": process.env.GENERATION_WORKER_SECRET!,
+        },
+        body: JSON.stringify({
+          generationId,
+        }),
+      });
+
+      if (response.ok) {
+        return;
+      }
+
+      const text = await response.text().catch(() => "");
+
+      if (response.status === 404 && attempt < maxAttempts) {
+        await sleep(200 * attempt);
+        continue;
+      }
+
+      console.error("Worker trigger failed:", {
+        generationId,
+        attempt,
+        status: response.status,
+        body: text,
+      });
+      return;
+    } catch (error) {
+      if (attempt < maxAttempts) {
+        await sleep(200 * attempt);
+        continue;
+      }
+
+      console.error("Worker trigger exception:", { generationId, error });
+    }
   }
 }
 
