@@ -4,6 +4,9 @@ import { fal } from "@fal-ai/client";
 import OpenAI from "openai";
 
 export const runtime = "nodejs";
+export const maxDuration = 300;
+
+const OPENAI_IMAGE_WORKFLOWS = new Set(["standard", "ugc_look"]);
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -94,6 +97,24 @@ function normalizeImageSize(value: unknown): ImageSize {
   }
 
   return "1024x1024";
+}
+
+function normalizeWorkflow(value: unknown): string {
+  if (typeof value !== "string") return "standard";
+
+  const normalized = value.trim().toLowerCase();
+  return normalized || "standard";
+}
+
+function normalizeProvider(value: unknown): string {
+  if (typeof value !== "string") return "openai";
+
+  const normalized = value.trim().toLowerCase();
+  return normalized || "openai";
+}
+
+function isOpenAiImageWorkflow(workflow: string, provider: string) {
+  return provider === "openai" && OPENAI_IMAGE_WORKFLOWS.has(workflow);
 }
 
 async function refundCredits(userId: string, creditsToRefund: number) {
@@ -1189,6 +1210,7 @@ async function processOpenAIImage({
   model,
   creditsUsed,
   imageSize,
+  workflow,
 }: {
   generationId: string;
   userId: string;
@@ -1196,6 +1218,7 @@ async function processOpenAIImage({
   model: string;
   creditsUsed: number;
   imageSize: ImageSize;
+  workflow: string;
 }) {
   try {
     const result = await openai.images.generate({
@@ -1258,6 +1281,10 @@ async function processOpenAIImage({
 }
 
 export async function POST(req: Request) {
+  let generationId: string | undefined;
+  let workerUserId: string | undefined;
+  let workerCreditsUsed = 1;
+
   try {
     const workerSecret = req.headers.get("x-worker-secret");
 
@@ -1266,7 +1293,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const generationId = body.generationId;
+    generationId = body.generationId;
 
     if (!generationId || typeof generationId !== "string") {
       return NextResponse.json(
@@ -1315,17 +1342,21 @@ export async function POST(req: Request) {
       });
     }
 
+    workerUserId = generation.user_id;
+
     const creditsUsed =
       typeof generation.credits_used === "number"
         ? generation.credits_used
         : 1;
 
-    const workflow = generation.workflow || "standard";
-    const provider = generation.provider || "openai";
+    workerCreditsUsed = creditsUsed;
+
+    const workflow = normalizeWorkflow(generation.workflow);
+    const provider = normalizeProvider(generation.provider);
 
     const finalPrompt = generation.final_prompt || generation.prompt;
 
-    if ((workflow === "standard" || workflow === "ugc_look") && provider === "openai") {
+    if (isOpenAiImageWorkflow(workflow, provider)) {
       const imageSize = normalizeImageSize(generation.image_size);
 
       return processOpenAIImage({
@@ -1335,6 +1366,7 @@ export async function POST(req: Request) {
         model: generation.model || "gpt-image-1",
         creditsUsed,
         imageSize,
+        workflow,
       });
     }
 
@@ -1486,18 +1518,31 @@ export async function POST(req: Request) {
       generationId,
       userId: generation.user_id,
       creditsUsed,
-      errorMessage:
-        "This workflow is not supported. Credits refunded.",
+      errorMessage: `Unsupported workflow "${workflow}" with provider "${provider}". Credits refunded.`,
     });
 
     return NextResponse.json(
       {
         error: "This workflow is not supported. Credits refunded.",
+        workflow,
+        provider,
       },
       { status: 400 }
     );
   } catch (error) {
     console.error("Generation worker error:", error);
+
+    if (generationId && workerUserId) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Generation worker failed.";
+
+      await markFailedAndRefund({
+        generationId,
+        userId: workerUserId,
+        creditsUsed: workerCreditsUsed,
+        errorMessage,
+      });
+    }
 
     return NextResponse.json(
       { error: "Generation worker failed" },
