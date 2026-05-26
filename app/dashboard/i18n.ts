@@ -49,6 +49,10 @@ const en = {
     creditCostShort: "Credits",
     nav: {
       agent: { label: "AI Agent", description: "Generate campaign visuals" },
+      tools: {
+        label: "Tools",
+        description: "Studio modes and creator platform roadmap",
+      },
       gallery: { label: "Asset Gallery", description: "Manage generated assets" },
       characters: {
         label: "Style Profiles",
@@ -517,6 +521,73 @@ const en = {
       title: "Campaign Planner",
       description:
         "Create structured campaign plans, shot prompts, captions, social schedules and safety checklists before generating assets.",
+    },
+    tools: {
+      eyebrow: "Creator Platform",
+      title: "Tools",
+      description:
+        "Browse live studio workflows and upcoming creator modules. Active tools open in the AI Agent — no extra API calls from this page.",
+    },
+  },
+  toolsPage: {
+    openInAgent: "Open in Agent",
+    includedModes: "Included modes",
+    roadmapOnly: "Roadmap preview — not active yet",
+    statuses: {
+      live: "Live",
+      beta: "Beta",
+      comingSoon: "Coming soon",
+      planned: "Planned",
+    },
+    imageModes: {
+      standard: "Standard",
+      fastDraft: "Fast Draft",
+      ugcLook: "UGC Look",
+      premium: "Premium",
+      brandAssets: "Brand Assets",
+      referenceEdit: "Reference Edit",
+    },
+    cards: {
+      imageStudio: {
+        title: "Image Studio",
+        benefit:
+          "Campaign-ready stills with six image workflows — standard, draft, UGC, premium, brand and reference edit.",
+      },
+      videoStudio: {
+        title: "Video Studio",
+        benefit:
+          "Short-form image-to-video clips for social and product campaigns.",
+      },
+      lipSync: {
+        title: "Lip Sync Studio",
+        benefit:
+          "Talking-head creator clips from script, voice and visual assets.",
+      },
+      cinemaAgent: {
+        title: "Cinema Agent",
+        benefit:
+          "Scene lists, shot planning and visual sequences before generation.",
+      },
+      omniCampaign: {
+        title: "Omni Campaign Agent",
+        benefit:
+          "One brief into visuals, video concepts, captions and export-ready assets.",
+      },
+      socialPlanner: {
+        title: "Social Planner",
+        benefit:
+          "Caption, hashtag and posting calendar planning — no live social API.",
+      },
+      compliance: {
+        title: "Compliance Check",
+        benefit:
+          "Pre-publish checklist for claims, logos, disclosure and brand safety.",
+      },
+      watermarkedPromo: {
+        title: "Watermarked Promo Package",
+        benefit:
+          "Low-cost watermarked exports for testing — full export upgrade planned.",
+      },
     },
   },
   compactCredits: {
@@ -1143,6 +1214,10 @@ const de: DeepString<typeof en> = {
         label: "AI Agent",
         description: "Kampagnenvisuals generieren",
       },
+      tools: {
+        label: "Werkzeuge",
+        description: "Studio-Modi und Creator-Platform-Roadmap",
+      },
       gallery: {
         label: "Asset Gallery",
         description: "Generierte Assets verwalten",
@@ -1615,6 +1690,73 @@ const de: DeepString<typeof en> = {
       title: "Campaign Planner",
       description:
         "Erstelle strukturierte Kampagnenpläne, Shot Prompts, Captions, Social Schedules und Safety Checklisten vor der Asset-Generierung.",
+    },
+    tools: {
+      eyebrow: "Creator Platform",
+      title: "Werkzeuge",
+      description:
+        "Live Studio-Workflows und kommende Creator-Module entdecken. Aktive Tools öffnen im AI Agent — keine zusätzlichen API-Calls von dieser Seite.",
+    },
+  },
+  toolsPage: {
+    openInAgent: "Im Agent öffnen",
+    includedModes: "Enthaltene Modi",
+    roadmapOnly: "Roadmap-Vorschau — noch nicht aktiv",
+    statuses: {
+      live: "Live",
+      beta: "Beta",
+      comingSoon: "Demnächst",
+      planned: "Geplant",
+    },
+    imageModes: {
+      standard: "Standard",
+      fastDraft: "Fast Draft",
+      ugcLook: "UGC Look",
+      premium: "Premium",
+      brandAssets: "Brand Assets",
+      referenceEdit: "Reference Edit",
+    },
+    cards: {
+      imageStudio: {
+        title: "Bild Studio",
+        benefit:
+          "Kampagnenfertige Stills mit sechs Bild-Workflows — Standard, Draft, UGC, Premium, Brand und Reference Edit.",
+      },
+      videoStudio: {
+        title: "Video Studio",
+        benefit:
+          "Kurze Image-to-Video-Clips für Social und Produktkampagnen.",
+      },
+      lipSync: {
+        title: "Lip Sync Studio",
+        benefit:
+          "Talking-Head-Creator-Clips aus Skript, Voice und Visual Assets.",
+      },
+      cinemaAgent: {
+        title: "Cinema Agent",
+        benefit:
+          "Szenenlisten, Shot-Planung und Visual Sequences vor der Generierung.",
+      },
+      omniCampaign: {
+        title: "Omni Campaign Agent",
+        benefit:
+          "Ein Brief für Visuals, Video-Konzepte, Captions und exportfertige Assets.",
+      },
+      socialPlanner: {
+        title: "Social Planner",
+        benefit:
+          "Caption-, Hashtag- und Posting-Kalender — ohne Live-Social-API.",
+      },
+      compliance: {
+        title: "Compliance Check",
+        benefit:
+          "Pre-Publish-Checkliste für Claims, Logos, Disclosure und Brand Safety.",
+      },
+      watermarkedPromo: {
+        title: "Wasserzeichen-Promo-Paket",
+        benefit:
+          "Günstige Exporte mit Wasserzeichen zum Testen — Voll-Export-Upgrade geplant.",
+      },
     },
   },
   compactCredits: {

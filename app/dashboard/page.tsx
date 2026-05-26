@@ -9,6 +9,7 @@ import {
   Film,
   GalleryVerticalEnd,
   Home,
+  LayoutGrid,
   Lock,
   LogOut,
   Menu,
@@ -27,6 +28,7 @@ import { DashboardLanguageProvider, useDashboardLanguage } from "./DashboardLang
 import CreditsCard from "./CreditsCard";
 import GenerationGallery from "./GenerationGallery";
 import LanguageSelector from "./LanguageSelector";
+import ToolsRoadmap from "./ToolsRoadmap";
 import { createClient } from "@/lib/supabase/client";
 
 const VIDEO_STUDIO_PUBLIC_ENABLED =
@@ -40,7 +42,13 @@ type RegenerateDraft = {
   loadedAt?: number;
 };
 
-type DashboardView = "agent" | "planner" | "gallery" | "characters" | "credits";
+type DashboardView =
+  | "agent"
+  | "tools"
+  | "planner"
+  | "gallery"
+  | "characters"
+  | "credits";
 
 type SidebarBadgeVariant = "live" | "beta" | "credits";
 
@@ -156,6 +164,12 @@ function DashboardPageInner() {
         description: copy.sidebar.nav.agent.description,
         icon: Bot,
         badge: copy.sidebar.live,
+      },
+      {
+        id: "tools",
+        label: copy.sidebar.nav.tools.label,
+        description: copy.sidebar.nav.tools.description,
+        icon: LayoutGrid,
       },
       {
         id: "gallery",
@@ -290,6 +304,22 @@ function DashboardPageInner() {
             onOpenCredits={() => setActiveView("credits")}
           />
         </>
+      );
+    }
+
+    if (activeView === "tools") {
+      return (
+        <ViewShell
+          eyebrow={copy.page.tools.eyebrow}
+          title={copy.page.tools.title}
+          description={copy.page.tools.description}
+        >
+          <ToolsRoadmap
+            copy={copy}
+            videoStudioEnabled={VIDEO_STUDIO_PUBLIC_ENABLED}
+            onOpenAgent={() => openView("agent")}
+          />
+        </ViewShell>
       );
     }
 
