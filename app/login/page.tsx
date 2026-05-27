@@ -1,20 +1,65 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const supabase = createClient();
+  const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [language, setLanguage] = useState<"en" | "de">("en");
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem("influexai_language");
+    if (stored === "de") {
+      setLanguage("de");
+    }
+  }, []);
+
+  useEffect(() => {
+    async function ensureLoggedOutOrRedirect() {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session) {
+          router.replace("/dashboard");
+          return;
+        }
+
+        const reason = new URLSearchParams(window.location.search).get("reason");
+        if (reason === "inactivity") {
+          setStatusMessage(
+            language === "de"
+              ? "Du wurdest nach längerer Inaktivität abgemeldet."
+              : "You were signed out after inactivity."
+          );
+        } else if (reason === "session_expired") {
+          setStatusMessage(
+            language === "de"
+              ? "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an."
+              : "Session expired. Please sign in again."
+          );
+        }
+      } finally {
+        setCheckingSession(false);
+      }
+    }
+
+    void ensureLoggedOutOrRedirect();
+  }, [language, router, supabase.auth]);
 
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -46,7 +91,7 @@ export default function LoginPage() {
       setStatusMessage("Signed in successfully. Opening your studio…");
 
       window.setTimeout(() => {
-        window.location.replace("/dashboard");
+        router.replace("/dashboard");
       }, 600);
     } catch (error) {
       console.error("Login error:", error);
@@ -68,11 +113,16 @@ export default function LoginPage() {
         href="/"
         className="absolute left-4 top-4 z-20 inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white/80 transition hover:border-[#d8ad5f]/40 hover:text-[#d8ad5f] sm:left-5 sm:top-5"
       >
-        Back to home
+        {language === "de" ? "Zur Startseite" : "Back to home"}
       </Link>
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-16 sm:px-5">
         <div className="w-full max-w-md rounded-[1.75rem] border border-white/10 bg-black/60 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:rounded-[2rem] sm:p-10">
+          {checkingSession ? (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-medium text-white/80">
+              Checking session…
+            </div>
+          ) : null}
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#d8ad5f] text-black">
               <Sparkles className="h-5 w-5" />

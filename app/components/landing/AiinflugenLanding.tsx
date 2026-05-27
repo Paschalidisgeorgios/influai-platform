@@ -21,6 +21,7 @@ import {
 
 import { PricingSection } from "./PricingSection";
 import { RoadmapSection } from "./RoadmapSection";
+import { createClient } from "@/lib/supabase/client";
 
 type Props = {
   images: string[];
@@ -84,7 +85,9 @@ export default function AiinflugenLanding({
 }: Props) {
   const [language, setLanguage] = useState<Language>("en");
   const [activeSlide, setActiveSlide] = useState(0);
+  const [studioHref, setStudioHref] = useState("/login");
   const examplesRef = useRef<HTMLDivElement | null>(null);
+  const supabase = createClient();
 
   function scrollExamples(direction: "left" | "right") {
     if (!examplesRef.current) return;
@@ -307,6 +310,34 @@ export default function AiinflugenLanding({
     return () => window.clearInterval(interval);
   }, [slides.length]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    async function resolveSessionTarget() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!mounted) return;
+      setStudioHref(session ? "/dashboard" : "/login");
+    }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      (_event: unknown, session: unknown) => {
+      if (!mounted) return;
+      setStudioHref(session ? "/dashboard" : "/login");
+      }
+    );
+
+    void resolveSessionTarget();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase.auth]);
+
   return (
     <main className={`${bodyFontClass} min-h-screen bg-black text-white`}>
       <header className="fixed left-0 right-0 top-0 z-50 px-3 pt-3 sm:px-4 sm:pt-5">
@@ -368,7 +399,7 @@ export default function AiinflugenLanding({
             </Link>
 
             <Link
-              href="/login"
+              href={studioHref}
               className="inline-flex rounded-full bg-[#d8ad5f] px-4 py-2.5 text-[10px] font-extrabold text-black transition hover:bg-[#efc777] sm:px-6 sm:py-3 sm:text-sm"
             >
               {t.openApp}
@@ -435,7 +466,7 @@ export default function AiinflugenLanding({
 
             <div className="hero-buttons mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link
-                href="/login"
+                href={studioHref}
                 className="inline-flex items-center justify-center rounded-full bg-[#d8ad5f] px-8 py-4 text-sm font-extrabold text-black transition hover:bg-[#efc777]"
               >
                 {t.start}
@@ -443,7 +474,7 @@ export default function AiinflugenLanding({
               </Link>
 
               <Link
-                href="/login"
+                href={studioHref}
                 className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-8 py-4 text-sm font-extrabold text-white backdrop-blur-xl transition hover:border-[#d8ad5f]/60 hover:text-[#d8ad5f]"
               >
                 {t.startCreating}

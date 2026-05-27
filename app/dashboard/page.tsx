@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Bot,
   CreditCard,
@@ -161,6 +162,7 @@ export default function DashboardPage() {
 function DashboardPageInner() {
   const { copy, language } = useDashboardLanguage();
   const supabase = createClient();
+  const router = useRouter();
 
   const liveItems: LiveSidebarItem[] = useMemo(
     () => [
@@ -227,6 +229,47 @@ function DashboardPageInner() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [regenerateDraft, setRegenerateDraft] =
     useState<RegenerateDraft | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function ensureSession() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!mounted) return;
+      if (!session) {
+        router.replace("/login?reason=session_expired");
+        return;
+      }
+
+      setAuthChecked(true);
+    }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      (event: unknown, session: unknown) => {
+      if (!mounted) return;
+
+      if (event === "SIGNED_OUT" || !session) {
+        router.replace("/login?reason=session_expired");
+        return;
+      }
+
+      setAuthChecked(true);
+      }
+    );
+
+    void ensureSession();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [router, supabase.auth]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -247,6 +290,51 @@ function DashboardPageInner() {
       window.history.replaceState({}, "", "/dashboard");
     }
   }, [copy]);
+
+  useEffect(() => {
+    if (!authChecked) return;
+
+    const INACTIVITY_MS = 60 * 60 * 1000;
+    let timeoutId: number | null = null;
+
+    const resetTimer = () => {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+
+      timeoutId = window.setTimeout(async () => {
+        if (activeView === "agent") {
+          resetTimer();
+          return;
+        }
+
+        await supabase.auth.signOut();
+        router.replace("/login?reason=inactivity");
+      }, INACTIVITY_MS);
+    };
+
+    const events: (keyof WindowEventMap)[] = [
+      "mousemove",
+      "keydown",
+      "click",
+      "scroll",
+      "touchstart",
+    ];
+
+    events.forEach((eventName) => {
+      window.addEventListener(eventName, resetTimer, { passive: true });
+    });
+    resetTimer();
+
+    return () => {
+      events.forEach((eventName) => {
+        window.removeEventListener(eventName, resetTimer);
+      });
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [activeView, authChecked, router, supabase.auth]);
 
   const activeLabel = useMemo(() => {
     const match = liveItems.find((item) => item.id === activeView);
@@ -307,7 +395,7 @@ function DashboardPageInner() {
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    window.location.href = "/login";
+    router.replace("/login");
   }
 
   async function getAccessToken() {
@@ -849,6 +937,13 @@ function DashboardPageInner() {
   }
 
   return (
+    !authChecked ? (
+      <main className="flex h-screen items-center justify-center bg-[#050505] text-white">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-white/80">
+          Loading your studio session…
+        </div>
+      </main>
+    ) : (
     <main className="flex h-screen flex-col overflow-hidden bg-[#050505] text-white">
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute left-[18%] top-[14%] h-[360px] w-[360px] rounded-full bg-[#d8ad5f]/8 blur-[120px]" />
@@ -964,5 +1059,6 @@ function DashboardPageInner() {
         </section>
       </div>
     </main>
+    )
   );
 }
