@@ -1792,6 +1792,9 @@ function LipSyncStudioPanel({
     introPlanned: string;
     introActive: string;
     sourceLabel: string;
+    sourceVideoLabel: string;
+    sourceVideoPlaceholder: string;
+    sourceVideoHint: string;
     sourcePlaceholder: string;
     sourceHint: string;
     uploadSource: string;
@@ -2125,6 +2128,27 @@ function LipSyncStudioPanel({
               <span className="text-[9px] text-white/30">{copy.sourceHint}</span>
             </button>
           )}
+          <div className="mt-2 space-y-1">
+            <label
+              htmlFor="lip-sync-source-video-url"
+              className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40"
+            >
+              {copy.sourceVideoLabel}
+            </label>
+            <input
+              id="lip-sync-source-video-url"
+              type="url"
+              value={sourcePreviewUrl ?? ""}
+              onChange={(event) => {
+                const value = event.target.value.trim();
+                onSourceChange(value || null, value ? "video" : null);
+              }}
+              disabled={!isEnabled}
+              placeholder={copy.sourceVideoPlaceholder}
+              className="w-full rounded-md border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] leading-4 text-white/70 placeholder:text-white/25 outline-none focus-visible:ring-2 focus-visible:ring-violet-500/30 disabled:opacity-50"
+            />
+            <p className="text-[9px] leading-4 text-white/32">{copy.sourceVideoHint}</p>
+          </div>
         </div>
 
         <div className="flex min-h-[7rem] flex-col rounded-lg border border-dashed border-white/12 bg-black/30 p-2 sm:min-h-[7.5rem]">

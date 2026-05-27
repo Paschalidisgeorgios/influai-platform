@@ -2072,6 +2072,8 @@ export async function POST(req: Request) {
 
       const lipSyncJobConfig = lipSyncJobConfigResult.config;
       const lipSyncCreditsUsed = lipSyncInputMode === "system_voice" ? 35 : 30;
+      const lipSyncVoiceStyle =
+        lipSyncInputMode === "system_voice" ? (voiceKey || "female_natural") : null;
       const finalPrompt =
         "Synchronize the provided audio with the source video while preserving the original subject and video quality.";
 
@@ -2142,6 +2144,8 @@ export async function POST(req: Request) {
         audio_url: lipSyncInputMode === "audio_upload" ? audioUrl : null,
         script_text: lipSyncInputMode === "system_voice" ? scriptText : null,
         voice_key: lipSyncInputMode === "system_voice" ? voiceKey : null,
+        voice_id: null,
+        voice_style: lipSyncVoiceStyle,
         social_platform: outputFormat.platform,
         output_format: outputFormat.label,
         image_size: outputFormat.imageSize,

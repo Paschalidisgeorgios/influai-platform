@@ -94,6 +94,7 @@ Use placeholders below when sharing examples:
 
 Voice IDs are account-dependent and must be set in Vercel per environment.
 If a selected voice style has no configured voice ID, worker fails with refund.
+Upload Audio mode stays available as fallback.
 
 ---
 

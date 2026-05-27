@@ -3,7 +3,7 @@
 **Document type:** Technical implementation specification  
 **Audience:** Engineering, product, operations, legal/compliance (review before Live)  
 **Status:** **Beta (feature-flagged)**  
-**Last updated:** 2026-05-27  
+**Last updated:** 2026-05-27 (finalized)
 **Related:** [CREDIT_AND_MODE_STRATEGY.md](./CREDIT_AND_MODE_STRATEGY.md), [ROADMAP_IMAGE_VIDEO_MODES.md](./ROADMAP_IMAGE_VIDEO_MODES.md), [VIDEO_STUDIO_IMPLEMENTATION_PLAN.md](./VIDEO_STUDIO_IMPLEMENTATION_PLAN.md)
 
 This specification describes **Lip Sync Studio** integration. Runtime is gated by feature flags:
@@ -46,7 +46,19 @@ Lip Sync Studio produces **talking creator clips** from **source video + audio**
   - `ELEVENLABS_VOICE_MALE_ENERGETIC`
 
 If a selected voice key has no configured voice ID, the worker marks the job as failed with refund and
-`Selected system voice is not configured.`
+`Selected system voice is not configured.` Upload Audio remains the fallback path.
+
+### 2c. Finalized input modes (implemented)
+
+1. **System Voice**  
+   Input: `sourceVideoUrl + scriptText + voiceKey`  
+   Billing: **35 credits**
+
+2. **Upload Audio**  
+   Input: `sourceVideoUrl + audioUrl`  
+   Billing: **30 credits**
+
+Output for both: `video_url` generated via `fal-ai/sync-lipsync/v2/pro`.
 
 | Category | Examples (evaluate at implementation) |
 |----------|----------------------------------------|

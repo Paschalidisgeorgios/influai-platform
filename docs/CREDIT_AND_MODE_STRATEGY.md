@@ -164,6 +164,7 @@ Required DB columns are documented in `docs/VIDEO_STUDIO_REQUIRED_SQL.md`.
 | **Safety rule** | No expensive provider call without explicit user confirmation and shown estimate |
 
 **Implementation spec:** [LIP_SYNC_IMPLEMENTATION_PLAN.md](./LIP_SYNC_IMPLEMENTATION_PLAN.md).
+Voice IDs are ElevenLabs account-specific environment variables; when a selected System Voice is not configured, the job fails and refunds, while Upload Audio remains available.
 
 ---
 

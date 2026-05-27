@@ -1674,6 +1674,29 @@ async function maybePersistLipSyncAudioUrl(generationId: string, audioUrl: strin
   }
 }
 
+async function maybePersistLipSyncVoiceMetadata({
+  generationId,
+  voiceKey,
+  voiceId,
+}: {
+  generationId: string;
+  voiceKey: string;
+  voiceId: string;
+}) {
+  const { error } = await supabaseAdmin
+    .from("generations")
+    .update({
+      voice_key: voiceKey,
+      voice_style: voiceKey,
+      voice_id: voiceId,
+    })
+    .eq("id", generationId);
+
+  if (error && !isMissingColumnError(error)) {
+    console.error("Lip Sync voice metadata update error:", error);
+  }
+}
+
 async function synthesizeElevenLabsAudio({
   scriptText,
   voiceId,
@@ -2055,6 +2078,11 @@ export async function POST(req: Request) {
         }
 
         try {
+          await maybePersistLipSyncVoiceMetadata({
+            generationId,
+            voiceKey: voiceKeyOrId,
+            voiceId: mappedVoiceId,
+          });
           const ttsAudioBuffer = await synthesizeElevenLabsAudio({
             scriptText,
             voiceId: mappedVoiceId,

@@ -653,8 +653,8 @@ const en = {
     talkingCreatorLongerHint:
       "Talking Creator may take longer than image generation.",
     generateTalkingCreator: "Generate Talking Creator",
-    lipSyncMissingSource: "Upload source media for Lip Sync Studio.",
-    lipSyncMissingAudio: "Upload audio for Lip Sync Studio.",
+    lipSyncMissingSource: "Source Video required for Lip Sync Studio.",
+    lipSyncMissingAudio: "Audio required for Upload Audio mode.",
     lipSyncMissingScript: "Script required for System Voice.",
     lipSyncSystemVoicesNotConfigured:
       "System voices are not configured yet. Upload audio instead.",
@@ -762,6 +762,10 @@ const en = {
           introActive:
             "Upload source media and audio. Your lip-synced video appears in the agent and gallery.",
           sourceLabel: "Source media",
+          sourceVideoLabel: "Source Video",
+          sourceVideoPlaceholder: "Paste source video URL",
+          sourceVideoHint:
+            "You can use a video URL from Video Studio or the Asset Gallery.",
           sourcePlaceholder: "Upload source video",
           sourceHint: "Video: MP4/WebM/MOV · max 50 MB",
           uploadSource: "Upload source media",
@@ -1883,8 +1887,8 @@ const de: DeepString<typeof en> = {
       "Talking Creator kann länger dauern als die Bild-Generierung.",
     generateTalkingCreator: "Talking Creator generieren",
     lipSyncMissingSource:
-      "Lade Quellmedien für Lip Sync Studio hoch.",
-    lipSyncMissingAudio: "Lade Audio für Lip Sync Studio hoch.",
+      "Source Video für Lip Sync Studio erforderlich.",
+    lipSyncMissingAudio: "Audio für Upload-Audio-Modus erforderlich.",
     lipSyncMissingScript: "Skript für System Voice erforderlich.",
     lipSyncSystemVoicesNotConfigured:
       "System-Stimmen sind noch nicht konfiguriert. Nutze stattdessen Audio-Upload.",
@@ -1996,6 +2000,10 @@ const de: DeepString<typeof en> = {
           introActive:
             "Lade Quellmedien und Audio hoch. Dein Lip-Sync-Video erscheint im Agent und in der Galerie.",
           sourceLabel: "Quellmedien",
+          sourceVideoLabel: "Source Video",
+          sourceVideoPlaceholder: "Source-Video-URL einfügen",
+          sourceVideoHint:
+            "Du kannst eine Video-URL aus dem Video Studio oder der Asset Gallery verwenden.",
           sourcePlaceholder: "Quellvideo hochladen",
           sourceHint: "Video: MP4/WebM/MOV · max. 50 MB",
           uploadSource: "Quellmedien hochladen",
