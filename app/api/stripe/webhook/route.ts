@@ -4,9 +4,17 @@ import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2026-04-22.dahlia",
-});
+function getStripe() {
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+
+  if (!stripeSecretKey) {
+    throw new Error("Missing STRIPE_SECRET_KEY");
+  }
+
+  return new Stripe(stripeSecretKey, {
+    apiVersion: "2026-04-22.dahlia",
+  });
+}
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -126,6 +134,22 @@ async function logStripeWebhookEvent({
 }
 
 export async function POST(req: Request) {
+  let stripe: Stripe;
+  try {
+    stripe = getStripe();
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "Missing STRIPE_SECRET_KEY"
+    ) {
+      return NextResponse.json(
+        { error: "Stripe is not configured" },
+        { status: 500 }
+      );
+    }
+    throw error;
+  }
+
   const body = await req.text();
   const signature = req.headers.get("stripe-signature");
 
