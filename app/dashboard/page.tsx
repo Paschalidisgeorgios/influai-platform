@@ -33,6 +33,8 @@ import { createClient } from "@/lib/supabase/client";
 
 const VIDEO_STUDIO_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO === "true";
+const CREATOR_VIDEO_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_CREATOR_VIDEO === "true";
 const LIP_SYNC_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC === "true";
 
@@ -211,7 +213,7 @@ function DashboardPageInner() {
   const [activeView, setActiveView] = useState<DashboardView>("home");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [preferredStudioTab, setPreferredStudioTab] = useState<
-    "image" | "video" | "lip_sync"
+    "image" | "video" | "creator_video" | "lip_sync"
   >("image");
 
   const [galleryRefreshKey, setGalleryRefreshKey] = useState(0);
@@ -452,7 +454,7 @@ function DashboardPageInner() {
     void loadHomeMetrics();
   }, []);
 
-  function openAgentWithTab(tab: "image" | "video" | "lip_sync") {
+  function openAgentWithTab(tab: "image" | "video" | "creator_video" | "lip_sync") {
     setPreferredStudioTab(tab);
     setActiveView("agent");
     setMobileSidebarOpen(false);
@@ -727,6 +729,14 @@ function DashboardPageInner() {
             </button>
             <button
               type="button"
+              onClick={() => openAgentWithTab("creator_video")}
+              disabled={!CREATOR_VIDEO_PUBLIC_ENABLED}
+              className="rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-3 py-1.5 text-[11px] font-black text-[#f0d7a8] disabled:opacity-40"
+            >
+              {copy.toolsPage.openInAgent} · Creator Video
+            </button>
+            <button
+              type="button"
               onClick={() => openAgentWithTab("lip_sync")}
               disabled={!LIP_SYNC_PUBLIC_ENABLED}
               className="rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-3 py-1.5 text-[11px] font-black text-[#f0d7a8] disabled:opacity-40"
@@ -737,8 +747,10 @@ function DashboardPageInner() {
           <ToolsRoadmap
             copy={copy}
             videoStudioEnabled={VIDEO_STUDIO_PUBLIC_ENABLED}
+            creatorVideoEnabled={CREATOR_VIDEO_PUBLIC_ENABLED}
             lipSyncEnabled={LIP_SYNC_PUBLIC_ENABLED}
             onOpenAgent={() => openAgentWithTab("image")}
+            onOpenCreatorVideo={() => openAgentWithTab("creator_video")}
           />
         </ViewShell>
       );

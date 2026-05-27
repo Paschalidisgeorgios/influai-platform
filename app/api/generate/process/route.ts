@@ -509,21 +509,31 @@ async function completeVideoGeneration({
 function getFalResultImageUrl(data: unknown): string | null {
   if (!data || typeof data !== "object") return null;
 
-  const images = (data as { images?: unknown }).images;
+  const record = data as Record<string, unknown>;
+  const images = record.images;
+  if (Array.isArray(images) && images.length > 0) {
+    const first = images[0];
 
-  if (!Array.isArray(images) || images.length === 0) return null;
+    if (typeof first === "string") return first;
 
-  const first = images[0];
+    if (
+      first &&
+      typeof first === "object" &&
+      "url" in first &&
+      typeof first.url === "string"
+    ) {
+      return first.url;
+    }
+  }
 
-  if (typeof first === "string") return first;
-
+  const singleImage = record.image;
   if (
-    first &&
-    typeof first === "object" &&
-    "url" in first &&
-    typeof first.url === "string"
+    singleImage &&
+    typeof singleImage === "object" &&
+    "url" in singleImage &&
+    typeof (singleImage as { url?: unknown }).url === "string"
   ) {
-    return first.url;
+    return (singleImage as { url: string }).url;
   }
 
   return null;
@@ -1179,6 +1189,175 @@ async function processVideoImageToVideo({
 
     return NextResponse.json(
       { error: "Video generation failed. Credits refunded." },
+      { status: 500 }
+    );
+  }
+}
+
+async function processCreatorVideo({
+  generationId,
+  userId,
+  finalPrompt,
+  creditsUsed,
+  sourceImageUrl,
+  imageSize,
+  outputWidth,
+  outputHeight,
+}: {
+  generationId: string;
+  userId: string;
+  finalPrompt: string;
+  creditsUsed: number;
+  sourceImageUrl: string | null;
+  imageSize: unknown;
+  outputWidth: unknown;
+  outputHeight: unknown;
+}) {
+  if (process.env.ENABLE_CREATOR_VIDEO !== "true") {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "Creator Video is not enabled on the server.",
+    });
+    return NextResponse.json(
+      { error: "Creator Video is not enabled. Credits refunded." },
+      { status: 400 }
+    );
+  }
+
+  if (!process.env.FAL_KEY) {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "FAL_KEY is not configured.",
+    });
+    return NextResponse.json(
+      { error: "Video provider is not configured. Credits refunded." },
+      { status: 500 }
+    );
+  }
+
+  if (!sourceImageUrl) {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "Source image required",
+    });
+    return NextResponse.json(
+      { error: "Source image required. Credits refunded." },
+      { status: 400 }
+    );
+  }
+
+  fal.config({ credentials: process.env.FAL_KEY });
+  const aspectRatio = resolveVideoAspectRatio({
+    imageSize,
+    outputWidth,
+    outputHeight,
+  });
+
+  try {
+    const editedImageResult = await Promise.race([
+      fal.subscribe(FAL_NANO_BANANA_PRO_EDIT_MODEL, {
+        input: {
+          prompt: finalPrompt,
+          image_urls: [sourceImageUrl],
+          num_images: 1,
+          output_format: "png",
+          resolution: "1K",
+        },
+        logs: false,
+      }),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Creator Video step 1 timed out (Nano Banana)."));
+        }, FAL_REFERENCE_EDIT_TIMEOUT_MS);
+      }),
+    ]);
+
+    const editedImageUrl =
+      getFalResultImageUrl(editedImageResult.data) ??
+      getFalResultImageUrl(editedImageResult);
+
+    if (!editedImageUrl) {
+      throw new Error("Nano Banana did not return an image URL.");
+    }
+
+    const videoResult = await Promise.race([
+      fal.subscribe(FAL_KLING_I2V_MODEL, {
+        input: {
+          image_url: editedImageUrl,
+          prompt:
+            "Animate this AI creator image into a short realistic creator video. Add subtle natural head movement, slight camera motion, natural expression, premium social media look, no text, no logo, no watermark.",
+          duration: "5",
+          aspect_ratio: aspectRatio,
+          negative_prompt: "blur, distort, and low quality",
+          cfg_scale: 0.5,
+        } as {
+          image_url: string;
+          prompt: string;
+          duration: "5" | "10";
+          aspect_ratio?: "16:9" | "9:16" | "1:1";
+          negative_prompt?: string;
+          cfg_scale?: number;
+        },
+        logs: false,
+      }),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Creator Video step 2 timed out (image-to-video)."));
+        }, FAL_VIDEO_REQUEST_TIMEOUT_MS);
+      }),
+    ]);
+
+    const finalVideoUrl =
+      getFalResultVideoUrl(videoResult.data) ?? getFalResultVideoUrl(videoResult);
+
+    if (!finalVideoUrl) {
+      throw new Error("Image-to-video did not return a video URL.");
+    }
+
+    const { videoBuffer, contentType } = await downloadVideoFromUrl(finalVideoUrl);
+    const publicVideoUrl = await uploadVideoBuffer({
+      userId,
+      videoBuffer,
+      contentType,
+    });
+
+    const { error: imageUpdateError } = await supabaseAdmin
+      .from("generations")
+      .update({ image_url: editedImageUrl })
+      .eq("id", generationId);
+
+    if (imageUpdateError && !isMissingColumnError(imageUpdateError)) {
+      console.error("Creator Video image metadata update error:", imageUpdateError);
+    }
+
+    await completeVideoGeneration({
+      generationId,
+      publicUrl: publicVideoUrl,
+      durationSeconds: 5,
+    });
+
+    return NextResponse.json({
+      success: true,
+      generationId,
+      video: publicVideoUrl,
+      workflow: "creator_video",
+    });
+  } catch (error) {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage:
+        error instanceof Error ? error.message : "Creator Video generation failed.",
+    });
+    return NextResponse.json(
+      { error: "Creator Video generation failed. Credits refunded." },
       { status: 500 }
     );
   }
@@ -1979,6 +2158,28 @@ export async function POST(req: Request) {
             : null;
 
       return processVideoImageToVideo({
+        generationId,
+        userId: generation.user_id,
+        finalPrompt,
+        creditsUsed,
+        sourceImageUrl,
+        imageSize: generation.image_size,
+        outputWidth: generation.output_width,
+        outputHeight: generation.output_height,
+      });
+    }
+
+    if (workflow === "creator_video" && provider === "fal") {
+      const sourceImageUrl =
+        typeof generation.source_image_url === "string" &&
+        generation.source_image_url.trim().length > 0
+          ? generation.source_image_url.trim()
+          : typeof generation.reference_image_url === "string" &&
+              generation.reference_image_url.trim().length > 0
+            ? generation.reference_image_url.trim()
+            : null;
+
+      return processCreatorVideo({
         generationId,
         userId: generation.user_id,
         finalPrompt,

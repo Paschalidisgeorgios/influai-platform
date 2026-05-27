@@ -21,6 +21,7 @@ Modes are enabled per environment via feature flags. The dashboard **Studio Suit
 | Reference Edit | Beta (flag) | 5 |
 | Brand Assets | Beta (flag) | 4 |
 | Video Studio | Beta (flag) | 25 |
+| Creator Video | Beta (flag) | 40 |
 | Lip Sync Studio | Beta (flag) | 30 (upload audio) / 35 (system voice) |
 | Talking Creator | Beta (flag) | 60 |
 
@@ -165,6 +166,19 @@ Required DB columns are documented in `docs/VIDEO_STUDIO_REQUIRED_SQL.md`.
 
 **Implementation spec:** [LIP_SYNC_IMPLEMENTATION_PLAN.md](./LIP_SYNC_IMPLEMENTATION_PLAN.md).
 Lip Sync System Voice supports **21 named ElevenLabs voices** plus **8 category presets** (`voiceKey`). Voice IDs are ElevenLabs account-specific env vars; when a selected voice is not configured, the job fails and refunds, while Upload Audio remains available. Local preview MP3s under `public/audio/voices/` do not consume credits.
+
+---
+
+## 7a. Creator Video (Beta)
+
+| Field | Value |
+|-------|--------|
+| **Mode key** | `creator_video` |
+| **Status** | **Beta** (`ENABLE_CREATOR_VIDEO` + public flag) |
+| **Cost** | **40 credits** |
+| **Required inputs** | Source image + creative prompt |
+| **Pipeline** | Nano Banana Pro Edit + Kling image-to-video |
+| **Safety rule** | Full failure path refunds credits once (no double-refund) |
 
 ---
 

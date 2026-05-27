@@ -24,7 +24,8 @@ type GenerateMode =
   | ImageMode
   | "video_image_to_video"
   | "lip_sync"
-  | "talking_creator";
+  | "talking_creator"
+  | "creator_video";
 
 const FAL_KLING_I2V_MODEL = "fal-ai/kling-video/v2.1/standard/image-to-video";
 /** Video + audio → lip-synced video (fal.ai Sync Lipsync 2 Pro) */
@@ -45,6 +46,10 @@ const PLANNED_IMAGE_MODES = new Set([
 ]);
 
 function getCreditCostForMode(mode: GenerateMode): number {
+  if (mode === "creator_video") {
+    return 40;
+  }
+
   if (mode === "talking_creator") {
     return 60;
   }
@@ -79,6 +84,7 @@ function getCreditCostForImageMode(imageMode: ImageMode): number {
 }
 
 function parseGenerateMode(value: unknown): GenerateMode {
+  if (value === "creator_video") return "creator_video";
   if (value === "talking_creator") return "talking_creator";
   if (value === "video_image_to_video") return "video_image_to_video";
   if (value === "lip_sync") return "lip_sync";
@@ -123,6 +129,27 @@ type LipSyncInputMode = "system_voice" | "audio_upload";
 function resolveGenerationJobConfig(mode: GenerateMode):
   | { ok: true; config: GenerationJobConfig }
   | { ok: false; error: string } {
+  if (mode === "creator_video") {
+    if (process.env.ENABLE_CREATOR_VIDEO !== "true") {
+      return {
+        ok: false,
+        error:
+          "Creator Video is not enabled. Set ENABLE_CREATOR_VIDEO=true on the server.",
+      };
+    }
+
+    return {
+      ok: true,
+      config: {
+        provider: "fal",
+        model: "creator_video_pipeline",
+        workflow: "creator_video",
+        creditsUsed: getCreditCostForMode("creator_video"),
+        transactionSource: "creator_video_generation_job",
+      },
+    };
+  }
+
   if (mode === "talking_creator") {
     if (process.env.ENABLE_TALKING_CREATOR !== "true") {
       return {
@@ -1765,6 +1792,7 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     const prompt = body.prompt;
+    const promptText = typeof prompt === "string" ? prompt.trim() : "";
     const characterId = body.characterId ?? null;
     const plannedModeError = getPlannedModeRejection(body.imageMode);
 
@@ -1808,6 +1836,189 @@ export async function POST(req: Request) {
       voiceKey && LIP_SYNC_VOICE_KEYS.has(voiceKey)
         ? voiceKey
         : resolveDefaultLipSyncVoiceKey();
+
+    if (imageMode === "creator_video") {
+      if (!sourceImageUrl) {
+        return NextResponse.json(
+          { error: "Source image required" },
+          { status: 400 }
+        );
+      }
+
+      if (!promptText) {
+        return NextResponse.json({ error: "Prompt required" }, { status: 400 });
+      }
+
+      const creatorVideoConfigResult = resolveGenerationJobConfig(imageMode);
+
+      if (!creatorVideoConfigResult.ok) {
+        return NextResponse.json(
+          { error: creatorVideoConfigResult.error },
+          { status: 400 }
+        );
+      }
+
+      const creatorVideoConfig = creatorVideoConfigResult.config;
+      const finalPrompt = `Create a realistic AI creator video starting frame from the provided source image. Keep the person recognizable. Improve lighting, styling and social-media creator quality. Preserve natural facial structure. No text, no logo, no watermark.\n\nUser prompt:\n${promptText}`;
+
+      const { count: creatorVideoActiveCount, error: creatorVideoActiveError } =
+        await supabaseAdmin
+          .from("generations")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("status", "processing");
+
+      if (creatorVideoActiveError) {
+        console.error("Active generation count error:", creatorVideoActiveError);
+        return NextResponse.json(
+          { error: "Could not verify active generations" },
+          { status: 500 }
+        );
+      }
+
+      if ((creatorVideoActiveCount ?? 0) >= ACTIVE_GENERATION_LIMIT) {
+        return NextResponse.json(
+          {
+            error: "Too many active generations",
+            reason: "active_generation_limit",
+            limit: ACTIVE_GENERATION_LIMIT,
+          },
+          { status: 429 }
+        );
+      }
+
+      const { data: creatorVideoCreditSuccess, error: creatorVideoCreditError } =
+        await supabaseAdmin.rpc("consume_user_credits", {
+          target_user_id: user.id,
+          credits_to_consume: creatorVideoConfig.creditsUsed,
+        });
+
+      if (creatorVideoCreditError) {
+        console.error("Credit consume error:", creatorVideoCreditError);
+        return NextResponse.json({ error: "Credit check failed" }, { status: 500 });
+      }
+
+      if (!creatorVideoCreditSuccess) {
+        return NextResponse.json(
+          {
+            error: "Not enough credits",
+            requiredCredits: creatorVideoConfig.creditsUsed,
+            reason: "insufficient_credits",
+          },
+          { status: 402 }
+        );
+      }
+
+      const creatorVideoInsertBase = {
+        user_id: user.id,
+        prompt: promptText,
+        final_prompt: finalPrompt,
+        image_url: null,
+        video_url: null,
+        status: "processing",
+        provider: creatorVideoConfig.provider,
+        model: creatorVideoConfig.model,
+        workflow: creatorVideoConfig.workflow,
+        reference_image_url: sourceImageUrl,
+        source_image_url: sourceImageUrl,
+        social_platform: outputFormat.platform,
+        output_format: outputFormat.label,
+        image_size: outputFormat.imageSize,
+        output_width: outputFormat.width,
+        output_height: outputFormat.height,
+        credits_used: creatorVideoConfig.creditsUsed,
+        duration_seconds: 5,
+        character_id: null,
+        error_message: null,
+        started_at: new Date().toISOString(),
+      };
+
+      let creatorVideoGenerationError: { message?: string; code?: string } | null =
+        null;
+      let creatorVideoGeneration: { id: string } | null = null;
+
+      const creatorVideoInsertAttempt = await supabaseAdmin
+        .from("generations")
+        .insert(creatorVideoInsertBase)
+        .select("id")
+        .single();
+
+      if (
+        creatorVideoInsertAttempt.error &&
+        isMissingColumnError(creatorVideoInsertAttempt.error)
+      ) {
+        const creatorVideoFallback = await supabaseAdmin
+          .from("generations")
+          .insert({
+            user_id: creatorVideoInsertBase.user_id,
+            prompt: creatorVideoInsertBase.prompt,
+            final_prompt: creatorVideoInsertBase.final_prompt,
+            image_url: null,
+            status: "processing",
+            provider: creatorVideoInsertBase.provider,
+            model: creatorVideoInsertBase.model,
+            workflow: creatorVideoInsertBase.workflow,
+            social_platform: creatorVideoInsertBase.social_platform,
+            output_format: creatorVideoInsertBase.output_format,
+            image_size: creatorVideoInsertBase.image_size,
+            output_width: creatorVideoInsertBase.output_width,
+            output_height: creatorVideoInsertBase.output_height,
+            credits_used: creatorVideoInsertBase.credits_used,
+            character_id: null,
+            error_message: null,
+            started_at: creatorVideoInsertBase.started_at,
+          })
+          .select("id")
+          .single();
+
+        creatorVideoGenerationError = creatorVideoFallback.error;
+        creatorVideoGeneration = creatorVideoFallback.data;
+      } else {
+        creatorVideoGenerationError = creatorVideoInsertAttempt.error;
+        creatorVideoGeneration = creatorVideoInsertAttempt.data;
+      }
+
+      if (creatorVideoGenerationError || !creatorVideoGeneration?.id) {
+        console.error("Creator Video job insert error:", creatorVideoGenerationError);
+        await refundCredits(user.id, creatorVideoConfig.creditsUsed);
+        return NextResponse.json(
+          { error: "Failed to queue Creator Video generation. Credits refunded." },
+          { status: 500 }
+        );
+      }
+
+      const { error: creatorVideoTxError } = await supabaseAdmin
+        .from("credit_transactions")
+        .insert({
+          user_id: user.id,
+          amount: -creatorVideoConfig.creditsUsed,
+          type: "usage",
+          source: creatorVideoConfig.transactionSource,
+        });
+
+      if (creatorVideoTxError) {
+        console.error("Credit transaction log error:", creatorVideoTxError);
+      }
+
+      const origin =
+        req.headers.get("origin") ??
+        process.env.NEXT_PUBLIC_APP_URL ??
+        new URL(req.url).origin;
+      void triggerWorker(creatorVideoGeneration.id, origin);
+
+      return NextResponse.json({
+        success: true,
+        queued: true,
+        generationId: creatorVideoGeneration.id,
+        creditsUsed: creatorVideoConfig.creditsUsed,
+        imageMode,
+        workflow: creatorVideoConfig.workflow,
+        provider: creatorVideoConfig.provider,
+        model: creatorVideoConfig.model,
+        sourceImageUrl,
+        outputFormat,
+      });
+    }
 
     if (imageMode === "talking_creator") {
       if (!sourceImageUrl) {

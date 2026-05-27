@@ -229,6 +229,11 @@ Prerequisites for Video Studio: `ENABLE_FAL_VIDEO_STUDIO=true`, `NEXT_PUBLIC_ENA
 | 15.14 | Talking Creator validation | No submit without source image + script + voice | ☐ |
 | 15.15 | Talking Creator run | One click creates final video; debit 60 credits | ☐ |
 | 15.16 | Talking Creator failure (test env) | Marks failed + refunds once; `credits_used = 0` | ☐ |
+| 15.17 | Creator Video tab | Visible only when `NEXT_PUBLIC_ENABLE_CREATOR_VIDEO=true` | ☐ |
+| 15.18 | Creator Video validation | No submit without source image + creative prompt | ☐ |
+| 15.19 | Creator Video run | Generates final video; `workflow = creator_video`; debit 40 credits | ☐ |
+| 15.20 | Creator Video gallery playback | `video_url` set and playable in Agent + Gallery | ☐ |
+| 15.21 | Creator Video failure (test env) | Marks failed + refunds once; `credits_used = 0` | ☐ |
 
 ---
 

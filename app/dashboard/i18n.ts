@@ -558,6 +558,11 @@ const en = {
         benefit:
           "Turn static visuals into short-form campaign videos for social media, product launches and creator ads.",
       },
+      creatorVideo: {
+        title: "Creator Video",
+        benefit:
+          "Turn a source image and prompt into a short AI creator video.",
+      },
       lipSync: {
         title: "Lip Sync Studio",
         benefit:
@@ -640,14 +645,22 @@ const en = {
     imageModeReferenceEditActiveNote: "Reference Edit · Beta · 5 Credits",
     imageModeBrandAssetsActiveNote: "Brand Assets · Beta · 4 Credits",
     imageModeVideoStudioActiveNote: "Video Studio · Beta · 25 Credits",
+    imageModeCreatorVideoActiveNote: "Creator Video · Beta · 40 Credits",
     imageModeTalkingCreatorActiveNote: "Talking Creator · Beta · 60 Credits",
     studioTabImage: "Image Studio",
     studioTabVideo: "Video Studio",
     studioTabVideoPlanned: "Video Studio · Coming soon",
+    studioTabCreatorVideo: "Creator Video",
+    studioTabCreatorVideoPlanned: "Creator Video · Coming soon",
     studioTabTalkingCreator: "Talking Creator",
     studioTabTalkingCreatorPlanned: "Talking Creator · Coming soon",
     studioTabLipSync: "Lip Sync",
     studioTabLipSyncPlanned: "Lip Sync · Coming soon",
+    creatorVideoMissingSource: "Source image required",
+    creatorVideoMissingPrompt: "Prompt required",
+    creatorVideoLongerHint:
+      "Turn one image and a prompt into a short AI creator video.",
+    generateCreatorVideo: "Generate Creator Video",
     talkingCreatorMissingSource: "Upload a source image for Talking Creator.",
     talkingCreatorMissingScript: "Script is required for Talking Creator.",
     talkingCreatorMissingVoice: "Choose a voice for Talking Creator.",
@@ -836,6 +849,34 @@ const en = {
             "Video Studio animates your source image into a 5-second campaign clip.",
         },
       },
+      creatorVideo: {
+        label: "Creator Video",
+        description:
+          "Turn a source image and prompt into a short AI creator video.",
+        panel: {
+          statusPlanned: "Coming soon · Planned",
+          statusActive: "Beta",
+          introPlanned:
+            "Creator Video is being prepared for Nano Banana and Kling pipeline generation.",
+          introActive:
+            "Upload one source image, add your creative prompt, and generate a short AI creator video.",
+          sourceLabel: "Source image",
+          sourcePlaceholder: "Upload source image",
+          sourceHint: "PNG, JPEG, or WebP · max 12 MB",
+          uploadSourceImage: "Upload source image",
+          uploading: "Uploading…",
+          clearImage: "Clear image",
+          invalidFile: "Please choose a JPEG, PNG, or WebP image.",
+          fileTooLarge: "Image is too large (max 12 MB).",
+          uploadFailed: "Upload failed. Please try again.",
+          creativePromptLabel: "Creative Prompt",
+          creativePromptPlaceholder:
+            "Create a realistic AI creator video style portrait, natural face, premium fashion look, subtle motion, social media creator aesthetic…",
+          creativePromptHint: "Required — describe the creator video style and mood.",
+          activeNote:
+            "Turn one image and a prompt into a short AI creator video. Cost: 40 Credits.",
+        },
+      },
       talkingCreator: {
         label: "Talking Creator",
         description:
@@ -881,6 +922,7 @@ const en = {
       fiveCredits: "5 Credits",
       twentyFiveCredits: "25 Credits",
       thirtyCredits: "30 Credits",
+      fortyCredits: "40 Credits",
       sixtyCredits: "60 Credits",
       planned: "Planned",
       comingSoon: "Coming soon",
@@ -937,6 +979,7 @@ const en = {
     latestResult: "Latest result",
     generating: "Generating your image…",
     generatingVideo: "Generating your video…",
+    generatingCreatorVideo: "Generating your creator video…",
     generatingTalkingCreator: "Generating your talking creator video…",
     generatingLipSync: "Generating your lip sync video…",
     completed: "Generation completed",
@@ -1024,6 +1067,7 @@ const en = {
     generationFailed: "Generation failed",
     creditsRefundedHint: "Credits were refunded.",
     lipSyncBadge: "Lip Sync",
+    creatorVideoBadge: "Creator Video",
     talkingCreatorBadge: "Talking Creator",
     videoBadge: "Video",
     ugcLookBadge: "UGC Look",
@@ -1137,6 +1181,7 @@ const en = {
       referenceEdit: "Reference Edit: 5 Credits",
       brandAssets: "Brand Assets: 4 Credits",
       videoStudio: "Video Studio: 25 Credits",
+      creatorVideo: "Creator Video: 40 Credits",
       lipSync: "Lip Sync Studio: 30-35 Credits",
       talkingCreator: "Talking Creator: 60 Credits",
     },
@@ -1805,6 +1850,11 @@ const de: DeepString<typeof en> = {
         benefit:
           "Verwandle statische Visuals in kurze Kampagnenvideos für Social Media, Produktlaunches und Creator Ads.",
       },
+      creatorVideo: {
+        title: "Creator Video",
+        benefit:
+          "Verwandle ein Bild und einen Prompt in ein kurzes AI-Creator-Video.",
+      },
       lipSync: {
         title: "Lip Sync Studio",
         benefit:
@@ -1888,14 +1938,22 @@ const de: DeepString<typeof en> = {
     imageModeReferenceEditActiveNote: "Reference Edit · Beta · 5 Credits",
     imageModeBrandAssetsActiveNote: "Brand Assets · Beta · 4 Credits",
     imageModeVideoStudioActiveNote: "Video Studio · Beta · 25 Credits",
+    imageModeCreatorVideoActiveNote: "Creator Video · Beta · 40 Credits",
     imageModeTalkingCreatorActiveNote: "Talking Creator · Beta · 60 Credits",
     studioTabImage: "Image Studio",
     studioTabVideo: "Video Studio",
     studioTabVideoPlanned: "Video Studio · Demnächst",
+    studioTabCreatorVideo: "Creator Video",
+    studioTabCreatorVideoPlanned: "Creator Video · Demnächst",
     studioTabTalkingCreator: "Talking Creator",
     studioTabTalkingCreatorPlanned: "Talking Creator · Demnächst",
     studioTabLipSync: "Lip Sync",
     studioTabLipSyncPlanned: "Lip Sync · Demnächst",
+    creatorVideoMissingSource: "Quellbild erforderlich",
+    creatorVideoMissingPrompt: "Prompt erforderlich",
+    creatorVideoLongerHint:
+      "Verwandle ein Bild und einen Prompt in ein kurzes AI-Creator-Video.",
+    generateCreatorVideo: "Creator Video generieren",
     talkingCreatorMissingSource: "Lade ein Quellbild für Talking Creator hoch.",
     talkingCreatorMissingScript: "Skript für Talking Creator erforderlich.",
     talkingCreatorMissingVoice: "Wähle eine Stimme für Talking Creator.",
@@ -2090,6 +2148,35 @@ const de: DeepString<typeof en> = {
             "Video Studio animiert dein Quellbild zu einem 5-Sekunden-Kampagnenclip.",
         },
       },
+      creatorVideo: {
+        label: "Creator Video",
+        description:
+          "Verwandle ein Quellbild und einen Prompt in ein kurzes AI-Creator-Video.",
+        panel: {
+          statusPlanned: "Demnächst · Geplant",
+          statusActive: "Beta",
+          introPlanned:
+            "Creator Video wird für die Nano Banana + Kling Pipeline vorbereitet.",
+          introActive:
+            "Lade ein Quellbild hoch, ergänze deinen Creative Prompt und generiere ein kurzes AI-Creator-Video.",
+          sourceLabel: "Quellbild",
+          sourcePlaceholder: "Quellbild hochladen",
+          sourceHint: "PNG, JPEG oder WebP · max. 12 MB",
+          uploadSourceImage: "Quellbild hochladen",
+          uploading: "Wird hochgeladen…",
+          clearImage: "Bild entfernen",
+          invalidFile: "Bitte JPEG, PNG oder WebP wählen.",
+          fileTooLarge: "Bild zu groß (max. 12 MB).",
+          uploadFailed: "Upload fehlgeschlagen. Bitte erneut versuchen.",
+          creativePromptLabel: "Creative Prompt",
+          creativePromptPlaceholder:
+            "Erstelle ein realistisches AI-Creator-Video-Portrait, natürliches Gesicht, Premium-Fashion-Look, subtile Bewegung, Social-Media-Creator-Ästhetik…",
+          creativePromptHint:
+            "Pflichtfeld — beschreibe Stil und Stimmung des Creator-Videos.",
+          activeNote:
+            "Dies erstellt ein kurzes AI-Creator-Video aus einem Bild und Prompt. Kosten: 40 Credits.",
+        },
+      },
       talkingCreator: {
         label: "Talking Creator",
         description:
@@ -2135,6 +2222,7 @@ const de: DeepString<typeof en> = {
       fiveCredits: "5 Credits",
       twentyFiveCredits: "25 Credits",
       thirtyCredits: "30 Credits",
+      fortyCredits: "40 Credits",
       sixtyCredits: "60 Credits",
       planned: "Geplant",
       comingSoon: "Demnächst",
@@ -2192,6 +2280,7 @@ const de: DeepString<typeof en> = {
     latestResult: "Neuestes Ergebnis",
     generating: "Dein Bild wird generiert…",
     generatingVideo: "Dein Video wird generiert…",
+    generatingCreatorVideo: "Dein Creator-Video wird generiert…",
     generatingTalkingCreator: "Dein Talking-Creator-Video wird generiert…",
     generatingLipSync: "Dein Lip-Sync-Video wird generiert…",
     completed: "Generierung abgeschlossen",
@@ -2285,6 +2374,7 @@ const de: DeepString<typeof en> = {
     generationFailed: "Generierung fehlgeschlagen",
     creditsRefundedHint: "Credits wurden erstattet.",
     lipSyncBadge: "Lip Sync",
+    creatorVideoBadge: "Creator Video",
     talkingCreatorBadge: "Talking Creator",
     videoBadge: "Video",
     ugcLookBadge: "UGC-Look",
@@ -2402,6 +2492,7 @@ const de: DeepString<typeof en> = {
       referenceEdit: "Reference Edit: 5 Credits",
       brandAssets: "Brand Assets: 4 Credits",
       videoStudio: "Video Studio: 25 Credits",
+      creatorVideo: "Creator Video: 40 Credits",
       lipSync: "Lip Sync Studio: 30-35 Credits",
       talkingCreator: "Talking Creator: 60 Credits",
     },

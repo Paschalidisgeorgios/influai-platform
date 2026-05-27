@@ -84,8 +84,13 @@ function getWorkflowLabel(
     lipSync: string;
     ugcLook: string;
     talkingCreator: string;
+    creatorVideo: string;
   }
 ) {
+  if (workflow === "creator_video") {
+    return labels.creatorVideo;
+  }
+
   if (workflow === "talking_creator") {
     return labels.talkingCreator;
   }
@@ -111,6 +116,7 @@ function getWorkflowLabel(
 
 function isVideoGeneration(generation: Generation) {
   return (
+    generation.workflow === "creator_video" ||
     generation.workflow === "talking_creator" ||
     generation.workflow === "video_image_to_video" ||
     generation.workflow === "lip_sync" ||
@@ -673,11 +679,16 @@ export default function GenerationGallery({
                         video: g.videoBadge,
                         lipSync: g.lipSyncBadge,
                         ugcLook: g.ugcLookBadge,
+                        creatorVideo: g.creatorVideoBadge,
                         talkingCreator: g.talkingCreatorBadge,
                       })}
                     </span>
 
-                    {generation.workflow === "talking_creator" ? (
+                    {generation.workflow === "creator_video" ? (
+                      <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-100">
+                        {g.creatorVideoBadge}
+                      </span>
+                    ) : generation.workflow === "talking_creator" ? (
                       <span className="rounded-full border border-cyan-500/25 bg-cyan-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-cyan-100">
                         {g.talkingCreatorBadge}
                       </span>
@@ -853,6 +864,7 @@ export default function GenerationGallery({
                       video: g.videoBadge,
                       lipSync: g.lipSyncBadge,
                       ugcLook: g.ugcLookBadge,
+                      creatorVideo: g.creatorVideoBadge,
                       talkingCreator: g.talkingCreatorBadge,
                     })}
                   </span>

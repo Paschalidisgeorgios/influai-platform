@@ -20,8 +20,10 @@ export type ToolCardStatus = "live" | "beta" | "comingSoon" | "planned";
 type ToolsRoadmapProps = {
   copy: DashboardCopy;
   videoStudioEnabled: boolean;
+  creatorVideoEnabled: boolean;
   lipSyncEnabled: boolean;
   onOpenAgent: () => void;
+  onOpenCreatorVideo: () => void;
 };
 
 type ToolCardConfig = {
@@ -60,8 +62,10 @@ function getCardShellClass(status: ToolCardStatus, interactive: boolean) {
 export default function ToolsRoadmap({
   copy,
   videoStudioEnabled,
+  creatorVideoEnabled,
   lipSyncEnabled,
   onOpenAgent,
+  onOpenCreatorVideo,
 }: ToolsRoadmapProps) {
   const t = copy.toolsPage;
   const statusLabels = t.statuses;
@@ -90,6 +94,14 @@ export default function ToolsRoadmap({
       benefit: t.cards.videoStudio.benefit,
       status: videoStudioEnabled ? "beta" : "comingSoon",
       openInAgent: videoStudioEnabled,
+    },
+    {
+      id: "creator-video",
+      icon: Film,
+      title: t.cards.creatorVideo.title,
+      benefit: t.cards.creatorVideo.benefit,
+      status: creatorVideoEnabled ? "beta" : "comingSoon",
+      openInAgent: creatorVideoEnabled,
     },
     {
       id: "lip-sync",
@@ -219,7 +231,7 @@ export default function ToolsRoadmap({
             {showOpenButton ? (
               <button
                 type="button"
-                onClick={onOpenAgent}
+                onClick={card.id === "creator-video" ? onOpenCreatorVideo : onOpenAgent}
                 className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-3 py-2.5 text-xs font-black uppercase tracking-[0.12em] text-[#f0d7a8] transition hover:border-[#d8ad5f]/50 hover:bg-[#d8ad5f]/15"
               >
                 <Sparkles className="h-3.5 w-3.5" />

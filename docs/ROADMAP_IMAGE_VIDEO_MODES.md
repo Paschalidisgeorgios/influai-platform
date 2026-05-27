@@ -113,6 +113,20 @@ Video Studio image-to-video is available as a **feature-flagged beta**. Lip Sync
 
 **Implementation spec:** [VIDEO_STUDIO_IMPLEMENTATION_PLAN.md](./VIDEO_STUDIO_IMPLEMENTATION_PLAN.md).
 
+### 3.1b Creator Video (Beta, flag-gated)
+
+| Field | Value |
+|-------|--------|
+| **Module** | Creator Video |
+| **Provider / model** | fal.ai pipeline (`creator_video_pipeline`) |
+| **Workflow** | `creator_video` |
+| **Intended use** | Source image + creative prompt to short AI creator video |
+| **Credit cost** | **40 credits** per clip |
+| **Status** | Beta (feature-flagged) |
+| **User-visible status** | Beta when `NEXT_PUBLIC_ENABLE_CREATOR_VIDEO=true`; otherwise Coming soon |
+
+**Pipeline:** Nano Banana Pro Edit (`fal-ai/nano-banana-pro/edit`) -> Kling image-to-video (`fal-ai/kling-video/v2.1/standard/image-to-video`) -> `generation-videos` storage.
+
 ### 3.2 Cinema Agent / Campaign Planner
 
 | Field | Value |

@@ -81,6 +81,8 @@ const LIP_SYNC_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC === "true";
 const TALKING_CREATOR_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_TALKING_CREATOR === "true";
+const CREATOR_VIDEO_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_CREATOR_VIDEO === "true";
 const ELEVENLABS_TTS_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_ELEVENLABS_TTS === "true";
 const SOCIAL_PLANNER_PUBLIC_ENABLED =
@@ -92,7 +94,7 @@ const CINEMA_AGENT_PUBLIC_ENABLED =
 const OMNI_CAMPAIGN_AGENT_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_OMNI_CAMPAIGN_AGENT === "true";
 
-type StudioTab = "image" | "video" | "lip_sync" | "talking_creator";
+type StudioTab = "image" | "video" | "creator_video" | "lip_sync" | "talking_creator";
 
 const LIP_SYNC_SOURCE_MAX_BYTES = 50 * 1024 * 1024;
 const LIP_SYNC_AUDIO_MAX_BYTES = 25 * 1024 * 1024;
@@ -262,6 +264,10 @@ function isVideoStudioWorkflow(workflow?: string | null) {
   return workflow === "video_image_to_video";
 }
 
+function isCreatorVideoWorkflow(workflow?: string | null) {
+  return workflow === "creator_video";
+}
+
 function isTalkingCreatorWorkflow(workflow?: string | null) {
   return workflow === "talking_creator";
 }
@@ -324,7 +330,7 @@ type AgentResult = {
 type AiAgentStudioProps = {
   charactersRefreshKey?: number;
   regenerateDraft?: RegenerateDraft | null;
-  preferredStudioTab?: "image" | "video" | "lip_sync";
+  preferredStudioTab?: "image" | "video" | "creator_video" | "lip_sync";
   onGenerationQueued?: () => void;
   onClearRegenerateDraft?: () => void;
   onOpenGallery?: () => void;
@@ -725,6 +731,10 @@ function getRequiredCreditsForStudio(
   studioTab: StudioTab,
   imageMode: ImageModeKey
 ): number {
+  if (studioTab === "creator_video" && CREATOR_VIDEO_PUBLIC_ENABLED) {
+    return 40;
+  }
+
   if (studioTab === "talking_creator" && TALKING_CREATOR_PUBLIC_ENABLED) {
     return 60;
   }
@@ -1634,6 +1644,81 @@ function VideoStudioPanel({
   );
 }
 
+function CreatorVideoPanel({
+  label,
+  copy,
+  panelRef,
+  getAccessToken,
+  isEnabled,
+  sourcePreviewUrl,
+  onSourcePreviewUrlChange,
+  creativePrompt,
+  onCreativePromptChange,
+  onCreativePromptKeyDown,
+}: {
+  label: string;
+  copy: {
+    statusPlanned: string;
+    statusActive: string;
+    introPlanned: string;
+    introActive: string;
+    sourceLabel: string;
+    sourcePlaceholder: string;
+    sourceHint: string;
+    uploadSourceImage: string;
+    uploading: string;
+    clearImage: string;
+    invalidFile: string;
+    fileTooLarge: string;
+    uploadFailed: string;
+    creativePromptLabel: string;
+    creativePromptPlaceholder: string;
+    creativePromptHint: string;
+    activeNote: string;
+  };
+  panelRef: React.RefObject<HTMLDivElement | null>;
+  getAccessToken: () => Promise<string | null>;
+  isEnabled: boolean;
+  sourcePreviewUrl: string | null;
+  onSourcePreviewUrlChange: (url: string | null) => void;
+  creativePrompt: string;
+  onCreativePromptChange: (value: string) => void;
+  onCreativePromptKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+}) {
+  return (
+    <VideoStudioPanel
+      label={label}
+      copy={{
+        statusPlanned: copy.statusPlanned,
+        statusActive: copy.statusActive,
+        introPlanned: copy.introPlanned,
+        introActive: copy.introActive,
+        sourceLabel: copy.sourceLabel,
+        sourcePlaceholder: copy.sourcePlaceholder,
+        sourceHint: copy.sourceHint,
+        uploadSourceImage: copy.uploadSourceImage,
+        uploading: copy.uploading,
+        clearImage: copy.clearImage,
+        invalidFile: copy.invalidFile,
+        fileTooLarge: copy.fileTooLarge,
+        uploadFailed: copy.uploadFailed,
+        motionLabel: copy.creativePromptLabel,
+        motionPlaceholder: copy.creativePromptPlaceholder,
+        motionHint: copy.creativePromptHint,
+        activeNote: copy.activeNote,
+      }}
+      panelRef={panelRef}
+      getAccessToken={getAccessToken}
+      isEnabled={isEnabled}
+      sourcePreviewUrl={sourcePreviewUrl}
+      onSourcePreviewUrlChange={onSourcePreviewUrlChange}
+      motionPrompt={creativePrompt}
+      onMotionPromptChange={onCreativePromptChange}
+      onMotionKeyDown={onCreativePromptKeyDown}
+    />
+  );
+}
+
 function TalkingCreatorPanel({
   label,
   copy,
@@ -2527,12 +2612,15 @@ export default function AiAgentStudio({
   const submitInFlightRef = useRef(false);
   const referenceEditPanelRef = useRef<HTMLDivElement | null>(null);
   const videoStudioPanelRef = useRef<HTMLDivElement | null>(null);
+  const creatorVideoPanelRef = useRef<HTMLDivElement | null>(null);
   const lipSyncPanelRef = useRef<HTMLDivElement | null>(null);
   const talkingCreatorPanelRef = useRef<HTMLDivElement | null>(null);
 
   const [studioTab, setStudioTab] = useState<StudioTab>("image");
   const [videoSourceUrl, setVideoSourceUrl] = useState<string | null>(null);
   const [videoMotionPrompt, setVideoMotionPrompt] = useState("");
+  const [creatorVideoSourceUrl, setCreatorVideoSourceUrl] = useState<string | null>(null);
+  const [creatorVideoPrompt, setCreatorVideoPrompt] = useState("");
   const [lipSyncSourceUrl, setLipSyncSourceUrl] = useState<string | null>(null);
   const [lipSyncSourceMediaType, setLipSyncSourceMediaType] = useState<
     "image" | "video" | null
@@ -2562,6 +2650,8 @@ export default function AiAgentStudio({
 
   const isVideoStudioActive =
     studioTab === "video" && VIDEO_STUDIO_PUBLIC_ENABLED;
+  const isCreatorVideoActive =
+    studioTab === "creator_video" && CREATOR_VIDEO_PUBLIC_ENABLED;
   const isLipSyncActive =
     studioTab === "lip_sync" && LIP_SYNC_PUBLIC_ENABLED;
   const isTalkingCreatorActive =
@@ -2569,6 +2659,9 @@ export default function AiAgentStudio({
   const videoStudioReady =
     Boolean(videoSourceUrl?.trim()) && Boolean(videoMotionPrompt.trim());
   const videoSubmitBlocked = isVideoStudioActive && !videoStudioReady;
+  const creatorVideoReady =
+    Boolean(creatorVideoSourceUrl?.trim()) && Boolean(creatorVideoPrompt.trim());
+  const creatorVideoSubmitBlocked = isCreatorVideoActive && !creatorVideoReady;
   const lipSyncReady =
     Boolean(lipSyncSourceUrl?.trim()) &&
     (lipSyncInputMode === "audio_upload"
@@ -2584,6 +2677,7 @@ export default function AiAgentStudio({
     isTalkingCreatorActive && !talkingCreatorReady;
 
   const imageModeActiveNote = useMemo(() => {
+    if (isCreatorVideoActive) return a.imageModeCreatorVideoActiveNote;
     if (isLipSyncActive) return a.imageModeLipSyncActiveNote;
     if (isTalkingCreatorActive) return a.imageModeTalkingCreatorActiveNote;
     if (isVideoStudioActive) return a.imageModeVideoStudioActiveNote;
@@ -2603,9 +2697,17 @@ export default function AiAgentStudio({
       return a.imageModePremiumActiveNote;
     }
     return a.imageModeStandardActiveNote;
-  }, [a, imageMode, isVideoStudioActive, isLipSyncActive, isTalkingCreatorActive]);
+  }, [
+    a,
+    imageMode,
+    isCreatorVideoActive,
+    isVideoStudioActive,
+    isLipSyncActive,
+    isTalkingCreatorActive,
+  ]);
 
   const imageModeUsesBetaBadge =
+    isCreatorVideoActive ||
     isLipSyncActive ||
     isTalkingCreatorActive ||
     isVideoStudioActive ||
@@ -2782,6 +2884,10 @@ export default function AiAgentStudio({
   useEffect(() => {
     if (preferredStudioTab === "video" && VIDEO_STUDIO_PUBLIC_ENABLED) {
       setStudioTab("video");
+      return;
+    }
+    if (preferredStudioTab === "creator_video" && CREATOR_VIDEO_PUBLIC_ENABLED) {
+      setStudioTab("creator_video");
       return;
     }
     if (preferredStudioTab === "lip_sync" && LIP_SYNC_PUBLIC_ENABLED) {
@@ -2975,6 +3081,7 @@ export default function AiAgentStudio({
 
     if (
       studioTab === "video" ||
+      studioTab === "creator_video" ||
       studioTab === "lip_sync" ||
       studioTab === "talking_creator"
     ) {
@@ -3025,6 +3132,24 @@ export default function AiAgentStudio({
     formRef.current?.requestSubmit();
   }
 
+  function submitCreatorVideoFromPrompt(
+    event: React.KeyboardEvent<HTMLTextAreaElement>
+  ) {
+    if (event.key !== "Enter") return;
+    if (event.shiftKey) return;
+
+    event.preventDefault();
+
+    if (!isCreatorVideoActive) return;
+
+    if (isSubmitBlocked) {
+      setErrorMessage(a.generationAlreadyProcessing);
+      return;
+    }
+
+    formRef.current?.requestSubmit();
+  }
+
   function submitTalkingCreatorFromScript(
     event: React.KeyboardEvent<HTMLTextAreaElement>
   ) {
@@ -3057,6 +3182,167 @@ export default function AiAgentStudio({
 
     if (submitInFlightRef.current || queuing || agentResult?.status === "processing") {
       setErrorMessage(a.generationAlreadyProcessing);
+      return;
+    }
+
+    if (isCreatorVideoActive) {
+      if (!creatorVideoSourceUrl?.trim()) {
+        setErrorMessage(a.creatorVideoMissingSource);
+        return;
+      }
+      if (!creatorVideoPrompt.trim()) {
+        setErrorMessage(a.creatorVideoMissingPrompt);
+        return;
+      }
+
+      const temporaryGenerationId = `temp-${Date.now()}`;
+      const promptLabel = creatorVideoPrompt.trim();
+      submitInFlightRef.current = true;
+
+      try {
+        setQueuing(true);
+        setQueuedGenerationId(null);
+        setErrorMessage(null);
+        setStatusMessage(a.generatingCreatorVideo);
+        setAgentResult({
+          id: temporaryGenerationId,
+          prompt: promptLabel,
+          image_url: null,
+          video_url: null,
+          workflow: "creator_video",
+          status: "processing",
+          error_message: null,
+          output_format: selectedOutputFormat.label,
+          image_size: "",
+        });
+        scrollToResult();
+
+        const token = await getAccessToken();
+        if (!token) {
+          setAgentResult({
+            id: temporaryGenerationId,
+            prompt: promptLabel,
+            image_url: null,
+            status: "failed",
+            error_message: a.signInAgain,
+            output_format: selectedOutputFormat.label,
+            image_size: "",
+          });
+          setErrorMessage(a.signInAgain);
+          return;
+        }
+
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            imageMode: "creator_video",
+            sourceImageUrl: creatorVideoSourceUrl,
+            prompt: promptLabel,
+            outputFormat: outputFormatKey,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          if (response.status === 402) {
+            const requiredCredits =
+              typeof data.requiredCredits === "number" ? data.requiredCredits : 40;
+            setAgentResult({
+              id: temporaryGenerationId,
+              prompt: promptLabel,
+              image_url: null,
+              status: "insufficient_credits",
+              error_message: null,
+              requiredCredits,
+              output_format: selectedOutputFormat.label,
+              image_size: "",
+            });
+            setErrorMessage(null);
+            setStatusMessage(null);
+            scrollToResult();
+            return;
+          }
+
+          if (response.status === 429 && data.reason === "active_generation_limit") {
+            setAgentResult({
+              id: temporaryGenerationId,
+              prompt: promptLabel,
+              image_url: null,
+              status: "active_generation_limit",
+              error_message: null,
+              output_format: selectedOutputFormat.label,
+              image_size: "",
+            });
+            setErrorMessage(null);
+            setStatusMessage(null);
+            scrollToResult();
+            return;
+          }
+
+          const safeMessage = getSafeErrorMessage(response.status, data.error);
+          setAgentResult({
+            id: temporaryGenerationId,
+            prompt: promptLabel,
+            image_url: null,
+            status: "failed",
+            error_message: safeMessage,
+            output_format: selectedOutputFormat.label,
+            image_size: "",
+          });
+          setErrorMessage(safeMessage);
+          return;
+        }
+
+        const generationId =
+          typeof data.generationId === "string" ? data.generationId : null;
+        if (!generationId) {
+          setAgentResult({
+            id: temporaryGenerationId,
+            prompt: promptLabel,
+            image_url: null,
+            status: "failed",
+            error_message: a.noGenerationId,
+            output_format: selectedOutputFormat.label,
+            image_size: "",
+          });
+          setErrorMessage(a.noGenerationId);
+          return;
+        }
+
+        setQueuedGenerationId(generationId);
+        setAgentResult({
+          id: generationId,
+          prompt: promptLabel,
+          image_url: null,
+          video_url: null,
+          workflow: "creator_video",
+          status: "processing",
+          error_message: null,
+          output_format: selectedOutputFormat.label,
+          image_size: "",
+        });
+        onGenerationQueued?.();
+        scrollToResult();
+      } catch {
+        setAgentResult({
+          id: temporaryGenerationId,
+          prompt: promptLabel,
+          image_url: null,
+          status: "failed",
+          error_message: a.networkError,
+          output_format: selectedOutputFormat.label,
+          image_size: "",
+        });
+        setErrorMessage(a.networkError);
+      } finally {
+        submitInFlightRef.current = false;
+        setQueuing(false);
+      }
+
       return;
     }
 
@@ -4130,6 +4416,8 @@ export default function AiAgentStudio({
           </>
         ) : studioTab === "video" ? (
           <p className="text-sm leading-6 text-white/50">{a.videoStudioLongerHint}</p>
+        ) : studioTab === "creator_video" ? (
+          <p className="text-sm leading-6 text-white/50">{a.creatorVideoLongerHint}</p>
         ) : studioTab === "talking_creator" ? (
           <p className="text-sm leading-6 text-white/50">{a.talkingCreatorLongerHint}</p>
         ) : (
@@ -4173,6 +4461,32 @@ export default function AiAgentStudio({
                 {VIDEO_STUDIO_PUBLIC_ENABLED
                   ? a.studioTabVideo
                   : a.studioTabVideoPlanned}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (CREATOR_VIDEO_PUBLIC_ENABLED) {
+                  setStudioTab("creator_video");
+                }
+              }}
+              disabled={!CREATOR_VIDEO_PUBLIC_ENABLED}
+              title={
+                CREATOR_VIDEO_PUBLIC_ENABLED
+                  ? a.imageModes.creatorVideo.description
+                  : a.studioTabCreatorVideoPlanned
+              }
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                studioTab === "creator_video" && CREATOR_VIDEO_PUBLIC_ENABLED
+                  ? "bg-emerald-500/20 text-emerald-100 ring-1 ring-emerald-500/30"
+                  : "border border-white/10 bg-black/25 text-white/55"
+              }`}
+            >
+              <Clapperboard className="h-3.5 w-3.5" aria-hidden />
+              <span>
+                {CREATOR_VIDEO_PUBLIC_ENABLED
+                  ? a.studioTabCreatorVideo
+                  : a.studioTabCreatorVideoPlanned}
               </span>
             </button>
             <button
@@ -4241,6 +4555,21 @@ export default function AiAgentStudio({
               motionPrompt={videoMotionPrompt}
               onMotionPromptChange={setVideoMotionPrompt}
               onMotionKeyDown={submitVideoFromMotionPrompt}
+            />
+          ) : null}
+
+          {studioTab === "creator_video" ? (
+            <CreatorVideoPanel
+              label={a.imageModes.creatorVideo.label}
+              copy={a.imageModes.creatorVideo.panel}
+              panelRef={creatorVideoPanelRef}
+              getAccessToken={getAccessToken}
+              isEnabled={CREATOR_VIDEO_PUBLIC_ENABLED}
+              sourcePreviewUrl={creatorVideoSourceUrl}
+              onSourcePreviewUrlChange={setCreatorVideoSourceUrl}
+              creativePrompt={creatorVideoPrompt}
+              onCreativePromptChange={setCreatorVideoPrompt}
+              onCreativePromptKeyDown={submitCreatorVideoFromPrompt}
             />
           ) : null}
 
@@ -4438,7 +4767,10 @@ export default function AiAgentStudio({
             </div>
           </div>
 
-          {!isVideoStudioActive && !isLipSyncActive && !isTalkingCreatorActive ? (
+          {!isVideoStudioActive &&
+          !isCreatorVideoActive &&
+          !isLipSyncActive &&
+          !isTalkingCreatorActive ? (
             <p className="text-xs text-white/55">
               {typeof availableCredits === "number"
                 ? language === "de"
@@ -4458,12 +4790,15 @@ export default function AiAgentStudio({
               isSubmitBlocked ||
               referenceEditSubmitBlocked ||
               videoSubmitBlocked ||
+              creatorVideoSubmitBlocked ||
               lipSyncSubmitBlocked ||
               talkingCreatorSubmitBlocked
             }
             title={
               isLipSyncActive
                 ? a.generateLipSync
+                : isCreatorVideoActive
+                  ? a.generateCreatorVideo
                 : isTalkingCreatorActive
                   ? a.generateTalkingCreator
                 : isVideoStudioActive
@@ -4473,6 +4808,8 @@ export default function AiAgentStudio({
             className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 text-sm font-black shadow-xl transition disabled:opacity-50 ${
               isLipSyncActive
                 ? "bg-violet-500 text-white hover:bg-violet-400"
+                : isCreatorVideoActive
+                  ? "bg-emerald-500 text-black hover:bg-emerald-400"
                 : isTalkingCreatorActive
                   ? "bg-cyan-500 text-black hover:bg-cyan-400"
                 : isVideoStudioActive
@@ -4486,6 +4823,11 @@ export default function AiAgentStudio({
               <>
                 <Mic className="h-4 w-4" aria-hidden />
                 <span>{a.generateLipSync}</span>
+              </>
+            ) : isCreatorVideoActive ? (
+              <>
+                <Clapperboard className="h-4 w-4" aria-hidden />
+                <span>{a.generateCreatorVideo}</span>
               </>
             ) : isTalkingCreatorActive ? (
               <>
@@ -4529,6 +4871,8 @@ export default function AiAgentStudio({
                 {agentResult.status === "processing"
                   ? isLipSyncWorkflow(agentResult.workflow)
                     ? a.generatingLipSync
+                    : isCreatorVideoWorkflow(agentResult.workflow)
+                      ? a.generatingCreatorVideo
                     : isTalkingCreatorWorkflow(agentResult.workflow)
                       ? a.generatingTalkingCreator
                     : isVideoStudioWorkflow(agentResult.workflow)
@@ -4614,6 +4958,8 @@ export default function AiAgentStudio({
                 <p className="mt-3 text-sm leading-6 text-white/45">
                   {isLipSyncWorkflow(agentResult.workflow)
                     ? a.lipSyncLongerHint
+                    : isCreatorVideoWorkflow(agentResult.workflow)
+                      ? a.creatorVideoLongerHint
                     : isTalkingCreatorWorkflow(agentResult.workflow)
                       ? a.talkingCreatorLongerHint
                     : isVideoStudioWorkflow(agentResult.workflow)
