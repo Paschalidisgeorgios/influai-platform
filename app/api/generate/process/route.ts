@@ -1314,6 +1314,25 @@ async function processLipSyncVideo({
       }),
     ]);
 
+    const providerJobId =
+      typeof (result as any)?.requestId === "string" && (result as any).requestId.trim().length > 0
+        ? (result as any).requestId.trim()
+        : typeof (result as any)?.data?.requestId === "string" &&
+            (result as any).data.requestId.trim().length > 0
+          ? (result as any).data.requestId.trim()
+          : null;
+
+    if (providerJobId) {
+      const { error: providerJobUpdateError } = await supabaseAdmin
+        .from("generations")
+        .update({ provider_job_id: providerJobId })
+        .eq("id", generationId);
+
+      if (providerJobUpdateError && !isMissingColumnError(providerJobUpdateError)) {
+        console.error("Provider job id update error:", providerJobUpdateError);
+      }
+    }
+
     const remoteVideoUrl =
       getFalResultVideoUrl(result.data) ?? getFalResultVideoUrl(result);
 
@@ -1655,15 +1674,6 @@ export async function POST(req: Request) {
           ? generation.source_video_url.trim()
           : null;
 
-      const sourceImageUrl =
-        typeof generation.source_image_url === "string" &&
-        generation.source_image_url.trim().length > 0
-          ? generation.source_image_url.trim()
-          : typeof generation.reference_image_url === "string" &&
-              generation.reference_image_url.trim().length > 0
-            ? generation.reference_image_url.trim()
-            : null;
-
       if (!audioUrl) {
         await markFailedAndRefund({
           generationId,
@@ -1678,38 +1688,27 @@ export async function POST(req: Request) {
         );
       }
 
-      if (sourceVideoUrl) {
-        return processLipSyncVideo({
+      if (!sourceVideoUrl) {
+        await markFailedAndRefund({
           generationId,
           userId: generation.user_id,
           creditsUsed,
-          sourceVideoUrl,
-          audioUrl,
+          errorMessage: "Lip Sync source video is missing.",
         });
+
+        return NextResponse.json(
+          { error: "Lip Sync source video is missing. Credits refunded." },
+          { status: 400 }
+        );
       }
 
-      if (sourceImageUrl) {
-        return processLipSyncImage({
-          generationId,
-          userId: generation.user_id,
-          finalPrompt,
-          creditsUsed,
-          sourceImageUrl,
-          audioUrl,
-        });
-      }
-
-      await markFailedAndRefund({
+      return processLipSyncVideo({
         generationId,
         userId: generation.user_id,
         creditsUsed,
-        errorMessage: "Lip Sync source media is missing.",
+        sourceVideoUrl,
+        audioUrl,
       });
-
-      return NextResponse.json(
-        { error: "Lip Sync source media is missing. Credits refunded." },
-        { status: 400 }
-      );
     }
 
     await markFailedAndRefund({

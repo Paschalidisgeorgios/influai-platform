@@ -28,6 +28,8 @@ import { createClient } from "@/lib/supabase/client";
 
 const VIDEO_STUDIO_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO === "true";
+const LIP_SYNC_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC === "true";
 
 type RegenerateDraft = {
   prompt: string;
@@ -294,6 +296,7 @@ function DashboardPageInner() {
           <ToolsRoadmap
             copy={copy}
             videoStudioEnabled={VIDEO_STUDIO_PUBLIC_ENABLED}
+            lipSyncEnabled={LIP_SYNC_PUBLIC_ENABLED}
             onOpenAgent={() => openView("agent")}
           />
         </ViewShell>

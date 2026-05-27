@@ -26,6 +26,7 @@ const AUDIO_MIME = new Set([
   "audio/x-wav",
   "audio/mp4",
   "audio/aac",
+  "audio/webm",
   "audio/ogg",
   "audio/x-m4a",
 ]);

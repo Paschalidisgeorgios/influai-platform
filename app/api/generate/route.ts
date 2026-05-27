@@ -144,7 +144,7 @@ function resolveGenerationJobConfig(mode: GenerateMode):
       ok: true,
       config: {
         provider: "fal",
-        model: FAL_LIP_SYNC_IMAGE_MODEL,
+        model: FAL_LIP_SYNC_VIDEO_MODEL,
         workflow: "lip_sync",
         creditsUsed: getCreditCostForMode("lip_sync"),
         transactionSource: "lip_sync_generation_job",
@@ -1759,14 +1759,174 @@ export async function POST(req: Request) {
           : "";
 
     if (imageMode === "lip_sync") {
-      return NextResponse.json(
-        {
-          error:
-            "Lip Sync Studio is currently planned and not enabled in this release.",
-          reason: "lip_sync_planned",
-        },
-        { status: 400 }
-      );
+      if (!sourceMediaUrl) {
+        return NextResponse.json(
+          { error: "Source video URL is required for Lip Sync Studio." },
+          { status: 400 }
+        );
+      }
+
+      if (!audioUrl) {
+        return NextResponse.json(
+          { error: "Audio URL is required for Lip Sync Studio." },
+          { status: 400 }
+        );
+      }
+
+      const lipSyncJobConfigResult = resolveGenerationJobConfig(imageMode);
+
+      if (!lipSyncJobConfigResult.ok) {
+        return NextResponse.json(
+          { error: lipSyncJobConfigResult.error },
+          { status: 400 }
+        );
+      }
+
+      const lipSyncJobConfig = lipSyncJobConfigResult.config;
+      const finalPrompt =
+        "Synchronize the provided audio with the source video while preserving the original subject and video quality.";
+
+      const { count: lipSyncActiveCount, error: lipSyncActiveError } =
+        await supabaseAdmin
+          .from("generations")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("status", "processing");
+
+      if (lipSyncActiveError) {
+        console.error("Active generation count error:", lipSyncActiveError);
+
+        return NextResponse.json(
+          { error: "Could not verify active generations" },
+          { status: 500 }
+        );
+      }
+
+      if ((lipSyncActiveCount ?? 0) >= ACTIVE_GENERATION_LIMIT) {
+        return NextResponse.json(
+          {
+            error: "Too many active generations",
+            reason: "active_generation_limit",
+            limit: ACTIVE_GENERATION_LIMIT,
+          },
+          { status: 429 }
+        );
+      }
+
+      const { data: lipSyncCreditSuccess, error: lipSyncCreditError } =
+        await supabaseAdmin.rpc("consume_user_credits", {
+          target_user_id: user.id,
+          credits_to_consume: lipSyncJobConfig.creditsUsed,
+        });
+
+      if (lipSyncCreditError) {
+        console.error("Credit consume error:", lipSyncCreditError);
+
+        return NextResponse.json(
+          { error: "Credit check failed" },
+          { status: 500 }
+        );
+      }
+
+      if (!lipSyncCreditSuccess) {
+        return NextResponse.json(
+          {
+            error: "Not enough credits",
+            requiredCredits: lipSyncJobConfig.creditsUsed,
+            reason: "insufficient_credits",
+          },
+          { status: 402 }
+        );
+      }
+
+      const lipSyncInsertBase = {
+        user_id: user.id,
+        prompt: lipSyncInstructions || "Lip Sync",
+        final_prompt: finalPrompt,
+        image_url: null,
+        video_url: null,
+        status: "processing",
+        provider: lipSyncJobConfig.provider,
+        model: lipSyncJobConfig.model,
+        workflow: lipSyncJobConfig.workflow,
+        source_video_url: sourceMediaUrl,
+        audio_url: audioUrl,
+        social_platform: outputFormat.platform,
+        output_format: outputFormat.label,
+        image_size: outputFormat.imageSize,
+        output_width: outputFormat.width,
+        output_height: outputFormat.height,
+        credits_used: lipSyncJobConfig.creditsUsed,
+        duration_seconds: null,
+        character_id: null,
+        error_message: null,
+        started_at: new Date().toISOString(),
+      };
+
+      let lipSyncGenerationError: { message?: string; code?: string } | null =
+        null;
+      let lipSyncGeneration: { id: string } | null = null;
+
+      const lipSyncInsertAttempt = await supabaseAdmin
+        .from("generations")
+        .insert(lipSyncInsertBase)
+        .select("id")
+        .single();
+
+      if (
+        lipSyncInsertAttempt.error &&
+        isMissingColumnError(lipSyncInsertAttempt.error)
+      ) {
+        const lipSyncFallback = await supabaseAdmin
+          .from("generations")
+          .insert({
+            user_id: lipSyncInsertBase.user_id,
+            prompt: lipSyncInsertBase.prompt,
+            final_prompt: lipSyncInsertBase.final_prompt,
+            image_url: null,
+            status: "processing",
+            provider: lipSyncInsertBase.provider,
+            model: lipSyncInsertBase.model,
+            workflow: lipSyncInsertBase.workflow,
+            social_platform: lipSyncInsertBase.social_platform,
+            output_format: lipSyncInsertBase.output_format,
+            image_size: lipSyncInsertBase.image_size,
+            output_width: lipSyncInsertBase.output_width,
+            output_height: lipSyncInsertBase.output_height,
+            credits_used: lipSyncInsertBase.credits_used,
+            character_id: null,
+            error_message: null,
+            started_at: lipSyncInsertBase.started_at,
+          })
+          .select("id")
+          .single();
+
+        lipSyncGenerationError = lipSyncFallback.error;
+        lipSyncGeneration = lipSyncFallback.data;
+      } else {
+        lipSyncGenerationError = lipSyncInsertAttempt.error;
+        lipSyncGeneration = lipSyncInsertAttempt.data;
+      }
+
+      if (lipSyncGenerationError || !lipSyncGeneration?.id) {
+        console.error("Lip Sync job insert error:", lipSyncGenerationError);
+        await refundCredits(user.id, lipSyncJobConfig.creditsUsed);
+
+        return NextResponse.json(
+          { error: "Failed to queue Lip Sync generation. Credits refunded." },
+          { status: 500 }
+        );
+      }
+
+      const origin = req.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
+      void triggerWorker(lipSyncGeneration.id, origin);
+
+      return NextResponse.json({
+        success: true,
+        generationId: lipSyncGeneration.id,
+        status: "processing",
+        workflow: lipSyncJobConfig.workflow,
+      });
     }
 
     if (imageMode === "video_image_to_video") {

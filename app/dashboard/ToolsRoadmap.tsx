@@ -20,6 +20,7 @@ export type ToolCardStatus = "live" | "beta" | "comingSoon" | "planned";
 type ToolsRoadmapProps = {
   copy: DashboardCopy;
   videoStudioEnabled: boolean;
+  lipSyncEnabled: boolean;
   onOpenAgent: () => void;
 };
 
@@ -59,6 +60,7 @@ function getCardShellClass(status: ToolCardStatus, interactive: boolean) {
 export default function ToolsRoadmap({
   copy,
   videoStudioEnabled,
+  lipSyncEnabled,
   onOpenAgent,
 }: ToolsRoadmapProps) {
   const t = copy.toolsPage;
@@ -94,7 +96,8 @@ export default function ToolsRoadmap({
       icon: Mic2,
       title: t.cards.lipSync.title,
       benefit: t.cards.lipSync.benefit,
-      status: "comingSoon",
+      status: lipSyncEnabled ? "beta" : "comingSoon",
+      openInAgent: lipSyncEnabled,
     },
     {
       id: "cinema-agent",

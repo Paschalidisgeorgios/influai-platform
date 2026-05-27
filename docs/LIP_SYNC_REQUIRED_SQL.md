@@ -7,6 +7,7 @@ alter table generations add column if not exists video_url text;
 alter table generations add column if not exists source_image_url text;
 alter table generations add column if not exists source_video_url text;
 alter table generations add column if not exists audio_url text;
+alter table generations add column if not exists script_text text;
 alter table generations add column if not exists duration_seconds integer;
 alter table generations add column if not exists provider_job_id text;
 ```

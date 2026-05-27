@@ -70,11 +70,8 @@ const UGC_LOOK_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_UGC_LOOK === "true";
 const VIDEO_STUDIO_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO === "true";
-/**
- * Lip Sync stays Planned for this release cycle.
- * Keep UI visible as roadmap-only and prevent generation triggers.
- */
-const LIP_SYNC_PUBLIC_ENABLED = false;
+const LIP_SYNC_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC === "true";
 const SOCIAL_PLANNER_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_SOCIAL_PLANNER === "true";
 const COMPLIANCE_CHECK_PUBLIC_ENABLED =
@@ -1042,8 +1039,8 @@ function ReferenceEditPanel({
     }
   }
 
-  const panelStatus = isEnabled ? copy.statusActive : copy.statusPlanned;
-  const panelIntro = isEnabled ? copy.introActive : copy.introPlanned;
+    const panelStatus = isEnabled ? copy.statusActive : copy.statusPlanned;
+    const panelIntro = isEnabled ? copy.introActive : copy.introPlanned;
 
   return (
     <motion.div
@@ -1599,12 +1596,10 @@ function LipSyncStudioPanel({
     if (!file) return;
 
     const mime = file.type.toLowerCase();
-    const isImage =
-      mime.startsWith("image/") || /\.(png|jpe?g|webp)$/i.test(file.name);
     const isVideo =
       mime.startsWith("video/") || /\.(mp4|webm|mov)$/i.test(file.name);
 
-    if (!isImage && !isVideo) {
+    if (!isVideo) {
       setLocalFileError(copy.invalidSource);
       return;
     }
@@ -1619,7 +1614,7 @@ function LipSyncStudioPanel({
 
     const blobUrl = URL.createObjectURL(file);
     blobPreviewRef.current = blobUrl;
-    const previewType: "image" | "video" = isVideo ? "video" : "image";
+    const previewType: "image" | "video" = "video";
     onSourceChange(blobUrl, previewType);
     setUploadingSource(true);
 
@@ -1706,7 +1701,7 @@ function LipSyncStudioPanel({
       <input
         ref={sourceInputRef}
         type="file"
-        accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime,.mov"
+        accept="video/mp4,video/webm,video/quicktime,.mov"
         className="sr-only"
         tabIndex={-1}
         aria-hidden
@@ -1715,7 +1710,7 @@ function LipSyncStudioPanel({
       <input
         ref={audioInputRef}
         type="file"
-        accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/aac,audio/ogg,.mp3,.wav,.aac,.ogg,.m4a"
+        accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/aac,audio/webm,audio/ogg,.mp3,.wav,.aac,.webm,.ogg,.m4a"
         className="sr-only"
         tabIndex={-1}
         aria-hidden
@@ -2419,7 +2414,11 @@ export default function AiAgentStudio({
     }
 
     if (isLipSyncActive) {
-      if (!lipSyncSourceUrl?.trim() || !lipSyncSourceMediaType) {
+      if (
+        !lipSyncSourceUrl?.trim() ||
+        !lipSyncSourceMediaType ||
+        lipSyncSourceMediaType !== "video"
+      ) {
         setErrorMessage(a.lipSyncMissingSource);
         return;
       }
