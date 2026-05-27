@@ -23,6 +23,8 @@ Use placeholders below when sharing examples:
 | `ELEVENLABS_API_KEY` | Optional (required for System Voice) | **No** | ElevenLabs text-to-speech for Lip Sync |
 | `ENABLE_ELEVENLABS_TTS` | Optional | **No** | Server gate for System Voice mode |
 | `NEXT_PUBLIC_ENABLE_ELEVENLABS_TTS` | Optional | Yes | Client gate for System Voice mode |
+| `ENABLE_TALKING_CREATOR` | Optional | **No** | Server gate for Talking Creator workflow |
+| `NEXT_PUBLIC_ENABLE_TALKING_CREATOR` | Optional | Yes | Client gate for Talking Creator tab |
 | `GENERATION_WORKER_SECRET` | Yes | **No** | Worker route authentication |
 | `STRIPE_SECRET_KEY` | Yes | **No** | Checkout + webhook |
 | `STRIPE_WEBHOOK_SECRET` | Yes | **No** | Stripe webhook signature |
@@ -135,6 +137,20 @@ Missing files show “Preview not available yet.” in the UI.
 
 ---
 
+## Talking Creator flags
+
+### `ENABLE_TALKING_CREATOR`
+
+- **Where:** Server environment (`.env.local`, Vercel)
+- **Notes:** Enables server-side Talking Creator processing.
+
+### `NEXT_PUBLIC_ENABLE_TALKING_CREATOR`
+
+- **Where:** Client environment (`.env.local`, Vercel)
+- **Notes:** Enables Talking Creator tab in AI Agent.
+
+---
+
 ## Generation worker
 
 ### `GENERATION_WORKER_SECRET`
@@ -142,6 +158,12 @@ Missing files show “Preview not available yet.” in the UI.
 - **Example:** `<long-random-string-min-32-chars>`
 - **Where:** Generate locally; set identical value in Vercel and local `.env.local`
 - **Notes:** Must match header `x-worker-secret` when `/api/generate` triggers `/api/generate/process`. Mismatch → jobs stuck in `processing`.
+
+### Required storage buckets
+
+- `reference-sources`
+- `lip-sync-audio`
+- `generation-videos`
 
 ---
 

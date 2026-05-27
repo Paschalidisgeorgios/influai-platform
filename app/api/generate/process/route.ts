@@ -1312,7 +1312,7 @@ async function processTalkingCreator({
       getFalResultVideoUrl(imageToVideoResult);
 
     if (!sourceVideoUrl) {
-      throw new Error("Talking Creator step 1 failed: missing source video URL.");
+      throw new Error("Image-to-video did not return a video URL.");
     }
 
     const ttsAudioBuffer = await synthesizeElevenLabsAudio({
@@ -1357,7 +1357,7 @@ async function processTalkingCreator({
       getFalResultVideoUrl(lipSyncResult.data) ?? getFalResultVideoUrl(lipSyncResult);
 
     if (!finalVideoUrl) {
-      throw new Error("Talking Creator step 3 failed: missing final video URL.");
+      throw new Error("Lip Sync did not return a video URL.");
     }
 
     const { videoBuffer, contentType } = await downloadVideoFromUrl(finalVideoUrl);
@@ -2153,10 +2153,10 @@ export async function POST(req: Request) {
           generationId,
           userId: generation.user_id,
           creditsUsed,
-          errorMessage: "Talking Creator source image is missing.",
+          errorMessage: "Source image is required for Talking Creator.",
         });
         return NextResponse.json(
-          { error: "Talking Creator source image is missing. Credits refunded." },
+          { error: "Source image is required for Talking Creator. Credits refunded." },
           { status: 400 }
         );
       }
@@ -2166,10 +2166,10 @@ export async function POST(req: Request) {
           generationId,
           userId: generation.user_id,
           creditsUsed,
-          errorMessage: "Talking Creator script is missing.",
+          errorMessage: "Script is required for Talking Creator.",
         });
         return NextResponse.json(
-          { error: "Talking Creator script is missing. Credits refunded." },
+          { error: "Script is required for Talking Creator. Credits refunded." },
           { status: 400 }
         );
       }

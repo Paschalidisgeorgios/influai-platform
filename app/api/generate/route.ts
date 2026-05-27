@@ -1842,7 +1842,7 @@ export async function POST(req: Request) {
 
       const talkingCreatorConfig = talkingCreatorConfigResult.config;
       const finalPrompt =
-        "Animate the provided source image into a short talking creator video. Keep the person recognizable. Subtle natural head movement, realistic facial motion, creator-style social video framing.";
+        "Animate the provided source image into a short talking creator video. Keep the person recognizable. Add subtle natural head movement, realistic facial motion, creator-style social video framing, natural lighting and no text, no logo, no watermark.";
 
       const { count: activeCount, error: activeError } = await supabaseAdmin
         .from("generations")
