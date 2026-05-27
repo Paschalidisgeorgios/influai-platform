@@ -15,16 +15,16 @@ const pricingDescriptions: Record<
   { en: string; de: string }
 > = {
   starter: {
-    en: "For testing prompts, formats and gallery workflows.",
-    de: "Zum Testen von Prompts, Formaten und Gallery-Workflows.",
+    en: "For testing prompts, formats and your first campaign drafts.",
+    de: "Zum Testen von Prompts, Formaten und ersten Kampagnen-Drafts.",
   },
   professional: {
-    en: "Recommended for regular creators and ongoing campaigns.",
-    de: "Empfohlen für regelmäßige Creator und laufende Kampagnen.",
+    en: "Recommended for weekly creation and ongoing campaigns.",
+    de: "Empfohlen für wöchentliche Produktion und laufende Kampagnen.",
   },
   ultimate: {
-    en: "For high-volume workflows and larger production needs.",
-    de: "Für High-Volume-Workflows und größere Produktionsanforderungen.",
+    en: "For high-volume production and larger teams.",
+    de: "Für hohe Produktionsvolumen und größere Teams.",
   },
 };
 
@@ -62,7 +62,9 @@ export function PricingSection({
       </p>
 
       <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#d8ad5f]/25 bg-[#d8ad5f]/10 px-3 py-1.5 text-xs font-bold text-[#d8ad5f]">
-        1 standard image = 1 credit
+        {language === "en"
+          ? "Standard image: 1 credit"
+          : "Standard-Bild: 1 Credit"}
       </div>
 
       <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:items-stretch lg:gap-5">

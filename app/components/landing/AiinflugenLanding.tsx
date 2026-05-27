@@ -103,65 +103,107 @@ export default function AiinflugenLanding({
       product: "Product",
       tools: "Tools",
       pricing: "Pricing",
-      creators: "Creators",
+      creators: "Examples",
       signIn: "Sign in",
-      openApp: "Open App",
-      label: "AI Creator Studio",
-      title1: "Premium AI visuals",
-      title2: "for creator",
+      openApp: "Open Studio",
+      label: "InfluExAi · AI Creator Studio",
+      title1: "Campaign-ready",
+      title2: "AI visuals",
       gold: "campaigns",
       subtitle:
-        "InfluExAi is an enterprise-grade AI Creator Studio for campaign visuals, social formats, style profiles and asset management — built for modern creator teams.",
+        "Brief → generate → reuse. InfluExAi helps creator teams produce consistent campaign visuals with Style Profiles, social formats and a private Asset Gallery.",
       start: "Open Studio",
       startCreating: "Start creating",
       explore: "Explore features",
       studioTitle: "One studio for the full visual workflow.",
       studioText:
-        "InfluExAi combines an AI Visual Agent, Style Profiles, Social Formats, Asset Gallery and Credits in one professional creator platform.",
-      toolsTitle: "Built for production-ready creator output.",
-      workflowTitle: "From brief to published visual.",
-      examplesTitle: "Campaign visual examples.",
+        "Use the AI Agent to generate visuals, keep a reusable creative direction in Style Profiles, and manage outputs in the Asset Gallery — all in one workspace.",
+      toolsTitle: "Designed for repeatable, on-brand output.",
+      workflowTitle: "From brief to finished assets.",
+      examplesTitle: "Campaign-ready examples.",
       pricingTitle: "Choose your credit package.",
       pricingNote:
-        "Credits are used when you generate images. 1 standard image = 1 credit.",
+        "Credits are only used when you generate. Standard images cost 1 credit.",
       secure: "Secure checkout via Stripe",
       powered: "Core platform capabilities",
       badgeLive: "Live",
       badgeComingSoon: "Coming soon",
       badgePlanned: "Planned",
       badgeRoadmap: "Roadmap",
+      trustTitle: "Trust & FAQ",
+      trustSubtitle:
+        "Clear pricing, private assets, and a simple workflow. Here are the most common questions.",
+      faq: [
+        {
+          q: "What do credits cover?",
+          a: "Credits are consumed when you generate. The cost depends on the selected mode (shown in the studio).",
+        },
+        {
+          q: "Do previews or browsing cost credits?",
+          a: "No. Browsing the gallery and playing local previews does not consume credits.",
+        },
+        {
+          q: "Where do my assets live?",
+          a: "Generated assets are saved to your account’s Asset Gallery for easy reuse and download.",
+        },
+        {
+          q: "Can I reuse a look across a campaign?",
+          a: "Yes. Style Profiles store reusable creative direction (look, mood, styling) so results stay consistent.",
+        },
+      ],
     },
     de: {
       product: "Produkt",
       tools: "Tools",
       pricing: "Preise",
-      creators: "Creator",
+      creators: "Beispiele",
       signIn: "Einloggen",
-      openApp: "App öffnen",
-      label: "AI Creator Studio",
-      title1: "Premium AI-Visuals",
-      title2: "für Creator",
+      openApp: "Studio öffnen",
+      label: "InfluExAi · AI Creator Studio",
+      title1: "Kampagnenfertige",
+      title2: "AI-Visuals",
       gold: "Kampagnen",
       subtitle:
-        "InfluExAi ist ein professionelles AI Creator Studio für Kampagnenvisuals, Social Formats, Style Profiles und Asset Management — entwickelt für moderne Creator-Teams.",
+        "Briefing → generieren → wiederverwenden. InfluExAi hilft Creator-Teams, konsistente Kampagnenvisuals mit Style Profiles, Social-Formaten und privater Asset Gallery zu produzieren.",
       start: "Studio öffnen",
       startCreating: "Jetzt erstellen",
       explore: "Features entdecken",
       studioTitle: "Ein Studio für den gesamten Visual-Workflow.",
       studioText:
-        "InfluExAi verbindet AI Visual Agent, Style Profiles, Social Formats, Asset Gallery und Credits in einer professionellen Creator-Plattform.",
-      toolsTitle: "Gebaut für produktionsreife Creator-Ergebnisse.",
-      workflowTitle: "Vom Briefing zum fertigen Visual.",
-      examplesTitle: "Kampagnen-Beispielvisuals.",
+        "Nutze den AI Agent zum Generieren, speichere wiederverwendbare Creative Direction in Style Profiles und verwalte Outputs in der Asset Gallery — alles in einem Workspace.",
+      toolsTitle: "Für wiederholbaren, markenkonsistenten Output.",
+      workflowTitle: "Vom Briefing zu fertigen Assets.",
+      examplesTitle: "Kampagnenfertige Beispiele.",
       pricingTitle: "Wähle dein Credit-Paket.",
       pricingNote:
-        "Credits werden beim Generieren von Bildern verwendet. 1 Standard-Bild = 1 Credit.",
+        "Credits werden nur beim Generieren verbraucht. Standard-Bilder kosten 1 Credit.",
       secure: "Sichere Zahlung über Stripe",
       powered: "Kernfunktionen der Plattform",
       badgeLive: "Live",
       badgeComingSoon: "Demnächst",
       badgePlanned: "Geplant",
       badgeRoadmap: "Roadmap",
+      trustTitle: "Trust & FAQ",
+      trustSubtitle:
+        "Klare Preise, private Assets und ein einfacher Workflow. Hier sind die häufigsten Fragen.",
+      faq: [
+        {
+          q: "Wofür werden Credits genutzt?",
+          a: "Credits werden beim Generieren verbraucht. Die Kosten hängen vom Modus ab (im Studio sichtbar).",
+        },
+        {
+          q: "Kosten Preview oder Galerie Credits?",
+          a: "Nein. Galerie-Browsing und lokale Vorschauen verbrauchen keine Credits.",
+        },
+        {
+          q: "Wo landen meine Assets?",
+          a: "Generierte Assets werden in deiner Asset Gallery gespeichert – zum Wiederverwenden und Download.",
+        },
+        {
+          q: "Kann ich einen Look für eine Kampagne wiederverwenden?",
+          a: "Ja. Style Profiles speichern Creative Direction (Look, Mood, Styling) für konsistentere Ergebnisse.",
+        },
+      ],
     },
   };
 
@@ -198,32 +240,32 @@ export default function AiinflugenLanding({
       title: language === "en" ? "AI Visual Agent" : "AI Visual Agent",
       description:
         language === "en"
-          ? "Generate premium campaign visuals from natural-language briefs with guided creative modes."
-          : "Erzeuge Premium-Kampagnenvisuals aus natürlichen Briefings mit geführten Creative-Modi.",
+          ? "Turn briefs into campaign-ready visuals with guided modes and social format presets."
+          : "Wandle Briefings in kampagnenfertige Visuals um – mit geführten Modi und Social-Format-Presets.",
       icon: Sparkles,
     },
     {
       title: language === "en" ? "Style Profiles" : "Style Profiles",
       description:
         language === "en"
-          ? "Define reusable creative direction for look, mood, styling and brand aesthetics."
-          : "Definiere wiederverwendbare Creative Direction für Look, Mood, Styling und Brand-Aesthetics.",
+          ? "Save reusable creative direction (look, mood, styling) to keep outputs consistent."
+          : "Speichere wiederverwendbare Creative Direction (Look, Mood, Styling) für konsistente Ergebnisse.",
       icon: UserRound,
     },
     {
       title: language === "en" ? "Social Formats" : "Social Formats",
       description:
         language === "en"
-          ? "Export-ready formats for posts, stories, shorts and campaign placements."
-          : "Exportfertige Formate für Posts, Stories, Shorts und Kampagnen-Placements.",
+          ? "Generate in the formats you ship: posts, stories, shorts and campaign placements."
+          : "Generiere in den Formaten, die du brauchst: Posts, Stories, Shorts und Placements.",
       icon: Film,
     },
     {
       title: language === "en" ? "Asset Gallery" : "Asset Gallery",
       description:
         language === "en"
-          ? "Review, favorite, download and organize every generated visual in one place."
-          : "Prüfe, favorisiere, lade herunter und organisiere jedes generierte Visual an einem Ort.",
+          ? "Review results, save favorites, and download campaign assets in one place."
+          : "Ergebnisse prüfen, Favoriten speichern und Kampagnenassets herunterladen – an einem Ort.",
       icon: GalleryVerticalEnd,
     },
   ];
@@ -233,24 +275,24 @@ export default function AiinflugenLanding({
       title: language === "en" ? "Define style profile" : "Style Profile anlegen",
       description:
         language === "en"
-          ? "Set appearance and style direction for repeatable campaign aesthetics."
-          : "Lege Appearance- und Style-Direction für wiederholbare Kampagnen-Ästhetik fest.",
+          ? "Set your reusable creative direction (look, mood, styling)."
+          : "Lege wiederverwendbare Creative Direction fest (Look, Mood, Styling).",
       icon: UserRound,
     },
     {
       title: language === "en" ? "Generate with agent" : "Mit Agent generieren",
       description:
         language === "en"
-          ? "Turn briefs into premium AI visuals with social format presets and credits."
-          : "Wandle Briefings in Premium-AI-Visuals mit Social-Format-Presets und Credits um.",
+          ? "Generate with the mode and social format you need. Credits are shown before you run."
+          : "Generiere mit dem passenden Modus und Social-Format. Credits siehst du vorher.",
       icon: Sparkles,
     },
     {
       title: language === "en" ? "Manage assets" : "Assets verwalten",
       description:
         language === "en"
-          ? "Track processing, completed and failed jobs in your Asset Gallery."
-          : "Verfolge Processing-, Completed- und Failed-Jobs in deiner Asset Gallery.",
+          ? "Track processing, review results, and reuse the best assets for your campaign."
+          : "Processing verfolgen, Ergebnisse prüfen und die besten Assets wiederverwenden.",
       icon: Layers,
     },
   ];
@@ -674,6 +716,33 @@ export default function AiinflugenLanding({
       </section>
 
       <RoadmapSection language={language} headingFontClass={headingFontClass} />
+
+      <section className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
+        <Reveal>
+          <p className="mb-4 text-xs font-extrabold uppercase tracking-[0.35em] text-[#d8ad5f]">
+            {t.trustTitle}
+          </p>
+          <h2
+            className={`${headingFontClass} max-w-4xl text-5xl font-bold leading-none tracking-tight sm:text-7xl`}
+          >
+            {t.trustTitle}
+          </h2>
+          <p className="mt-8 max-w-2xl text-sm leading-7 text-white/55 sm:text-base">
+            {t.trustSubtitle}
+          </p>
+        </Reveal>
+
+        <div className="mt-12 grid gap-4 lg:grid-cols-2">
+          {t.faq.map((item, index) => (
+            <Reveal key={item.q} delay={index * 90}>
+              <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-7 transition hover:border-[#d8ad5f]/35">
+                <p className="text-base font-extrabold text-white">{item.q}</p>
+                <p className="mt-3 text-sm leading-7 text-white/55">{item.a}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </section>
 
       <Reveal>
         <PricingSection

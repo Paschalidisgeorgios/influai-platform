@@ -48,17 +48,17 @@ const en = {
       "Image modes run in the AI Agent. Open Tools for the full studio roadmap.",
     creditCostShort: "Credits",
     nav: {
-      agent: { label: "AI Agent", description: "Generate campaign visuals" },
+      agent: { label: "AI Agent", description: "Generate campaign-ready visuals" },
       tools: {
         label: "Tools",
-        description: "Studio modes and creator platform roadmap",
+        description: "Studio modes, costs and roadmap",
       },
-      gallery: { label: "Asset Gallery", description: "Manage generated assets" },
+      gallery: { label: "Asset Gallery", description: "Review, reuse and download assets" },
       characters: {
         label: "Style Profiles",
-        description: "Reusable creative direction",
+        description: "Reusable creative direction for consistent output",
       },
-      credits: { label: "Credits", description: "Balance and packages" },
+      credits: { label: "Credits", description: "Balance, costs and packages" },
       planner: {
         label: "Campaign Planner",
         description:
@@ -502,19 +502,19 @@ const en = {
       eyebrow: "Creator Assets",
       title: "Asset Gallery",
       description:
-        "Review generated visuals, manage processing jobs, save favorites, regenerate prompts and download your best campaign assets.",
+        "Review results, track processing jobs, save favorites, regenerate prompts and download campaign assets.",
     },
     characters: {
       eyebrow: "Reusable Creative Direction",
       title: "Style Profiles",
       description:
-        "Create reusable visual profiles that guide appearance, styling, mood and brand direction for consistent creative output.",
+        "Create reusable profiles that guide look, mood and styling for more consistent outputs.",
     },
     credits: {
       eyebrow: "Billing",
       title: "Credits & Plans",
       description:
-        "View your balance, understand credit usage (1 standard image = 1 credit) and purchase Starter, Professional or Ultimate packages via secure Stripe checkout.",
+        "View your balance, understand mode costs, and buy credit packages via secure Stripe checkout.",
     },
     planner: {
       eyebrow: "Campaign Planning",
@@ -526,7 +526,7 @@ const en = {
       eyebrow: "Creator Platform",
       title: "Tools",
       description:
-        "Browse live studio workflows and upcoming creator modules. Active tools open in the AI Agent — no extra API calls from this page.",
+        "Browse studio workflows and upcoming modules. Active tools run in the AI Agent — this page is a read-only overview.",
     },
   },
   toolsPage: {
@@ -600,7 +600,7 @@ const en = {
   agent: {
     title: "Create campaign-ready visuals",
     subtitle:
-      "Generate premium creator visuals, product shots and social media campaign assets. Use style profiles for reusable creative direction.",
+      "Turn briefs into creator visuals, product shots and social assets. Use Style Profiles to keep direction consistent across a campaign.",
     enterHint: "Enter to generate · Shift+Enter for a new line",
     workspacePromptHeadline: "What do you want to create?",
     searchHeadline: "Hey, what do you want to create?",
@@ -621,7 +621,7 @@ const en = {
       brandAssets: "Brand Assets 4C",
       referenceEdit: "Reference Edit 5C",
     },
-    promptPlaceholder: "Describe the visual you want to create",
+    promptPlaceholder: "Describe what you want to generate (subject, setting, style, details)…",
     agent: "Agent",
     styleProfileNone: "Style profile: none",
     loadingStyleProfiles: "Loading style profiles…",
@@ -1005,9 +1005,9 @@ const en = {
     campaignPromptLoaded: "Campaign prompt loaded into AI Agent.",
   },
   gallery: {
-    loading: "Loading asset gallery...",
-    empty: "No matching assets in your gallery.",
-    searchPlaceholder: "Search prompts...",
+    loading: "Loading your Asset Gallery…",
+    empty: "No assets match your filters yet.",
+    searchPlaceholder: "Search prompts or ideas…",
     allStyleProfiles: "All style profiles",
     noStyleProfile: "No style profile",
     filterAll: "All",
@@ -1056,17 +1056,17 @@ const en = {
     removeFavorite: "Remove favorite",
     openDownloadImage: "Open / download image",
     processingHint:
-      "Your image is being generated. The gallery refreshes automatically.",
+      "Your generation is running. The gallery refreshes automatically.",
   },
   styleProfiles: {
     loading: "Loading style profiles...",
     brandDirection: "Brand & creator direction",
     disclaimer:
-      "Style profiles guide look, mood, styling and brand direction. They are not fixed identity models.",
+      "Style profiles store reusable creative direction (look, mood, styling). They are not fixed identity models.",
     newProfile: "New style profile",
     buildDirection: "New style profile",
     buildDescription:
-      "Build reusable creative direction for campaign visuals — appearance, mood and brand styling in one profile.",
+      "Create reusable creative direction for campaign visuals — look, mood and styling in one profile.",
     profileName: "Profile name",
     profileNamePlaceholder: "e.g. Luxury fitness creator",
     creativeTag: "Creative tag (optional)",
@@ -1124,7 +1124,7 @@ const en = {
     accountBalance: "Account balance",
     creditsTitle: "Credits",
     balanceDescription:
-      "Credits are used when you generate images in the AI Agent. Each standard image uses one credit.",
+      "Credits are only used when you generate. Standard images cost 1 credit.",
     modeUsageIntro: "Credits are used depending on the selected mode.",
     workflowChargeNote:
       "Credits are charged based on the selected workflow.",
@@ -1288,21 +1288,21 @@ const de: DeepString<typeof en> = {
     nav: {
       agent: {
         label: "AI Agent",
-        description: "Kampagnenvisuals generieren",
+        description: "Kampagnenfertige Visuals generieren",
       },
       tools: {
         label: "Werkzeuge",
-        description: "Studio-Modi und Creator-Platform-Roadmap",
+        description: "Studio-Modi, Kosten und Roadmap",
       },
       gallery: {
         label: "Asset Gallery",
-        description: "Generierte Assets verwalten",
+        description: "Assets prüfen, wiederverwenden und downloaden",
       },
       characters: {
         label: "Style Profiles",
-        description: "Wiederverwendbare Creative Direction",
+        description: "Wiederverwendbare Creative Direction für Konsistenz",
       },
-      credits: { label: "Credits", description: "Guthaben und Pakete" },
+      credits: { label: "Credits", description: "Guthaben, Kosten und Pakete" },
       planner: {
         label: "Campaign Planner",
         description:
@@ -1747,19 +1747,19 @@ const de: DeepString<typeof en> = {
       eyebrow: "Creator Assets",
       title: "Asset Gallery",
       description:
-        "Prüfe generierte Visuals, verwalte Processing-Jobs, speichere Favoriten, regeneriere Prompts und lade deine besten Kampagnen-Assets herunter.",
+        "Ergebnisse prüfen, Processing verfolgen, Favoriten speichern, Prompts regenerieren und Kampagnen-Assets herunterladen.",
     },
     characters: {
       eyebrow: "Wiederverwendbare Creative Direction",
       title: "Style Profiles",
       description:
-        "Erstelle wiederverwendbare Visual Profiles für Appearance, Styling, Mood und Brand Direction für konsistente Ergebnisse.",
+        "Erstelle wiederverwendbare Profile für Look, Mood und Styling – für konsistentere Ergebnisse.",
     },
     credits: {
       eyebrow: "Abrechnung",
       title: "Credits & Pläne",
       description:
-        "Sieh dein Guthaben, verstehe die Credit-Nutzung (1 Standard-Bild = 1 Credit) und kaufe Starter-, Professional- oder Ultimate-Pakete per sicherem Stripe-Checkout.",
+        "Guthaben anzeigen, Modus-Kosten verstehen und Credit-Pakete per sicherem Stripe-Checkout kaufen.",
     },
     planner: {
       eyebrow: "Campaign Planning",
@@ -1771,7 +1771,7 @@ const de: DeepString<typeof en> = {
       eyebrow: "Creator Platform",
       title: "Werkzeuge",
       description:
-        "Live Studio-Workflows und kommende Creator-Module entdecken. Aktive Tools öffnen im AI Agent — keine zusätzlichen API-Calls von dieser Seite.",
+        "Studio-Workflows und kommende Module entdecken. Aktive Tools laufen im AI Agent — diese Seite ist eine Übersicht.",
     },
   },
   toolsPage: {
@@ -1867,7 +1867,7 @@ const de: DeepString<typeof en> = {
       brandAssets: "Brand Assets 4C",
       referenceEdit: "Reference Edit 5C",
     },
-    promptPlaceholder: "Beschreibe das gewünschte Visual",
+    promptPlaceholder: "Beschreibe, was du generieren willst (Motiv, Setting, Stil, Details)…",
     agent: "Agent",
     styleProfileNone: "Style Profile: keins",
     loadingStyleProfiles: "Style Profiles werden geladen…",
@@ -2264,9 +2264,9 @@ const de: DeepString<typeof en> = {
     campaignPromptLoaded: "Kampagnen-Prompt in den AI Agent geladen.",
   },
   gallery: {
-    loading: "Asset Gallery wird geladen...",
-    empty: "Keine passenden Assets in deiner Gallery.",
-    searchPlaceholder: "Prompts durchsuchen...",
+    loading: "Asset Gallery wird geladen…",
+    empty: "Keine Assets passen zu deinen Filtern.",
+    searchPlaceholder: "Prompts oder Ideen suchen…",
     allStyleProfiles: "Alle Style Profiles",
     noStyleProfile: "Kein Style Profile",
     filterAll: "Alle",
@@ -2386,7 +2386,7 @@ const de: DeepString<typeof en> = {
     accountBalance: "Kontoguthaben",
     creditsTitle: "Credits",
     balanceDescription:
-      "Credits werden beim Generieren von Bildern im AI Agent verwendet. Jedes Standard-Bild verbraucht einen Credit.",
+      "Credits werden nur beim Generieren verbraucht. Standard-Bilder kosten 1 Credit.",
     modeUsageIntro:
       "Credits werden je nach gewähltem Modus verbraucht.",
     workflowChargeNote:
