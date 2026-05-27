@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fal } from "@fal-ai/client";
 import OpenAI from "openai";
+import { resolveElevenLabsVoiceIdFromKey } from "@/lib/lip-sync/elevenlabs-voices";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -689,25 +690,6 @@ async function uploadAudioBuffer({
   return publicUrl;
 }
 
-function resolveLipSyncVoiceIdFromKey(voiceKey: string): string | null {
-  const key = voiceKey.trim().toLowerCase();
-  const envMap: Record<string, string | undefined> = {
-    female_natural: process.env.ELEVENLABS_VOICE_FEMALE_NATURAL,
-    female_soft: process.env.ELEVENLABS_VOICE_FEMALE_SOFT,
-    female_energetic: process.env.ELEVENLABS_VOICE_FEMALE_ENERGETIC,
-    female_premium: process.env.ELEVENLABS_VOICE_FEMALE_PREMIUM,
-    male_natural: process.env.ELEVENLABS_VOICE_MALE_NATURAL,
-    male_deep: process.env.ELEVENLABS_VOICE_MALE_DEEP,
-    male_storytelling: process.env.ELEVENLABS_VOICE_MALE_STORYTELLING,
-    male_energetic: process.env.ELEVENLABS_VOICE_MALE_ENERGETIC,
-  };
-
-  const resolved = envMap[key];
-  return typeof resolved === "string" && resolved.trim().length > 0
-    ? resolved.trim()
-    : null;
-}
-
 type FalFluxJobOptions = {
   generationId: string;
   userId: string;
@@ -1277,7 +1259,7 @@ async function processTalkingCreator({
     );
   }
 
-  const mappedVoiceId = resolveLipSyncVoiceIdFromKey(voiceKey);
+  const mappedVoiceId = resolveElevenLabsVoiceIdFromKey(voiceKey);
   if (!mappedVoiceId) {
     await markFailedAndRefund({
       generationId,
@@ -2062,7 +2044,7 @@ export async function POST(req: Request) {
           );
         }
 
-        const mappedVoiceId = resolveLipSyncVoiceIdFromKey(voiceKeyOrId);
+        const mappedVoiceId = resolveElevenLabsVoiceIdFromKey(voiceKeyOrId);
         if (!mappedVoiceId) {
           await markFailedAndRefund({
             generationId,

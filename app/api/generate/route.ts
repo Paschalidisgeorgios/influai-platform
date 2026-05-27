@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  LIP_SYNC_VOICE_KEYS,
+  resolveDefaultLipSyncVoiceKey,
+} from "@/lib/lip-sync/elevenlabs-voices";
 
 export const runtime = "nodejs";
 
@@ -115,17 +119,6 @@ type GenerationJobConfig = {
 };
 
 type LipSyncInputMode = "system_voice" | "audio_upload";
-
-const LIP_SYNC_VOICE_KEYS = new Set([
-  "female_natural",
-  "female_soft",
-  "female_energetic",
-  "female_premium",
-  "male_natural",
-  "male_deep",
-  "male_storytelling",
-  "male_energetic",
-]);
 
 function resolveGenerationJobConfig(mode: GenerateMode):
   | { ok: true; config: GenerationJobConfig }
@@ -1812,7 +1805,9 @@ export async function POST(req: Request) {
           ? body.instructions.trim()
           : "";
     const resolvedVoiceKey =
-      voiceKey && LIP_SYNC_VOICE_KEYS.has(voiceKey) ? voiceKey : "female_natural";
+      voiceKey && LIP_SYNC_VOICE_KEYS.has(voiceKey)
+        ? voiceKey
+        : resolveDefaultLipSyncVoiceKey();
 
     if (imageMode === "talking_creator") {
       if (!sourceImageUrl) {
@@ -1831,7 +1826,7 @@ export async function POST(req: Request) {
 
       if (voiceKey && !LIP_SYNC_VOICE_KEYS.has(voiceKey)) {
         return NextResponse.json(
-          { error: "Invalid voiceKey for Talking Creator." },
+          { error: "Invalid voice selected." },
           { status: 400 }
         );
       }
@@ -2053,13 +2048,20 @@ export async function POST(req: Request) {
           );
         }
 
-        if (!voiceKey || !LIP_SYNC_VOICE_KEYS.has(voiceKey)) {
+        if (voiceKey && !LIP_SYNC_VOICE_KEYS.has(voiceKey)) {
           return NextResponse.json(
-            { error: "Invalid voiceKey for System Voice Lip Sync." },
+            { error: "Invalid voice selected." },
             { status: 400 }
           );
         }
       }
+
+      const resolvedLipSyncVoiceKey =
+        lipSyncInputMode === "system_voice"
+          ? voiceKey && LIP_SYNC_VOICE_KEYS.has(voiceKey)
+            ? voiceKey
+            : resolveDefaultLipSyncVoiceKey()
+          : null;
 
       const lipSyncJobConfigResult = resolveGenerationJobConfig(imageMode);
 
@@ -2073,7 +2075,7 @@ export async function POST(req: Request) {
       const lipSyncJobConfig = lipSyncJobConfigResult.config;
       const lipSyncCreditsUsed = lipSyncInputMode === "system_voice" ? 35 : 30;
       const lipSyncVoiceStyle =
-        lipSyncInputMode === "system_voice" ? (voiceKey || "female_natural") : null;
+        lipSyncInputMode === "system_voice" ? resolvedLipSyncVoiceKey : null;
       const finalPrompt =
         "Synchronize the provided audio with the source video while preserving the original subject and video quality.";
 
@@ -2143,7 +2145,7 @@ export async function POST(req: Request) {
         source_video_url: resolvedSourceVideoUrl,
         audio_url: lipSyncInputMode === "audio_upload" ? audioUrl : null,
         script_text: lipSyncInputMode === "system_voice" ? scriptText : null,
-        voice_key: lipSyncInputMode === "system_voice" ? voiceKey : null,
+        voice_key: lipSyncInputMode === "system_voice" ? resolvedLipSyncVoiceKey : null,
         voice_id: null,
         voice_style: lipSyncVoiceStyle,
         social_platform: outputFormat.platform,

@@ -35,15 +35,10 @@ Lip Sync Studio produces **talking creator clips** from **source video + audio**
 
 - Lip sync provider: `fal-ai/sync-lipsync/v2/pro`
 - System Voice TTS provider: ElevenLabs `eleven_multilingual_v2`
-- Voice keys are mapped server-side to env-specific IDs:
-  - `ELEVENLABS_VOICE_FEMALE_NATURAL`
-  - `ELEVENLABS_VOICE_FEMALE_SOFT`
-  - `ELEVENLABS_VOICE_FEMALE_ENERGETIC`
-  - `ELEVENLABS_VOICE_FEMALE_PREMIUM`
-  - `ELEVENLABS_VOICE_MALE_NATURAL`
-  - `ELEVENLABS_VOICE_MALE_DEEP`
-  - `ELEVENLABS_VOICE_MALE_STORYTELLING`
-  - `ELEVENLABS_VOICE_MALE_ENERGETIC`
+- **21 named voices** (`roger`, `sarah`, `laura`, `charlie`, `george`, `callum`, `river`, `harry`, `liam`, `alice`, `matilda`, `will`, `jessica`, `eric`, `bella`, `chris`, `brian`, `daniel`, `lily`, `adam`, `bill`) map to `ELEVENLABS_VOICE_*` env vars (see [ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md)).
+- **8 category presets** (`female_natural`, `female_soft`, `female_energetic`, `female_premium`, `male_natural`, `male_deep`, `male_storytelling`, `male_energetic`) remain supported as aliases.
+- Default `voiceKey` when omitted: `sarah` if `ELEVENLABS_VOICE_SARAH` is set, else `female_natural` if configured, else `sarah`.
+- UI: Voice Library with Recommended, Female, Male, and Category sections. Preview via local `public/audio/voices/{voiceKey}.mp3` (no ElevenLabs call). Optional `NEXT_PUBLIC_ELEVENLABS_CONFIGURED_VOICE_KEYS` disables unlisted voices in the UI.
 
 If a selected voice key has no configured voice ID, the worker marks the job as failed with refund and
 `Selected system voice is not configured.` Upload Audio remains the fallback path.

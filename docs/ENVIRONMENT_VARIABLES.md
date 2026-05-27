@@ -83,6 +83,32 @@ Use placeholders below when sharing examples:
 
 ### Voice ID env variables (account-specific)
 
+Named ElevenLabs voices (Lip Sync voice library):
+
+- `ELEVENLABS_VOICE_ROGER`
+- `ELEVENLABS_VOICE_SARAH`
+- `ELEVENLABS_VOICE_LAURA`
+- `ELEVENLABS_VOICE_CHARLIE`
+- `ELEVENLABS_VOICE_GEORGE`
+- `ELEVENLABS_VOICE_CALLUM`
+- `ELEVENLABS_VOICE_RIVER`
+- `ELEVENLABS_VOICE_HARRY`
+- `ELEVENLABS_VOICE_LIAM`
+- `ELEVENLABS_VOICE_ALICE`
+- `ELEVENLABS_VOICE_MATILDA`
+- `ELEVENLABS_VOICE_WILL`
+- `ELEVENLABS_VOICE_JESSICA`
+- `ELEVENLABS_VOICE_ERIC`
+- `ELEVENLABS_VOICE_BELLA`
+- `ELEVENLABS_VOICE_CHRIS`
+- `ELEVENLABS_VOICE_BRIAN`
+- `ELEVENLABS_VOICE_DANIEL`
+- `ELEVENLABS_VOICE_LILY`
+- `ELEVENLABS_VOICE_ADAM`
+- `ELEVENLABS_VOICE_BILL`
+
+Category / style presets (legacy aliases, still supported):
+
 - `ELEVENLABS_VOICE_FEMALE_NATURAL`
 - `ELEVENLABS_VOICE_FEMALE_SOFT`
 - `ELEVENLABS_VOICE_FEMALE_ENERGETIC`
@@ -92,9 +118,20 @@ Use placeholders below when sharing examples:
 - `ELEVENLABS_VOICE_MALE_STORYTELLING`
 - `ELEVENLABS_VOICE_MALE_ENERGETIC`
 
+### `NEXT_PUBLIC_ELEVENLABS_CONFIGURED_VOICE_KEYS` (optional)
+
+- **Example:** `sarah,laura,liam,brian,matilda,george,female_natural`
+- **Notes:** Comma-separated `voiceKey` values that are enabled in the Lip Sync UI. When set, voices not listed show as disabled (“Not configured yet”). Server-side validation still uses the `ELEVENLABS_VOICE_*` IDs above.
+
 Voice IDs are account-dependent and must be set in Vercel per environment.
-If a selected voice style has no configured voice ID, worker fails with refund.
-Upload Audio mode stays available as fallback.
+If a selected voice key has no configured voice ID, the worker fails with refund and
+`Selected system voice is not configured.` Upload Audio mode stays available as fallback.
+
+### Local voice previews (no API cost)
+
+Place optional preview MP3 files under `public/audio/voices/` (e.g. `public/audio/voices/sarah.mp3`).
+The dashboard plays these files for “Listen” — no ElevenLabs API call and no credits.
+Missing files show “Preview not available yet.” in the UI.
 
 ---
 

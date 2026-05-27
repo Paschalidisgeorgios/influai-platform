@@ -30,6 +30,13 @@ import {
   Zap,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import {
+  ELEVENLABS_NAMED_VOICES,
+  LIP_SYNC_CATEGORY_VOICE_STYLES,
+  LIP_SYNC_RECOMMENDED_VOICE_KEYS,
+  type ElevenLabsVoiceDefinition,
+  isClientVoiceConfigured,
+} from "@/lib/lip-sync/elevenlabs-voices";
 import { useDashboardLanguage } from "./DashboardLanguageProvider";
 import { formatCopy, type DashboardLanguage } from "./i18n";
 
@@ -91,63 +98,161 @@ const LIP_SYNC_SOURCE_MAX_BYTES = 50 * 1024 * 1024;
 const LIP_SYNC_AUDIO_MAX_BYTES = 25 * 1024 * 1024;
 type LipSyncInputMode = "system_voice" | "audio_upload";
 
-type LipSyncVoiceStyle = {
-  key: string;
-  label: string;
-  description: string;
-  group: "female" | "male";
+type LipSyncVoiceLibraryCopy = {
+  voiceLibrary: string;
+  recommendedVoices: string;
+  femaleVoices: string;
+  maleVoices: string;
+  categoryVoiceStyles: string;
+  preview: string;
+  previewListen: string;
+  notConfiguredYet: string;
+  previewNotAvailable: string;
 };
 
-const LIP_SYNC_VOICE_STYLES: LipSyncVoiceStyle[] = [
-  {
-    key: "female_natural",
-    label: "Female Natural",
-    description: "Natural, friendly creator voice",
-    group: "female",
-  },
-  {
-    key: "female_soft",
-    label: "Female Soft",
-    description: "Soft, polished, beauty/lifestyle voice",
-    group: "female",
-  },
-  {
-    key: "female_energetic",
-    label: "Female Energetic",
-    description: "Bright, upbeat, TikTok/Reels style",
-    group: "female",
-  },
-  {
-    key: "female_premium",
-    label: "Female Premium",
-    description: "Elegant, brand-ready campaign voice",
-    group: "female",
-  },
-  {
-    key: "male_natural",
-    label: "Male Natural",
-    description: "Clear, neutral creator voice",
-    group: "male",
-  },
-  {
-    key: "male_deep",
-    label: "Male Deep",
-    description: "Deep, confident, premium voice",
-    group: "male",
-  },
-  {
-    key: "male_storytelling",
-    label: "Male Storytelling",
-    description: "Warm, narrative, character voice",
-    group: "male",
-  },
-  {
-    key: "male_energetic",
-    label: "Male Energetic",
-    description: "Clear, upbeat, ad-style voice",
-    group: "male",
-  },
-];
+function LipSyncVoiceCard({
+  voice,
+  selected,
+  configured,
+  copy,
+  onSelect,
+}: {
+  voice: ElevenLabsVoiceDefinition;
+  selected: boolean;
+  configured: boolean;
+  copy: LipSyncVoiceLibraryCopy;
+  onSelect: (key: string) => void;
+}) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [previewUnavailable, setPreviewUnavailable] = useState(false);
+
+  useEffect(() => {
+    setPreviewUnavailable(false);
+  }, [voice.key]);
+
+  async function handlePreview(event: React.MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    if (!configured || previewUnavailable) return;
+
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    try {
+      audio.currentTime = 0;
+      await audio.play();
+    } catch {
+      setPreviewUnavailable(true);
+    }
+  }
+
+  return (
+    <div
+      className={`rounded-md border px-2 py-1.5 transition ${
+        selected
+          ? "border-violet-400/50 bg-violet-500/20"
+          : "border-white/10 bg-black/25"
+      } ${!configured ? "opacity-55" : ""}`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <button
+          type="button"
+          disabled={!configured}
+          onClick={() => onSelect(voice.key)}
+          className="min-w-0 flex-1 text-left disabled:cursor-not-allowed"
+        >
+          <p className="text-[10px] font-bold text-white/85">{voice.label}</p>
+          <p className="text-[9px] text-white/45">{voice.description}</p>
+        </button>
+        <button
+          type="button"
+          onClick={handlePreview}
+          disabled={!configured || previewUnavailable}
+          title={copy.preview}
+          className="shrink-0 rounded-full border border-white/15 bg-black/35 px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-white/65 transition hover:border-violet-400/35 hover:text-violet-100 disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          {copy.previewListen}
+        </button>
+      </div>
+      {!configured ? (
+        <p className="mt-1 text-[8px] font-medium text-amber-200/85">
+          {copy.notConfiguredYet}
+        </p>
+      ) : null}
+      {previewUnavailable ? (
+        <p className="mt-1 text-[8px] text-white/38">{copy.previewNotAvailable}</p>
+      ) : null}
+      <audio
+        ref={audioRef}
+        src={voice.previewPath}
+        preload="none"
+        onError={() => setPreviewUnavailable(true)}
+        className="sr-only"
+      />
+    </div>
+  );
+}
+
+function LipSyncVoiceLibrary({
+  copy,
+  voiceKey,
+  onVoiceKeyChange,
+  isEnabled,
+}: {
+  copy: LipSyncVoiceLibraryCopy;
+  voiceKey: string;
+  onVoiceKeyChange: (value: string) => void;
+  isEnabled: boolean;
+}) {
+  const recommendedVoices = LIP_SYNC_RECOMMENDED_VOICE_KEYS.map((key) =>
+    ELEVENLABS_NAMED_VOICES.find((voice) => voice.key === key)
+  ).filter((voice): voice is ElevenLabsVoiceDefinition => Boolean(voice));
+  const femaleVoices = ELEVENLABS_NAMED_VOICES.filter((voice) => voice.group === "female");
+  const maleVoices = ELEVENLABS_NAMED_VOICES.filter((voice) => voice.group === "male");
+  function renderVoiceGrid(voices: ElevenLabsVoiceDefinition[]) {
+    return (
+      <div className="mt-1.5 grid gap-1.5 sm:grid-cols-2">
+        {voices.map((voice) => (
+          <LipSyncVoiceCard
+            key={voice.key}
+            voice={voice}
+            selected={voiceKey === voice.key}
+            configured={isEnabled && isClientVoiceConfigured(voice.key)}
+            copy={copy}
+            onSelect={onVoiceKeyChange}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-white/12 bg-black/25 p-2.5">
+      <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
+        {copy.voiceLibrary}
+      </p>
+
+      <p className="mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-200/85">
+        {copy.recommendedVoices}
+      </p>
+      {renderVoiceGrid(recommendedVoices)}
+
+      <p className="mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-200/85">
+        {copy.femaleVoices}
+      </p>
+      {renderVoiceGrid(femaleVoices)}
+
+      <p className="mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-200/85">
+        {copy.maleVoices}
+      </p>
+      {renderVoiceGrid(maleVoices)}
+
+      <p className="mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-white/45">
+        {copy.categoryVoiceStyles}
+      </p>
+      {renderVoiceGrid(LIP_SYNC_CATEGORY_VOICE_STYLES)}
+    </div>
+  );
+}
 
 function isLipSyncWorkflow(workflow?: string | null) {
   return workflow === "lip_sync";
@@ -1559,10 +1664,15 @@ function TalkingCreatorPanel({
     uploadFailed: string;
     scriptLabel: string;
     scriptPlaceholder: string;
-    voiceLabel: string;
-    chooseVoice: string;
-    femaleStyleVoices: string;
-    maleStyleVoices: string;
+    voiceLibrary: string;
+    recommendedVoices: string;
+    femaleVoices: string;
+    maleVoices: string;
+    categoryVoiceStyles: string;
+    preview: string;
+    previewListen: string;
+    notConfiguredYet: string;
+    previewNotAvailable: string;
     activeNote: string;
   };
   panelRef: React.RefObject<HTMLDivElement | null>;
@@ -1580,8 +1690,6 @@ function TalkingCreatorPanel({
   const blobPreviewRef = useRef<string | null>(null);
   const [localFileError, setLocalFileError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const femaleVoices = LIP_SYNC_VOICE_STYLES.filter((v) => v.group === "female");
-  const maleVoices = LIP_SYNC_VOICE_STYLES.filter((v) => v.group === "male");
 
   useEffect(() => {
     return () => {
@@ -1730,30 +1838,22 @@ function TalkingCreatorPanel({
             placeholder={copy.scriptPlaceholder}
             className="min-h-[4.8rem] resize-y rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] leading-4 text-white/70 placeholder:text-white/22 outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/30 disabled:opacity-50"
           />
-          <label className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
-            {copy.voiceLabel}
-          </label>
-          <select
-            value={voiceKey}
-            onChange={(event) => onVoiceKeyChange(event.target.value)}
-            disabled={!isEnabled}
-            className="rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] text-white/75 disabled:opacity-50"
-          >
-            <optgroup label={copy.femaleStyleVoices}>
-              {femaleVoices.map((voice) => (
-                <option key={voice.key} value={voice.key}>
-                  {voice.label}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label={copy.maleStyleVoices}>
-              {maleVoices.map((voice) => (
-                <option key={voice.key} value={voice.key}>
-                  {voice.label}
-                </option>
-              ))}
-            </optgroup>
-          </select>
+          <LipSyncVoiceLibrary
+            copy={{
+              voiceLibrary: copy.voiceLibrary,
+              recommendedVoices: copy.recommendedVoices,
+              femaleVoices: copy.femaleVoices,
+              maleVoices: copy.maleVoices,
+              categoryVoiceStyles: copy.categoryVoiceStyles,
+              preview: copy.preview,
+              previewListen: copy.previewListen,
+              notConfiguredYet: copy.notConfiguredYet,
+              previewNotAvailable: copy.previewNotAvailable,
+            }}
+            voiceKey={voiceKey}
+            onVoiceKeyChange={onVoiceKeyChange}
+            isEnabled={isEnabled}
+          />
         </div>
       </div>
       <p className="mt-2.5 text-[9px] leading-4 text-white/32">{copy.activeNote}</p>
@@ -1815,9 +1915,15 @@ function LipSyncStudioPanel({
     activeNote: string;
     inputModeSystemVoice: string;
     inputModeUploadAudio: string;
-    chooseVoice: string;
-    femaleStyleVoices: string;
-    maleStyleVoices: string;
+    voiceLibrary: string;
+    recommendedVoices: string;
+    femaleVoices: string;
+    maleVoices: string;
+    categoryVoiceStyles: string;
+    preview: string;
+    previewListen: string;
+    notConfiguredYet: string;
+    previewNotAvailable: string;
     scriptLabel: string;
     scriptPlaceholder: string;
     scriptRequired: string;
@@ -2031,8 +2137,6 @@ function LipSyncStudioPanel({
     }
   }
 
-  const femaleVoices = LIP_SYNC_VOICE_STYLES.filter((voice) => voice.group === "female");
-  const maleVoices = LIP_SYNC_VOICE_STYLES.filter((voice) => voice.group === "male");
   const panelStatus = isEnabled ? copy.statusActive : copy.statusPlanned;
   const panelIntro = isEnabled ? copy.introActive : copy.introPlanned;
   const uploading = uploadingSource || uploadingAudio;
@@ -2237,51 +2341,22 @@ function LipSyncStudioPanel({
 
       {inputMode === "system_voice" ? (
         <div className="mt-2.5 space-y-2">
-          <div className="rounded-lg border border-white/12 bg-black/25 p-2.5">
-            <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
-              {copy.chooseVoice}
-            </p>
-            <p className="mt-2 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-200/85">
-              {copy.femaleStyleVoices}
-            </p>
-            <div className="mt-1.5 grid gap-1.5">
-              {femaleVoices.map((voice) => (
-                <button
-                  key={voice.key}
-                  type="button"
-                  onClick={() => onVoiceKeyChange(voice.key)}
-                  className={`rounded-md border px-2 py-1.5 text-left transition ${
-                    voiceKey === voice.key
-                      ? "border-violet-400/50 bg-violet-500/20 text-violet-100"
-                      : "border-white/10 bg-black/25 text-white/65 hover:border-violet-400/35"
-                  }`}
-                >
-                  <p className="text-[10px] font-bold">{voice.label}</p>
-                  <p className="text-[9px] text-white/45">{voice.description}</p>
-                </button>
-              ))}
-            </div>
-            <p className="mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-200/85">
-              {copy.maleStyleVoices}
-            </p>
-            <div className="mt-1.5 grid gap-1.5">
-              {maleVoices.map((voice) => (
-                <button
-                  key={voice.key}
-                  type="button"
-                  onClick={() => onVoiceKeyChange(voice.key)}
-                  className={`rounded-md border px-2 py-1.5 text-left transition ${
-                    voiceKey === voice.key
-                      ? "border-violet-400/50 bg-violet-500/20 text-violet-100"
-                      : "border-white/10 bg-black/25 text-white/65 hover:border-violet-400/35"
-                  }`}
-                >
-                  <p className="text-[10px] font-bold">{voice.label}</p>
-                  <p className="text-[9px] text-white/45">{voice.description}</p>
-                </button>
-              ))}
-            </div>
-          </div>
+          <LipSyncVoiceLibrary
+            copy={{
+              voiceLibrary: copy.voiceLibrary,
+              recommendedVoices: copy.recommendedVoices,
+              femaleVoices: copy.femaleVoices,
+              maleVoices: copy.maleVoices,
+              categoryVoiceStyles: copy.categoryVoiceStyles,
+              preview: copy.preview,
+              previewListen: copy.previewListen,
+              notConfiguredYet: copy.notConfiguredYet,
+              previewNotAvailable: copy.previewNotAvailable,
+            }}
+            voiceKey={voiceKey}
+            onVoiceKeyChange={onVoiceKeyChange}
+            isEnabled={isEnabled && systemVoiceAvailable}
+          />
 
           <div>
             <label
@@ -2466,14 +2541,12 @@ export default function AiAgentStudio({
   const [lipSyncInputMode, setLipSyncInputMode] =
     useState<LipSyncInputMode>("audio_upload");
   const [lipSyncScriptText, setLipSyncScriptText] = useState("");
-  const [lipSyncVoiceKey, setLipSyncVoiceKey] = useState("female_natural");
+  const [lipSyncVoiceKey, setLipSyncVoiceKey] = useState("sarah");
   const [talkingCreatorSourceUrl, setTalkingCreatorSourceUrl] = useState<string | null>(
     null
   );
   const [talkingCreatorScriptText, setTalkingCreatorScriptText] = useState("");
-  const [talkingCreatorVoiceKey, setTalkingCreatorVoiceKey] = useState(
-    "female_natural"
-  );
+  const [talkingCreatorVoiceKey, setTalkingCreatorVoiceKey] = useState("sarah");
 
   const [prompt, setPrompt] = useState("");
   const [characters, setCharacters] = useState<Character[]>([]);
