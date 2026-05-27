@@ -19,6 +19,10 @@ Use placeholders below when sharing examples:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Yes | Browser auth + RLS client |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes | **No** | API routes, worker, webhooks |
 | `OPENAI_API_KEY` | Yes | **No** | Standard image generation |
+| `FAL_KEY` | Yes (for video/lip sync) | **No** | fal.ai Video Studio and Lip Sync |
+| `ELEVENLABS_API_KEY` | Optional (required for System Voice) | **No** | ElevenLabs text-to-speech for Lip Sync |
+| `ENABLE_ELEVENLABS_TTS` | Optional | **No** | Server gate for System Voice mode |
+| `NEXT_PUBLIC_ENABLE_ELEVENLABS_TTS` | Optional | Yes | Client gate for System Voice mode |
 | `GENERATION_WORKER_SECRET` | Yes | **No** | Worker route authentication |
 | `STRIPE_SECRET_KEY` | Yes | **No** | Checkout + webhook |
 | `STRIPE_WEBHOOK_SECRET` | Yes | **No** | Stripe webhook signature |
@@ -58,6 +62,38 @@ Use placeholders below when sharing examples:
 - **Example:** `sk-proj-<redacted>`
 - **Where:** OpenAI Platform → API keys
 - **Notes:** Powers Standard Image (`gpt-image-1`) via generate worker. Invalid key → generations fail.
+
+---
+
+## fal.ai
+
+### `FAL_KEY`
+
+- **Where:** fal.ai dashboard credentials
+- **Notes:** Required for `video_image_to_video` and `lip_sync` worker workflows.
+
+---
+
+## ElevenLabs (Lip Sync System Voice)
+
+### `ELEVENLABS_API_KEY`
+
+- **Where:** ElevenLabs dashboard API keys
+- **Notes:** Required when `lipSyncInputMode = system_voice`.
+
+### Voice ID env variables (account-specific)
+
+- `ELEVENLABS_VOICE_FEMALE_NATURAL`
+- `ELEVENLABS_VOICE_FEMALE_SOFT`
+- `ELEVENLABS_VOICE_FEMALE_ENERGETIC`
+- `ELEVENLABS_VOICE_FEMALE_PREMIUM`
+- `ELEVENLABS_VOICE_MALE_NATURAL`
+- `ELEVENLABS_VOICE_MALE_DEEP`
+- `ELEVENLABS_VOICE_MALE_STORYTELLING`
+- `ELEVENLABS_VOICE_MALE_ENERGETIC`
+
+Voice IDs are account-dependent and must be set in Vercel per environment.
+If a selected voice style has no configured voice ID, worker fails with refund.
 
 ---
 
@@ -168,7 +204,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 These may exist in older routes but are **not** part of the launch MVP env checklist:
 
 - `REPLICATE_API_TOKEN` — legacy image paths
-- `FAL_KEY` — character training (disabled in MVP)
+- `FAL_KEY` — required for Video Studio + Lip Sync (keep server-only)
 - `NEXT_PUBLIC_STRIPE_PRICE_ID_*` — alternate naming in some components; canonical checkout uses `STRIPE_PRICE_*`
 
 If build/runtime errors mention missing vars, grep the codebase before adding to Vercel.

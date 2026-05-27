@@ -646,10 +646,13 @@ const en = {
     studioTabLipSyncPlanned: "Lip Sync Studio · Coming soon",
     lipSyncMissingSource: "Upload source media for Lip Sync Studio.",
     lipSyncMissingAudio: "Upload audio for Lip Sync Studio.",
+    lipSyncMissingScript: "Script required for System Voice.",
+    lipSyncSystemVoicesNotConfigured:
+      "System voices are not configured yet. Upload audio instead.",
     lipSyncLongerHint:
       "Lip Sync may take longer than image generation.",
     generateLipSync: "Generate Lip Sync",
-    imageModeLipSyncActiveNote: "Lip Sync Studio · Beta · 30 Credits",
+    imageModeLipSyncActiveNote: "Lip Sync Studio · Beta · 30-35 Credits",
     videoStudioMissingSource: "Upload a source image for Video Studio.",
     videoStudioMissingMotion: "Add a motion prompt for Video Studio.",
     videoStudioLongerHint:
@@ -768,8 +771,20 @@ const en = {
           instructionsLabel: "Instructions (optional)",
           instructionsPlaceholder:
             "Describe expression, energy, or scene mood…",
+          inputModeSystemVoice: "System Voice",
+          inputModeUploadAudio: "Upload Audio",
+          chooseVoice: "Choose voice",
+          femaleStyleVoices: "Female-style voices",
+          maleStyleVoices: "Male-style voices",
+          scriptLabel: "Script",
+          scriptPlaceholder:
+            "Enter the spoken text for ElevenLabs system voice generation…",
+          scriptRequired: "Script required",
+          systemVoicesNotConfigured: "System voices are not configured yet.",
+          uploadAudioInstead: "Upload audio instead.",
+          usePreviousVideo: "Use previous video",
           activeNote:
-            "Lip Sync uses your source media and audio — no text-to-speech.",
+            "Lip Sync supports uploaded audio (30 credits) or System Voice (35 credits).",
         },
       },
       videoStudio: {
@@ -1062,9 +1077,10 @@ const en = {
       referenceEdit: "Reference Edit: 5 Credits",
       brandAssets: "Brand Assets: 4 Credits",
       videoStudio: "Video Studio: 25 Credits",
-      lipSync: "Lip Sync Studio: 30 Credits",
+      lipSync: "Lip Sync Studio: 30-35 Credits",
     },
-    lipSyncUsageNote: "Lip Sync uses source media and audio input.",
+    lipSyncUsageNote:
+      "Lip Sync uses source video + uploaded audio (30) or System Voice (35).",
     oneCreditRule: "1 standard image = 1 credit",
     availableCredits: "Available credits",
     refreshing: "Refreshing balance…",
@@ -1817,10 +1833,13 @@ const de: DeepString<typeof en> = {
     lipSyncMissingSource:
       "Lade Quellmedien für Lip Sync Studio hoch.",
     lipSyncMissingAudio: "Lade Audio für Lip Sync Studio hoch.",
+    lipSyncMissingScript: "Skript für System Voice erforderlich.",
+    lipSyncSystemVoicesNotConfigured:
+      "System-Stimmen sind noch nicht konfiguriert. Nutze stattdessen Audio-Upload.",
     lipSyncLongerHint:
       "Lip Sync kann länger dauern als Bild-Generierung.",
     generateLipSync: "Lip Sync generieren",
-    imageModeLipSyncActiveNote: "Lip Sync Studio · Beta · 30 Credits",
+    imageModeLipSyncActiveNote: "Lip Sync Studio · Beta · 30-35 Credits",
     videoStudioMissingSource:
       "Lade ein Quellbild für Video Studio hoch.",
     videoStudioMissingMotion:
@@ -1943,8 +1962,21 @@ const de: DeepString<typeof en> = {
           instructionsLabel: "Anweisungen (optional)",
           instructionsPlaceholder:
             "Beschreibe Ausdruck, Energie oder Szenenstimmung…",
+          inputModeSystemVoice: "System Voice",
+          inputModeUploadAudio: "Audio hochladen",
+          chooseVoice: "Stimme auswählen",
+          femaleStyleVoices: "Weibliche Voice-Styles",
+          maleStyleVoices: "Männliche Voice-Styles",
+          scriptLabel: "Skript",
+          scriptPlaceholder:
+            "Gesprochenen Text für die ElevenLabs-Systemstimme eingeben…",
+          scriptRequired: "Skript erforderlich",
+          systemVoicesNotConfigured:
+            "System-Stimmen sind noch nicht konfiguriert.",
+          uploadAudioInstead: "Nutze stattdessen Audio-Upload.",
+          usePreviousVideo: "Vorheriges Video verwenden",
           activeNote:
-            "Lip Sync nutzt Quellmedien und Audio — kein Text-to-Speech.",
+            "Lip Sync unterstützt Audio-Upload (30 Credits) oder System Voice (35 Credits).",
         },
       },
       videoStudio: {
@@ -2248,10 +2280,10 @@ const de: DeepString<typeof en> = {
       referenceEdit: "Reference Edit: 5 Credits",
       brandAssets: "Brand Assets: 4 Credits",
       videoStudio: "Video Studio: 25 Credits",
-      lipSync: "Lip Sync Studio: 30 Credits",
+      lipSync: "Lip Sync Studio: 30-35 Credits",
     },
     lipSyncUsageNote:
-      "Lip Sync nutzt Quellmedien und Audio als Eingabe.",
+      "Lip Sync nutzt Quellvideo + Audio-Upload (30) oder System Voice (35).",
     oneCreditRule: "1 Standard-Bild = 1 Credit",
     availableCredits: "Verfügbare Credits",
     refreshing: "Guthaben wird aktualisiert…",

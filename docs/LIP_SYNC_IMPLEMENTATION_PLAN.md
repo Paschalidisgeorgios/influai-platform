@@ -2,28 +2,51 @@
 
 **Document type:** Technical implementation specification  
 **Audience:** Engineering, product, operations, legal/compliance (review before Live)  
-**Status:** **Planned** (disabled for current release)  
-**Last updated:** 2026-05-22  
+**Status:** **Beta (feature-flagged)**  
+**Last updated:** 2026-05-27  
 **Related:** [CREDIT_AND_MODE_STRATEGY.md](./CREDIT_AND_MODE_STRATEGY.md), [ROADMAP_IMAGE_VIDEO_MODES.md](./ROADMAP_IMAGE_VIDEO_MODES.md), [VIDEO_STUDIO_IMPLEMENTATION_PLAN.md](./VIDEO_STUDIO_IMPLEMENTATION_PLAN.md)
 
-This specification describes **Lip Sync Studio** integration. Runtime is gated by feature flags; without flags the UI shows Coming soon.
+This specification describes **Lip Sync Studio** integration. Runtime is gated by feature flags:
+
+- `ENABLE_FAL_LIP_SYNC` + `NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC`
+- `ENABLE_ELEVENLABS_TTS` + `NEXT_PUBLIC_ENABLE_ELEVENLABS_TTS` (System Voice mode)
 
 ---
 
 ## 1. Goal
 
-Lip Sync Studio produces **talking creator clips** from **source media + uploaded audio** (no TTS in v1).
+Lip Sync Studio produces **talking creator clips** from **source video + audio** with two modes:
+
+1. **Upload Audio**: user uploads own audio.
+2. **System Voice**: user enters script + voice style, ElevenLabs generates audio first.
 
 | Objective | Detail |
 |-----------|--------|
 | Core output | Lip-synced video in `generations.video_url` |
-| Inputs | Source image or video URL + audio URL; optional instructions |
-| Credits | **Estimated 20–80** per job depending on duration |
-| MVP scope | **No** script-only, **no** TTS, **no** auto social posting |
+| Inputs | Source video URL + (`audio_url` or `script_text` + `voice_key`) |
+| Credits | **30** (Upload Audio) / **35** (System Voice) |
+| MVP scope | No auto social posting, no extra lip-sync providers beyond `fal-ai/sync-lipsync/v2/pro` |
 
 ---
 
 ## 2. Future provider candidates
+
+## 2b. Current provider chain (implemented)
+
+- Lip sync provider: `fal-ai/sync-lipsync/v2/pro`
+- System Voice TTS provider: ElevenLabs `eleven_multilingual_v2`
+- Voice keys are mapped server-side to env-specific IDs:
+  - `ELEVENLABS_VOICE_FEMALE_NATURAL`
+  - `ELEVENLABS_VOICE_FEMALE_SOFT`
+  - `ELEVENLABS_VOICE_FEMALE_ENERGETIC`
+  - `ELEVENLABS_VOICE_FEMALE_PREMIUM`
+  - `ELEVENLABS_VOICE_MALE_NATURAL`
+  - `ELEVENLABS_VOICE_MALE_DEEP`
+  - `ELEVENLABS_VOICE_MALE_STORYTELLING`
+  - `ELEVENLABS_VOICE_MALE_ENERGETIC`
+
+If a selected voice key has no configured voice ID, the worker marks the job as failed with refund and
+`Selected system voice is not configured.`
 
 | Category | Examples (evaluate at implementation) |
 |----------|----------------------------------------|

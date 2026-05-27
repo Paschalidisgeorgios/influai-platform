@@ -19,8 +19,6 @@ type ImageMode =
 type GenerateMode = ImageMode | "video_image_to_video" | "lip_sync";
 
 const FAL_KLING_I2V_MODEL = "fal-ai/kling-video/v2.1/standard/image-to-video";
-/** Image + audio → talking video (fal.ai) */
-const FAL_LIP_SYNC_IMAGE_MODEL = "fal-ai/ai-avatar";
 /** Video + audio → lip-synced video (fal.ai Sync Lipsync 2 Pro) */
 const FAL_LIP_SYNC_VIDEO_MODEL = "fal-ai/sync-lipsync/v2/pro";
 
@@ -106,6 +104,19 @@ type GenerationJobConfig = {
   creditsUsed: number;
   transactionSource: string;
 };
+
+type LipSyncInputMode = "system_voice" | "audio_upload";
+
+const LIP_SYNC_VOICE_KEYS = new Set([
+  "female_natural",
+  "female_soft",
+  "female_energetic",
+  "female_premium",
+  "male_natural",
+  "male_deep",
+  "male_storytelling",
+  "male_energetic",
+]);
 
 function resolveGenerationJobConfig(mode: GenerateMode):
   | { ok: true; config: GenerationJobConfig }
@@ -966,6 +977,12 @@ function parseSourceMediaType(value: unknown): "image" | "video" {
   return value === "video" ? "video" : "image";
 }
 
+function parseLipSyncInputMode(value: unknown): LipSyncInputMode | null {
+  if (value === "system_voice") return "system_voice";
+  if (value === "audio_upload") return "audio_upload";
+  return null;
+}
+
 function buildReferenceEditFinalPrompt(editInstruction: string) {
   return assembleFinalPrompt([
     `Edit the provided source image according to the instructions below.
@@ -1748,8 +1765,15 @@ export async function POST(req: Request) {
         : "";
     const sourceMediaUrl =
       typeof body.sourceMediaUrl === "string" ? body.sourceMediaUrl.trim() : "";
+    const sourceVideoUrl =
+      typeof body.sourceVideoUrl === "string" ? body.sourceVideoUrl.trim() : "";
     const audioUrl =
       typeof body.audioUrl === "string" ? body.audioUrl.trim() : "";
+    const scriptText =
+      typeof body.scriptText === "string" ? body.scriptText.trim() : "";
+    const voiceKey =
+      typeof body.voiceKey === "string" ? body.voiceKey.trim() : "";
+    const lipSyncInputMode = parseLipSyncInputMode(body.lipSyncInputMode);
     const sourceMediaType = parseSourceMediaType(body.sourceMediaType);
     const lipSyncInstructions =
       typeof body.lipSyncInstructions === "string"
@@ -1759,18 +1783,57 @@ export async function POST(req: Request) {
           : "";
 
     if (imageMode === "lip_sync") {
-      if (!sourceMediaUrl) {
+      const resolvedSourceVideoUrl = sourceVideoUrl || sourceMediaUrl;
+
+      if (!resolvedSourceVideoUrl) {
         return NextResponse.json(
           { error: "Source video URL is required for Lip Sync Studio." },
           { status: 400 }
         );
       }
 
-      if (!audioUrl) {
+      if (!lipSyncInputMode) {
+        return NextResponse.json(
+          { error: "lipSyncInputMode is required for Lip Sync Studio." },
+          { status: 400 }
+        );
+      }
+
+      if (lipSyncInputMode === "audio_upload" && !audioUrl) {
         return NextResponse.json(
           { error: "Audio URL is required for Lip Sync Studio." },
           { status: 400 }
         );
+      }
+
+      if (lipSyncInputMode === "system_voice") {
+        if (process.env.ENABLE_ELEVENLABS_TTS !== "true") {
+          return NextResponse.json(
+            { error: "System Voice is not enabled. Set ENABLE_ELEVENLABS_TTS=true." },
+            { status: 400 }
+          );
+        }
+
+        if (!process.env.ELEVENLABS_API_KEY) {
+          return NextResponse.json(
+            { error: "ELEVENLABS_API_KEY is not configured." },
+            { status: 500 }
+          );
+        }
+
+        if (!scriptText) {
+          return NextResponse.json(
+            { error: "Script is required for System Voice Lip Sync." },
+            { status: 400 }
+          );
+        }
+
+        if (!voiceKey || !LIP_SYNC_VOICE_KEYS.has(voiceKey)) {
+          return NextResponse.json(
+            { error: "Invalid voiceKey for System Voice Lip Sync." },
+            { status: 400 }
+          );
+        }
       }
 
       const lipSyncJobConfigResult = resolveGenerationJobConfig(imageMode);
@@ -1783,6 +1846,7 @@ export async function POST(req: Request) {
       }
 
       const lipSyncJobConfig = lipSyncJobConfigResult.config;
+      const lipSyncCreditsUsed = lipSyncInputMode === "system_voice" ? 35 : 30;
       const finalPrompt =
         "Synchronize the provided audio with the source video while preserving the original subject and video quality.";
 
@@ -1816,7 +1880,7 @@ export async function POST(req: Request) {
       const { data: lipSyncCreditSuccess, error: lipSyncCreditError } =
         await supabaseAdmin.rpc("consume_user_credits", {
           target_user_id: user.id,
-          credits_to_consume: lipSyncJobConfig.creditsUsed,
+          credits_to_consume: lipSyncCreditsUsed,
         });
 
       if (lipSyncCreditError) {
@@ -1832,7 +1896,7 @@ export async function POST(req: Request) {
         return NextResponse.json(
           {
             error: "Not enough credits",
-            requiredCredits: lipSyncJobConfig.creditsUsed,
+            requiredCredits: lipSyncCreditsUsed,
             reason: "insufficient_credits",
           },
           { status: 402 }
@@ -1849,14 +1913,16 @@ export async function POST(req: Request) {
         provider: lipSyncJobConfig.provider,
         model: lipSyncJobConfig.model,
         workflow: lipSyncJobConfig.workflow,
-        source_video_url: sourceMediaUrl,
-        audio_url: audioUrl,
+        source_video_url: resolvedSourceVideoUrl,
+        audio_url: lipSyncInputMode === "audio_upload" ? audioUrl : null,
+        script_text: lipSyncInputMode === "system_voice" ? scriptText : null,
+        voice_key: lipSyncInputMode === "system_voice" ? voiceKey : null,
         social_platform: outputFormat.platform,
         output_format: outputFormat.label,
         image_size: outputFormat.imageSize,
         output_width: outputFormat.width,
         output_height: outputFormat.height,
-        credits_used: lipSyncJobConfig.creditsUsed,
+        credits_used: lipSyncCreditsUsed,
         duration_seconds: null,
         character_id: null,
         error_message: null,
@@ -1910,12 +1976,25 @@ export async function POST(req: Request) {
 
       if (lipSyncGenerationError || !lipSyncGeneration?.id) {
         console.error("Lip Sync job insert error:", lipSyncGenerationError);
-        await refundCredits(user.id, lipSyncJobConfig.creditsUsed);
+        await refundCredits(user.id, lipSyncCreditsUsed);
 
         return NextResponse.json(
           { error: "Failed to queue Lip Sync generation. Credits refunded." },
           { status: 500 }
         );
+      }
+
+      const { error: lipSyncTxError } = await supabaseAdmin
+        .from("credit_transactions")
+        .insert({
+          user_id: user.id,
+          amount: -lipSyncCreditsUsed,
+          type: "usage",
+          source: lipSyncJobConfig.transactionSource,
+        });
+
+      if (lipSyncTxError) {
+        console.error("Credit transaction log error:", lipSyncTxError);
       }
 
       const origin = req.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
@@ -1926,6 +2005,7 @@ export async function POST(req: Request) {
         generationId: lipSyncGeneration.id,
         status: "processing",
         workflow: lipSyncJobConfig.workflow,
+        creditsUsed: lipSyncCreditsUsed,
       });
     }
 

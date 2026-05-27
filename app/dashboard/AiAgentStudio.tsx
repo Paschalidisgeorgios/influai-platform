@@ -72,6 +72,8 @@ const VIDEO_STUDIO_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO === "true";
 const LIP_SYNC_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC === "true";
+const ELEVENLABS_TTS_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_ELEVENLABS_TTS === "true";
 const SOCIAL_PLANNER_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_SOCIAL_PLANNER === "true";
 const COMPLIANCE_CHECK_PUBLIC_ENABLED =
@@ -85,6 +87,65 @@ type StudioTab = "image" | "video" | "lip_sync";
 
 const LIP_SYNC_SOURCE_MAX_BYTES = 50 * 1024 * 1024;
 const LIP_SYNC_AUDIO_MAX_BYTES = 25 * 1024 * 1024;
+type LipSyncInputMode = "system_voice" | "audio_upload";
+
+type LipSyncVoiceStyle = {
+  key: string;
+  label: string;
+  description: string;
+  group: "female" | "male";
+};
+
+const LIP_SYNC_VOICE_STYLES: LipSyncVoiceStyle[] = [
+  {
+    key: "female_natural",
+    label: "Female Natural",
+    description: "Natural, friendly creator voice",
+    group: "female",
+  },
+  {
+    key: "female_soft",
+    label: "Female Soft",
+    description: "Soft, polished, beauty/lifestyle voice",
+    group: "female",
+  },
+  {
+    key: "female_energetic",
+    label: "Female Energetic",
+    description: "Bright, upbeat, TikTok/Reels style",
+    group: "female",
+  },
+  {
+    key: "female_premium",
+    label: "Female Premium",
+    description: "Elegant, brand-ready campaign voice",
+    group: "female",
+  },
+  {
+    key: "male_natural",
+    label: "Male Natural",
+    description: "Clear, neutral creator voice",
+    group: "male",
+  },
+  {
+    key: "male_deep",
+    label: "Male Deep",
+    description: "Deep, confident, premium voice",
+    group: "male",
+  },
+  {
+    key: "male_storytelling",
+    label: "Male Storytelling",
+    description: "Warm, narrative, character voice",
+    group: "male",
+  },
+  {
+    key: "male_energetic",
+    label: "Male Energetic",
+    description: "Clear, upbeat, ad-style voice",
+    group: "male",
+  },
+];
 
 function isLipSyncWorkflow(workflow?: string | null) {
   return workflow === "lip_sync";
@@ -1472,6 +1533,14 @@ function LipSyncStudioPanel({
   instructions,
   onInstructionsChange,
   onInstructionsKeyDown,
+  inputMode,
+  onInputModeChange,
+  scriptText,
+  onScriptTextChange,
+  voiceKey,
+  onVoiceKeyChange,
+  systemVoiceAvailable,
+  previousVideoUrl,
 }: {
   label: string;
   copy: {
@@ -1498,6 +1567,17 @@ function LipSyncStudioPanel({
     instructionsLabel: string;
     instructionsPlaceholder: string;
     activeNote: string;
+    inputModeSystemVoice: string;
+    inputModeUploadAudio: string;
+    chooseVoice: string;
+    femaleStyleVoices: string;
+    maleStyleVoices: string;
+    scriptLabel: string;
+    scriptPlaceholder: string;
+    scriptRequired: string;
+    systemVoicesNotConfigured: string;
+    uploadAudioInstead: string;
+    usePreviousVideo: string;
   };
   panelRef: React.RefObject<HTMLDivElement | null>;
   getAccessToken: () => Promise<string | null>;
@@ -1514,6 +1594,14 @@ function LipSyncStudioPanel({
   instructions: string;
   onInstructionsChange: (value: string) => void;
   onInstructionsKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  inputMode: LipSyncInputMode;
+  onInputModeChange: (mode: LipSyncInputMode) => void;
+  scriptText: string;
+  onScriptTextChange: (value: string) => void;
+  voiceKey: string;
+  onVoiceKeyChange: (value: string) => void;
+  systemVoiceAvailable: boolean;
+  previousVideoUrl: string | null;
 }) {
   const sourceInputRef = useRef<HTMLInputElement | null>(null);
   const audioInputRef = useRef<HTMLInputElement | null>(null);
@@ -1557,7 +1645,7 @@ function LipSyncStudioPanel({
   async function uploadLipSyncFile(
     file: File,
     uploadType: "source" | "audio"
-  ): Promise<{ fileUrl?: string; fileType?: string; error?: string }> {
+  ): Promise<{ fileUrl?: string; fileType?: string; audioUrl?: string; error?: string }> {
     const token = await getAccessToken();
 
     if (!token) {
@@ -1568,19 +1656,30 @@ function LipSyncStudioPanel({
     formData.append("file", file);
     formData.append("type", uploadType);
 
-    const response = await fetch("/api/lip-sync/upload", {
+    const response = await fetch(
+      uploadType === "audio" ? "/api/lip-sync/audio-upload" : "/api/lip-sync/upload",
+      {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
       },
       body: formData,
-    });
+      }
+    );
 
     const data = (await response.json()) as {
       fileUrl?: string;
       fileType?: string;
+      audioUrl?: string;
       error?: string;
     };
+
+    if (uploadType === "audio") {
+      if (!response.ok || !data.audioUrl) {
+        return { error: data.error ?? copy.uploadFailed };
+      }
+      return { audioUrl: data.audioUrl };
+    }
 
     if (!response.ok || !data.fileUrl) {
       return { error: data.error ?? copy.uploadFailed };
@@ -1670,12 +1769,12 @@ function LipSyncStudioPanel({
     try {
       const result = await uploadLipSyncFile(file, "audio");
 
-      if (!result.fileUrl) {
+      if (!result.audioUrl) {
         setLocalFileError(result.error ?? copy.uploadFailed);
         return;
       }
 
-      onAudioChange(result.fileUrl, file.name);
+      onAudioChange(result.audioUrl, file.name);
     } catch {
       setLocalFileError(copy.uploadFailed);
     } finally {
@@ -1686,6 +1785,8 @@ function LipSyncStudioPanel({
     }
   }
 
+  const femaleVoices = LIP_SYNC_VOICE_STYLES.filter((voice) => voice.group === "female");
+  const maleVoices = LIP_SYNC_VOICE_STYLES.filter((voice) => voice.group === "male");
   const panelStatus = isEnabled ? copy.statusActive : copy.statusPlanned;
   const panelIntro = isEnabled ? copy.introActive : copy.introPlanned;
   const uploading = uploadingSource || uploadingAudio;
@@ -1830,6 +1931,114 @@ function LipSyncStudioPanel({
         </div>
       </div>
 
+      <div className="mt-2.5 space-y-2">
+        <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
+          {copy.audioLabel}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={!isEnabled || !systemVoiceAvailable}
+            onClick={() => onInputModeChange("system_voice")}
+            className={`rounded-full border px-3 py-1.5 text-[10px] font-bold transition ${
+              inputMode === "system_voice"
+                ? "border-violet-400/50 bg-violet-500/20 text-violet-100"
+                : "border-white/15 bg-black/25 text-white/60"
+            } disabled:cursor-not-allowed disabled:opacity-45`}
+          >
+            {copy.inputModeSystemVoice}
+          </button>
+          <button
+            type="button"
+            disabled={!isEnabled}
+            onClick={() => onInputModeChange("audio_upload")}
+            className={`rounded-full border px-3 py-1.5 text-[10px] font-bold transition ${
+              inputMode === "audio_upload"
+                ? "border-violet-400/50 bg-violet-500/20 text-violet-100"
+                : "border-white/15 bg-black/25 text-white/60"
+            } disabled:cursor-not-allowed disabled:opacity-45`}
+          >
+            {copy.inputModeUploadAudio}
+          </button>
+        </div>
+        {!systemVoiceAvailable ? (
+          <p className="text-[10px] text-amber-200/85">
+            {copy.systemVoicesNotConfigured} {copy.uploadAudioInstead}
+          </p>
+        ) : null}
+      </div>
+
+      {inputMode === "system_voice" ? (
+        <div className="mt-2.5 space-y-2">
+          <div className="rounded-lg border border-white/12 bg-black/25 p-2.5">
+            <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
+              {copy.chooseVoice}
+            </p>
+            <p className="mt-2 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-200/85">
+              {copy.femaleStyleVoices}
+            </p>
+            <div className="mt-1.5 grid gap-1.5">
+              {femaleVoices.map((voice) => (
+                <button
+                  key={voice.key}
+                  type="button"
+                  onClick={() => onVoiceKeyChange(voice.key)}
+                  className={`rounded-md border px-2 py-1.5 text-left transition ${
+                    voiceKey === voice.key
+                      ? "border-violet-400/50 bg-violet-500/20 text-violet-100"
+                      : "border-white/10 bg-black/25 text-white/65 hover:border-violet-400/35"
+                  }`}
+                >
+                  <p className="text-[10px] font-bold">{voice.label}</p>
+                  <p className="text-[9px] text-white/45">{voice.description}</p>
+                </button>
+              ))}
+            </div>
+            <p className="mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-200/85">
+              {copy.maleStyleVoices}
+            </p>
+            <div className="mt-1.5 grid gap-1.5">
+              {maleVoices.map((voice) => (
+                <button
+                  key={voice.key}
+                  type="button"
+                  onClick={() => onVoiceKeyChange(voice.key)}
+                  className={`rounded-md border px-2 py-1.5 text-left transition ${
+                    voiceKey === voice.key
+                      ? "border-violet-400/50 bg-violet-500/20 text-violet-100"
+                      : "border-white/10 bg-black/25 text-white/65 hover:border-violet-400/35"
+                  }`}
+                >
+                  <p className="text-[10px] font-bold">{voice.label}</p>
+                  <p className="text-[9px] text-white/45">{voice.description}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label
+              htmlFor="lip-sync-script"
+              className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40"
+            >
+              {copy.scriptLabel}
+            </label>
+            <textarea
+              id="lip-sync-script"
+              value={scriptText}
+              onChange={(event) => onScriptTextChange(event.target.value)}
+              onKeyDown={onInstructionsKeyDown}
+              rows={4}
+              disabled={!isEnabled || !systemVoiceAvailable}
+              placeholder={copy.scriptPlaceholder}
+              className="mt-1.5 w-full resize-y rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] leading-4 text-white/70 placeholder:text-white/22 outline-none focus-visible:ring-2 focus-visible:ring-violet-500/30 disabled:opacity-50"
+            />
+            {!scriptText.trim() ? (
+              <p className="mt-1 text-[9px] text-white/35">{copy.scriptRequired}</p>
+            ) : null}
+          </div>
+        </div>
+      ) : (
       <div className="mt-2.5">
         <label
           htmlFor="lip-sync-instructions"
@@ -1848,6 +2057,18 @@ function LipSyncStudioPanel({
           className="mt-1.5 w-full resize-y rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] leading-4 text-white/70 placeholder:text-white/22 outline-none focus-visible:ring-2 focus-visible:ring-violet-500/30 disabled:opacity-50"
         />
       </div>
+      )}
+
+      {previousVideoUrl ? (
+        <button
+          type="button"
+          onClick={() => onSourceChange(previousVideoUrl, "video")}
+          disabled={!isEnabled || uploadingSource}
+          className="mt-2 inline-flex items-center rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-[10px] font-bold text-violet-100 transition hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {copy.usePreviousVideo}
+        </button>
+      ) : null}
 
       {localFileError ? (
         <p className="mt-2 text-[10px] font-semibold text-red-200/90">{localFileError}</p>
@@ -1974,6 +2195,10 @@ export default function AiAgentStudio({
   const [lipSyncAudioUrl, setLipSyncAudioUrl] = useState<string | null>(null);
   const [lipSyncAudioLabel, setLipSyncAudioLabel] = useState<string | null>(null);
   const [lipSyncInstructions, setLipSyncInstructions] = useState("");
+  const [lipSyncInputMode, setLipSyncInputMode] =
+    useState<LipSyncInputMode>("audio_upload");
+  const [lipSyncScriptText, setLipSyncScriptText] = useState("");
+  const [lipSyncVoiceKey, setLipSyncVoiceKey] = useState("female_natural");
 
   const [prompt, setPrompt] = useState("");
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -1994,7 +2219,9 @@ export default function AiAgentStudio({
   const videoSubmitBlocked = isVideoStudioActive && !videoStudioReady;
   const lipSyncReady =
     Boolean(lipSyncSourceUrl?.trim()) &&
-    Boolean(lipSyncAudioUrl?.trim()) &&
+    (lipSyncInputMode === "audio_upload"
+      ? Boolean(lipSyncAudioUrl?.trim())
+      : Boolean(lipSyncScriptText.trim()) && ELEVENLABS_TTS_PUBLIC_ENABLED) &&
     Boolean(lipSyncSourceMediaType);
   const lipSyncSubmitBlocked = isLipSyncActive && !lipSyncReady;
 
@@ -2423,9 +2650,20 @@ export default function AiAgentStudio({
         return;
       }
 
-      if (!lipSyncAudioUrl?.trim()) {
+      if (lipSyncInputMode === "audio_upload" && !lipSyncAudioUrl?.trim()) {
         setErrorMessage(a.lipSyncMissingAudio);
         return;
+      }
+
+      if (lipSyncInputMode === "system_voice") {
+        if (!ELEVENLABS_TTS_PUBLIC_ENABLED) {
+          setErrorMessage(a.lipSyncSystemVoicesNotConfigured);
+          return;
+        }
+        if (!lipSyncScriptText.trim()) {
+          setErrorMessage(a.lipSyncMissingScript);
+          return;
+        }
       }
 
       const temporaryGenerationId = `temp-${Date.now()}`;
@@ -2477,8 +2715,14 @@ export default function AiAgentStudio({
           },
           body: JSON.stringify({
             imageMode: "lip_sync",
-            sourceMediaUrl: lipSyncSourceUrl,
-            audioUrl: lipSyncAudioUrl,
+            sourceVideoUrl: lipSyncSourceUrl,
+            lipSyncInputMode,
+            audioUrl: lipSyncInputMode === "audio_upload" ? lipSyncAudioUrl : undefined,
+            scriptText:
+              lipSyncInputMode === "system_voice"
+                ? lipSyncScriptText.trim()
+                : undefined,
+            voiceKey: lipSyncInputMode === "system_voice" ? lipSyncVoiceKey : undefined,
             sourceMediaType: lipSyncSourceMediaType,
             lipSyncInstructions: lipSyncInstructions.trim() || undefined,
             outputFormat: outputFormatKey,
@@ -2490,7 +2734,11 @@ export default function AiAgentStudio({
         if (!response.ok) {
           if (response.status === 402) {
             const requiredCredits =
-              typeof data.requiredCredits === "number" ? data.requiredCredits : 30;
+              typeof data.requiredCredits === "number"
+                ? data.requiredCredits
+                : lipSyncInputMode === "system_voice"
+                  ? 35
+                  : 30;
 
             setAgentResult({
               id: temporaryGenerationId,
@@ -3312,6 +3560,14 @@ export default function AiAgentStudio({
               instructions={lipSyncInstructions}
               onInstructionsChange={setLipSyncInstructions}
               onInstructionsKeyDown={submitLipSyncFromInstructions}
+              inputMode={lipSyncInputMode}
+              onInputModeChange={setLipSyncInputMode}
+              scriptText={lipSyncScriptText}
+              onScriptTextChange={setLipSyncScriptText}
+              voiceKey={lipSyncVoiceKey}
+              onVoiceKeyChange={setLipSyncVoiceKey}
+              systemVoiceAvailable={ELEVENLABS_TTS_PUBLIC_ENABLED}
+              previousVideoUrl={agentResult?.video_url ?? null}
             />
           ) : null}
 

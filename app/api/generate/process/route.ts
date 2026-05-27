@@ -19,6 +19,7 @@ const supabaseAdmin = createClient(
 
 const STORAGE_BUCKET = "generations";
 const VIDEO_STORAGE_BUCKET = "generation-videos";
+const LIP_SYNC_AUDIO_BUCKET = "lip-sync-audio";
 const FAL_FLUX_SCHNELL_MODEL = "fal-ai/flux/schnell";
 const FAL_FLUX_DEV_MODEL = "fal-ai/flux/dev";
 const FAL_NANO_BANANA_PRO_EDIT_MODEL = "fal-ai/nano-banana-pro/edit";
@@ -35,6 +36,7 @@ const FAL_LIP_SYNC_IMAGE_MODEL = "fal-ai/ai-avatar";
 /** Video + audio → lip-synced output — see docs/LIP_SYNC_IMPLEMENTATION_PLAN.md */
 const FAL_LIP_SYNC_VIDEO_MODEL = "fal-ai/sync-lipsync/v2/pro";
 const FAL_LIP_SYNC_REQUEST_TIMEOUT_MS = 600_000;
+const ELEVENLABS_MODEL_ID = "eleven_multilingual_v2";
 
 const ERR_PROVIDER_NO_IMAGE_URL = "Provider did not return an image URL.";
 const ERR_OPENAI_NO_IMAGE_DATA = "OpenAI did not return image data.";
@@ -153,6 +155,9 @@ type GenerationWorkerRow = {
   source_image_url: string | null;
   source_video_url: string | null;
   audio_url: string | null;
+  script_text: string | null;
+  voice_key: string | null;
+  voice_id: string | null;
 };
 
 function normalizeGenerationRow(data: Record<string, unknown>): GenerationWorkerRow {
@@ -180,6 +185,9 @@ function normalizeGenerationRow(data: Record<string, unknown>): GenerationWorker
     source_video_url:
       typeof data.source_video_url === "string" ? data.source_video_url : null,
     audio_url: typeof data.audio_url === "string" ? data.audio_url : null,
+    script_text: typeof data.script_text === "string" ? data.script_text : null,
+    voice_key: typeof data.voice_key === "string" ? data.voice_key : null,
+    voice_id: typeof data.voice_id === "string" ? data.voice_id : null,
   };
 }
 
@@ -641,6 +649,63 @@ async function uploadVideoBuffer({
   }
 
   throw new Error("Video upload failed.");
+}
+
+function resolveAudioContentTypeFromExtension(ext: string): string {
+  if (ext === "wav") return "audio/wav";
+  if (ext === "aac") return "audio/aac";
+  if (ext === "webm") return "audio/webm";
+  if (ext === "m4a" || ext === "mp4") return "audio/mp4";
+  return "audio/mpeg";
+}
+
+async function uploadAudioBuffer({
+  userId,
+  audioBuffer,
+  extension = "mp3",
+}: {
+  userId: string;
+  audioBuffer: Buffer;
+  extension?: "mp3" | "wav" | "aac" | "webm" | "m4a" | "mp4";
+}) {
+  const filePath = `${userId}/${crypto.randomUUID()}.${extension}`;
+  const contentType = resolveAudioContentTypeFromExtension(extension);
+
+  const { error: uploadError } = await supabaseAdmin.storage
+    .from(LIP_SYNC_AUDIO_BUCKET)
+    .upload(filePath, audioBuffer, {
+      contentType,
+      upsert: false,
+    });
+
+  if (uploadError) {
+    throw new Error(uploadError.message);
+  }
+
+  const {
+    data: { publicUrl },
+  } = supabaseAdmin.storage.from(LIP_SYNC_AUDIO_BUCKET).getPublicUrl(filePath);
+
+  return publicUrl;
+}
+
+function resolveLipSyncVoiceIdFromKey(voiceKey: string): string | null {
+  const key = voiceKey.trim().toLowerCase();
+  const envMap: Record<string, string | undefined> = {
+    female_natural: process.env.ELEVENLABS_VOICE_FEMALE_NATURAL,
+    female_soft: process.env.ELEVENLABS_VOICE_FEMALE_SOFT,
+    female_energetic: process.env.ELEVENLABS_VOICE_FEMALE_ENERGETIC,
+    female_premium: process.env.ELEVENLABS_VOICE_FEMALE_PREMIUM,
+    male_natural: process.env.ELEVENLABS_VOICE_MALE_NATURAL,
+    male_deep: process.env.ELEVENLABS_VOICE_MALE_DEEP,
+    male_storytelling: process.env.ELEVENLABS_VOICE_MALE_STORYTELLING,
+    male_energetic: process.env.ELEVENLABS_VOICE_MALE_ENERGETIC,
+  };
+
+  const resolved = envMap[key];
+  return typeof resolved === "string" && resolved.trim().length > 0
+    ? resolved.trim()
+    : null;
 }
 
 type FalFluxJobOptions = {
@@ -1388,6 +1453,55 @@ async function processLipSyncVideo({
   }
 }
 
+async function maybePersistLipSyncAudioUrl(generationId: string, audioUrl: string) {
+  const { error } = await supabaseAdmin
+    .from("generations")
+    .update({ audio_url: audioUrl })
+    .eq("id", generationId);
+
+  if (error && !isMissingColumnError(error)) {
+    console.error("Lip Sync audio URL update error:", error);
+  }
+}
+
+async function synthesizeElevenLabsAudio({
+  scriptText,
+  voiceId,
+}: {
+  scriptText: string;
+  voiceId: string;
+}) {
+  const response = await fetch(
+    `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+    {
+      method: "POST",
+      headers: {
+        "xi-api-key": process.env.ELEVENLABS_API_KEY!,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text: scriptText,
+        model_id: ELEVENLABS_MODEL_ID,
+        voice_settings: {
+          stability: 0.45,
+          similarity_boost: 0.8,
+          style: 0.35,
+          use_speaker_boost: true,
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "");
+    throw new Error(
+      `ElevenLabs TTS failed (${response.status}): ${errorText.slice(0, 300)}`
+    );
+  }
+
+  return Buffer.from(await response.arrayBuffer());
+}
+
 async function resolveOpenAIImageBuffer(result: {
   data?: Array<{ b64_json?: string | null; url?: string | null }>;
 }): Promise<{ imageBuffer: Buffer; contentType: string } | null> {
@@ -1662,7 +1776,7 @@ export async function POST(req: Request) {
     }
 
     if (workflow === "lip_sync" && provider === "fal") {
-      const audioUrl =
+      let audioUrl =
         typeof generation.audio_url === "string" &&
         generation.audio_url.trim().length > 0
           ? generation.audio_url.trim()
@@ -1673,6 +1787,90 @@ export async function POST(req: Request) {
         generation.source_video_url.trim().length > 0
           ? generation.source_video_url.trim()
           : null;
+      const scriptText =
+        typeof generation.script_text === "string" &&
+        generation.script_text.trim().length > 0
+          ? generation.script_text.trim()
+          : null;
+      const voiceKeyOrId =
+        typeof generation.voice_key === "string" && generation.voice_key.trim().length > 0
+          ? generation.voice_key.trim()
+          : typeof generation.voice_id === "string" &&
+              generation.voice_id.trim().length > 0
+            ? generation.voice_id.trim()
+            : "female_natural";
+
+      if (!audioUrl && scriptText) {
+        if (process.env.ENABLE_ELEVENLABS_TTS !== "true") {
+          await markFailedAndRefund({
+            generationId,
+            userId: generation.user_id,
+            creditsUsed,
+            errorMessage: "System Voice is not enabled on the server.",
+          });
+
+          return NextResponse.json(
+            { error: "System Voice is not enabled. Credits refunded." },
+            { status: 400 }
+          );
+        }
+
+        if (!process.env.ELEVENLABS_API_KEY) {
+          await markFailedAndRefund({
+            generationId,
+            userId: generation.user_id,
+            creditsUsed,
+            errorMessage: "ELEVENLABS_API_KEY is not configured.",
+          });
+
+          return NextResponse.json(
+            { error: "ElevenLabs is not configured. Credits refunded." },
+            { status: 500 }
+          );
+        }
+
+        const mappedVoiceId = resolveLipSyncVoiceIdFromKey(voiceKeyOrId);
+        if (!mappedVoiceId) {
+          await markFailedAndRefund({
+            generationId,
+            userId: generation.user_id,
+            creditsUsed,
+            errorMessage: "Selected system voice is not configured.",
+          });
+
+          return NextResponse.json(
+            { error: "Selected system voice is not configured. Credits refunded." },
+            { status: 400 }
+          );
+        }
+
+        try {
+          const ttsAudioBuffer = await synthesizeElevenLabsAudio({
+            scriptText,
+            voiceId: mappedVoiceId,
+          });
+          const uploadedAudioUrl = await uploadAudioBuffer({
+            userId: generation.user_id,
+            audioBuffer: ttsAudioBuffer,
+            extension: "mp3",
+          });
+          audioUrl = uploadedAudioUrl;
+          await maybePersistLipSyncAudioUrl(generationId, uploadedAudioUrl);
+        } catch (ttsError) {
+          await markFailedAndRefund({
+            generationId,
+            userId: generation.user_id,
+            creditsUsed,
+            errorMessage:
+              ttsError instanceof Error ? ttsError.message : "ElevenLabs TTS failed.",
+          });
+
+          return NextResponse.json(
+            { error: "Failed to generate system voice audio. Credits refunded." },
+            { status: 500 }
+          );
+        }
+      }
 
       if (!audioUrl) {
         await markFailedAndRefund({

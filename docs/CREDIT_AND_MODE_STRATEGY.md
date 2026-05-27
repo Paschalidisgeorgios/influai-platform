@@ -21,7 +21,7 @@ Modes are enabled per environment via feature flags. The dashboard **Studio Suit
 | Reference Edit | Beta (flag) | 5 |
 | Brand Assets | Beta (flag) | 4 |
 | Video Studio | Beta (flag) | 25 |
-| Lip Sync Studio | Planned | 20–80 (estimated) |
+| Lip Sync Studio | Beta (flag) | 30 (upload audio) / 35 (system voice) |
 
 ### Planned modules (no generation API)
 
@@ -152,14 +152,14 @@ Required DB columns are documented in `docs/VIDEO_STUDIO_REQUIRED_SQL.md`.
 
 ---
 
-## 7. Lip Sync Studio (Planned)
+## 7. Lip Sync Studio (Beta)
 
 | Field | Value |
 |-------|--------|
 | **Mode key** | `lip_sync` (reserved) |
-| **Status** | **Planned** (disabled in release UI/API) |
-| **Estimated cost band** | **20–80 credits** depending on duration |
-| **Required inputs (future)** | Source image/video + script/audio + target duration |
+| **Status** | **Beta** (`ENABLE_FAL_LIP_SYNC` + public flag) |
+| **Cost** | **30 credits** (upload audio) / **35 credits** (system voice) |
+| **Required inputs** | Source video + uploaded audio OR script + voice style |
 | **Safety rule** | No expensive provider call without explicit user confirmation and shown estimate |
 
 **Implementation spec:** [LIP_SYNC_IMPLEMENTATION_PLAN.md](./LIP_SYNC_IMPLEMENTATION_PLAN.md).
@@ -230,7 +230,7 @@ Violating any gate blocks marking the mode **Live** in UI or API.
 | **Phase 5** | Add Brand Assets | Recraft / layout-oriented outputs |
 | **Phase 6** | Add Video Studio | Video storage, 15–80 credit tiers |
 | **Phase 6b** | Cinema Agent (planning) | Text-only plans; shot-to-image with confirm |
-| **Phase 7** | Add Lip Sync Studio | 10–60 credits (duration/provider tiers) |
+| **Phase 7** | Add Lip Sync Studio | 30/35 credits (implemented in beta) |
 | **Phase 8** | Add Omni Campaign Agent | Cross-format orchestration; after video + lip sync maturity |
 
 Watermarked Promo can ship in parallel with Phase 2–3 once server watermarking exists, or as a dedicated monetization phase—see [ROADMAP_IMAGE_VIDEO_MODES.md](./ROADMAP_IMAGE_VIDEO_MODES.md) §5 and §10.
@@ -279,8 +279,8 @@ Existing columns (`provider`, `model`, `workflow`) remain required for Standard 
 | Brand Assets | Beta (flagged) | **4** |
 | Video Studio (short) | Planned | 15–30 |
 | Video Studio (long/premium) | Planned | 40–80 |
-| Lip Sync Studio (short) | Planned | 10–30 |
-| Lip Sync Studio (long/premium) | Planned | 30–60 |
+| Lip Sync Studio (Upload Audio) | Beta (flagged) | 30 |
+| Lip Sync Studio (System Voice) | Beta (flagged) | 35 |
 | Cinema Agent (planning) | Planned | 0–1 (text-only, TBD) |
 | Cinema Agent (per-shot image) | Planned | Standard/Premium rates |
 | Cinema Agent (per-shot video) | Planned | Video Studio tiers when live |
