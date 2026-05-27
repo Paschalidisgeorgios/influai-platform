@@ -1202,6 +1202,216 @@ async function processVideoImageToVideo({
   }
 }
 
+async function processTalkingCreator({
+  generationId,
+  userId,
+  finalPrompt,
+  creditsUsed,
+  sourceImageUrl,
+  scriptText,
+  voiceKey,
+  imageSize,
+  outputWidth,
+  outputHeight,
+}: {
+  generationId: string;
+  userId: string;
+  finalPrompt: string;
+  creditsUsed: number;
+  sourceImageUrl: string;
+  scriptText: string;
+  voiceKey: string;
+  imageSize: unknown;
+  outputWidth: unknown;
+  outputHeight: unknown;
+}) {
+  if (process.env.ENABLE_TALKING_CREATOR !== "true") {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "Talking Creator is not enabled on the server.",
+    });
+    return NextResponse.json(
+      { error: "Talking Creator is not enabled. Credits refunded." },
+      { status: 400 }
+    );
+  }
+
+  if (process.env.ENABLE_ELEVENLABS_TTS !== "true") {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "System Voice is not enabled on the server.",
+    });
+    return NextResponse.json(
+      { error: "System Voice is not enabled. Credits refunded." },
+      { status: 400 }
+    );
+  }
+
+  if (!process.env.FAL_KEY) {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "FAL_KEY is not configured.",
+    });
+    return NextResponse.json(
+      { error: "Video provider is not configured. Credits refunded." },
+      { status: 500 }
+    );
+  }
+
+  if (!process.env.ELEVENLABS_API_KEY) {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "ELEVENLABS_API_KEY is not configured.",
+    });
+    return NextResponse.json(
+      { error: "ElevenLabs is not configured. Credits refunded." },
+      { status: 500 }
+    );
+  }
+
+  const mappedVoiceId = resolveLipSyncVoiceIdFromKey(voiceKey);
+  if (!mappedVoiceId) {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage: "Selected system voice is not configured.",
+    });
+    return NextResponse.json(
+      { error: "Selected system voice is not configured. Credits refunded." },
+      { status: 400 }
+    );
+  }
+
+  fal.config({ credentials: process.env.FAL_KEY });
+  const aspectRatio = resolveVideoAspectRatio({
+    imageSize,
+    outputWidth,
+    outputHeight,
+  });
+
+  try {
+    const imageToVideoResult = await Promise.race([
+      fal.subscribe(FAL_KLING_I2V_MODEL, {
+        input: {
+          prompt: finalPrompt,
+          image_url: sourceImageUrl,
+          duration: "5",
+          aspect_ratio: aspectRatio,
+          negative_prompt: "blur, distort, and low quality",
+          cfg_scale: 0.5,
+        } as {
+          prompt: string;
+          image_url: string;
+          duration: "5" | "10";
+          aspect_ratio?: "16:9" | "9:16" | "1:1";
+          negative_prompt?: string;
+          cfg_scale?: number;
+        },
+        logs: false,
+      }),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Talking Creator step 1 timed out (image-to-video)."));
+        }, FAL_VIDEO_REQUEST_TIMEOUT_MS);
+      }),
+    ]);
+
+    const sourceVideoUrl =
+      getFalResultVideoUrl(imageToVideoResult.data) ??
+      getFalResultVideoUrl(imageToVideoResult);
+
+    if (!sourceVideoUrl) {
+      throw new Error("Talking Creator step 1 failed: missing source video URL.");
+    }
+
+    const ttsAudioBuffer = await synthesizeElevenLabsAudio({
+      scriptText,
+      voiceId: mappedVoiceId,
+    });
+    const audioUrl = await uploadAudioBuffer({
+      userId,
+      audioBuffer: ttsAudioBuffer,
+      extension: "mp3",
+    });
+
+    const { error: pipelineUpdateError } = await supabaseAdmin
+      .from("generations")
+      .update({
+        source_video_url: sourceVideoUrl,
+        audio_url: audioUrl,
+      })
+      .eq("id", generationId);
+
+    if (pipelineUpdateError && !isMissingColumnError(pipelineUpdateError)) {
+      console.error("Talking Creator pipeline metadata update error:", pipelineUpdateError);
+    }
+
+    const lipSyncResult = await Promise.race([
+      fal.subscribe(FAL_LIP_SYNC_VIDEO_MODEL, {
+        input: {
+          video_url: sourceVideoUrl,
+          audio_url: audioUrl,
+          sync_mode: "cut_off",
+        },
+        logs: false,
+      }),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Talking Creator step 3 timed out (lip sync)."));
+        }, FAL_LIP_SYNC_REQUEST_TIMEOUT_MS);
+      }),
+    ]);
+
+    const finalVideoUrl =
+      getFalResultVideoUrl(lipSyncResult.data) ?? getFalResultVideoUrl(lipSyncResult);
+
+    if (!finalVideoUrl) {
+      throw new Error("Talking Creator step 3 failed: missing final video URL.");
+    }
+
+    const { videoBuffer, contentType } = await downloadVideoFromUrl(finalVideoUrl);
+    const publicUrl = await uploadVideoBuffer({
+      userId,
+      videoBuffer,
+      contentType,
+    });
+
+    await completeVideoGeneration({
+      generationId,
+      publicUrl,
+      durationSeconds: 5,
+    });
+
+    return NextResponse.json({
+      success: true,
+      generationId,
+      video: publicUrl,
+      workflow: "talking_creator",
+    });
+  } catch (error) {
+    await markFailedAndRefund({
+      generationId,
+      userId,
+      creditsUsed,
+      errorMessage:
+        error instanceof Error ? error.message : "Talking Creator generation failed.",
+    });
+    return NextResponse.json(
+      { error: "Talking Creator generation failed. Credits refunded." },
+      { status: 500 }
+    );
+  }
+}
+
 async function processLipSyncImage({
   generationId,
   userId,
@@ -1906,6 +2116,65 @@ export async function POST(req: Request) {
         creditsUsed,
         sourceVideoUrl,
         audioUrl,
+      });
+    }
+
+    if (workflow === "talking_creator" && provider === "fal") {
+      const sourceImageUrl =
+        typeof generation.source_image_url === "string" &&
+        generation.source_image_url.trim().length > 0
+          ? generation.source_image_url.trim()
+          : typeof generation.reference_image_url === "string" &&
+              generation.reference_image_url.trim().length > 0
+            ? generation.reference_image_url.trim()
+            : null;
+      const scriptText =
+        typeof generation.script_text === "string" &&
+        generation.script_text.trim().length > 0
+          ? generation.script_text.trim()
+          : null;
+      const voiceKey =
+        typeof generation.voice_key === "string" && generation.voice_key.trim().length > 0
+          ? generation.voice_key.trim()
+          : "female_natural";
+
+      if (!sourceImageUrl) {
+        await markFailedAndRefund({
+          generationId,
+          userId: generation.user_id,
+          creditsUsed,
+          errorMessage: "Talking Creator source image is missing.",
+        });
+        return NextResponse.json(
+          { error: "Talking Creator source image is missing. Credits refunded." },
+          { status: 400 }
+        );
+      }
+
+      if (!scriptText) {
+        await markFailedAndRefund({
+          generationId,
+          userId: generation.user_id,
+          creditsUsed,
+          errorMessage: "Talking Creator script is missing.",
+        });
+        return NextResponse.json(
+          { error: "Talking Creator script is missing. Credits refunded." },
+          { status: 400 }
+        );
+      }
+
+      return processTalkingCreator({
+        generationId,
+        userId: generation.user_id,
+        finalPrompt,
+        creditsUsed,
+        sourceImageUrl,
+        scriptText,
+        voiceKey,
+        imageSize: generation.image_size,
+        outputWidth: generation.output_width,
+        outputHeight: generation.output_height,
       });
     }
 

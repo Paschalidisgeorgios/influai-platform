@@ -224,6 +224,10 @@ Prerequisites for Video Studio: `ENABLE_FAL_VIDEO_STUDIO=true`, `NEXT_PUBLIC_ENA
 | 15.10 | Lip Sync voice config missing (test env) | Job fails with `Selected system voice is not configured.` + refund | ☐ |
 | 15.11 | Generated lip-sync output | `video_url` set and playable in Agent + Gallery | ☐ |
 | 15.12 | Cinema / Omni / Social chips | Roadmap only — not clickable, no API | ☐ |
+| 15.13 | Talking Creator tab | Visible only when `NEXT_PUBLIC_ENABLE_TALKING_CREATOR=true` | ☐ |
+| 15.14 | Talking Creator validation | No submit without source image + script + voice | ☐ |
+| 15.15 | Talking Creator run | One click creates final video; debit 60 credits | ☐ |
+| 15.16 | Talking Creator failure (test env) | Marks failed + refunds once; `credits_used = 0` | ☐ |
 
 ---
 

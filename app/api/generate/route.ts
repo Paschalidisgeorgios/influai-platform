@@ -16,7 +16,11 @@ type ImageMode =
   | "brand_assets"
   | "ugc_look";
 
-type GenerateMode = ImageMode | "video_image_to_video" | "lip_sync";
+type GenerateMode =
+  | ImageMode
+  | "video_image_to_video"
+  | "lip_sync"
+  | "talking_creator";
 
 const FAL_KLING_I2V_MODEL = "fal-ai/kling-video/v2.1/standard/image-to-video";
 /** Video + audio → lip-synced video (fal.ai Sync Lipsync 2 Pro) */
@@ -37,6 +41,10 @@ const PLANNED_IMAGE_MODES = new Set([
 ]);
 
 function getCreditCostForMode(mode: GenerateMode): number {
+  if (mode === "talking_creator") {
+    return 60;
+  }
+
   if (mode === "lip_sync") {
     return 30;
   }
@@ -67,6 +75,7 @@ function getCreditCostForImageMode(imageMode: ImageMode): number {
 }
 
 function parseGenerateMode(value: unknown): GenerateMode {
+  if (value === "talking_creator") return "talking_creator";
   if (value === "video_image_to_video") return "video_image_to_video";
   if (value === "lip_sync") return "lip_sync";
   return parseImageMode(value);
@@ -121,6 +130,27 @@ const LIP_SYNC_VOICE_KEYS = new Set([
 function resolveGenerationJobConfig(mode: GenerateMode):
   | { ok: true; config: GenerationJobConfig }
   | { ok: false; error: string } {
+  if (mode === "talking_creator") {
+    if (process.env.ENABLE_TALKING_CREATOR !== "true") {
+      return {
+        ok: false,
+        error:
+          "Talking Creator is not enabled. Set ENABLE_TALKING_CREATOR=true on the server.",
+      };
+    }
+
+    return {
+      ok: true,
+      config: {
+        provider: "fal",
+        model: "talking_creator_pipeline",
+        workflow: "talking_creator",
+        creditsUsed: getCreditCostForMode("talking_creator"),
+        transactionSource: "talking_creator_generation_job",
+      },
+    };
+  }
+
   if (mode === "video_image_to_video") {
     if (process.env.ENABLE_FAL_VIDEO_STUDIO !== "true") {
       return {
@@ -1781,6 +1811,201 @@ export async function POST(req: Request) {
         : typeof body.instructions === "string"
           ? body.instructions.trim()
           : "";
+    const resolvedVoiceKey =
+      voiceKey && LIP_SYNC_VOICE_KEYS.has(voiceKey) ? voiceKey : "female_natural";
+
+    if (imageMode === "talking_creator") {
+      if (!sourceImageUrl) {
+        return NextResponse.json(
+          { error: "Source image is required for Talking Creator." },
+          { status: 400 }
+        );
+      }
+
+      if (!scriptText) {
+        return NextResponse.json(
+          { error: "Script is required for Talking Creator." },
+          { status: 400 }
+        );
+      }
+
+      if (voiceKey && !LIP_SYNC_VOICE_KEYS.has(voiceKey)) {
+        return NextResponse.json(
+          { error: "Invalid voiceKey for Talking Creator." },
+          { status: 400 }
+        );
+      }
+
+      const talkingCreatorConfigResult = resolveGenerationJobConfig(imageMode);
+
+      if (!talkingCreatorConfigResult.ok) {
+        return NextResponse.json(
+          { error: talkingCreatorConfigResult.error },
+          { status: 400 }
+        );
+      }
+
+      const talkingCreatorConfig = talkingCreatorConfigResult.config;
+      const finalPrompt =
+        "Animate the provided source image into a short talking creator video. Keep the person recognizable. Subtle natural head movement, realistic facial motion, creator-style social video framing.";
+
+      const { count: activeCount, error: activeError } = await supabaseAdmin
+        .from("generations")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("status", "processing");
+
+      if (activeError) {
+        console.error("Active generation count error:", activeError);
+        return NextResponse.json(
+          { error: "Could not verify active generations" },
+          { status: 500 }
+        );
+      }
+
+      if ((activeCount ?? 0) >= ACTIVE_GENERATION_LIMIT) {
+        return NextResponse.json(
+          {
+            error: "Too many active generations",
+            reason: "active_generation_limit",
+            limit: ACTIVE_GENERATION_LIMIT,
+          },
+          { status: 429 }
+        );
+      }
+
+      const { data: creditSuccess, error: creditError } = await supabaseAdmin.rpc(
+        "consume_user_credits",
+        {
+          target_user_id: user.id,
+          credits_to_consume: talkingCreatorConfig.creditsUsed,
+        }
+      );
+
+      if (creditError) {
+        console.error("Credit consume error:", creditError);
+        return NextResponse.json({ error: "Credit check failed" }, { status: 500 });
+      }
+
+      if (!creditSuccess) {
+        return NextResponse.json(
+          {
+            error: "Not enough credits",
+            requiredCredits: talkingCreatorConfig.creditsUsed,
+            reason: "insufficient_credits",
+          },
+          { status: 402 }
+        );
+      }
+
+      const insertBase = {
+        user_id: user.id,
+        prompt: scriptText,
+        final_prompt: finalPrompt,
+        image_url: null,
+        video_url: null,
+        status: "processing",
+        provider: talkingCreatorConfig.provider,
+        model: talkingCreatorConfig.model,
+        workflow: talkingCreatorConfig.workflow,
+        reference_image_url: sourceImageUrl,
+        source_image_url: sourceImageUrl,
+        script_text: scriptText,
+        voice_key: resolvedVoiceKey,
+        social_platform: outputFormat.platform,
+        output_format: outputFormat.label,
+        image_size: outputFormat.imageSize,
+        output_width: outputFormat.width,
+        output_height: outputFormat.height,
+        credits_used: talkingCreatorConfig.creditsUsed,
+        duration_seconds: 5,
+        character_id: null,
+        error_message: null,
+        started_at: new Date().toISOString(),
+      };
+
+      let generationError: { message?: string; code?: string } | null = null;
+      let generation: { id: string } | null = null;
+
+      const insertAttempt = await supabaseAdmin
+        .from("generations")
+        .insert(insertBase)
+        .select("id")
+        .single();
+
+      if (insertAttempt.error && isMissingColumnError(insertAttempt.error)) {
+        const fallback = await supabaseAdmin
+          .from("generations")
+          .insert({
+            user_id: insertBase.user_id,
+            prompt: insertBase.prompt,
+            final_prompt: insertBase.final_prompt,
+            image_url: null,
+            status: "processing",
+            provider: insertBase.provider,
+            model: insertBase.model,
+            workflow: insertBase.workflow,
+            social_platform: insertBase.social_platform,
+            output_format: insertBase.output_format,
+            image_size: insertBase.image_size,
+            output_width: insertBase.output_width,
+            output_height: insertBase.output_height,
+            credits_used: insertBase.credits_used,
+            character_id: null,
+            error_message: null,
+            started_at: insertBase.started_at,
+          })
+          .select("id")
+          .single();
+
+        generationError = fallback.error;
+        generation = fallback.data;
+      } else {
+        generationError = insertAttempt.error;
+        generation = insertAttempt.data;
+      }
+
+      if (generationError || !generation?.id) {
+        console.error("Talking Creator generation create error:", generationError);
+        await refundCredits(user.id, talkingCreatorConfig.creditsUsed);
+        return NextResponse.json(
+          { error: "Failed to create talking creator job. Credits refunded." },
+          { status: 500 }
+        );
+      }
+
+      const { error: transactionError } = await supabaseAdmin
+        .from("credit_transactions")
+        .insert({
+          user_id: user.id,
+          amount: -talkingCreatorConfig.creditsUsed,
+          type: "usage",
+          source: talkingCreatorConfig.transactionSource,
+        });
+
+      if (transactionError) {
+        console.error("Credit transaction log error:", transactionError);
+      }
+
+      const origin =
+        req.headers.get("origin") ??
+        process.env.NEXT_PUBLIC_APP_URL ??
+        new URL(req.url).origin;
+      void triggerWorker(generation.id, origin);
+
+      return NextResponse.json({
+        success: true,
+        queued: true,
+        generationId: generation.id,
+        creditsUsed: talkingCreatorConfig.creditsUsed,
+        imageMode,
+        workflow: talkingCreatorConfig.workflow,
+        provider: talkingCreatorConfig.provider,
+        model: talkingCreatorConfig.model,
+        sourceImageUrl,
+        outputFormat,
+      });
+    }
 
     if (imageMode === "lip_sync") {
       const resolvedSourceVideoUrl = sourceVideoUrl || sourceMediaUrl;

@@ -22,6 +22,7 @@ Modes are enabled per environment via feature flags. The dashboard **Studio Suit
 | Brand Assets | Beta (flag) | 4 |
 | Video Studio | Beta (flag) | 25 |
 | Lip Sync Studio | Beta (flag) | 30 (upload audio) / 35 (system voice) |
+| Talking Creator | Beta (flag) | 60 |
 
 ### Planned modules (no generation API)
 
@@ -179,6 +180,17 @@ Required DB columns are documented in `docs/VIDEO_STUDIO_REQUIRED_SQL.md`.
 
 **Implementation spec:** [CINEMA_AGENT_IMPLEMENTATION_PLAN.md](./CINEMA_AGENT_IMPLEMENTATION_PLAN.md). No automatic provider calls without user confirmation and credit estimate.
 
+## 7b. Talking Creator (Beta)
+
+| Field | Value |
+|-------|--------|
+| **Mode key** | `talking_creator` |
+| **Status** | **Beta** (`ENABLE_TALKING_CREATOR` + public flag) |
+| **Cost** | **60 credits** |
+| **Required inputs** | Source image + script + voice |
+| **Pipeline** | Image-to-video (Kling) + TTS (ElevenLabs) + lip sync (fal.ai) |
+| **Safety rule** | Full failure path refunds credits once (no double-refund) |
+
 ---
 
 ## 9. Watermarked Promo Package
@@ -281,6 +293,7 @@ Existing columns (`provider`, `model`, `workflow`) remain required for Standard 
 | Video Studio (long/premium) | Planned | 40–80 |
 | Lip Sync Studio (Upload Audio) | Beta (flagged) | 30 |
 | Lip Sync Studio (System Voice) | Beta (flagged) | 35 |
+| Talking Creator | Beta (flagged) | 60 |
 | Cinema Agent (planning) | Planned | 0–1 (text-only, TBD) |
 | Cinema Agent (per-shot image) | Planned | Standard/Premium rates |
 | Cinema Agent (per-shot video) | Planned | Video Studio tiers when live |

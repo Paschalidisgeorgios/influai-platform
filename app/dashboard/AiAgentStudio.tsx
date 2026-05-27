@@ -72,6 +72,8 @@ const VIDEO_STUDIO_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO === "true";
 const LIP_SYNC_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC === "true";
+const TALKING_CREATOR_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_TALKING_CREATOR === "true";
 const ELEVENLABS_TTS_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_ELEVENLABS_TTS === "true";
 const SOCIAL_PLANNER_PUBLIC_ENABLED =
@@ -83,7 +85,7 @@ const CINEMA_AGENT_PUBLIC_ENABLED =
 const OMNI_CAMPAIGN_AGENT_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_OMNI_CAMPAIGN_AGENT === "true";
 
-type StudioTab = "image" | "video" | "lip_sync";
+type StudioTab = "image" | "video" | "lip_sync" | "talking_creator";
 
 const LIP_SYNC_SOURCE_MAX_BYTES = 50 * 1024 * 1024;
 const LIP_SYNC_AUDIO_MAX_BYTES = 25 * 1024 * 1024;
@@ -153,6 +155,10 @@ function isLipSyncWorkflow(workflow?: string | null) {
 
 function isVideoStudioWorkflow(workflow?: string | null) {
   return workflow === "video_image_to_video";
+}
+
+function isTalkingCreatorWorkflow(workflow?: string | null) {
+  return workflow === "talking_creator";
 }
 
 function resolveSubmitImageMode(imageMode: ImageModeKey): ImageModeKey {
@@ -613,6 +619,10 @@ function getRequiredCreditsForStudio(
   studioTab: StudioTab,
   imageMode: ImageModeKey
 ): number {
+  if (studioTab === "talking_creator" && TALKING_CREATOR_PUBLIC_ENABLED) {
+    return 60;
+  }
+
   if (studioTab === "lip_sync" && LIP_SYNC_PUBLIC_ENABLED) {
     return 30;
   }
@@ -1518,6 +1528,239 @@ function VideoStudioPanel({
   );
 }
 
+function TalkingCreatorPanel({
+  label,
+  copy,
+  panelRef,
+  getAccessToken,
+  isEnabled,
+  sourcePreviewUrl,
+  onSourcePreviewUrlChange,
+  scriptText,
+  onScriptTextChange,
+  onScriptKeyDown,
+  voiceKey,
+  onVoiceKeyChange,
+}: {
+  label: string;
+  copy: {
+    statusPlanned: string;
+    statusActive: string;
+    introPlanned: string;
+    introActive: string;
+    sourceLabel: string;
+    sourcePlaceholder: string;
+    sourceHint: string;
+    uploadSourceImage: string;
+    uploading: string;
+    clearImage: string;
+    invalidFile: string;
+    fileTooLarge: string;
+    uploadFailed: string;
+    scriptLabel: string;
+    scriptPlaceholder: string;
+    voiceLabel: string;
+    chooseVoice: string;
+    femaleStyleVoices: string;
+    maleStyleVoices: string;
+    activeNote: string;
+  };
+  panelRef: React.RefObject<HTMLDivElement | null>;
+  getAccessToken: () => Promise<string | null>;
+  isEnabled: boolean;
+  sourcePreviewUrl: string | null;
+  onSourcePreviewUrlChange: (url: string | null) => void;
+  scriptText: string;
+  onScriptTextChange: (value: string) => void;
+  onScriptKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  voiceKey: string;
+  onVoiceKeyChange: (value: string) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const blobPreviewRef = useRef<string | null>(null);
+  const [localFileError, setLocalFileError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const femaleVoices = LIP_SYNC_VOICE_STYLES.filter((v) => v.group === "female");
+  const maleVoices = LIP_SYNC_VOICE_STYLES.filter((v) => v.group === "male");
+
+  useEffect(() => {
+    return () => {
+      if (blobPreviewRef.current) URL.revokeObjectURL(blobPreviewRef.current);
+    };
+  }, []);
+
+  function revokeBlobPreview() {
+    if (blobPreviewRef.current) {
+      URL.revokeObjectURL(blobPreviewRef.current);
+      blobPreviewRef.current = null;
+    }
+  }
+
+  function clearSourceImage() {
+    revokeBlobPreview();
+    onSourcePreviewUrlChange(null);
+    setLocalFileError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  async function handleSourceFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const mime = file.type.toLowerCase();
+    const allowedMime = new Set(["image/png", "image/jpeg", "image/jpg", "image/webp"]);
+    const allowedByName = /\.(png|jpe?g|webp)$/i.test(file.name);
+    if (!(allowedMime.has(mime) || (allowedByName && file.type.startsWith("image/")))) {
+      setLocalFileError(copy.invalidFile);
+      return;
+    }
+    if (file.size > REFERENCE_EDIT_MAX_BYTES) {
+      setLocalFileError(copy.fileTooLarge);
+      return;
+    }
+
+    setLocalFileError(null);
+    revokeBlobPreview();
+    const blobUrl = URL.createObjectURL(file);
+    blobPreviewRef.current = blobUrl;
+    onSourcePreviewUrlChange(blobUrl);
+    setUploading(true);
+
+    try {
+      const token = await getAccessToken();
+      if (!token) {
+        setLocalFileError(copy.uploadFailed);
+        return;
+      }
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/reference-sources/upload", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = (await response.json()) as { imageUrl?: string; error?: string };
+      if (!response.ok || !data.imageUrl) {
+        setLocalFileError(data.error ?? copy.uploadFailed);
+        return;
+      }
+      revokeBlobPreview();
+      onSourcePreviewUrlChange(data.imageUrl);
+    } catch {
+      setLocalFileError(copy.uploadFailed);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  const panelStatus = isEnabled ? copy.statusActive : copy.statusPlanned;
+  const panelIntro = isEnabled ? copy.introActive : copy.introPlanned;
+
+  return (
+    <motion.div
+      ref={panelRef}
+      id="talking-creator-panel"
+      aria-label={label}
+      initial={false}
+      className="mt-2.5 rounded-xl border border-cyan-500/15 bg-[linear-gradient(165deg,rgba(34,211,238,0.08)_0%,rgba(0,0,0,0.35)_45%)] p-2.5 sm:p-3"
+    >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+        onChange={handleSourceFileChange}
+      />
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-black text-white/85 sm:text-xs">{label}</p>
+          <p className="mt-0.5 text-[9px] leading-4 text-white/38">{panelIntro}</p>
+        </div>
+        <span className="shrink-0 rounded-full border border-cyan-500/25 bg-cyan-500/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.1em] text-cyan-100/90">
+          {panelStatus}
+        </span>
+      </div>
+      <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5">
+        <div className="flex min-h-[7rem] flex-col rounded-lg border border-dashed border-white/12 bg-black/30 p-2 sm:min-h-[7.5rem]">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
+              {copy.sourceLabel}
+            </p>
+            {sourcePreviewUrl ? (
+              <button type="button" onClick={clearSourceImage} className="text-[9px] text-white/55">
+                {copy.clearImage}
+              </button>
+            ) : null}
+          </div>
+          {sourcePreviewUrl ? (
+            <div className="relative mt-2 flex flex-1 overflow-hidden rounded-lg border border-white/10 bg-black/50">
+              <img src={sourcePreviewUrl} alt="" className="h-full max-h-[6rem] w-full object-contain" />
+            </div>
+          ) : (
+            <div className="mt-2 flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
+              <p className="text-[10px] font-semibold text-white/50">{copy.sourcePlaceholder}</p>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading || !isEnabled}
+                className="mt-0.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.08em] text-cyan-100/90 disabled:opacity-60"
+              >
+                {uploading ? copy.uploading : copy.uploadSourceImage}
+              </button>
+            </div>
+          )}
+          <p className="mt-1.5 text-center text-[9px] text-white/28">{copy.sourceHint}</p>
+          {localFileError ? (
+            <p className="mt-1 text-center text-[9px] font-medium text-amber-200/80">{localFileError}</p>
+          ) : null}
+        </div>
+        <div className="flex min-h-[7rem] flex-col gap-2 sm:min-h-[7.5rem]">
+          <label className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
+            {copy.scriptLabel}
+          </label>
+          <textarea
+            value={scriptText}
+            onChange={(event) => onScriptTextChange(event.target.value)}
+            onKeyDown={onScriptKeyDown}
+            rows={4}
+            disabled={!isEnabled}
+            placeholder={copy.scriptPlaceholder}
+            className="min-h-[4.8rem] resize-y rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] leading-4 text-white/70 placeholder:text-white/22 outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/30 disabled:opacity-50"
+          />
+          <label className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
+            {copy.voiceLabel}
+          </label>
+          <select
+            value={voiceKey}
+            onChange={(event) => onVoiceKeyChange(event.target.value)}
+            disabled={!isEnabled}
+            className="rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] text-white/75 disabled:opacity-50"
+          >
+            <optgroup label={copy.femaleStyleVoices}>
+              {femaleVoices.map((voice) => (
+                <option key={voice.key} value={voice.key}>
+                  {voice.label}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label={copy.maleStyleVoices}>
+              {maleVoices.map((voice) => (
+                <option key={voice.key} value={voice.key}>
+                  {voice.label}
+                </option>
+              ))}
+            </optgroup>
+          </select>
+        </div>
+      </div>
+      <p className="mt-2.5 text-[9px] leading-4 text-white/32">{copy.activeNote}</p>
+    </motion.div>
+  );
+}
+
 function LipSyncStudioPanel({
   label,
   copy,
@@ -2184,6 +2427,7 @@ export default function AiAgentStudio({
   const referenceEditPanelRef = useRef<HTMLDivElement | null>(null);
   const videoStudioPanelRef = useRef<HTMLDivElement | null>(null);
   const lipSyncPanelRef = useRef<HTMLDivElement | null>(null);
+  const talkingCreatorPanelRef = useRef<HTMLDivElement | null>(null);
 
   const [studioTab, setStudioTab] = useState<StudioTab>("image");
   const [videoSourceUrl, setVideoSourceUrl] = useState<string | null>(null);
@@ -2199,6 +2443,13 @@ export default function AiAgentStudio({
     useState<LipSyncInputMode>("audio_upload");
   const [lipSyncScriptText, setLipSyncScriptText] = useState("");
   const [lipSyncVoiceKey, setLipSyncVoiceKey] = useState("female_natural");
+  const [talkingCreatorSourceUrl, setTalkingCreatorSourceUrl] = useState<string | null>(
+    null
+  );
+  const [talkingCreatorScriptText, setTalkingCreatorScriptText] = useState("");
+  const [talkingCreatorVoiceKey, setTalkingCreatorVoiceKey] = useState(
+    "female_natural"
+  );
 
   const [prompt, setPrompt] = useState("");
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -2214,6 +2465,8 @@ export default function AiAgentStudio({
     studioTab === "video" && VIDEO_STUDIO_PUBLIC_ENABLED;
   const isLipSyncActive =
     studioTab === "lip_sync" && LIP_SYNC_PUBLIC_ENABLED;
+  const isTalkingCreatorActive =
+    studioTab === "talking_creator" && TALKING_CREATOR_PUBLIC_ENABLED;
   const videoStudioReady =
     Boolean(videoSourceUrl?.trim()) && Boolean(videoMotionPrompt.trim());
   const videoSubmitBlocked = isVideoStudioActive && !videoStudioReady;
@@ -2224,41 +2477,38 @@ export default function AiAgentStudio({
       : Boolean(lipSyncScriptText.trim()) && ELEVENLABS_TTS_PUBLIC_ENABLED) &&
     Boolean(lipSyncSourceMediaType);
   const lipSyncSubmitBlocked = isLipSyncActive && !lipSyncReady;
+  const talkingCreatorReady =
+    Boolean(talkingCreatorSourceUrl?.trim()) &&
+    Boolean(talkingCreatorScriptText.trim()) &&
+    Boolean(talkingCreatorVoiceKey.trim());
+  const talkingCreatorSubmitBlocked =
+    isTalkingCreatorActive && !talkingCreatorReady;
 
   const imageModeActiveNote = useMemo(() => {
-    if (isLipSyncActive) {
-      return a.imageModeLipSyncActiveNote;
-    }
-
-    if (isVideoStudioActive) {
-      return a.imageModeVideoStudioActiveNote;
-    }
-
+    if (isLipSyncActive) return a.imageModeLipSyncActiveNote;
+    if (isTalkingCreatorActive) return a.imageModeTalkingCreatorActiveNote;
+    if (isVideoStudioActive) return a.imageModeVideoStudioActiveNote;
     if (imageMode === "ugc_look" && UGC_LOOK_PUBLIC_ENABLED) {
       return a.imageModeUGCLookActiveNote;
     }
-
     if (imageMode === "brand_assets" && BRAND_ASSETS_PUBLIC_ENABLED) {
       return a.imageModeBrandAssetsActiveNote;
     }
-
     if (imageMode === "reference_edit" && REFERENCE_EDIT_PUBLIC_ENABLED) {
       return a.imageModeReferenceEditActiveNote;
     }
-
     if (imageMode === "fast_draft" && FAST_DRAFT_PUBLIC_ENABLED) {
       return a.imageModeFastDraftActiveNote;
     }
-
     if (imageMode === "premium_image" && PREMIUM_IMAGE_PUBLIC_ENABLED) {
       return a.imageModePremiumActiveNote;
     }
-
     return a.imageModeStandardActiveNote;
-  }, [a, imageMode, isVideoStudioActive, isLipSyncActive]);
+  }, [a, imageMode, isVideoStudioActive, isLipSyncActive, isTalkingCreatorActive]);
 
   const imageModeUsesBetaBadge =
     isLipSyncActive ||
+    isTalkingCreatorActive ||
     isVideoStudioActive ||
     (imageMode === "ugc_look" && UGC_LOOK_PUBLIC_ENABLED) ||
     (imageMode === "brand_assets" && BRAND_ASSETS_PUBLIC_ENABLED) ||
@@ -2575,7 +2825,11 @@ export default function AiAgentStudio({
 
     event.preventDefault();
 
-    if (studioTab === "video" || studioTab === "lip_sync") {
+    if (
+      studioTab === "video" ||
+      studioTab === "lip_sync" ||
+      studioTab === "talking_creator"
+    ) {
       return;
     }
 
@@ -2623,6 +2877,24 @@ export default function AiAgentStudio({
     formRef.current?.requestSubmit();
   }
 
+  function submitTalkingCreatorFromScript(
+    event: React.KeyboardEvent<HTMLTextAreaElement>
+  ) {
+    if (event.key !== "Enter") return;
+    if (event.shiftKey) return;
+
+    event.preventDefault();
+
+    if (!isTalkingCreatorActive) return;
+
+    if (isSubmitBlocked) {
+      setErrorMessage(a.generationAlreadyProcessing);
+      return;
+    }
+
+    formRef.current?.requestSubmit();
+  }
+
   function getSafeErrorMessage(status: number, apiError?: string) {
     if (status === 401) return a.signInAgain;
     if (status === 402) return a.notEnoughCredits;
@@ -2637,6 +2909,172 @@ export default function AiAgentStudio({
 
     if (submitInFlightRef.current || queuing || agentResult?.status === "processing") {
       setErrorMessage(a.generationAlreadyProcessing);
+      return;
+    }
+
+    if (isTalkingCreatorActive) {
+      if (!talkingCreatorSourceUrl?.trim()) {
+        setErrorMessage(a.talkingCreatorMissingSource);
+        return;
+      }
+      if (!talkingCreatorScriptText.trim()) {
+        setErrorMessage(a.talkingCreatorMissingScript);
+        return;
+      }
+      if (!talkingCreatorVoiceKey.trim()) {
+        setErrorMessage(a.talkingCreatorMissingVoice);
+        return;
+      }
+
+      const temporaryGenerationId = `temp-${Date.now()}`;
+      const promptLabel = talkingCreatorScriptText.trim();
+      submitInFlightRef.current = true;
+
+      try {
+        setQueuing(true);
+        setQueuedGenerationId(null);
+        setErrorMessage(null);
+        setStatusMessage(a.generatingTalkingCreator);
+        setAgentResult({
+          id: temporaryGenerationId,
+          prompt: promptLabel,
+          image_url: null,
+          video_url: null,
+          workflow: "talking_creator",
+          status: "processing",
+          error_message: null,
+          output_format: selectedOutputFormat.label,
+          image_size: "",
+        });
+        scrollToResult();
+
+        const token = await getAccessToken();
+        if (!token) {
+          setAgentResult({
+            id: temporaryGenerationId,
+            prompt: promptLabel,
+            image_url: null,
+            status: "failed",
+            error_message: a.signInAgain,
+            output_format: selectedOutputFormat.label,
+            image_size: "",
+          });
+          setErrorMessage(a.signInAgain);
+          return;
+        }
+
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            imageMode: "talking_creator",
+            sourceImageUrl: talkingCreatorSourceUrl,
+            scriptText: promptLabel,
+            voiceKey: talkingCreatorVoiceKey,
+            outputFormat: outputFormatKey,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          if (response.status === 402) {
+            const requiredCredits =
+              typeof data.requiredCredits === "number" ? data.requiredCredits : 60;
+            setAgentResult({
+              id: temporaryGenerationId,
+              prompt: promptLabel,
+              image_url: null,
+              status: "insufficient_credits",
+              error_message: null,
+              requiredCredits,
+              output_format: selectedOutputFormat.label,
+              image_size: "",
+            });
+            setErrorMessage(null);
+            setStatusMessage(null);
+            scrollToResult();
+            return;
+          }
+
+          if (response.status === 429 && data.reason === "active_generation_limit") {
+            setAgentResult({
+              id: temporaryGenerationId,
+              prompt: promptLabel,
+              image_url: null,
+              status: "active_generation_limit",
+              error_message: null,
+              output_format: selectedOutputFormat.label,
+              image_size: "",
+            });
+            setErrorMessage(null);
+            setStatusMessage(null);
+            scrollToResult();
+            return;
+          }
+
+          const safeMessage = getSafeErrorMessage(response.status, data.error);
+          setAgentResult({
+            id: temporaryGenerationId,
+            prompt: promptLabel,
+            image_url: null,
+            status: "failed",
+            error_message: safeMessage,
+            output_format: selectedOutputFormat.label,
+            image_size: "",
+          });
+          setErrorMessage(safeMessage);
+          return;
+        }
+
+        const generationId =
+          typeof data.generationId === "string" ? data.generationId : null;
+        if (!generationId) {
+          setAgentResult({
+            id: temporaryGenerationId,
+            prompt: promptLabel,
+            image_url: null,
+            status: "failed",
+            error_message: a.noGenerationId,
+            output_format: selectedOutputFormat.label,
+            image_size: "",
+          });
+          setErrorMessage(a.noGenerationId);
+          return;
+        }
+
+        setQueuedGenerationId(generationId);
+        setAgentResult({
+          id: generationId,
+          prompt: promptLabel,
+          image_url: null,
+          video_url: null,
+          workflow: "talking_creator",
+          status: "processing",
+          error_message: null,
+          output_format: selectedOutputFormat.label,
+          image_size: "",
+        });
+        onGenerationQueued?.();
+        scrollToResult();
+      } catch {
+        setAgentResult({
+          id: temporaryGenerationId,
+          prompt: promptLabel,
+          image_url: null,
+          status: "failed",
+          error_message: a.networkError,
+          output_format: selectedOutputFormat.label,
+          image_size: "",
+        });
+        setErrorMessage(a.networkError);
+      } finally {
+        submitInFlightRef.current = false;
+        setQueuing(false);
+      }
+
       return;
     }
 
@@ -3452,6 +3890,8 @@ export default function AiAgentStudio({
           </>
         ) : studioTab === "video" ? (
           <p className="text-sm leading-6 text-white/50">{a.videoStudioLongerHint}</p>
+        ) : studioTab === "talking_creator" ? (
+          <p className="text-sm leading-6 text-white/50">{a.talkingCreatorLongerHint}</p>
         ) : (
           <p className="text-sm leading-6 text-white/50">{a.lipSyncLongerHint}</p>
         )}
@@ -3493,6 +3933,32 @@ export default function AiAgentStudio({
                 {VIDEO_STUDIO_PUBLIC_ENABLED
                   ? a.studioTabVideo
                   : a.studioTabVideoPlanned}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (TALKING_CREATOR_PUBLIC_ENABLED) {
+                  setStudioTab("talking_creator");
+                }
+              }}
+              disabled={!TALKING_CREATOR_PUBLIC_ENABLED}
+              title={
+                TALKING_CREATOR_PUBLIC_ENABLED
+                  ? a.imageModes.talkingCreator.description
+                  : a.studioTabTalkingCreatorPlanned
+              }
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                studioTab === "talking_creator" && TALKING_CREATOR_PUBLIC_ENABLED
+                  ? "bg-cyan-500/20 text-cyan-100 ring-1 ring-cyan-500/30"
+                  : "border border-white/10 bg-black/25 text-white/55"
+              }`}
+            >
+              <Mic className="h-3.5 w-3.5" aria-hidden />
+              <span>
+                {TALKING_CREATOR_PUBLIC_ENABLED
+                  ? a.studioTabTalkingCreator
+                  : a.studioTabTalkingCreatorPlanned}
               </span>
             </button>
             <button
@@ -3568,6 +4034,23 @@ export default function AiAgentStudio({
               onVoiceKeyChange={setLipSyncVoiceKey}
               systemVoiceAvailable={ELEVENLABS_TTS_PUBLIC_ENABLED}
               previousVideoUrl={agentResult?.video_url ?? null}
+            />
+          ) : null}
+
+          {studioTab === "talking_creator" ? (
+            <TalkingCreatorPanel
+              label={a.imageModes.talkingCreator.label}
+              copy={a.imageModes.talkingCreator.panel}
+              panelRef={talkingCreatorPanelRef}
+              getAccessToken={getAccessToken}
+              isEnabled={TALKING_CREATOR_PUBLIC_ENABLED}
+              sourcePreviewUrl={talkingCreatorSourceUrl}
+              onSourcePreviewUrlChange={setTalkingCreatorSourceUrl}
+              scriptText={talkingCreatorScriptText}
+              onScriptTextChange={setTalkingCreatorScriptText}
+              onScriptKeyDown={submitTalkingCreatorFromScript}
+              voiceKey={talkingCreatorVoiceKey}
+              onVoiceKeyChange={setTalkingCreatorVoiceKey}
             />
           ) : null}
 
@@ -3723,11 +4206,14 @@ export default function AiAgentStudio({
               isSubmitBlocked ||
               referenceEditSubmitBlocked ||
               videoSubmitBlocked ||
-              lipSyncSubmitBlocked
+              lipSyncSubmitBlocked ||
+              talkingCreatorSubmitBlocked
             }
             title={
               isLipSyncActive
                 ? a.generateLipSync
+                : isTalkingCreatorActive
+                  ? a.generateTalkingCreator
                 : isVideoStudioActive
                   ? a.generateVideo
                   : undefined
@@ -3735,6 +4221,8 @@ export default function AiAgentStudio({
             className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 text-sm font-black shadow-xl transition disabled:opacity-50 ${
               isLipSyncActive
                 ? "bg-violet-500 text-white hover:bg-violet-400"
+                : isTalkingCreatorActive
+                  ? "bg-cyan-500 text-black hover:bg-cyan-400"
                 : isVideoStudioActive
                   ? "bg-sky-500 text-black hover:bg-sky-400"
                   : "bg-[#d8ad5f] text-black hover:bg-[#efc777]"
@@ -3746,6 +4234,11 @@ export default function AiAgentStudio({
               <>
                 <Mic className="h-4 w-4" aria-hidden />
                 <span>{a.generateLipSync}</span>
+              </>
+            ) : isTalkingCreatorActive ? (
+              <>
+                <Mic className="h-4 w-4" aria-hidden />
+                <span>{a.generateTalkingCreator}</span>
               </>
             ) : isVideoStudioActive ? (
               <>
@@ -3784,6 +4277,8 @@ export default function AiAgentStudio({
                 {agentResult.status === "processing"
                   ? isLipSyncWorkflow(agentResult.workflow)
                     ? a.generatingLipSync
+                    : isTalkingCreatorWorkflow(agentResult.workflow)
+                      ? a.generatingTalkingCreator
                     : isVideoStudioWorkflow(agentResult.workflow)
                       ? a.generatingVideo
                       : a.generating
@@ -3867,6 +4362,8 @@ export default function AiAgentStudio({
                 <p className="mt-3 text-sm leading-6 text-white/45">
                   {isLipSyncWorkflow(agentResult.workflow)
                     ? a.lipSyncLongerHint
+                    : isTalkingCreatorWorkflow(agentResult.workflow)
+                      ? a.talkingCreatorLongerHint
                     : isVideoStudioWorkflow(agentResult.workflow)
                       ? a.videoStudioLongerHint
                       : a.processingStay}

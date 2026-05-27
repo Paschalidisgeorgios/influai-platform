@@ -83,8 +83,13 @@ function getWorkflowLabel(
     video: string;
     lipSync: string;
     ugcLook: string;
+    talkingCreator: string;
   }
 ) {
+  if (workflow === "talking_creator") {
+    return labels.talkingCreator;
+  }
+
   if (workflow === "lip_sync") {
     return labels.lipSync;
   }
@@ -106,6 +111,7 @@ function getWorkflowLabel(
 
 function isVideoGeneration(generation: Generation) {
   return (
+    generation.workflow === "talking_creator" ||
     generation.workflow === "video_image_to_video" ||
     generation.workflow === "lip_sync" ||
     Boolean(generation.video_url)
@@ -667,10 +673,15 @@ export default function GenerationGallery({
                         video: g.videoBadge,
                         lipSync: g.lipSyncBadge,
                         ugcLook: g.ugcLookBadge,
+                        talkingCreator: g.talkingCreatorBadge,
                       })}
                     </span>
 
-                    {generation.workflow === "lip_sync" ? (
+                    {generation.workflow === "talking_creator" ? (
+                      <span className="rounded-full border border-cyan-500/25 bg-cyan-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-cyan-100">
+                        {g.talkingCreatorBadge}
+                      </span>
+                    ) : generation.workflow === "lip_sync" ? (
                       <span className="rounded-full border border-violet-500/25 bg-violet-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-violet-100">
                         {g.lipSyncBadge}
                       </span>
@@ -842,6 +853,7 @@ export default function GenerationGallery({
                       video: g.videoBadge,
                       lipSync: g.lipSyncBadge,
                       ugcLook: g.ugcLookBadge,
+                      talkingCreator: g.talkingCreatorBadge,
                     })}
                   </span>
 

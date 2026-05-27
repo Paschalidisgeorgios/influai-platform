@@ -598,6 +598,7 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                   copy.credits.modeCosts.referenceEdit,
                   copy.credits.modeCosts.videoStudio,
                   copy.credits.modeCosts.lipSync,
+                  copy.credits.modeCosts.talkingCreator,
                 ].map((item) => (
                   <li
                     key={item}
