@@ -556,12 +556,12 @@ const en = {
       videoStudio: {
         title: "Video Studio",
         benefit:
-          "Short-form image-to-video clips for social and product campaigns.",
+          "Turn static visuals into short-form campaign videos for social media, product launches and creator ads.",
       },
       lipSync: {
         title: "Lip Sync Studio",
         benefit:
-          "Talking-head creator clips from script, voice and visual assets.",
+          "Create talking-head creator videos from scripts, voices and visual assets — ideal for UGC-style campaigns.",
       },
       cinemaAgent: {
         title: "Cinema Agent",
@@ -645,8 +645,8 @@ const en = {
     studioTabVideoPlanned: "Video Studio · Coming soon",
     studioTabTalkingCreator: "Talking Creator",
     studioTabTalkingCreatorPlanned: "Talking Creator · Coming soon",
-    studioTabLipSync: "Lip Sync Studio",
-    studioTabLipSyncPlanned: "Lip Sync Studio · Coming soon",
+    studioTabLipSync: "Lip Sync",
+    studioTabLipSyncPlanned: "Lip Sync · Coming soon",
     talkingCreatorMissingSource: "Upload a source image for Talking Creator.",
     talkingCreatorMissingScript: "Script is required for Talking Creator.",
     talkingCreatorMissingVoice: "Choose a voice for Talking Creator.",
@@ -1801,12 +1801,12 @@ const de: DeepString<typeof en> = {
       videoStudio: {
         title: "Video Studio",
         benefit:
-          "Kurze Image-to-Video-Clips für Social und Produktkampagnen.",
+          "Verwandle statische Visuals in kurze Kampagnenvideos für Social Media, Produktlaunches und Creator Ads.",
       },
       lipSync: {
         title: "Lip Sync Studio",
         benefit:
-          "Talking-Head-Creator-Clips aus Skript, Voice und Visual Assets.",
+          "Erstelle Talking-Head-Creator-Videos aus Skripten, Stimmen und Visual Assets — ideal für UGC-ähnliche Kampagnen.",
       },
       cinemaAgent: {
         title: "Cinema Agent",
@@ -1891,8 +1891,8 @@ const de: DeepString<typeof en> = {
     studioTabVideoPlanned: "Video Studio · Demnächst",
     studioTabTalkingCreator: "Talking Creator",
     studioTabTalkingCreatorPlanned: "Talking Creator · Demnächst",
-    studioTabLipSync: "Lip Sync Studio",
-    studioTabLipSyncPlanned: "Lip Sync Studio · Demnächst",
+    studioTabLipSync: "Lip Sync",
+    studioTabLipSyncPlanned: "Lip Sync · Demnächst",
     talkingCreatorMissingSource: "Lade ein Quellbild für Talking Creator hoch.",
     talkingCreatorMissingScript: "Skript für Talking Creator erforderlich.",
     talkingCreatorMissingVoice: "Wähle eine Stimme für Talking Creator.",
