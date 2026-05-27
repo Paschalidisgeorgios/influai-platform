@@ -526,13 +526,13 @@ const en = {
       eyebrow: "Creator Platform",
       title: "Tools",
       description:
-        "Browse studio workflows and upcoming modules. Active tools run in the AI Agent — this page is a read-only overview.",
+        "Choose the right creative workflow for your next campaign — from image generation and reusable styles to upcoming video, planning and brand safety tools.",
     },
   },
   toolsPage: {
     openInAgent: "Open in Agent",
     includedModes: "Included modes",
-    roadmapOnly: "Roadmap preview — not active yet",
+    roadmapOnly: "Planned workflow",
     statuses: {
       live: "Live",
       beta: "Beta",
@@ -576,7 +576,7 @@ const en = {
       socialPlanner: {
         title: "Social Planner",
         benefit:
-          "Caption, hashtag and posting calendar planning — no live social API.",
+          "Plan captions, hashtags and posting calendars for upcoming campaigns.",
       },
       compliance: {
         title: "Compliance Check",
@@ -598,21 +598,21 @@ const en = {
     zeroCreditsHint: "No credits left — open Credits to buy a package",
   },
   agent: {
-    title: "Create campaign-ready visuals",
+    title: "Create your next campaign visual.",
     subtitle:
-      "Turn briefs into creator visuals, product shots and social assets. Use Style Profiles to keep direction consistent across a campaign.",
+      "Describe your idea, choose a visual mode and generate a ready-to-use asset for social media, ads, product campaigns or creator content.",
     enterHint: "Enter to generate · Shift+Enter for a new line",
     workspacePromptHeadline: "What do you want to create?",
-    searchHeadline: "Hey, what do you want to create?",
+    searchHeadline: "Create your next campaign visual.",
     imageStudioTab: "Image Studio",
     resultPlaceholderTitle: "Your result will appear here.",
     resultPlaceholderHint:
       "Generate a visual to preview it live. Completed assets are saved to your gallery automatically.",
-    generateButton: "Generate",
-    processingStepBrief: "Preparing creative brief…",
-    processingStepDirection: "Rendering visual direction…",
-    processingStepFormat: "Optimizing social format…",
-    processingStepSaving: "Saving asset to gallery…",
+    generateButton: "Generate Campaign Visual",
+    processingStepBrief: "Analyzing campaign brief",
+    processingStepDirection: "Applying visual direction",
+    processingStepFormat: "Preparing social format",
+    processingStepSaving: "Saving to Asset Gallery",
     imageModeChips: {
       standard: "Standard 1C",
       fastDraft: "Fast Draft 1C",
@@ -621,7 +621,8 @@ const en = {
       brandAssets: "Brand Assets 4C",
       referenceEdit: "Reference Edit 5C",
     },
-    promptPlaceholder: "Describe what you want to generate (subject, setting, style, details)…",
+    promptPlaceholder:
+      "Example: Create a premium fitness creator campaign for Instagram featuring a confident athlete, luxury sportswear, cinematic gym lighting and a clean product-focused composition…",
     agent: "Agent",
     styleProfileNone: "Style profile: none",
     loadingStyleProfiles: "Loading style profiles…",
@@ -956,7 +957,7 @@ const en = {
     socialPlannerCopyPlan: "Copy plan",
     socialPlannerAdded: "Added to plan",
     complianceTitle: "Compliance checklist",
-    complianceSubtitle: "Quick internal review (no API)",
+    complianceSubtitle: "Quick pre-publish review checklist",
     complianceItemNoFakeText: "No unwanted / fake text",
     complianceItemNoFakeLogo: "No fake logos / brands",
     complianceItemNoArtifacts: "No obvious AI artifacts",
@@ -964,13 +965,13 @@ const en = {
     complianceMarkReviewed: "Mark as reviewed",
     complianceReviewed: "Reviewed",
     cinemaAgentTitle: "Cinema Agent (planning)",
-    cinemaAgentSubtitle: "Create a 5-shot plan (no generation calls)",
+    cinemaAgentSubtitle: "Create a 5-shot campaign plan.",
     omniAgentTitle: "Omni Campaign Agent (planning)",
-    omniAgentSubtitle: "Create a 7-day plan (no generation calls)",
+    omniAgentSubtitle: "Create a 7-day campaign rollout plan.",
     copyPlan: "Copy plan",
     planCopied: "Plan copied",
     processingHint:
-      "Processing in the background. The image will appear here automatically.",
+      "We’re applying your selected mode, style profile and format to generate a ready-to-use asset.",
     processingStay:
       "Please wait while InfluExAi generates and saves your image. Stay on this page — the result appears here automatically.",
     currentJob: "Current job",
@@ -1124,7 +1125,7 @@ const en = {
     accountBalance: "Account balance",
     creditsTitle: "Credits",
     balanceDescription:
-      "Credits are only used when you generate. Standard images cost 1 credit.",
+      "Choose the right credit package for your creative workflow and generate campaign visuals with transparent usage. Standard images start at 1 credit.",
     modeUsageIntro: "Credits are used depending on the selected mode.",
     workflowChargeNote:
       "Credits are charged based on the selected workflow.",
@@ -1200,40 +1201,41 @@ const en = {
     },
     packages: {
       starter: {
-        tagline: "For testing",
+        tagline: "For Testing",
         description:
-          "Try prompts, formats and gallery workflows before scaling production.",
+          "Explore InfluExAi, test prompts and create your first campaign visuals before scaling production.",
         benefits: [
+          "100 credits included",
           "AI Agent image generation",
           "Social media format presets",
           "Asset Gallery storage",
-          "Ideal for testing and early ideas",
+          "Great for first tests and early ideas",
         ],
-        button: "Buy Starter",
+        button: "Start with Starter",
       },
       professional: {
-        tagline: "Recommended for regular creators",
+        tagline: "Recommended for Regular Creators",
         description:
-          "The balanced package for consistent campaign output and reusable creative direction.",
+          "The best choice for consistent content production, reusable Style Profiles and regular campaign visuals.",
         benefits: [
           "Everything in Starter",
-          "Style Profiles for reusable direction",
-          "Built for regular creator workflows",
+          "Style Profiles for reusable creative direction",
+          "Built for weekly creator workflows",
           "Best value for ongoing production",
         ],
-        button: "Buy Professional",
+        button: "Choose Professional",
       },
       ultimate: {
-        tagline: "For high-volume workflows",
+        tagline: "For Teams & High-Volume Workflows",
         description:
-          "Scale content production with a large credit reserve for teams and heavy usage.",
+          "Scale campaign production with a large credit reserve for businesses, agencies and power users.",
         benefits: [
           "Everything in Professional",
-          "High-volume image generation",
-          "Suited for agencies and power users",
-          "Maximum runway per purchase",
+          "High-volume generation",
+          "Suitable for teams and agencies",
+          "Ideal for testing multiple creative directions",
         ],
-        button: "Buy Ultimate",
+        button: "Scale with Ultimate",
       },
     },
   },
@@ -1771,13 +1773,13 @@ const de: DeepString<typeof en> = {
       eyebrow: "Creator Platform",
       title: "Werkzeuge",
       description:
-        "Studio-Workflows und kommende Module entdecken. Aktive Tools laufen im AI Agent — diese Seite ist eine Übersicht.",
+        "Wähle den passenden Kreativ-Workflow für deine nächste Kampagne — von Bildgenerierung und wiederverwendbaren Styles bis zu kommenden Video-, Planungs- und Brand-Safety-Tools.",
     },
   },
   toolsPage: {
     openInAgent: "Im Agent öffnen",
     includedModes: "Enthaltene Modi",
-    roadmapOnly: "Roadmap-Vorschau — noch nicht aktiv",
+    roadmapOnly: "Geplanter Workflow",
     statuses: {
       live: "Live",
       beta: "Beta",
@@ -1821,7 +1823,7 @@ const de: DeepString<typeof en> = {
       socialPlanner: {
         title: "Social Planner",
         benefit:
-          "Caption-, Hashtag- und Posting-Kalender — ohne Live-Social-API.",
+          "Plane Captions, Hashtags und Posting-Kalender für kommende Kampagnen.",
       },
       compliance: {
         title: "Compliance Check",
@@ -1846,19 +1848,19 @@ const de: DeepString<typeof en> = {
   agent: {
     title: "Kampagnenfertige Visuals erstellen",
     subtitle:
-      "Erzeuge Premium-Creator-Visuals, Produktshots und Social-Media-Kampagnen-Assets. Nutze Style Profiles für wiederverwendbare Creative Direction.",
+      "Beschreibe deine Idee, wähle einen visuellen Modus und generiere ein einsatzbereites Asset für Social Media, Werbung, Produktkampagnen oder Creator Content.",
     enterHint: "Enter zum Generieren · Shift+Enter für neue Zeile",
     workspacePromptHeadline: "Was möchtest du erstellen?",
-    searchHeadline: "Hey, was möchtest du erschaffen?",
+    searchHeadline: "Erstelle dein nächstes Kampagnenvisual.",
     imageStudioTab: "Bild Studio",
     resultPlaceholderTitle: "Dein Ergebnis erscheint hier.",
     resultPlaceholderHint:
       "Generiere ein Visual für die Live-Vorschau. Fertige Assets werden automatisch in deiner Gallery gespeichert.",
-    generateButton: "Generieren",
-    processingStepBrief: "Creative Brief wird vorbereitet…",
-    processingStepDirection: "Visuelle Direction wird gerendert…",
-    processingStepFormat: "Social Format wird optimiert…",
-    processingStepSaving: "Asset wird in der Gallery gespeichert…",
+    generateButton: "Visual generieren",
+    processingStepBrief: "Kampagnenbriefing analysieren",
+    processingStepDirection: "Visuelle Richtung anwenden",
+    processingStepFormat: "Social-Media-Format vorbereiten",
+    processingStepSaving: "In der Asset Gallery speichern",
     imageModeChips: {
       standard: "Standard 1C",
       fastDraft: "Fast Draft 1C",
@@ -1867,7 +1869,8 @@ const de: DeepString<typeof en> = {
       brandAssets: "Brand Assets 4C",
       referenceEdit: "Reference Edit 5C",
     },
-    promptPlaceholder: "Beschreibe, was du generieren willst (Motiv, Setting, Stil, Details)…",
+    promptPlaceholder:
+      "Beispiel: Erstelle eine hochwertige Fitness-Creator-Kampagne für Instagram mit selbstbewusster Athletin, Premium-Sportswear, cineastischem Gym-Licht und klarem Produktfokus…",
     agent: "Agent",
     styleProfileNone: "Style Profile: keins",
     loadingStyleProfiles: "Style Profiles werden geladen…",
@@ -2209,7 +2212,7 @@ const de: DeepString<typeof en> = {
     socialPlannerCopyPlan: "Plan kopieren",
     socialPlannerAdded: "Zum Plan hinzugefügt",
     complianceTitle: "Compliance-Checkliste",
-    complianceSubtitle: "Schneller interner Check (keine API)",
+    complianceSubtitle: "Schnelle Pre-Publish-Checkliste",
     complianceItemNoFakeText: "Kein unerwünschter / Fake-Text",
     complianceItemNoFakeLogo: "Keine Fake-Logos / Brands",
     complianceItemNoArtifacts: "Keine offensichtlichen AI-Artefakte",
@@ -2217,13 +2220,13 @@ const de: DeepString<typeof en> = {
     complianceMarkReviewed: "Als geprüft markieren",
     complianceReviewed: "Geprüft",
     cinemaAgentTitle: "Cinema Agent (Planung)",
-    cinemaAgentSubtitle: "5-Shot-Plan erstellen (keine Generierung)",
+    cinemaAgentSubtitle: "Erstelle einen 5-Shot-Kampagnenplan.",
     omniAgentTitle: "Omni Campaign Agent (Planung)",
-    omniAgentSubtitle: "7-Tage-Plan erstellen (keine Generierung)",
+    omniAgentSubtitle: "Erstelle einen 7-Tage-Kampagnen-Rollout-Plan.",
     copyPlan: "Plan kopieren",
     planCopied: "Plan kopiert",
     processingHint:
-      "Verarbeitung im Hintergrund. Das Bild erscheint hier automatisch.",
+      "Wir wenden den ausgewählten Modus, das Style Profile und das Format an, um ein einsatzbereites Asset zu generieren.",
     processingStay:
       "Bitte warten, während InfluExAi dein Bild generiert und speichert. Auf dieser Seite bleiben — das Ergebnis erscheint automatisch.",
     currentJob: "Aktueller Job",
@@ -2386,7 +2389,7 @@ const de: DeepString<typeof en> = {
     accountBalance: "Kontoguthaben",
     creditsTitle: "Credits",
     balanceDescription:
-      "Credits werden nur beim Generieren verbraucht. Standard-Bilder kosten 1 Credit.",
+      "Wähle das passende Credit-Paket für deinen kreativen Workflow und erstelle Kampagnenvisuals mit transparenter Nutzung. Standardbilder starten ab 1 Credit.",
     modeUsageIntro:
       "Credits werden je nach gewähltem Modus verbraucht.",
     workflowChargeNote:
@@ -2467,38 +2470,39 @@ const de: DeepString<typeof en> = {
       starter: {
         tagline: "Zum Testen",
         description:
-          "Teste Prompts, Formate und Gallery-Workflows, bevor du die Produktion skalierst.",
+          "Entdecke InfluExAi, teste Prompts und erstelle erste Kampagnenvisuals, bevor du skalierst.",
         benefits: [
+          "100 Credits enthalten",
           "AI Agent Bildgenerierung",
           "Social-Media-Format-Presets",
-          "Asset Gallery Speicher",
-          "Ideal zum Testen und für erste Ideen",
+          "Asset Gallery Speicherung",
+          "Ideal für erste Tests und frühe Ideen",
         ],
-        button: "Starter kaufen",
+        button: "Mit Starter starten",
       },
       professional: {
         tagline: "Empfohlen für regelmäßige Creator",
         description:
-          "Das ausgewogene Paket für konsistente Kampagnen und wiederverwendbare Creative Direction.",
+          "Die beste Wahl für kontinuierliche Produktion, wiederverwendbare Style Profiles und regelmäßige Kampagnenvisuals.",
         benefits: [
           "Alles aus Starter",
-          "Style Profiles für wiederverwendbare Direction",
-          "Für regelmäßige Creator-Workflows",
+          "Style Profiles für wiederverwendbare Creative Direction",
+          "Für wöchentliche Creator-Workflows",
           "Bestes Preis-Leistungs-Verhältnis",
         ],
-        button: "Professional kaufen",
+        button: "Professional wählen",
       },
       ultimate: {
-        tagline: "Für High-Volume-Workflows",
+        tagline: "Für Teams & High-Volume-Workflows",
         description:
-          "Skaliere Content-Produktion mit großem Credit-Reserve für Teams und Heavy Usage.",
+          "Skaliere Kampagnenproduktion mit großer Credit-Reserve für Unternehmen, Agenturen und Power User.",
         benefits: [
           "Alles aus Professional",
-          "High-Volume Bildgenerierung",
-          "Für Agenturen und Power User",
-          "Maximale Reichweite pro Kauf",
+          "High-Volume Generierung",
+          "Geeignet für Teams und Agenturen",
+          "Ideal für das Testen mehrerer Creative-Richtungen",
         ],
-        button: "Ultimate kaufen",
+        button: "Mit Ultimate skalieren",
       },
     },
   },

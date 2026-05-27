@@ -111,13 +111,13 @@ export default function AiinflugenLanding({
       title2: "AI visuals",
       gold: "campaigns",
       subtitle:
-        "Brief → generate → reuse. InfluExAi helps creator teams produce consistent campaign visuals with Style Profiles, social formats and a private Asset Gallery.",
+        "InfluExAi is an AI Campaign Studio for creators, brands and businesses who want to produce campaign-ready visuals faster.",
       start: "Open Studio",
       startCreating: "Start creating",
       explore: "Explore features",
       studioTitle: "One studio for the full visual workflow.",
       studioText:
-        "Use the AI Agent to generate visuals, keep a reusable creative direction in Style Profiles, and manage outputs in the Asset Gallery — all in one workspace.",
+        "Turn ideas into professional visuals for social media, product campaigns and digital ads with reusable styles and a complete asset workflow.",
       toolsTitle: "Designed for repeatable, on-brand output.",
       workflowTitle: "From brief to finished assets.",
       examplesTitle: "Campaign-ready examples.",
@@ -164,13 +164,13 @@ export default function AiinflugenLanding({
       title2: "AI-Visuals",
       gold: "Kampagnen",
       subtitle:
-        "Briefing → generieren → wiederverwenden. InfluExAi hilft Creator-Teams, konsistente Kampagnenvisuals mit Style Profiles, Social-Formaten und privater Asset Gallery zu produzieren.",
+        "Erstelle kampagnenfähige KI-Visuals in Minuten. InfluExAi ist ein AI Campaign Studio für Creator, Marken und Unternehmen.",
       start: "Studio öffnen",
       startCreating: "Jetzt erstellen",
       explore: "Features entdecken",
       studioTitle: "Ein Studio für den gesamten Visual-Workflow.",
       studioText:
-        "Nutze den AI Agent zum Generieren, speichere wiederverwendbare Creative Direction in Style Profiles und verwalte Outputs in der Asset Gallery — alles in einem Workspace.",
+        "Verwandle Ideen in professionelle Visuals für Social Media, Produktkampagnen und digitale Werbung – mit wiederverwendbaren Styles und vollständigem Asset-Workflow.",
       toolsTitle: "Für wiederholbaren, markenkonsistenten Output.",
       workflowTitle: "Vom Briefing zu fertigen Assets.",
       examplesTitle: "Kampagnenfertige Beispiele.",

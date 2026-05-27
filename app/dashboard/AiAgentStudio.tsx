@@ -324,6 +324,7 @@ type AgentResult = {
 type AiAgentStudioProps = {
   charactersRefreshKey?: number;
   regenerateDraft?: RegenerateDraft | null;
+  preferredStudioTab?: "image" | "video" | "lip_sync";
   onGenerationQueued?: () => void;
   onClearRegenerateDraft?: () => void;
   onOpenGallery?: () => void;
@@ -2426,6 +2427,7 @@ function LipSyncStudioPanel({
 export default function AiAgentStudio({
   charactersRefreshKey = 0,
   regenerateDraft = null,
+  preferredStudioTab = "image",
   onGenerationQueued,
   onClearRegenerateDraft,
   onOpenGallery,
@@ -2635,6 +2637,7 @@ export default function AiAgentStudio({
   );
 
   const [agentResult, setAgentResult] = useState<AgentResult | null>(null);
+  const [availableCredits, setAvailableCredits] = useState<number | null>(null);
   const [captionCopied, setCaptionCopied] = useState(false);
   const [planCopied, setPlanCopied] = useState(false);
   const [planAdded, setPlanAdded] = useState(false);
@@ -2671,6 +2674,14 @@ export default function AiAgentStudio({
 
   const [exampleIndex, setExampleIndex] = useState(0);
   const [typedExample, setTypedExample] = useState("");
+  const requiredCreditsForCurrentSelection = getRequiredCreditsForStudio(
+    studioTab,
+    imageMode
+  );
+  const creditsLeftAfterGeneration =
+    typeof availableCredits === "number"
+      ? Math.max(availableCredits - requiredCreditsForCurrentSelection, 0)
+      : null;
 
   const selectedCharacter = useMemo(() => {
     return characters.find((character) => character.id === selectedCharacterId);
@@ -2769,12 +2780,34 @@ export default function AiAgentStudio({
   }, [regenerateDraft, a.campaignPromptLoaded, a.promptLoadedRegeneration]);
 
   useEffect(() => {
+    if (preferredStudioTab === "video" && VIDEO_STUDIO_PUBLIC_ENABLED) {
+      setStudioTab("video");
+      return;
+    }
+    if (preferredStudioTab === "lip_sync" && LIP_SYNC_PUBLIC_ENABLED) {
+      setStudioTab("lip_sync");
+      return;
+    }
+    setStudioTab("image");
+  }, [preferredStudioTab]);
+
+  useEffect(() => {
     const interval = window.setInterval(() => {
       setExampleIndex((current) => (current + 1) % examplePrompts.length);
     }, 4400);
 
     return () => window.clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    void loadAvailableCredits();
+  }, []);
+
+  useEffect(() => {
+    if (!agentResult) return;
+    if (agentResult.status === "processing") return;
+    void loadAvailableCredits();
+  }, [agentResult?.status]);
 
   useEffect(() => {
     const currentText = examplePrompts[exampleIndex];
@@ -2865,6 +2898,24 @@ export default function AiAgentStudio({
     } = await supabase.auth.getSession();
 
     return session?.access_token ?? null;
+  }
+
+  async function loadAvailableCredits() {
+    try {
+      const token = await getAccessToken();
+      if (!token) return;
+
+      const response = await fetch("/api/credits", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) return;
+      setAvailableCredits(typeof data.credits === "number" ? data.credits : 0);
+    } catch (error) {
+      console.warn("AI Agent credits preview load failed:", error);
+    }
   }
 
   async function loadCharacters() {
@@ -3968,6 +4019,49 @@ export default function AiAgentStudio({
     : "relative isolate w-full max-w-3xl overflow-visible rounded-[1.75rem] border border-white/10 bg-white/[0.05] shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl";
 
   function renderComposerContent() {
+    const useCaseChips = [
+      "Social Ad",
+      "UGC Post",
+      "Product Visual",
+      "Creator Portrait",
+      "Brand Campaign",
+      "Story Format",
+      "Launch Promo",
+      "Local Business Ad",
+    ];
+    const templateCards = [
+      {
+        title: "Fitness Creator Campaign",
+        body: "Premium Instagram visual for fitness brands and personal trainers.",
+        prompt:
+          "Create a premium fitness creator campaign visual for Instagram featuring a confident athlete, luxury sportswear, cinematic gym lighting and a clean product-focused composition.",
+      },
+      {
+        title: "UGC Product Ad",
+        body: "Authentic creator-style image for product promotion.",
+        prompt:
+          "Create an authentic UGC-style product ad visual, creator holding the product naturally, social-friendly framing, clean lighting and clear product focus.",
+      },
+      {
+        title: "Luxury Product Visual",
+        body: "High-end campaign look for premium brands.",
+        prompt:
+          "Create a luxury product campaign visual with high-end styling, dramatic but clean lighting, elegant composition and premium commercial polish.",
+      },
+      {
+        title: "Restaurant Promo",
+        body: "Social media visual for local food campaigns.",
+        prompt:
+          "Create an eye-catching restaurant promo visual for social media, appetizing product focus, warm cinematic lighting and clear campaign-ready composition.",
+      },
+      {
+        title: "Beauty Launch",
+        body: "Clean product-focused visual for skincare or cosmetics.",
+        prompt:
+          "Create a clean beauty launch campaign visual for skincare, premium product focus, soft commercial lighting, elegant background and polished brand look.",
+      },
+    ];
+
     return (
       <>
         {studioTab === "image" ? (
@@ -3984,6 +4078,55 @@ export default function AiAgentStudio({
               }`}
             />
             <p className="mt-2 text-[10px] font-medium text-white/32">{a.enterHint}</p>
+            <p className="mt-1 text-[11px] text-white/45">
+              {language === "de"
+                ? "Tipp: Beschreibe Produkt, Zielgruppe, Stimmung, Plattform und visuellen Stil für bessere Ergebnisse."
+                : "Tip: Include the product, target audience, mood, platform and visual style for better results."}
+            </p>
+
+            <div className="mt-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/35">
+                {language === "de" ? "Use Cases" : "Use Cases"}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {useCaseChips.map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => insertQuickPrompt(chip)}
+                    className="rounded-full border border-white/12 bg-white/[0.04] px-2.5 py-1 text-[10px] font-bold text-white/70 transition hover:border-[#d8ad5f]/35 hover:text-[#d8ad5f]"
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-3 rounded-xl border border-white/10 bg-black/25 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/35">
+                  {language === "de" ? "Start with a template" : "Start with a template"}
+                </p>
+              </div>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {templateCards.map((template) => (
+                  <div key={template.title} className="rounded-lg border border-white/10 bg-white/[0.03] p-2.5">
+                    <p className="text-[11px] font-black text-white/90">{template.title}</p>
+                    <p className="mt-1 text-[10px] leading-4 text-white/45">{template.body}</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPrompt(template.prompt);
+                        setStudioTab("image");
+                      }}
+                      className="mt-2 rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-3 py-1 text-[10px] font-black text-[#f0d7a8]"
+                    >
+                      {language === "de" ? "Use Template" : "Use Template"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </>
         ) : studioTab === "video" ? (
           <p className="text-sm leading-6 text-white/50">{a.videoStudioLongerHint}</p>
@@ -4295,6 +4438,18 @@ export default function AiAgentStudio({
             </div>
           </div>
 
+          {!isVideoStudioActive && !isLipSyncActive && !isTalkingCreatorActive ? (
+            <p className="text-xs text-white/55">
+              {typeof availableCredits === "number"
+                ? language === "de"
+                  ? `Diese Generierung verwendet ${requiredCreditsForCurrentSelection} Credits. Danach bleiben dir ${creditsLeftAfterGeneration ?? 0} Credits.`
+                  : `This generation will use ${requiredCreditsForCurrentSelection} credits. You will have ${creditsLeftAfterGeneration ?? 0} credits left.`
+                : language === "de"
+                  ? `Diese Generierung verwendet ${requiredCreditsForCurrentSelection} Credits.`
+                  : `This generation will use ${requiredCreditsForCurrentSelection} credits.`}
+            </p>
+          ) : null}
+
           <motion.button
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
@@ -4593,6 +4748,97 @@ export default function AiAgentStudio({
                 {a.viewInGallery}
               </button>
             ) : null}
+            {agentResult.status === "completed" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setStudioTab("image");
+                  setPrompt(agentResult.prompt);
+                  setStatusMessage(
+                    language === "de"
+                      ? "Variante vorbereitet. Passe Prompt oder Modus an und generiere erneut."
+                      : "Variant ready. Adjust prompt or mode and generate again."
+                  );
+                }}
+                className="inline-flex flex-1 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-bold text-white/80"
+              >
+                {language === "de" ? "Variante erstellen" : "Create Variant"}
+              </button>
+            ) : null}
+            {agentResult.status === "completed" &&
+            agentResult.image_url &&
+            !agentResult.video_url ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setStudioTab("image");
+                  setImageMode("reference_edit");
+                  setReferenceEditSourceUrl(agentResult.image_url ?? null);
+                  setReferenceEditInstruction(agentResult.prompt);
+                  setStatusMessage(
+                    language === "de"
+                      ? "Referenz übernommen. Ergänze Anweisungen und starte Reference Edit."
+                      : "Reference applied. Add edit instructions and run Reference Edit."
+                  );
+                }}
+                className="inline-flex flex-1 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-bold text-white/80"
+              >
+                {language === "de" ? "Als Referenz nutzen" : "Use as Reference"}
+              </button>
+            ) : null}
+            {agentResult.status === "completed" && !agentResult.video_url ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const currentIndex = localizedOutputFormats.findIndex(
+                    (item) => item.key === outputFormatKey
+                  );
+                  const next =
+                    localizedOutputFormats[
+                      (currentIndex + 1) % localizedOutputFormats.length
+                    ];
+                  setOutputFormatKey(next.key);
+                  setStatusMessage(
+                    language === "de"
+                      ? `Format gewechselt zu ${next.label}.`
+                      : `Format switched to ${next.label}.`
+                  );
+                }}
+                className="inline-flex flex-1 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-bold text-white/80"
+              >
+                {language === "de"
+                  ? "Anderes Format generieren"
+                  : "Generate Another Format"}
+              </button>
+            ) : null}
+            {agentResult.status === "completed" ? (
+              <button
+                type="button"
+                onClick={async () => {
+                  const token = await getAccessToken();
+                  if (!token || !agentResult.id) return;
+                  await fetch("/api/generations/favorite", {
+                    method: "PATCH",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                      generationId: agentResult.id,
+                      isFavorite: true,
+                    }),
+                  });
+                  setStatusMessage(
+                    language === "de"
+                      ? "Als Favorit gespeichert."
+                      : "Saved to favorites."
+                  );
+                }}
+                className="inline-flex flex-1 items-center justify-center rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-5 py-3 text-sm font-bold text-[#d8ad5f]"
+              >
+                {language === "de" ? "Favorit speichern" : "Save to Favorites"}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => {
@@ -4868,6 +5114,9 @@ export default function AiAgentStudio({
             >
               {a.searchHeadline}
             </motion.h1>
+            <p className="mt-3 max-w-3xl text-center text-sm leading-6 text-white/50">
+              {a.subtitle}
+            </p>
 
             <motion.form
               ref={formRef}
