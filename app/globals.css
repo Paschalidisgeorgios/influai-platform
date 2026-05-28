@@ -69,3 +69,28 @@ body {
   letter-spacing: -0.04em;
   line-height: 0.95;
 }
+
+@keyframes landing-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.landing-ticker-track {
+  width: max-content;
+  animation: landing-marquee 28s linear infinite;
+}
+
+.landing-ticker-track:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-ticker-track {
+    animation: none;
+  }
+}

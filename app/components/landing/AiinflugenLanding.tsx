@@ -21,6 +21,9 @@ import {
 
 import { PricingSection } from "./PricingSection";
 import { RoadmapSection } from "./RoadmapSection";
+import ScrollScaleHero from "./ScrollScaleHero";
+import ScrollTextReveal from "./ScrollTextReveal";
+import InfiniteTicker from "./InfiniteTicker";
 import { createClient } from "@/lib/supabase/client";
 
 type Props = {
@@ -535,6 +538,9 @@ export default function AiinflugenLanding({
         )}
       </section>
 
+      <ScrollTextReveal />
+      <ScrollScaleHero />
+
       <section id="studio" className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
         <Reveal>
           <p className="mb-4 text-xs font-extrabold uppercase tracking-[0.35em] text-[#d8ad5f]">
@@ -787,6 +793,8 @@ export default function AiinflugenLanding({
           getStartedLabel={language === "en" ? "Start creating" : "Jetzt erstellen"}
         />
       </Reveal>
+
+      <InfiniteTicker />
 
       <style jsx global>{`
         .hero-label {

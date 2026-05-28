@@ -76,10 +76,12 @@ export default function CreateStudioHub({
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="shrink-0 border-b border-gray-100 bg-white px-4 py-4 sm:px-6">
-        <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">{t.workspaceTitle}</h2>
-        <p className="mt-1 text-sm text-slate-500">{t.workspaceSubline}</p>
+    <div className="flex min-h-0 w-full flex-1 flex-col gap-6">
+      <div className="shrink-0 rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm sm:px-6">
+        <h2 className="text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">
+          {t.workspaceTitle}
+        </h2>
+        <p className="mt-1 text-sm font-medium text-slate-600">{t.workspaceSubline}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           {tabs.map((item) => {
             const Icon = item.icon;
@@ -93,7 +95,7 @@ export default function CreateStudioHub({
                 onClick={() => setTab(item.id)}
                 className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40 ${
                   active
-                    ? "bg-[#d8ad5f] text-slate-900 shadow-sm"
+                    ? "bg-orange-500 text-white shadow-sm"
                     : "border border-gray-200 bg-white text-slate-600 hover:border-gray-300 hover:shadow-sm"
                 }`}
               >
@@ -105,8 +107,10 @@ export default function CreateStudioHub({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-        <StudioWorkspaceView workspace={tab} {...studioProps} />
+      <div className="min-w-0 flex-1 overflow-visible pb-2">
+        <div className="w-full min-w-0 space-y-6">
+          <StudioWorkspaceView workspace={tab} {...studioProps} />
+        </div>
       </div>
     </div>
   );

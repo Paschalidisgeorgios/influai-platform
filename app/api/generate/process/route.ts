@@ -2208,15 +2208,25 @@ export async function POST(req: Request) {
         generation.script_text.trim().length > 0
           ? generation.script_text.trim()
           : null;
-      const voiceKeyOrId =
+      const voiceKey =
         typeof generation.voice_key === "string" && generation.voice_key.trim().length > 0
           ? generation.voice_key.trim()
-          : typeof generation.voice_id === "string" &&
-              generation.voice_id.trim().length > 0
-            ? generation.voice_id.trim()
-            : "female_natural";
+          : null;
 
       if (!audioUrl && scriptText) {
+        if (!voiceKey) {
+          await markFailedAndRefund({
+            generationId,
+            userId: generation.user_id,
+            creditsUsed,
+            errorMessage: "System voice is required for Lip Sync.",
+          });
+
+          return NextResponse.json(
+            { error: "Please select a voice. Credits refunded." },
+            { status: 400 }
+          );
+        }
         if (process.env.ENABLE_ELEVENLABS_TTS !== "true") {
           await markFailedAndRefund({
             generationId,
@@ -2245,7 +2255,7 @@ export async function POST(req: Request) {
           );
         }
 
-        const mappedVoiceId = resolveElevenLabsVoiceIdFromKey(voiceKeyOrId);
+        const mappedVoiceId = resolveElevenLabsVoiceIdFromKey(voiceKey);
         if (!mappedVoiceId) {
           await markFailedAndRefund({
             generationId,
@@ -2263,7 +2273,7 @@ export async function POST(req: Request) {
         try {
           await maybePersistLipSyncVoiceMetadata({
             generationId,
-            voiceKey: voiceKeyOrId,
+            voiceKey,
             voiceId: mappedVoiceId,
           });
           const ttsAudioBuffer = await synthesizeElevenLabsAudio({

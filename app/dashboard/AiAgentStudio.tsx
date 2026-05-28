@@ -4,12 +4,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
+  BadgeCheck,
   CheckCircle2,
   Clock,
   Clapperboard,
   CreditCard,
   Copy,
+  Crop,
   ExternalLink,
+  Film,
   GalleryVerticalEnd,
   ImageIcon,
   ImageOff,
@@ -17,6 +20,8 @@ import {
   Lock,
   Megaphone,
   Mic,
+  Mic2,
+  Monitor,
   MonitorPlay,
   PenLine,
   Search,
@@ -24,19 +29,24 @@ import {
   Sparkles,
   Square,
   Upload,
+  UploadCloud,
   UserRound,
   Wand2,
   X,
   Zap,
 } from "lucide-react";
+import UnifiedCommandBar, {
+  type CommandBarPill,
+} from "./components/studio/UnifiedCommandBar";
+import VisualFormatGrid from "./components/studio/VisualFormatGrid";
 import { createClient } from "@/lib/supabase/client";
 import {
   ELEVENLABS_NAMED_VOICES,
-  LIP_SYNC_CATEGORY_VOICE_STYLES,
   LIP_SYNC_RECOMMENDED_VOICE_KEYS,
   type ElevenLabsVoiceDefinition,
   isClientVoiceConfigured,
 } from "@/lib/lip-sync/elevenlabs-voices";
+import { isBlobMediaUrl, isRemoteMediaUrl } from "@/lib/lip-sync/media-url";
 import { useDashboardLanguage } from "./DashboardLanguageProvider";
 import { formatCopy, type DashboardLanguage } from "./i18n";
 
@@ -118,12 +128,14 @@ function LipSyncVoiceCard({
   configured,
   copy,
   onSelect,
+  isLight = false,
 }: {
   voice: ElevenLabsVoiceDefinition;
   selected: boolean;
   configured: boolean;
   copy: LipSyncVoiceLibraryCopy;
   onSelect: (key: string) => void;
+  isLight?: boolean;
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [previewUnavailable, setPreviewUnavailable] = useState(false);
@@ -149,10 +161,14 @@ function LipSyncVoiceCard({
 
   return (
     <div
-      className={`rounded-md border px-2 py-1.5 transition ${
+      className={`rounded-2xl border px-2 py-1.5 transition ${
         selected
-          ? "border-violet-400/50 bg-violet-500/20"
-          : "border-white/10 bg-black/25"
+          ? isLight
+            ? "border-orange-500 bg-orange-50/40 ring-1 ring-orange-500"
+            : "border-orange-400/60 bg-orange-500/15 ring-1 ring-orange-500/50"
+          : isLight
+            ? "border-gray-200 bg-white"
+            : "border-white/10 bg-black/25"
       } ${!configured ? "opacity-55" : ""}`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -162,15 +178,40 @@ function LipSyncVoiceCard({
           onClick={() => onSelect(voice.key)}
           className="min-w-0 flex-1 text-left disabled:cursor-not-allowed"
         >
-          <p className="text-[10px] font-bold text-white/85">{voice.label}</p>
-          <p className="text-[9px] text-white/45">{voice.description}</p>
+          <p
+            className={`flex flex-wrap items-center gap-1 text-[10px] font-bold ${
+              isLight ? "text-slate-900" : "text-white/85"
+            }`}
+          >
+            {voice.label}
+            {LIP_SYNC_RECOMMENDED_VOICE_KEYS.includes(
+              voice.key as (typeof LIP_SYNC_RECOMMENDED_VOICE_KEYS)[number]
+            ) ? (
+              <span
+                className={`rounded-full px-1.5 py-0 text-[7px] font-bold uppercase tracking-wide ${
+                  isLight
+                    ? "bg-orange-100 text-orange-700"
+                    : "bg-orange-500/20 text-orange-100"
+                }`}
+              >
+                ★
+              </span>
+            ) : null}
+          </p>
+          <p className={`text-[9px] ${isLight ? "text-slate-500" : "text-white/45"}`}>
+            {voice.description}
+          </p>
         </button>
         <button
           type="button"
           onClick={handlePreview}
           disabled={!configured || previewUnavailable}
           title={copy.preview}
-          className="shrink-0 rounded-full border border-white/15 bg-black/35 px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-white/65 transition hover:border-violet-400/35 hover:text-violet-100 disabled:cursor-not-allowed disabled:opacity-45"
+          className={`shrink-0 rounded-full border px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] transition disabled:cursor-not-allowed disabled:opacity-45 ${
+            isLight
+              ? "border-gray-200 bg-gray-50 text-slate-600 hover:border-violet-300 hover:text-violet-700"
+              : "border-white/15 bg-black/35 text-white/65 hover:border-violet-400/35 hover:text-violet-100"
+          }`}
         >
           {copy.previewListen}
         </button>
@@ -181,7 +222,11 @@ function LipSyncVoiceCard({
         </p>
       ) : null}
       {previewUnavailable ? (
-        <p className="mt-1 text-[8px] text-white/38">{copy.previewNotAvailable}</p>
+        <p
+          className={`mt-1 text-[8px] ${isLight ? "text-slate-500" : "text-white/38"}`}
+        >
+          {copy.previewNotAvailable}
+        </p>
       ) : null}
       <audio
         ref={audioRef}
@@ -199,12 +244,15 @@ function LipSyncVoiceLibrary({
   voiceKey,
   onVoiceKeyChange,
   isEnabled,
+  appearance = "dark",
 }: {
   copy: LipSyncVoiceLibraryCopy;
   voiceKey: string;
   onVoiceKeyChange: (value: string) => void;
   isEnabled: boolean;
+  appearance?: "light" | "dark";
 }) {
+  const isLight = appearance === "light";
   const recommendedVoices = LIP_SYNC_RECOMMENDED_VOICE_KEYS.map((key) =>
     ELEVENLABS_NAMED_VOICES.find((voice) => voice.key === key)
   ).filter((voice): voice is ElevenLabsVoiceDefinition => Boolean(voice));
@@ -221,6 +269,7 @@ function LipSyncVoiceLibrary({
             configured={isEnabled && isClientVoiceConfigured(voice.key)}
             copy={copy}
             onSelect={onVoiceKeyChange}
+            isLight={isLight}
           />
         ))}
       </div>
@@ -228,30 +277,55 @@ function LipSyncVoiceLibrary({
   }
 
   return (
-    <div className="rounded-lg border border-white/12 bg-black/25 p-2.5">
-      <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
+    <div
+      className={
+        isLight
+          ? "rounded-lg border border-gray-200 bg-white p-2.5 shadow-sm"
+          : "rounded-lg border border-white/12 bg-black/25 p-2.5"
+      }
+    >
+      <p
+        className={
+          isLight
+            ? "text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500"
+            : "text-[9px] font-black uppercase tracking-[0.12em] text-white/40"
+        }
+      >
         {copy.voiceLibrary}
       </p>
 
-      <p className="mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-200/85">
+      <p
+        className={
+          isLight
+            ? "mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-700"
+            : "mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-200/85"
+        }
+      >
         {copy.recommendedVoices}
       </p>
       {renderVoiceGrid(recommendedVoices)}
 
-      <p className="mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-200/85">
+      <p
+        className={
+          isLight
+            ? "mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-700"
+            : "mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-200/85"
+        }
+      >
         {copy.femaleVoices}
       </p>
       {renderVoiceGrid(femaleVoices)}
 
-      <p className="mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-200/85">
+      <p
+        className={
+          isLight
+            ? "mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-700"
+            : "mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-200/85"
+        }
+      >
         {copy.maleVoices}
       </p>
       {renderVoiceGrid(maleVoices)}
-
-      <p className="mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-white/45">
-        {copy.categoryVoiceStyles}
-      </p>
-      {renderVoiceGrid(LIP_SYNC_CATEGORY_VOICE_STYLES)}
     </div>
   );
 }
@@ -731,7 +805,8 @@ function getRequiredCreditsForImageMode(imageMode: ImageModeKey): number {
 
 function getRequiredCreditsForStudio(
   studioTab: StudioTab,
-  imageMode: ImageModeKey
+  imageMode: ImageModeKey,
+  lipSyncMode: LipSyncInputMode = "audio_upload"
 ): number {
   if (studioTab === "creator_video" && CREATOR_VIDEO_PUBLIC_ENABLED) {
     return 40;
@@ -742,7 +817,9 @@ function getRequiredCreditsForStudio(
   }
 
   if (studioTab === "lip_sync" && LIP_SYNC_PUBLIC_ENABLED) {
-    return 30;
+    return lipSyncMode === "system_voice" && ELEVENLABS_TTS_PUBLIC_ENABLED
+      ? 35
+      : 30;
   }
 
   if (studioTab === "video" && VIDEO_STUDIO_PUBLIC_ENABLED) {
@@ -1017,18 +1094,26 @@ function ImageModeChip({
   disabled,
   onClick,
   title,
+  appearance = "dark",
 }: {
   label: string;
   selected: boolean;
   disabled?: boolean;
   onClick?: () => void;
   title?: string;
+  appearance?: "light" | "dark";
 }) {
+  const isLight = appearance === "light";
+
   if (disabled) {
     return (
       <span
         title={title}
-        className="inline-flex cursor-not-allowed items-center rounded-full border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-[11px] font-bold text-white/30"
+        className={`inline-flex cursor-not-allowed items-center rounded-full border px-3 py-2 text-[11px] font-bold ${
+          isLight
+            ? "border-gray-200 bg-gray-50 text-slate-400"
+            : "border-white/[0.06] bg-white/[0.02] text-white/30"
+        }`}
       >
         {label}
       </span>
@@ -1041,10 +1126,14 @@ function ImageModeChip({
       aria-pressed={selected}
       title={title}
       onClick={onClick}
-      className={`inline-flex items-center rounded-full border px-3 py-2 text-[11px] font-black transition outline-none focus-visible:ring-2 focus-visible:ring-[#d8ad5f]/40 ${
-        selected
-          ? "border-[#d8ad5f]/50 bg-[#d8ad5f]/15 text-[#f0d4a8] ring-1 ring-[#d8ad5f]/25"
-          : "border-white/10 bg-black/25 text-white/60 hover:border-white/20 hover:text-white"
+      className={`inline-flex items-center rounded-full border px-3 py-2 text-[11px] font-bold transition outline-none focus-visible:ring-2 ${
+        isLight
+          ? selected
+            ? "border-orange-500 bg-orange-50/40 text-orange-700 ring-1 ring-orange-500 focus-visible:ring-orange-500/30"
+            : "border-gray-200 bg-white text-slate-600 hover:border-gray-300 hover:text-slate-900 focus-visible:ring-orange-500/20"
+          : selected
+            ? "border-[#d8ad5f]/50 bg-[#d8ad5f]/15 font-black text-[#f0d4a8] ring-1 ring-[#d8ad5f]/25 focus-visible:ring-[#d8ad5f]/40"
+            : "border-white/10 bg-black/25 font-black text-white/60 hover:border-white/20 hover:text-white focus-visible:ring-[#d8ad5f]/40"
       }`}
     >
       {label}
@@ -1391,6 +1480,9 @@ function VideoStudioPanel({
   motionPrompt,
   onMotionPromptChange,
   onMotionKeyDown,
+  hideMotionPrompt = false,
+  uploadTriggerRef,
+  lightSurface = false,
 }: {
   label: string;
   copy: {
@@ -1420,11 +1512,29 @@ function VideoStudioPanel({
   motionPrompt: string;
   onMotionPromptChange: (value: string) => void;
   onMotionKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  hideMotionPrompt?: boolean;
+  uploadTriggerRef?: React.MutableRefObject<(() => void) | null>;
+  lightSurface?: boolean;
 }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const blobPreviewRef = useRef<string | null>(null);
   const [localFileError, setLocalFileError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (uploadTriggerRef) {
+      uploadTriggerRef.current = () => {
+        if (isEnabled) {
+          fileInputRef.current?.click();
+        }
+      };
+    }
+    return () => {
+      if (uploadTriggerRef) {
+        uploadTriggerRef.current = null;
+      }
+    };
+  }, [uploadTriggerRef, isEnabled]);
 
   useEffect(() => {
     return () => {
@@ -1526,6 +1636,15 @@ function VideoStudioPanel({
 
   const panelStatus = isEnabled ? copy.statusActive : copy.statusPlanned;
   const panelIntro = isEnabled ? copy.introActive : copy.introPlanned;
+  const uploadBoxClass = lightSurface
+    ? "flex min-h-[7rem] flex-col rounded-lg border border-dashed border-gray-300 bg-white p-2 sm:min-h-[7.5rem]"
+    : "flex min-h-[7rem] flex-col rounded-lg border border-dashed border-white/12 bg-black/30 p-2 sm:min-h-[7.5rem]";
+  const fieldLabelClass = lightSurface
+    ? "text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500"
+    : "text-[9px] font-black uppercase tracking-[0.12em] text-white/40";
+  const hintClass = lightSurface
+    ? "text-[9px] text-slate-400"
+    : "text-[9px] text-white/28";
 
   return (
     <motion.div
@@ -1533,7 +1652,11 @@ function VideoStudioPanel({
       id="video-studio-panel"
       aria-label={label}
       initial={false}
-      className="mt-2.5 rounded-xl border border-sky-500/15 bg-[linear-gradient(165deg,rgba(56,189,248,0.08)_0%,rgba(0,0,0,0.35)_45%)] p-2.5 sm:p-3"
+      className={
+        lightSurface
+          ? "mt-6 rounded-xl border border-gray-200 bg-white p-3 shadow-sm sm:p-4"
+          : "mt-2.5 rounded-xl border border-sky-500/15 bg-[linear-gradient(165deg,rgba(56,189,248,0.08)_0%,rgba(0,0,0,0.35)_45%)] p-2.5 sm:p-3"
+      }
     >
       <input
         ref={fileInputRef}
@@ -1547,26 +1670,50 @@ function VideoStudioPanel({
 
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-black text-white/85 sm:text-xs">{label}</p>
-          <p className="mt-0.5 text-[9px] leading-4 text-white/38">{panelIntro}</p>
+          <p
+            className={`text-[11px] font-semibold sm:text-xs ${
+              lightSurface ? "text-slate-800" : "font-black text-white/85"
+            }`}
+          >
+            {label}
+          </p>
+          <p
+            className={`mt-0.5 text-[9px] leading-4 ${
+              lightSurface ? "text-slate-600" : "text-white/38"
+            }`}
+          >
+            {panelIntro}
+          </p>
         </div>
-        <span className="shrink-0 rounded-full border border-sky-500/25 bg-sky-500/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.1em] text-sky-100/90">
+        <span
+          className={`shrink-0 rounded-full border px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide ${
+            lightSurface
+              ? "border-orange-100 bg-orange-50 text-orange-600"
+              : "border-sky-500/25 bg-sky-500/10 text-sky-100/90"
+          }`}
+        >
           {panelStatus}
         </span>
       </div>
 
-      <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5">
-        <div className="flex min-h-[7rem] flex-col rounded-lg border border-dashed border-white/12 bg-black/30 p-2 sm:min-h-[7.5rem]">
+      <div
+        className={`mt-2.5 grid grid-cols-1 gap-2 sm:gap-2.5 ${
+          hideMotionPrompt ? "" : "sm:grid-cols-2"
+        }`}
+      >
+        <div className={uploadBoxClass}>
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
-              {copy.sourceLabel}
-            </p>
+            <p className={fieldLabelClass}>{copy.sourceLabel}</p>
             {sourcePreviewUrl ? (
               <button
                 type="button"
                 onClick={clearSourceImage}
                 disabled={uploading}
-                className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white/45 transition hover:bg-white/[0.06] hover:text-white/70 disabled:cursor-not-allowed disabled:opacity-50"
+                className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                  lightSurface
+                    ? "text-slate-500 hover:bg-gray-100 hover:text-slate-800"
+                    : "text-white/45 hover:bg-white/[0.06] hover:text-white/70"
+                }`}
               >
                 <X className="h-3 w-3" aria-hidden />
                 {copy.clearImage}
@@ -1575,7 +1722,11 @@ function VideoStudioPanel({
           </div>
 
           {sourcePreviewUrl ? (
-            <div className="relative mt-2 flex flex-1 overflow-hidden rounded-lg border border-white/10 bg-black/50">
+            <div
+              className={`relative mt-2 flex flex-1 overflow-hidden rounded-lg border ${
+                lightSurface ? "border-gray-200 bg-gray-50" : "border-white/10 bg-black/50"
+              }`}
+            >
               <img
                 src={sourcePreviewUrl}
                 alt=""
@@ -1584,17 +1735,29 @@ function VideoStudioPanel({
             </div>
           ) : (
             <div className="mt-2 flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-white/35">
+              <div
+                className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+                  lightSurface ? "bg-gray-100 text-slate-500" : "bg-white/[0.06] text-white/35"
+                }`}
+              >
                 <Upload className="h-4 w-4" aria-hidden />
               </div>
-              <p className="text-[10px] font-semibold text-white/50">
+              <p
+                className={`text-[10px] font-semibold ${
+                  lightSurface ? "text-slate-600" : "text-white/50"
+                }`}
+              >
                 {copy.sourcePlaceholder}
               </p>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading || !isEnabled}
-                className="mt-0.5 inline-flex items-center justify-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.08em] text-sky-100/90 transition hover:bg-sky-500/18 disabled:cursor-not-allowed disabled:opacity-60"
+                className={`mt-0.5 inline-flex items-center justify-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.08em] transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                  lightSurface
+                    ? "border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100"
+                    : "border-sky-500/30 bg-sky-500/10 text-sky-100/90 hover:bg-sky-500/18"
+                }`}
               >
                 {uploading ? (
                   <>
@@ -1608,39 +1771,54 @@ function VideoStudioPanel({
             </div>
           )}
 
-          <p className="mt-1.5 text-center text-[9px] text-white/28">{copy.sourceHint}</p>
+          <p className={`mt-1.5 text-center ${hintClass}`}>{copy.sourceHint}</p>
           {localFileError ? (
-            <p className="mt-1 text-center text-[9px] font-medium text-amber-200/80">
+            <p
+              className={`mt-1 text-center text-[9px] font-medium ${
+                lightSurface ? "text-amber-700" : "text-amber-200/80"
+              }`}
+            >
               {localFileError}
             </p>
           ) : null}
         </div>
 
-        <div className="flex min-h-[7rem] flex-col sm:min-h-[7.5rem]">
-          <label
-            htmlFor="video-studio-motion"
-            className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40"
-          >
-            {copy.motionLabel}
-          </label>
-          <textarea
-            id="video-studio-motion"
-            value={motionPrompt}
-            onChange={(event) => onMotionPromptChange(event.target.value)}
-            onKeyDown={onMotionKeyDown}
-            rows={5}
-            disabled={!isEnabled}
-            placeholder={copy.motionPlaceholder}
-            className="mt-1.5 min-h-[5rem] flex-1 resize-y rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] leading-4 text-white/70 placeholder:text-white/22 outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 disabled:opacity-50 sm:min-h-[5.5rem]"
-          />
-          <p className="mt-1.5 text-[9px] text-white/28">{copy.motionHint}</p>
-        </div>
+        {hideMotionPrompt ? null : (
+          <div className="flex min-h-[7rem] flex-col sm:min-h-[7.5rem]">
+            <label htmlFor="video-studio-motion" className={fieldLabelClass}>
+              {copy.motionLabel}
+            </label>
+            <textarea
+              id="video-studio-motion"
+              value={motionPrompt}
+              onChange={(event) => onMotionPromptChange(event.target.value)}
+              onKeyDown={onMotionKeyDown}
+              rows={5}
+              disabled={!isEnabled}
+              placeholder={copy.motionPlaceholder}
+              className="mt-1.5 min-h-[5rem] flex-1 resize-y rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] leading-4 text-white/70 placeholder:text-white/22 outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 disabled:opacity-50 sm:min-h-[5.5rem]"
+            />
+            <p className="mt-1.5 text-[9px] text-white/28">{copy.motionHint}</p>
+          </div>
+        )}
       </div>
 
       {isEnabled ? (
-        <p className="mt-2.5 text-[9px] leading-4 text-white/32">{copy.activeNote}</p>
+        <p
+          className={`mt-2.5 text-[9px] leading-4 ${
+            lightSurface ? "text-slate-500" : "text-white/32"
+          }`}
+        >
+          {copy.activeNote}
+        </p>
       ) : (
-        <p className="mt-2.5 text-[9px] leading-4 text-white/32">{copy.introPlanned}</p>
+        <p
+          className={`mt-2.5 text-[9px] leading-4 ${
+            lightSurface ? "text-slate-500" : "text-white/32"
+          }`}
+        >
+          {copy.introPlanned}
+        </p>
       )}
     </motion.div>
   );
@@ -1955,9 +2133,11 @@ function LipSyncStudioPanel({
   panelRef,
   getAccessToken,
   isEnabled,
+  sourceStorageUrl,
   sourcePreviewUrl,
   sourceMediaType,
   onSourceChange,
+  onUploadingChange,
   audioPreviewLabel,
   audioUrl,
   onAudioChange,
@@ -1972,6 +2152,10 @@ function LipSyncStudioPanel({
   onVoiceKeyChange,
   systemVoiceAvailable,
   previousVideoUrl,
+  hideTextInputs = false,
+  sourceUploadTriggerRef,
+  audioUploadTriggerRef,
+  lightSurface = false,
 }: {
   label: string;
   copy: {
@@ -2015,6 +2199,9 @@ function LipSyncStudioPanel({
     scriptLabel: string;
     scriptPlaceholder: string;
     scriptRequired: string;
+    scriptCommandBarHint: string;
+    selectedVoiceLabel: string;
+    sourceUploadedReady: string;
     systemVoicesNotConfigured: string;
     uploadAudioInstead: string;
     usePreviousVideo: string;
@@ -2022,12 +2209,15 @@ function LipSyncStudioPanel({
   panelRef: React.RefObject<HTMLDivElement | null>;
   getAccessToken: () => Promise<string | null>;
   isEnabled: boolean;
+  sourceStorageUrl: string | null;
   sourcePreviewUrl: string | null;
   sourceMediaType: "image" | "video" | null;
-  onSourceChange: (
-    url: string | null,
-    mediaType: "image" | "video" | null
-  ) => void;
+  onSourceChange: (payload: {
+    storageUrl: string | null;
+    previewUrl: string | null;
+    mediaType: "image" | "video" | null;
+  }) => void;
+  onUploadingChange?: (uploading: boolean) => void;
   audioPreviewLabel: string | null;
   audioUrl: string | null;
   onAudioChange: (url: string | null, label: string | null) => void;
@@ -2042,6 +2232,10 @@ function LipSyncStudioPanel({
   onVoiceKeyChange: (value: string) => void;
   systemVoiceAvailable: boolean;
   previousVideoUrl: string | null;
+  hideTextInputs?: boolean;
+  sourceUploadTriggerRef?: React.MutableRefObject<(() => void) | null>;
+  audioUploadTriggerRef?: React.MutableRefObject<(() => void) | null>;
+  lightSurface?: boolean;
 }) {
   const sourceInputRef = useRef<HTMLInputElement | null>(null);
   const audioInputRef = useRef<HTMLInputElement | null>(null);
@@ -2051,12 +2245,41 @@ function LipSyncStudioPanel({
   const [uploadingAudio, setUploadingAudio] = useState(false);
 
   useEffect(() => {
+    if (sourceUploadTriggerRef) {
+      sourceUploadTriggerRef.current = () => {
+        if (isEnabled) {
+          sourceInputRef.current?.click();
+        }
+      };
+    }
+    if (audioUploadTriggerRef) {
+      audioUploadTriggerRef.current = () => {
+        if (isEnabled) {
+          audioInputRef.current?.click();
+        }
+      };
+    }
+    return () => {
+      if (sourceUploadTriggerRef) {
+        sourceUploadTriggerRef.current = null;
+      }
+      if (audioUploadTriggerRef) {
+        audioUploadTriggerRef.current = null;
+      }
+    };
+  }, [sourceUploadTriggerRef, audioUploadTriggerRef, isEnabled]);
+
+  useEffect(() => {
     return () => {
       if (blobPreviewRef.current) {
         URL.revokeObjectURL(blobPreviewRef.current);
       }
     };
   }, []);
+
+  useEffect(() => {
+    onUploadingChange?.(uploadingSource || uploadingAudio);
+  }, [uploadingSource, uploadingAudio, onUploadingChange]);
 
   function revokeBlobPreview() {
     if (blobPreviewRef.current) {
@@ -2067,7 +2290,7 @@ function LipSyncStudioPanel({
 
   function clearSource() {
     revokeBlobPreview();
-    onSourceChange(null, null);
+    onSourceChange({ storageUrl: null, previewUrl: null, mediaType: null });
     setLocalFileError(null);
     if (sourceInputRef.current) {
       sourceInputRef.current.value = "";
@@ -2116,12 +2339,24 @@ function LipSyncStudioPanel({
 
     if (uploadType === "audio") {
       if (!response.ok || !data.audioUrl) {
+        if (process.env.NODE_ENV === "development") {
+          console.error("Lip sync audio upload failed:", {
+            status: response.status,
+            error: data.error,
+          });
+        }
         return { error: data.error ?? copy.uploadFailed };
       }
       return { audioUrl: data.audioUrl };
     }
 
     if (!response.ok || !data.fileUrl) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Lip sync source upload failed:", {
+          status: response.status,
+          error: data.error,
+        });
+      }
       return { error: data.error ?? copy.uploadFailed };
     }
 
@@ -2154,7 +2389,11 @@ function LipSyncStudioPanel({
     const blobUrl = URL.createObjectURL(file);
     blobPreviewRef.current = blobUrl;
     const previewType: "image" | "video" = "video";
-    onSourceChange(blobUrl, previewType);
+    onSourceChange({
+      storageUrl: null,
+      previewUrl: blobUrl,
+      mediaType: previewType,
+    });
     setUploadingSource(true);
 
     try {
@@ -2162,6 +2401,12 @@ function LipSyncStudioPanel({
 
       if (!result.fileUrl) {
         setLocalFileError(result.error ?? copy.uploadFailed);
+        revokeBlobPreview();
+        onSourceChange({
+          storageUrl: null,
+          previewUrl: null,
+          mediaType: null,
+        });
         return;
       }
 
@@ -2172,9 +2417,19 @@ function LipSyncStudioPanel({
           : result.fileType === "image"
             ? "image"
             : previewType;
-      onSourceChange(result.fileUrl, mediaType);
+      onSourceChange({
+        storageUrl: result.fileUrl,
+        previewUrl: result.fileUrl,
+        mediaType,
+      });
     } catch {
       setLocalFileError(copy.uploadFailed);
+      revokeBlobPreview();
+      onSourceChange({
+        storageUrl: null,
+        previewUrl: null,
+        mediaType: null,
+      });
     } finally {
       setUploadingSource(false);
       if (sourceInputRef.current) {
@@ -2228,6 +2483,34 @@ function LipSyncStudioPanel({
   const panelStatus = isEnabled ? copy.statusActive : copy.statusPlanned;
   const panelIntro = isEnabled ? copy.introActive : copy.introPlanned;
   const uploading = uploadingSource || uploadingAudio;
+  const videoPreviewSrc =
+    sourcePreviewUrl ||
+    (sourceStorageUrl && !isBlobMediaUrl(sourceStorageUrl)
+      ? sourceStorageUrl
+      : null);
+  const selectedVoiceLabel =
+    ELEVENLABS_NAMED_VOICES.find((voice) => voice.key === voiceKey)?.label ??
+    voiceKey;
+  const modeSegmentClass = (active: boolean) =>
+    lightSurface
+      ? active
+        ? "bg-white text-orange-700 shadow-sm ring-1 ring-orange-500"
+        : "text-slate-600 hover:bg-gray-100"
+      : active
+        ? "border-orange-400/50 bg-orange-500/20 text-orange-100 ring-1 ring-orange-500/50"
+        : "border-transparent bg-black/25 text-white/60 hover:bg-white/[0.06]";
+  const uploadBoxClass = lightSurface
+    ? "flex min-h-[7rem] flex-col rounded-lg border border-dashed border-gray-300 bg-gray-50 p-2 sm:min-h-[7.5rem]"
+    : "flex min-h-[7rem] flex-col rounded-lg border border-dashed border-white/12 bg-black/30 p-2 sm:min-h-[7.5rem]";
+  const fieldLabelClass = lightSurface
+    ? "text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500"
+    : "text-[9px] font-black uppercase tracking-[0.12em] text-white/40";
+  const hintClass = lightSurface
+    ? "text-[9px] text-slate-400"
+    : "text-[9px] text-white/32";
+  const clearButtonClass = lightSurface
+    ? "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold text-slate-500 transition hover:bg-gray-100 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+    : "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white/45 transition hover:bg-white/[0.06] hover:text-white/70 disabled:cursor-not-allowed disabled:opacity-50";
 
   return (
     <motion.div
@@ -2235,7 +2518,11 @@ function LipSyncStudioPanel({
       id="lip-sync-studio-panel"
       aria-label={label}
       initial={false}
-      className="mt-2.5 rounded-xl border border-violet-500/15 bg-[linear-gradient(165deg,rgba(139,92,246,0.08)_0%,rgba(0,0,0,0.35)_45%)] p-2.5 sm:p-3"
+      className={
+        lightSurface
+          ? "mt-6 rounded-xl border border-gray-200 bg-white p-3 shadow-sm sm:p-4"
+          : "mt-2.5 rounded-xl border border-violet-500/15 bg-[linear-gradient(165deg,rgba(139,92,246,0.08)_0%,rgba(0,0,0,0.35)_45%)] p-2.5 sm:p-3"
+      }
     >
       <input
         ref={sourceInputRef}
@@ -2258,26 +2545,82 @@ function LipSyncStudioPanel({
 
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-black text-white/85 sm:text-xs">{label}</p>
-          <p className="mt-0.5 text-[9px] leading-4 text-white/38">{panelIntro}</p>
+          <p
+            className={`text-[11px] font-semibold sm:text-xs ${
+              lightSurface ? "text-slate-800" : "font-black text-white/85"
+            }`}
+          >
+            {label}
+          </p>
+          <p
+            className={`mt-0.5 text-[9px] leading-4 ${
+              lightSurface ? "text-slate-600" : "text-white/38"
+            }`}
+          >
+            {panelIntro}
+          </p>
         </div>
-        <span className="shrink-0 rounded-full border border-violet-500/25 bg-violet-500/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.1em] text-violet-100/90">
+        <span
+          className={`shrink-0 rounded-full border px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide ${
+            lightSurface
+              ? "border-orange-100 bg-orange-50 text-orange-600"
+              : "border-violet-500/25 bg-violet-500/10 text-violet-100/90"
+          }`}
+        >
           {panelStatus}
         </span>
       </div>
 
-      <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5">
-        <div className="flex min-h-[7rem] flex-col rounded-lg border border-dashed border-white/12 bg-black/30 p-2 sm:min-h-[7.5rem]">
+      <div
+        className={`mt-3 grid grid-cols-2 gap-1 rounded-xl border p-1 sm:max-w-lg ${
+          lightSurface
+            ? "border-gray-200 bg-gray-50"
+            : "border-white/12 bg-black/30"
+        }`}
+        role="tablist"
+        aria-label={copy.inputModeUploadAudio}
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={inputMode === "audio_upload"}
+          disabled={!isEnabled}
+          onClick={() => onInputModeChange("audio_upload")}
+          className={`rounded-lg px-3 py-2 text-[11px] font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${modeSegmentClass(inputMode === "audio_upload")}`}
+        >
+          {copy.inputModeUploadAudio}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={inputMode === "system_voice"}
+          disabled={!isEnabled || !systemVoiceAvailable}
+          onClick={() => onInputModeChange("system_voice")}
+          className={`rounded-lg px-3 py-2 text-[11px] font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${modeSegmentClass(inputMode === "system_voice")}`}
+        >
+          {copy.inputModeSystemVoice}
+        </button>
+      </div>
+      {!systemVoiceAvailable && inputMode === "system_voice" ? (
+        <p
+          className={`mt-2 text-[10px] font-medium ${
+            lightSurface ? "text-amber-700" : "text-amber-200/85"
+          }`}
+        >
+          {copy.systemVoicesNotConfigured} {copy.uploadAudioInstead}
+        </p>
+      ) : null}
+
+      <div className="mt-2.5 space-y-2.5">
+        <div className={uploadBoxClass}>
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
-              {copy.sourceLabel}
-            </p>
-            {sourcePreviewUrl ? (
+            <p className={fieldLabelClass}>{copy.sourceLabel}</p>
+            {videoPreviewSrc ? (
               <button
                 type="button"
                 onClick={clearSource}
                 disabled={uploading}
-                className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white/45 transition hover:bg-white/[0.06] hover:text-white/70 disabled:cursor-not-allowed disabled:opacity-50"
+                className={clearButtonClass}
               >
                 <X className="h-3 w-3" aria-hidden />
                 {copy.clearSource}
@@ -2285,75 +2628,127 @@ function LipSyncStudioPanel({
             ) : null}
           </div>
 
-          {sourcePreviewUrl ? (
-            <div className="relative mt-2 flex flex-1 items-center justify-center overflow-hidden rounded-md bg-black/50">
+          {videoPreviewSrc ? (
+            <div
+              className={`relative mt-2 flex flex-1 items-center justify-center overflow-hidden rounded-md ${
+                lightSurface ? "bg-gray-100" : "bg-black/50"
+              }`}
+            >
               {sourceMediaType === "video" ? (
                 <video
-                  src={sourcePreviewUrl}
+                  src={videoPreviewSrc}
                   className="max-h-28 w-full object-contain"
                   muted
                   playsInline
                 />
               ) : (
                 <img
-                  src={sourcePreviewUrl}
+                  src={videoPreviewSrc}
                   alt=""
                   className="max-h-28 w-full object-contain"
                 />
               )}
+              {uploadingSource ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                  <Loader2 className="h-6 w-6 animate-spin text-white" aria-hidden />
+                </div>
+              ) : null}
             </div>
           ) : (
             <button
               type="button"
               disabled={!isEnabled || uploadingSource}
               onClick={() => sourceInputRef.current?.click()}
-              className="mt-2 flex flex-1 flex-col items-center justify-center gap-2 rounded-md border border-white/10 bg-black/35 px-3 py-4 text-center transition hover:border-violet-500/30 hover:bg-violet-500/5 disabled:cursor-not-allowed disabled:opacity-50"
+              className={`mt-2 flex flex-1 flex-col items-center justify-center gap-2 rounded-md border px-3 py-4 text-center transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                lightSurface
+                  ? "border-gray-200 bg-white hover:border-orange-200 hover:bg-orange-50/40"
+                  : "border-white/10 bg-black/35 hover:border-violet-500/30 hover:bg-violet-500/5"
+              }`}
             >
               {uploadingSource ? (
-                <Loader2 className="h-5 w-5 animate-spin text-violet-200" />
+                <Loader2
+                  className={`h-5 w-5 animate-spin ${lightSurface ? "text-orange-500" : "text-violet-200"}`}
+                />
               ) : (
-                <Upload className="h-5 w-5 text-violet-200/80" />
+                <Upload
+                  className={`h-5 w-5 ${lightSurface ? "text-orange-500" : "text-violet-200/80"}`}
+                />
               )}
-              <span className="text-[10px] font-bold text-white/55">
+              <span
+                className={`text-[10px] font-bold ${lightSurface ? "text-slate-700" : "text-white/55"}`}
+              >
                 {uploadingSource ? copy.uploading : copy.uploadSource}
               </span>
-              <span className="text-[9px] text-white/30">{copy.sourceHint}</span>
+              <span className={hintClass}>{copy.sourceHint}</span>
             </button>
           )}
           <div className="mt-2 space-y-1">
-            <label
-              htmlFor="lip-sync-source-video-url"
-              className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40"
-            >
+            <label htmlFor="lip-sync-source-video-url" className={fieldLabelClass}>
               {copy.sourceVideoLabel}
             </label>
             <input
               id="lip-sync-source-video-url"
               type="url"
-              value={sourcePreviewUrl ?? ""}
+              value={
+                sourceStorageUrl && !isBlobMediaUrl(sourceStorageUrl)
+                  ? sourceStorageUrl
+                  : ""
+              }
               onChange={(event) => {
                 const value = event.target.value.trim();
-                onSourceChange(value || null, value ? "video" : null);
+                if (!value) {
+                  clearSource();
+                  return;
+                }
+                if (!/^https?:\/\//i.test(value)) {
+                  setLocalFileError(copy.invalidSource);
+                  return;
+                }
+                setLocalFileError(null);
+                revokeBlobPreview();
+                onSourceChange({
+                  storageUrl: value,
+                  previewUrl: value,
+                  mediaType: "video",
+                });
               }}
-              disabled={!isEnabled}
-              placeholder={copy.sourceVideoPlaceholder}
-              className="w-full rounded-md border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] leading-4 text-white/70 placeholder:text-white/25 outline-none focus-visible:ring-2 focus-visible:ring-violet-500/30 disabled:opacity-50"
+              disabled={!isEnabled || uploadingSource}
+              placeholder={
+                uploadingSource
+                  ? copy.uploading
+                  : copy.sourceVideoPlaceholder
+              }
+              className={`w-full rounded-md border px-2 py-1.5 text-[10px] leading-4 outline-none focus-visible:ring-2 disabled:opacity-50 ${
+                lightSurface
+                  ? "border-gray-200 bg-white text-slate-800 placeholder:text-slate-400 focus-visible:ring-orange-500/30"
+                  : "border-white/10 bg-black/40 text-white/70 placeholder:text-white/25 focus-visible:ring-violet-500/30"
+              }`}
             />
-            <p className="text-[9px] leading-4 text-white/32">{copy.sourceVideoHint}</p>
+            <p className={hintClass}>{copy.sourceVideoHint}</p>
+            {sourceStorageUrl && isRemoteMediaUrl(sourceStorageUrl) ? (
+              <p
+                className={`text-[9px] font-medium ${
+                  lightSurface ? "text-green-700" : "text-green-200/90"
+                }`}
+              >
+                {copy.sourceUploadedReady}
+              </p>
+            ) : uploadingSource ? (
+              <p className={hintClass}>{copy.uploading}</p>
+            ) : null}
           </div>
         </div>
 
-        <div className="flex min-h-[7rem] flex-col rounded-lg border border-dashed border-white/12 bg-black/30 p-2 sm:min-h-[7.5rem]">
+        {inputMode === "audio_upload" ? (
+        <div className={uploadBoxClass}>
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
-              {copy.audioLabel}
-            </p>
+            <p className={fieldLabelClass}>{copy.audioLabel}</p>
             {audioUrl ? (
               <button
                 type="button"
                 onClick={clearAudio}
                 disabled={uploading}
-                className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white/45 transition hover:bg-white/[0.06] hover:text-white/70 disabled:cursor-not-allowed disabled:opacity-50"
+                className={clearButtonClass}
               >
                 <X className="h-3 w-3" aria-hidden />
                 {copy.clearAudio}
@@ -2362,9 +2757,20 @@ function LipSyncStudioPanel({
           </div>
 
           {audioUrl ? (
-            <div className="mt-2 flex flex-1 flex-col justify-center gap-2 rounded-md border border-white/10 bg-black/40 p-3">
-              <Mic className="h-5 w-5 text-violet-200/80" aria-hidden />
-              <p className="line-clamp-2 text-[10px] font-semibold text-white/65">
+            <div
+              className={`mt-2 flex flex-1 flex-col justify-center gap-2 rounded-md border p-3 ${
+                lightSurface ? "border-gray-200 bg-white" : "border-white/10 bg-black/40"
+              }`}
+            >
+              <Mic
+                className={`h-5 w-5 ${lightSurface ? "text-orange-500" : "text-violet-200/80"}`}
+                aria-hidden
+              />
+              <p
+                className={`line-clamp-2 text-[10px] font-semibold ${
+                  lightSurface ? "text-slate-700" : "text-white/65"
+                }`}
+              >
                 {audioPreviewLabel ?? copy.audioPlaceholder}
               </p>
               <audio src={audioUrl} controls className="w-full" />
@@ -2374,82 +2780,69 @@ function LipSyncStudioPanel({
               type="button"
               disabled={!isEnabled || uploadingAudio}
               onClick={() => audioInputRef.current?.click()}
-              className="mt-2 flex flex-1 flex-col items-center justify-center gap-2 rounded-md border border-white/10 bg-black/35 px-3 py-4 text-center transition hover:border-violet-500/30 hover:bg-violet-500/5 disabled:cursor-not-allowed disabled:opacity-50"
+              className={`mt-2 flex flex-1 flex-col items-center justify-center gap-2 rounded-md border px-3 py-4 text-center transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                lightSurface
+                  ? "border-gray-200 bg-white hover:border-orange-200 hover:bg-orange-50/40"
+                  : "border-white/10 bg-black/35 hover:border-violet-500/30 hover:bg-violet-500/5"
+              }`}
             >
               {uploadingAudio ? (
-                <Loader2 className="h-5 w-5 animate-spin text-violet-200" />
+                <Loader2
+                  className={`h-5 w-5 animate-spin ${lightSurface ? "text-orange-500" : "text-violet-200"}`}
+                />
               ) : (
-                <Mic className="h-5 w-5 text-violet-200/80" />
+                <Mic
+                  className={`h-5 w-5 ${lightSurface ? "text-orange-500" : "text-violet-200/80"}`}
+                />
               )}
-              <span className="text-[10px] font-bold text-white/55">
+              <span
+                className={`text-[10px] font-bold ${lightSurface ? "text-slate-700" : "text-white/55"}`}
+              >
                 {uploadingAudio ? copy.uploading : copy.uploadAudio}
               </span>
-              <span className="text-[9px] text-white/30">{copy.audioHint}</span>
+              <span className={hintClass}>{copy.audioHint}</span>
             </button>
           )}
         </div>
-      </div>
-
-      <div className="mt-2.5 space-y-2">
-        <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
-          {copy.audioLabel}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={!isEnabled || !systemVoiceAvailable}
-            onClick={() => onInputModeChange("system_voice")}
-            className={`rounded-full border px-3 py-1.5 text-[10px] font-bold transition ${
-              inputMode === "system_voice"
-                ? "border-violet-400/50 bg-violet-500/20 text-violet-100"
-                : "border-white/15 bg-black/25 text-white/60"
-            } disabled:cursor-not-allowed disabled:opacity-45`}
-          >
-            {copy.inputModeSystemVoice}
-          </button>
-          <button
-            type="button"
-            disabled={!isEnabled}
-            onClick={() => onInputModeChange("audio_upload")}
-            className={`rounded-full border px-3 py-1.5 text-[10px] font-bold transition ${
-              inputMode === "audio_upload"
-                ? "border-violet-400/50 bg-violet-500/20 text-violet-100"
-                : "border-white/15 bg-black/25 text-white/60"
-            } disabled:cursor-not-allowed disabled:opacity-45`}
-          >
-            {copy.inputModeUploadAudio}
-          </button>
-        </div>
-        {!systemVoiceAvailable ? (
-          <p className="text-[10px] text-amber-200/85">
-            {copy.systemVoicesNotConfigured} {copy.uploadAudioInstead}
-          </p>
         ) : null}
       </div>
 
       {inputMode === "system_voice" ? (
-        <div className="mt-2.5 space-y-2">
-          <LipSyncVoiceLibrary
-            copy={{
-              voiceLibrary: copy.voiceLibrary,
-              recommendedVoices: copy.recommendedVoices,
-              femaleVoices: copy.femaleVoices,
-              maleVoices: copy.maleVoices,
-              categoryVoiceStyles: copy.categoryVoiceStyles,
-              preview: copy.preview,
-              previewListen: copy.previewListen,
-              notConfiguredYet: copy.notConfiguredYet,
-              previewNotAvailable: copy.previewNotAvailable,
-            }}
-            voiceKey={voiceKey}
-            onVoiceKeyChange={onVoiceKeyChange}
-            isEnabled={isEnabled && systemVoiceAvailable}
-          />
+        <div className="mt-2.5 space-y-2.5">
+          <p
+            className={`text-[10px] font-semibold ${
+              lightSurface ? "text-slate-700" : "text-white/70"
+            }`}
+          >
+            {copy.selectedVoiceLabel}:{" "}
+            <span className={lightSurface ? "text-orange-600" : "text-orange-200"}>
+              {selectedVoiceLabel}
+            </span>
+          </p>
+          <div id="lip-sync-voice-library">
+            <LipSyncVoiceLibrary
+              copy={{
+                voiceLibrary: copy.voiceLibrary,
+                recommendedVoices: copy.recommendedVoices,
+                femaleVoices: copy.femaleVoices,
+                maleVoices: copy.maleVoices,
+                categoryVoiceStyles: copy.categoryVoiceStyles,
+                preview: copy.preview,
+                previewListen: copy.previewListen,
+                notConfiguredYet: copy.notConfiguredYet,
+                previewNotAvailable: copy.previewNotAvailable,
+              }}
+              voiceKey={voiceKey}
+              onVoiceKeyChange={onVoiceKeyChange}
+              isEnabled={isEnabled && systemVoiceAvailable}
+              appearance={lightSurface ? "light" : "dark"}
+            />
+          </div>
 
           <div>
             <label
               htmlFor="lip-sync-script"
-              className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40"
+              className={fieldLabelClass}
             >
               {copy.scriptLabel}
             </label>
@@ -2461,14 +2854,21 @@ function LipSyncStudioPanel({
               rows={4}
               disabled={!isEnabled || !systemVoiceAvailable}
               placeholder={copy.scriptPlaceholder}
-              className="mt-1.5 w-full resize-y rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] leading-4 text-white/70 placeholder:text-white/22 outline-none focus-visible:ring-2 focus-visible:ring-violet-500/30 disabled:opacity-50"
+              className={`mt-1.5 w-full resize-y rounded-lg border px-2 py-2 text-sm leading-relaxed outline-none focus-visible:ring-2 disabled:opacity-50 ${
+                lightSurface
+                  ? "border-gray-200 bg-white text-slate-800 placeholder:text-gray-400 focus-visible:ring-orange-500/30"
+                  : "border-white/10 bg-black/40 text-white/70 placeholder:text-white/22 focus-visible:ring-violet-500/30"
+              }`}
             />
             {!scriptText.trim() ? (
-              <p className="mt-1 text-[9px] text-white/35">{copy.scriptRequired}</p>
+              <p className={`mt-1 text-[9px] ${hintClass}`}>{copy.scriptRequired}</p>
+            ) : null}
+            {hideTextInputs ? (
+              <p className={`mt-1 text-[9px] ${hintClass}`}>{copy.scriptCommandBarHint}</p>
             ) : null}
           </div>
         </div>
-      ) : (
+      ) : hideTextInputs ? null : (
       <div className="mt-2.5">
         <label
           htmlFor="lip-sync-instructions"
@@ -2492,20 +2892,42 @@ function LipSyncStudioPanel({
       {previousVideoUrl ? (
         <button
           type="button"
-          onClick={() => onSourceChange(previousVideoUrl, "video")}
+          onClick={() =>
+            onSourceChange({
+              storageUrl: previousVideoUrl,
+              previewUrl: previousVideoUrl,
+              mediaType: "video",
+            })
+          }
           disabled={!isEnabled || uploadingSource}
-          className="mt-2 inline-flex items-center rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-[10px] font-bold text-violet-100 transition hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+          className={`mt-2 inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+            lightSurface
+              ? "border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100"
+              : "border-violet-500/30 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20"
+          }`}
         >
           {copy.usePreviousVideo}
         </button>
       ) : null}
 
       {localFileError ? (
-        <p className="mt-2 text-[10px] font-semibold text-red-200/90">{localFileError}</p>
+        <p
+          className={`mt-2 text-[10px] font-semibold ${
+            lightSurface ? "text-red-600" : "text-red-200/90"
+          }`}
+        >
+          {localFileError}
+        </p>
       ) : null}
 
       {isEnabled ? (
-        <p className="mt-2.5 text-[9px] leading-4 text-white/32">{copy.activeNote}</p>
+        <p
+          className={`mt-2.5 text-[9px] leading-4 ${
+            lightSurface ? "font-medium text-slate-500" : "text-white/32"
+          }`}
+        >
+          {copy.activeNote}
+        </p>
       ) : null}
     </motion.div>
   );
@@ -2622,6 +3044,9 @@ export default function AiAgentStudio({
   const creatorVideoPanelRef = useRef<HTMLDivElement | null>(null);
   const lipSyncPanelRef = useRef<HTMLDivElement | null>(null);
   const talkingCreatorPanelRef = useRef<HTMLDivElement | null>(null);
+  const videoUploadTriggerRef = useRef<(() => void) | null>(null);
+  const lipSyncSourceUploadRef = useRef<(() => void) | null>(null);
+  const lipSyncAudioUploadRef = useRef<(() => void) | null>(null);
 
   const [studioTab, setStudioTab] = useState<StudioTab>("image");
   const [videoSourceUrl, setVideoSourceUrl] = useState<string | null>(null);
@@ -2629,9 +3054,13 @@ export default function AiAgentStudio({
   const [creatorVideoSourceUrl, setCreatorVideoSourceUrl] = useState<string | null>(null);
   const [creatorVideoPrompt, setCreatorVideoPrompt] = useState("");
   const [lipSyncSourceUrl, setLipSyncSourceUrl] = useState<string | null>(null);
+  const [lipSyncSourcePreviewUrl, setLipSyncSourcePreviewUrl] = useState<
+    string | null
+  >(null);
   const [lipSyncSourceMediaType, setLipSyncSourceMediaType] = useState<
     "image" | "video" | null
   >(null);
+  const [lipSyncUploading, setLipSyncUploading] = useState(false);
   const [lipSyncAudioUrl, setLipSyncAudioUrl] = useState<string | null>(null);
   const [lipSyncAudioLabel, setLipSyncAudioLabel] = useState<string | null>(null);
   const [lipSyncInstructions, setLipSyncInstructions] = useState("");
@@ -2670,11 +3099,15 @@ export default function AiAgentStudio({
     Boolean(creatorVideoSourceUrl?.trim()) && Boolean(creatorVideoPrompt.trim());
   const creatorVideoSubmitBlocked = isCreatorVideoActive && !creatorVideoReady;
   const lipSyncReady =
-    Boolean(lipSyncSourceUrl?.trim()) &&
+    isRemoteMediaUrl(lipSyncSourceUrl) &&
+    lipSyncSourceMediaType === "video" &&
+    !lipSyncUploading &&
     (lipSyncInputMode === "audio_upload"
-      ? Boolean(lipSyncAudioUrl?.trim())
-      : Boolean(lipSyncScriptText.trim()) && ELEVENLABS_TTS_PUBLIC_ENABLED) &&
-    Boolean(lipSyncSourceMediaType);
+      ? isRemoteMediaUrl(lipSyncAudioUrl)
+      : Boolean(lipSyncScriptText.trim()) &&
+        ELEVENLABS_TTS_PUBLIC_ENABLED &&
+        Boolean(lipSyncVoiceKey.trim()) &&
+        isClientVoiceConfigured(lipSyncVoiceKey));
   const lipSyncSubmitBlocked = isLipSyncActive && !lipSyncReady;
   const talkingCreatorReady =
     Boolean(talkingCreatorSourceUrl?.trim()) &&
@@ -2737,7 +3170,6 @@ export default function AiAgentStudio({
   const [agentMode, setAgentMode] = useState<AgentMode>("auto");
   const [outputFormatKey, setOutputFormatKey] =
     useState<OutputFormatKey>("square");
-  const [formatMenuOpen, setFormatMenuOpen] = useState(false);
 
   const [loadingCharacters, setLoadingCharacters] = useState(false);
   const [queuing, setQueuing] = useState(false);
@@ -2786,7 +3218,8 @@ export default function AiAgentStudio({
   const [typedExample, setTypedExample] = useState("");
   const requiredCreditsForCurrentSelection = getRequiredCreditsForStudio(
     studioTab,
-    imageMode
+    imageMode,
+    lipSyncInputMode
   );
   const creditsLeftAfterGeneration =
     typeof availableCredits === "number"
@@ -3530,8 +3963,18 @@ export default function AiAgentStudio({
     }
 
     if (isLipSyncActive) {
+      if (lipSyncUploading) {
+        setErrorMessage(a.lipSyncUploadingFiles);
+        return;
+      }
+
+      if (isBlobMediaUrl(lipSyncSourceUrl) || isBlobMediaUrl(lipSyncSourcePreviewUrl)) {
+        setErrorMessage(a.lipSyncWaitForVideoUpload);
+        return;
+      }
+
       if (
-        !lipSyncSourceUrl?.trim() ||
+        !isRemoteMediaUrl(lipSyncSourceUrl) ||
         !lipSyncSourceMediaType ||
         lipSyncSourceMediaType !== "video"
       ) {
@@ -3539,9 +3982,15 @@ export default function AiAgentStudio({
         return;
       }
 
-      if (lipSyncInputMode === "audio_upload" && !lipSyncAudioUrl?.trim()) {
-        setErrorMessage(a.lipSyncMissingAudio);
-        return;
+      if (lipSyncInputMode === "audio_upload") {
+        if (isBlobMediaUrl(lipSyncAudioUrl)) {
+          setErrorMessage(a.lipSyncWaitForAudioUpload);
+          return;
+        }
+        if (!isRemoteMediaUrl(lipSyncAudioUrl)) {
+          setErrorMessage(a.lipSyncMissingAudio);
+          return;
+        }
       }
 
       if (lipSyncInputMode === "system_voice") {
@@ -3551,6 +4000,13 @@ export default function AiAgentStudio({
         }
         if (!lipSyncScriptText.trim()) {
           setErrorMessage(a.lipSyncMissingScript);
+          return;
+        }
+        if (
+          !lipSyncVoiceKey.trim() ||
+          !isClientVoiceConfigured(lipSyncVoiceKey)
+        ) {
+          setErrorMessage(a.lipSyncMissingVoice);
           return;
         }
       }
@@ -4005,7 +4461,7 @@ export default function AiAgentStudio({
           const requiredCredits =
             typeof data.requiredCredits === "number"
               ? data.requiredCredits
-              : getRequiredCreditsForStudio(studioTab, imageMode);
+              : getRequiredCreditsForStudio(studioTab, imageMode, lipSyncInputMode);
 
           setAgentResult({
             id: temporaryGenerationId,
@@ -4124,7 +4580,6 @@ export default function AiAgentStudio({
     }
   }
 
-  const FormatIcon = selectedOutputFormat.icon;
   const showSplitWorkspace = Boolean(agentResult);
 
   const selectedImageModeEntry = useMemo(
@@ -4328,13 +4783,225 @@ export default function AiAgentStudio({
   }
 
   const studioLight = Boolean(lockedWorkspace);
+  const showUnifiedCommandBar =
+    lockedWorkspace === "image" ||
+    lockedWorkspace === "video" ||
+    lockedWorkspace === "lip_sync";
+
+  const selectableImageModes = useMemo(
+    () =>
+      imageModes.filter(
+        (mode) => mode.status === "live" || mode.status === "beta"
+      ),
+    [imageModes]
+  );
+
+  const activeImageModeLabel = useMemo(() => {
+    const mode = imageModes.find((item) => item.key === imageMode);
+    return mode ? getImageModeChipLabel(mode.key, a.imageModeChips) : "Model";
+  }, [imageMode, imageModes, a.imageModeChips]);
+
+  const qualityLabel =
+    imageMode === "premium_image" && PREMIUM_IMAGE_PUBLIC_ENABLED
+      ? a.imageModeChips.premium
+      : a.imageModeChips.standard;
+
+  function requestComposerSubmit() {
+    if (isSubmitBlocked) {
+      setErrorMessage(a.generationAlreadyProcessing);
+      return;
+    }
+    formRef.current?.requestSubmit();
+  }
+
+  function cycleImageMode() {
+    if (selectableImageModes.length === 0) return;
+    const currentIndex = selectableImageModes.findIndex(
+      (mode) => mode.key === imageMode
+    );
+    const nextIndex =
+      currentIndex >= 0
+        ? (currentIndex + 1) % selectableImageModes.length
+        : 0;
+    setImageMode(selectableImageModes[nextIndex]!.key);
+  }
+
+  function toggleImageQuality() {
+    if (!PREMIUM_IMAGE_PUBLIC_ENABLED) return;
+    setImageMode((current) =>
+      current === "premium_image" ? "standard" : "premium_image"
+    );
+  }
+
+  function renderStudioCommandBar() {
+    const isGenerating =
+      queuing || agentResult?.status === "processing" || submitInFlightRef.current;
+
+    const submitBlockedForStudio =
+      isSubmitBlocked ||
+      referenceEditSubmitBlocked ||
+      videoSubmitBlocked ||
+      creatorVideoSubmitBlocked ||
+      lipSyncSubmitBlocked ||
+      talkingCreatorSubmitBlocked;
+
+    let commandValue = prompt;
+    let commandOnChange = setPrompt;
+    let commandPlaceholder =
+      typedExample || a.promptPlaceholder || "Describe what you want to create and press generate...";
+    let commandPills: CommandBarPill[] = [];
+    let submitLabel = a.generateButton;
+    let helperText: string | undefined;
+
+    if (lockedWorkspace === "image") {
+      commandPills = [
+        {
+          id: "model",
+          label: activeImageModeLabel,
+          title: "Image model / mode",
+          icon: <Wand2 className="h-3.5 w-3.5" aria-hidden />,
+          onClick: cycleImageMode,
+        },
+        {
+          id: "aspect",
+          label: selectedOutputFormat.ratio,
+          title: a.socialFormat,
+          icon: <Crop className="h-3.5 w-3.5" aria-hidden />,
+          onClick: () => {
+            document
+              .getElementById("visual-format-grid")
+              ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          },
+        },
+        {
+          id: "quality",
+          label: qualityLabel,
+          title: "Image quality",
+          icon: <BadgeCheck className="h-3.5 w-3.5" aria-hidden />,
+          active: imageMode === "premium_image",
+          onClick: toggleImageQuality,
+          disabled: !PREMIUM_IMAGE_PUBLIC_ENABLED,
+        },
+      ];
+      helperText = a.promptTip;
+    }
+
+    if (lockedWorkspace === "video") {
+      commandValue = videoMotionPrompt;
+      commandOnChange = setVideoMotionPrompt;
+      commandPlaceholder =
+        a.imageModes.videoStudio.panel.motionPlaceholder ||
+        "Describe camera motion and press generate...";
+      submitLabel = a.generateVideo;
+      commandPills = [
+        {
+          id: "model",
+          label: "Kling",
+          title: copy.workspaces.video.modelName,
+          icon: <Film className="h-3.5 w-3.5" aria-hidden />,
+        },
+        {
+          id: "start-frame",
+          label: videoSourceUrl ? "Start Frame ✓" : "Start Frame",
+          title: a.imageModes.videoStudio.panel.uploadSourceImage,
+          icon: <ImageIcon className="h-3.5 w-3.5" aria-hidden />,
+          onClick: () => videoUploadTriggerRef.current?.(),
+        },
+        {
+          id: "resolution",
+          label: "768p",
+          title: "Output resolution",
+          icon: <Monitor className="h-3.5 w-3.5" aria-hidden />,
+        },
+        {
+          id: "duration",
+          label: "6s",
+          title: "Clip duration",
+          icon: <Clock className="h-3.5 w-3.5" aria-hidden />,
+        },
+      ];
+      helperText = a.imageModes.videoStudio.panel.motionHint;
+    }
+
+    if (lockedWorkspace === "lip_sync") {
+      const voiceFlow = lipSyncInputMode === "system_voice";
+      commandValue = voiceFlow ? lipSyncScriptText : lipSyncInstructions;
+      commandOnChange = voiceFlow ? setLipSyncScriptText : setLipSyncInstructions;
+      commandPlaceholder = voiceFlow
+        ? a.imageModes.lipSync.panel.scriptPlaceholder
+        : a.imageModes.lipSync.panel.instructionsPlaceholder;
+      submitLabel = a.generateLipSync;
+
+      const selectedVoice =
+        ELEVENLABS_NAMED_VOICES.find((voice) => voice.key === lipSyncVoiceKey)?.label ??
+        "Voice";
+
+      commandPills = [
+        {
+          id: "source-video",
+          label: isRemoteMediaUrl(lipSyncSourceUrl) ? "Source ✓" : "Source Video",
+          title: a.imageModes.lipSync.panel.sourceLabel,
+          icon: <Film className="h-3.5 w-3.5" aria-hidden />,
+          onClick: () => lipSyncSourceUploadRef.current?.(),
+        },
+        {
+          id: "voice",
+          label: voiceFlow ? selectedVoice : "Voice",
+          title: a.imageModes.lipSync.panel.inputModeSystemVoice,
+          icon: <Mic2 className="h-3.5 w-3.5" aria-hidden />,
+          active: voiceFlow,
+          disabled: !ELEVENLABS_TTS_PUBLIC_ENABLED,
+          onClick: () => {
+            setLipSyncInputMode("system_voice");
+            document
+              .getElementById("lip-sync-voice-library")
+              ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          },
+        },
+        {
+          id: "audio-sync",
+          label: isRemoteMediaUrl(lipSyncAudioUrl) ? "Audio Sync ✓" : "Audio Sync",
+          title: a.imageModes.lipSync.panel.inputModeUploadAudio,
+          icon: <UploadCloud className="h-3.5 w-3.5" aria-hidden />,
+          active: !voiceFlow,
+          onClick: () => {
+            setLipSyncInputMode("audio_upload");
+            lipSyncAudioUploadRef.current?.();
+          },
+        },
+      ];
+      helperText = lipSyncUploading
+        ? a.lipSyncUploadingFiles
+        : voiceFlow
+          ? a.lipSyncCreditsVoice
+          : a.lipSyncCreditsUpload;
+    }
+
+    return (
+      <UnifiedCommandBar
+        value={commandValue}
+        onChange={commandOnChange}
+        onSubmit={requestComposerSubmit}
+        placeholder={commandPlaceholder}
+        pills={commandPills}
+        disabled={submitBlockedForStudio}
+        loading={isGenerating}
+        submitAriaLabel={submitLabel}
+        inputAriaLabel={commandPlaceholder}
+        helperText={helperText}
+      />
+    );
+  }
+
   const formSurfaceClass = showSplitWorkspace
     ? studioLight
-      ? "relative isolate flex h-full min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+      ? "relative isolate flex w-full flex-col overflow-visible rounded-2xl border border-gray-200 bg-white shadow-sm"
       : "relative isolate flex h-full min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl"
-    : studioLight
-      ? "relative isolate w-full max-w-3xl overflow-visible rounded-2xl border border-gray-200 bg-white shadow-sm"
-      : "relative isolate w-full max-w-3xl overflow-visible rounded-[1.75rem] border border-white/10 bg-white/[0.05] shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl";
+    : studioLight && showUnifiedCommandBar
+      ? "relative isolate w-full max-w-none overflow-visible border-0 bg-transparent shadow-none"
+      : studioLight
+        ? "relative isolate w-full max-w-3xl overflow-visible rounded-2xl border border-gray-200 bg-white shadow-sm"
+        : "relative isolate w-full max-w-3xl overflow-visible rounded-[1.75rem] border border-white/10 bg-white/[0.05] shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl";
 
   function renderComposerContent() {
     const useCaseChips = [
@@ -4382,7 +5049,11 @@ export default function AiAgentStudio({
 
     return (
       <>
-        {studioTab === "image" ? (
+        {showUnifiedCommandBar ? (
+          <div className="flex justify-center px-1">{renderStudioCommandBar()}</div>
+        ) : null}
+
+        {studioTab === "image" && !showUnifiedCommandBar ? (
           <>
             <textarea
               value={prompt}
@@ -4446,17 +5117,17 @@ export default function AiAgentStudio({
               </div>
             </div>
           </>
-        ) : studioTab === "video" ? (
+        ) : !showUnifiedCommandBar && studioTab === "video" ? (
           <p className="text-sm leading-6 text-white/50">{a.videoStudioLongerHint}</p>
-        ) : studioTab === "creator_video" ? (
+        ) : !showUnifiedCommandBar && studioTab === "creator_video" ? (
           <p className="text-sm leading-6 text-white/50">{a.creatorVideoLongerHint}</p>
-        ) : studioTab === "talking_creator" ? (
+        ) : !showUnifiedCommandBar && studioTab === "talking_creator" ? (
           <p className="text-sm leading-6 text-white/50">{a.talkingCreatorLongerHint}</p>
-        ) : (
+        ) : !showUnifiedCommandBar ? (
           <p className="text-sm leading-6 text-white/50">{a.lipSyncLongerHint}</p>
-        )}
+        ) : null}
 
-        <div className="mt-4 space-y-4">
+        <div className={`space-y-6 ${showUnifiedCommandBar ? "mt-6" : "mt-4"}`}>
           {!lockedWorkspace ? (
           <div className="flex flex-wrap gap-2">
             <button
@@ -4589,6 +5260,9 @@ export default function AiAgentStudio({
               motionPrompt={videoMotionPrompt}
               onMotionPromptChange={setVideoMotionPrompt}
               onMotionKeyDown={submitVideoFromMotionPrompt}
+              hideMotionPrompt={showUnifiedCommandBar}
+              uploadTriggerRef={videoUploadTriggerRef}
+              lightSurface={studioLight}
             />
           ) : null}
 
@@ -4614,12 +5288,15 @@ export default function AiAgentStudio({
               panelRef={lipSyncPanelRef}
               getAccessToken={getAccessToken}
               isEnabled={LIP_SYNC_PUBLIC_ENABLED}
-              sourcePreviewUrl={lipSyncSourceUrl}
+              sourceStorageUrl={lipSyncSourceUrl}
+              sourcePreviewUrl={lipSyncSourcePreviewUrl}
               sourceMediaType={lipSyncSourceMediaType}
-              onSourceChange={(url, mediaType) => {
-                setLipSyncSourceUrl(url);
+              onSourceChange={({ storageUrl, previewUrl, mediaType }) => {
+                setLipSyncSourceUrl(storageUrl);
+                setLipSyncSourcePreviewUrl(previewUrl);
                 setLipSyncSourceMediaType(mediaType);
               }}
+              onUploadingChange={setLipSyncUploading}
               audioPreviewLabel={lipSyncAudioLabel}
               audioUrl={lipSyncAudioUrl}
               onAudioChange={(url, label) => {
@@ -4637,6 +5314,10 @@ export default function AiAgentStudio({
               onVoiceKeyChange={setLipSyncVoiceKey}
               systemVoiceAvailable={ELEVENLABS_TTS_PUBLIC_ENABLED}
               previousVideoUrl={agentResult?.video_url ?? null}
+              hideTextInputs={showUnifiedCommandBar}
+              sourceUploadTriggerRef={lipSyncSourceUploadRef}
+              audioUploadTriggerRef={lipSyncAudioUploadRef}
+              lightSurface={studioLight}
             />
           ) : null}
 
@@ -4659,7 +5340,7 @@ export default function AiAgentStudio({
 
           {studioTab === "image" ? (
             <>
-              <div className="flex flex-wrap gap-2">
+              <div id="image-mode-chips" className="flex flex-wrap gap-2">
                 {imageModes.map((mode) => {
                   const isSelectable =
                     mode.status === "live" || mode.status === "beta";
@@ -4680,6 +5361,7 @@ export default function AiAgentStudio({
                       selected={isSelected}
                       disabled={!isSelectable}
                       title={chipTitle}
+                      appearance={studioLight ? "light" : "dark"}
                       onClick={
                         isSelectable
                           ? () => setImageMode(mode.key)
@@ -4690,7 +5372,13 @@ export default function AiAgentStudio({
                 })}
               </div>
               {activeModeShortLine ? (
-                <p className="text-xs leading-5 text-white/42">{activeModeShortLine}</p>
+                <p
+                  className={`text-xs font-medium leading-5 ${
+                    studioLight ? "text-slate-500" : "text-white/42"
+                  }`}
+                >
+                  {activeModeShortLine}
+                </p>
               ) : null}
               {isReferenceEditActive ? (
                 <ReferenceEditPanel
@@ -4708,8 +5396,47 @@ export default function AiAgentStudio({
             </>
           ) : null}
 
+          {studioTab === "image" ? (
+            <div className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div>
+                <p
+                  className={`text-[10px] font-bold uppercase tracking-[0.18em] ${
+                    studioLight ? "text-slate-600" : "text-white/35"
+                  }`}
+                >
+                  {a.socialFormat}
+                </p>
+                <p
+                  className={`mt-1 text-xs font-medium ${
+                    studioLight ? "text-slate-500" : "text-white/40"
+                  }`}
+                >
+                  {selectedOutputFormat.platform} · {selectedOutputFormat.ratio}
+                </p>
+              </div>
+              <VisualFormatGrid
+                ariaLabel={a.socialFormat}
+                options={localizedOutputFormats.map((formatOption) => ({
+                  id: formatOption.key,
+                  label: formatOption.label,
+                  description: formatOption.description,
+                  value: formatOption.key,
+                  ratio: formatOption.ratio,
+                }))}
+                value={outputFormatKey}
+                onChange={(nextValue) =>
+                  setOutputFormatKey(nextValue as OutputFormatKey)
+                }
+              />
+            </div>
+          ) : null}
+
           <div className="space-y-2">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/35">
+            <p
+              className={`text-[10px] font-bold uppercase tracking-[0.18em] ${
+                studioLight ? "text-slate-600" : "text-white/35"
+              }`}
+            >
               {a.styleProfile}
             </p>
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
@@ -4719,7 +5446,11 @@ export default function AiAgentStudio({
                   setSelectedCharacterId(event.target.value);
                 }}
                 aria-label={a.styleProfileAria}
-                className="w-full max-w-full rounded-full border border-white/10 bg-black/35 px-3 py-2.5 text-xs font-bold text-white outline-none sm:w-auto sm:min-w-[200px] sm:max-w-[280px]"
+                className={`w-full max-w-full rounded-full border px-3 py-2.5 text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-orange-500/20 sm:w-auto sm:min-w-[200px] sm:max-w-[280px] ${
+                  studioLight
+                    ? "border-gray-200 bg-white text-slate-800"
+                    : "border-white/10 bg-black/35 text-white"
+                }`}
               >
                 <option value="">
                   {loadingCharacters
@@ -4732,72 +5463,6 @@ export default function AiAgentStudio({
                   </option>
                 ))}
               </select>
-
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setFormatMenuOpen((current) => !current)}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-xs font-bold text-white transition hover:border-white/20"
-                >
-                  <FormatIcon className="h-3.5 w-3.5 shrink-0" />
-                  <span>{a.socialFormat}</span>
-                  <span className="shrink-0 text-white/40">
-                    {selectedOutputFormat.ratio}
-                  </span>
-                </button>
-
-                {formatMenuOpen ? (
-                  <div className="absolute left-0 right-0 top-12 z-50 max-h-[min(60vh,320px)] overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-[#101014] p-1.5 shadow-2xl sm:right-auto sm:w-64">
-                    <div className="space-y-1">
-                      {localizedOutputFormats.map((formatOption) => {
-                        const Icon = formatOption.icon;
-                        const active = outputFormatKey === formatOption.key;
-
-                        return (
-                          <button
-                            key={formatOption.key}
-                            type="button"
-                            onClick={() => {
-                              setOutputFormatKey(formatOption.key);
-                              setFormatMenuOpen(false);
-                            }}
-                            className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition ${
-                              active
-                                ? "bg-white text-black"
-                                : "text-white/70 hover:bg-white/[0.06] hover:text-white"
-                            }`}
-                          >
-                            <span className="flex min-w-0 items-center gap-2.5">
-                              <Icon className="h-3.5 w-3.5 shrink-0" />
-                              <span className="min-w-0">
-                                <span className="block truncate text-xs font-black">
-                                  {formatOption.label}
-                                </span>
-                                <span
-                                  className={`block truncate text-[11px] ${
-                                    active ? "text-black/55" : "text-white/35"
-                                  }`}
-                                >
-                                  {formatOption.platform}
-                                </span>
-                              </span>
-                            </span>
-                            <span
-                              className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-black ${
-                                active
-                                  ? "bg-black/10 text-black"
-                                  : "bg-white/[0.06] text-white/55"
-                              }`}
-                            >
-                              {formatOption.ratio}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
             </div>
           </div>
 
@@ -4805,7 +5470,11 @@ export default function AiAgentStudio({
           !isCreatorVideoActive &&
           !isLipSyncActive &&
           !isTalkingCreatorActive ? (
-            <p className="text-xs text-white/55">
+            <p
+              className={`text-xs font-medium ${
+                studioLight ? "text-slate-600" : "text-white/55"
+              }`}
+            >
               {typeof availableCredits === "number"
                 ? format(a.creditPreview, {
                     cost: String(requiredCreditsForCurrentSelection),
@@ -4817,6 +5486,7 @@ export default function AiAgentStudio({
             </p>
           ) : null}
 
+          {!showUnifiedCommandBar ? (
           <motion.button
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
@@ -4881,6 +5551,7 @@ export default function AiAgentStudio({
               </>
             )}
           </motion.button>
+          ) : null}
         </div>
       </>
     );
@@ -5020,7 +5691,7 @@ export default function AiAgentStudio({
                 {format(a.insufficientCreditsModeRequires, {
                   count:
                     agentResult.requiredCredits ??
-                    getRequiredCreditsForStudio(studioTab, imageMode),
+                    getRequiredCreditsForStudio(studioTab, imageMode, lipSyncInputMode),
                 })}
               </p>
               {onOpenCredits ? (
@@ -5474,8 +6145,10 @@ export default function AiAgentStudio({
   return (
     <section
       id="agent"
-      className={`relative flex h-full min-h-0 flex-col overflow-hidden ${
-        studioLight ? "bg-gray-50" : "bg-[#06060a]"
+      className={`relative w-full min-w-0 ${
+        studioLight
+          ? "flex flex-col overflow-visible bg-transparent"
+          : "flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[#06060a]"
       }`}
     >
       {!studioLight ? (
@@ -5485,12 +6158,18 @@ export default function AiAgentStudio({
         </div>
       ) : null}
 
-      <div className="relative z-10 flex h-full min-h-0 flex-col overflow-hidden px-3 py-3 sm:px-5 sm:py-4">
+      <div
+        className={`relative z-10 w-full min-w-0 ${
+          studioLight
+            ? "flex flex-col overflow-visible"
+            : "flex h-full min-h-0 flex-1 flex-col overflow-hidden px-3 py-3 sm:px-5 sm:py-4"
+        }`}
+      >
         {statusMessage ? (
           <div
             className={`mb-2 shrink-0 rounded-xl border px-3 py-2 text-xs font-bold ${
               studioLight
-                ? "border-amber-200 bg-amber-50 text-amber-900"
+                ? "border-orange-200 bg-orange-50 text-orange-800"
                 : "border-white/10 bg-white/[0.06] text-white"
             }`}
           >
@@ -5512,17 +6191,44 @@ export default function AiAgentStudio({
         ) : null}
 
         {!showSplitWorkspace ? (
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto overscroll-contain lg:overflow-hidden">
-            <motion.h1
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="max-w-3xl text-center text-2xl font-black tracking-[-0.04em] text-white sm:text-3xl lg:text-4xl"
-            >
-              {composerHeadline}
-            </motion.h1>
-            <p className="mt-3 max-w-3xl text-center text-sm leading-6 text-white/50">
-              {a.subtitle}
-            </p>
+          <div
+            className={`flex w-full min-w-0 flex-col ${
+              studioLight
+                ? "items-stretch justify-start overflow-visible"
+                : "min-h-0 flex-1 items-center justify-center overflow-y-auto overscroll-contain lg:overflow-hidden"
+            }`}
+          >
+            {lockedWorkspace && workspaceHeadline ? (
+              <div className="mb-6 w-full max-w-2xl">
+                <motion.h1
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl"
+                >
+                  {workspaceHeadline}
+                </motion.h1>
+                <p className="mt-1 text-sm leading-6 text-slate-500">{a.subtitle}</p>
+              </div>
+            ) : (
+              <>
+                <motion.h1
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`max-w-3xl text-center text-2xl font-black tracking-[-0.04em] sm:text-3xl lg:text-4xl ${
+                    studioLight ? "text-slate-950" : "text-white"
+                  }`}
+                >
+                  {composerHeadline}
+                </motion.h1>
+                <p
+                  className={`mt-3 max-w-3xl text-center text-sm leading-6 ${
+                    studioLight ? "text-slate-500" : "text-white/50"
+                  }`}
+                >
+                  {a.subtitle}
+                </p>
+              </>
+            )}
 
             <motion.form
               ref={formRef}
@@ -5530,15 +6236,23 @@ export default function AiAgentStudio({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: 0.05 }}
               onSubmit={queueGeneration}
-              className={`${formSurfaceClass} mt-6 w-full`}
+              className={`${formSurfaceClass} ${studioLight && lockedWorkspace ? "mt-0" : "mt-6"} w-full`}
             >
-              <div className="relative z-10 flex flex-col p-4 sm:p-5">
+              <div
+                className={`relative z-10 flex flex-col ${
+                  studioLight && showUnifiedCommandBar ? "p-0" : "p-4 sm:p-5"
+                }`}
+              >
                 {renderComposerContent()}
               </div>
             </motion.form>
           </div>
         ) : (
-          <div className="grid h-full min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[2fr_3fr] lg:gap-5">
+          <div
+            className={`grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[2fr_3fr] ${
+              studioLight ? "items-start overflow-visible" : "h-full overflow-hidden"
+            }`}
+          >
             <motion.form
               ref={formRef}
               initial={{ opacity: 0, x: -12 }}
@@ -5547,14 +6261,24 @@ export default function AiAgentStudio({
               onSubmit={queueGeneration}
               className={formSurfaceClass}
             >
-              <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4">
+              <div
+                className={`relative z-10 flex flex-col p-4 sm:p-5 ${
+                  studioLight
+                    ? "overflow-visible"
+                    : "min-h-0 flex-1 overflow-y-auto overscroll-contain"
+                }`}
+              >
                 {renderComposerContent()}
               </div>
             </motion.form>
 
             <div
               ref={resultRef}
-              className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden"
+              className={`flex min-w-0 flex-col ${
+                studioLight
+                  ? "overflow-visible"
+                  : "h-full min-h-0 overflow-hidden"
+              }`}
             >
               {renderResultPanel()}
             </div>

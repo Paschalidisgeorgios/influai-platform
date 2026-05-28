@@ -25,7 +25,7 @@ type StudioWorkspaceViewProps = {
 };
 
 function betaBadgeClass() {
-  return "border-amber-200 bg-amber-50 text-amber-700";
+  return "border-orange-100 bg-orange-50 text-orange-600";
 }
 
 function plannedBadgeClass() {

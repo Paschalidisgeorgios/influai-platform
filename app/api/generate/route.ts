@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import {
   LIP_SYNC_VOICE_KEYS,
   resolveDefaultLipSyncVoiceKey,
+  resolveElevenLabsVoiceIdFromKey,
 } from "@/lib/lip-sync/elevenlabs-voices";
 
 export const runtime = "nodejs";
@@ -2218,7 +2219,17 @@ export async function POST(req: Request) {
 
       if (!resolvedSourceVideoUrl) {
         return NextResponse.json(
-          { error: "Source video URL is required for Lip Sync Studio." },
+          { success: false, error: "Source video URL is required for Lip Sync Studio." },
+          { status: 400 }
+        );
+      }
+
+      if (resolvedSourceVideoUrl.startsWith("blob:")) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Please wait until the video upload is complete.",
+          },
           { status: 400 }
         );
       }
@@ -2230,11 +2241,26 @@ export async function POST(req: Request) {
         );
       }
 
-      if (lipSyncInputMode === "audio_upload" && !audioUrl) {
-        return NextResponse.json(
-          { error: "Audio URL is required for Lip Sync Studio." },
-          { status: 400 }
-        );
+      if (lipSyncInputMode === "audio_upload") {
+        if (!audioUrl) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Audio URL is required for Lip Sync Studio.",
+            },
+            { status: 400 }
+          );
+        }
+
+        if (audioUrl.startsWith("blob:")) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Please wait until the audio upload is complete.",
+            },
+            { status: 400 }
+          );
+        }
       }
 
       if (lipSyncInputMode === "system_voice") {
@@ -2259,19 +2285,38 @@ export async function POST(req: Request) {
           );
         }
 
-        if (voiceKey && !LIP_SYNC_VOICE_KEYS.has(voiceKey)) {
+        const trimmedVoiceKey =
+          typeof voiceKey === "string" ? voiceKey.trim() : "";
+
+        if (!trimmedVoiceKey || !LIP_SYNC_VOICE_KEYS.has(trimmedVoiceKey)) {
           return NextResponse.json(
-            { error: "Invalid voice selected." },
+            { error: "Please select a voice." },
+            { status: 400 }
+          );
+        }
+
+        const mappedVoiceId = resolveElevenLabsVoiceIdFromKey(trimmedVoiceKey);
+        if (!mappedVoiceId) {
+          return NextResponse.json(
+            {
+              error:
+                "Selected system voice is not configured on the server.",
+            },
             { status: 400 }
           );
         }
       }
 
+      if (!process.env.FAL_KEY?.trim()) {
+        return NextResponse.json(
+          { error: "FAL_KEY is not configured." },
+          { status: 500 }
+        );
+      }
+
       const resolvedLipSyncVoiceKey =
-        lipSyncInputMode === "system_voice"
-          ? voiceKey && LIP_SYNC_VOICE_KEYS.has(voiceKey)
-            ? voiceKey
-            : resolveDefaultLipSyncVoiceKey()
+        lipSyncInputMode === "system_voice" && typeof voiceKey === "string"
+          ? voiceKey.trim()
           : null;
 
       const lipSyncJobConfigResult = resolveGenerationJobConfig(imageMode);

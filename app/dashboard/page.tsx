@@ -100,7 +100,7 @@ function ViewShell({
 }) {
   return (
     <section className="space-y-5 sm:space-y-6">
-      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-6">
         <div className="relative">
           <div className="relative z-10">
             <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400">
@@ -167,6 +167,7 @@ function DashboardPageInner() {
     styleProfiles: 0,
   });
   const [recentAssets, setRecentAssets] = useState<HomeAsset[]>([]);
+  const [userDisplayName, setUserDisplayName] = useState<string | undefined>();
 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [regenerateDraft, setRegenerateDraft] =
@@ -187,6 +188,17 @@ function DashboardPageInner() {
         return;
       }
 
+      const metadata = session.user.user_metadata as
+        | { full_name?: string; name?: string }
+        | undefined;
+      const emailPrefix = session.user.email?.split("@")[0];
+      const resolvedName =
+        metadata?.full_name?.trim() ||
+        metadata?.name?.trim() ||
+        (emailPrefix
+          ? emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1)
+          : undefined);
+      setUserDisplayName(resolvedName);
       setAuthChecked(true);
     }
 
@@ -404,6 +416,7 @@ function DashboardPageInner() {
           searchQuery={homeSearchQuery}
           videoStudioEnabled={VIDEO_STUDIO_PUBLIC_ENABLED}
           lipSyncEnabled={LIP_SYNC_PUBLIC_ENABLED}
+          userName={userDisplayName}
           onOpenStudio={openCreateStudio}
           onRegenerate={(prompt) => handleRegenerate(prompt, null)}
         />
@@ -541,8 +554,8 @@ function DashboardPageInner() {
         </div>
       </main>
     ) : (
-    <main className="flex h-screen flex-col overflow-hidden bg-gray-50 text-slate-900">
-      <div className="relative z-10 flex min-h-0 flex-1 overflow-hidden">
+    <main className="flex min-h-screen flex-col bg-gray-50 text-slate-900">
+      <div className="relative z-10 flex min-h-0 min-w-0 flex-1">
         <aside className="hidden h-full w-[280px] shrink-0 border-r border-slate-800 bg-slate-900 p-4 lg:block">
           <div className="sticky top-4 h-[calc(100vh-32px)] overflow-y-auto overscroll-contain pr-1">
             <SidebarContent />
@@ -578,7 +591,7 @@ function DashboardPageInner() {
           </div>
         )}
 
-        <section className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gray-50">
+        <section className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-gray-50">
           {activeView === "home" ? (
             <DashboardTopBar
               credits={homeMetrics.credits}
@@ -589,7 +602,7 @@ function DashboardPageInner() {
               onOpenMenu={() => setMobileSidebarOpen(true)}
             />
           ) : (
-            <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-gray-100 bg-white px-4 py-3 sm:px-6">
+            <header className="sticky top-0 z-40 flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3 sm:px-6">
               <div className="flex min-w-0 items-center gap-2">
                 <button
                   type="button"
@@ -599,7 +612,7 @@ function DashboardPageInner() {
                   <Menu className="h-4 w-4" />
                 </button>
                 <div className="min-w-0">
-                  <p className="truncate text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">
+                  <p className="truncate text-[10px] font-bold uppercase tracking-[0.2em] text-orange-600">
                     InfluExAi
                   </p>
                   <h1 className="truncate text-base font-semibold text-slate-900 sm:text-lg">
@@ -616,19 +629,19 @@ function DashboardPageInner() {
           <div
             className={
               STUDIO_FULL_VIEWS.includes(activeView)
-                ? "flex min-h-0 flex-1 flex-col overflow-hidden p-4 sm:p-6"
+                ? "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4 sm:p-6"
                 : "min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-6 sm:px-6 md:px-8"
             }
           >
             <div
               className={
                 STUDIO_FULL_VIEWS.includes(activeView)
-                  ? "flex min-h-0 flex-1 flex-col"
+                  ? "flex min-h-0 w-full min-w-0 flex-1 flex-col"
                   : "mx-auto w-full max-w-[1200px]"
               }
             >
               {statusMessage ? (
-                <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+                <div className="mb-4 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-800">
                   {statusMessage}
                 </div>
               ) : null}

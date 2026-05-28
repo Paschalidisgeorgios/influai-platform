@@ -962,15 +962,22 @@ const en = {
     talkingCreatorLongerHint:
       "Talking Creator may take longer than image generation.",
     generateTalkingCreator: "Generate Talking Creator",
-    lipSyncMissingSource: "Source Video required for Lip Sync Studio.",
-    lipSyncMissingAudio: "Audio required for Upload Audio mode.",
-    lipSyncMissingScript: "Script required for System Voice.",
+    lipSyncMissingSource: "Please upload a source video.",
+    lipSyncMissingAudio: "Please upload an audio file.",
+    lipSyncMissingScript: "Please enter a script.",
+    lipSyncMissingVoice: "Please select a voice.",
     lipSyncInvalidVoice: "Invalid voice selected.",
+    lipSyncFailedRefunded: "Lip Sync failed. Your credits were refunded.",
+    lipSyncUploadingFiles: "Uploading files…",
+    lipSyncWaitForVideoUpload: "Please wait until the video upload is complete.",
+    lipSyncWaitForAudioUpload: "Please wait until the audio upload is complete.",
     lipSyncSystemVoicesNotConfigured:
       "System voices are not configured yet. Upload audio instead.",
     lipSyncLongerHint:
       "Lip Sync may take longer than image generation.",
     generateLipSync: "Generate Lip Sync",
+    lipSyncCreditsUpload: "30 credits with uploaded audio",
+    lipSyncCreditsVoice: "35 credits with AI voice",
     imageModeLipSyncActiveNote: "Lip Sync Studio · Beta · 30-35 Credits",
     videoStudioMissingSource: "Upload a source image for Video Studio.",
     videoStudioMissingMotion: "Add a motion prompt for Video Studio.",
@@ -1066,16 +1073,16 @@ const en = {
       lipSync: {
         label: "Lip Sync Studio",
         description:
-          "Generate talking creator clips from scripts, voice and visual assets.",
+          "Sync a creator video with your own audio or an AI-generated voice.",
         panel: {
           statusPlanned: "Coming soon · Planned",
           statusActive: "Beta",
           introPlanned:
             "Lip Sync Studio is coming soon. When enabled it costs 30 credits per job.",
           introActive:
-            "Upload source media and audio. Your lip-synced video appears in the agent and gallery.",
-          sourceLabel: "Source media",
-          sourceVideoLabel: "Source Video",
+            "Sync a creator video with your own audio or an AI-generated voice.",
+          sourceLabel: "Source video",
+          sourceVideoLabel: "Source video",
           sourceVideoPlaceholder: "Paste source video URL",
           sourceVideoHint:
             "You can use a video URL from Video Studio or the Asset Gallery.",
@@ -1097,8 +1104,8 @@ const en = {
           instructionsLabel: "Instructions (optional)",
           instructionsPlaceholder:
             "Describe expression, energy, or scene mood…",
-          inputModeSystemVoice: "System Voice",
-          inputModeUploadAudio: "Upload Audio",
+          inputModeSystemVoice: "AI voice",
+          inputModeUploadAudio: "Upload audio",
           voiceLibrary: "Voice Library",
           recommendedVoices: "Recommended voices",
           femaleVoices: "Female voices",
@@ -1107,16 +1114,20 @@ const en = {
           preview: "Preview",
           previewListen: "Listen",
           notConfiguredYet: "Not configured yet",
-          previewNotAvailable: "Preview not available yet.",
-          scriptLabel: "Script",
-          scriptPlaceholder:
-            "Enter the spoken text for ElevenLabs system voice generation…",
+          previewNotAvailable: "Preview not available yet",
+          scriptLabel: "Script for AI voice",
+          scriptPlaceholder: "Write what the creator should say…",
+          voiceLabel: "Voice",
           scriptRequired: "Script required",
+          scriptCommandBarHint:
+            "You can also edit the script in the command bar above.",
+          selectedVoiceLabel: "Selected voice",
+          sourceUploadedReady: "Video uploaded — ready to generate.",
           systemVoicesNotConfigured: "System voices are not configured yet.",
           uploadAudioInstead: "Upload audio instead.",
           usePreviousVideo: "Use previous video",
           activeNote:
-            "Lip Sync supports uploaded audio (30 credits) or System Voice (35 credits).",
+            "Upload audio (30 credits) or AI voice + script (35 credits).",
         },
       },
       videoStudio: {
@@ -2583,16 +2594,25 @@ const de: DeepString<typeof en> = {
     talkingCreatorLongerHint:
       "Talking Creator kann länger dauern als die Bild-Generierung.",
     generateTalkingCreator: "Talking Creator generieren",
-    lipSyncMissingSource:
-      "Source Video für Lip Sync Studio erforderlich.",
-    lipSyncMissingAudio: "Audio für Upload-Audio-Modus erforderlich.",
-    lipSyncMissingScript: "Skript für System Voice erforderlich.",
+    lipSyncMissingSource: "Bitte lade ein Quellvideo hoch.",
+    lipSyncMissingAudio: "Bitte lade eine Audiodatei hoch.",
+    lipSyncMissingScript: "Bitte gib ein Skript ein.",
+    lipSyncMissingVoice: "Bitte wähle eine Stimme.",
     lipSyncInvalidVoice: "Ungültige Stimme ausgewählt.",
+    lipSyncFailedRefunded:
+      "Lip Sync fehlgeschlagen. Deine Credits wurden erstattet.",
+    lipSyncUploadingFiles: "Dateien werden hochgeladen…",
+    lipSyncWaitForVideoUpload:
+      "Bitte warte, bis der Video-Upload abgeschlossen ist.",
+    lipSyncWaitForAudioUpload:
+      "Bitte warte, bis der Audio-Upload abgeschlossen ist.",
     lipSyncSystemVoicesNotConfigured:
       "System-Stimmen sind noch nicht konfiguriert. Nutze stattdessen Audio-Upload.",
     lipSyncLongerHint:
       "Lip Sync kann länger dauern als Bild-Generierung.",
-    generateLipSync: "Lip Sync generieren",
+    generateLipSync: "Lip Sync erstellen",
+    lipSyncCreditsUpload: "30 Credits mit eigener Audiodatei",
+    lipSyncCreditsVoice: "35 Credits mit KI-Stimme",
     imageModeLipSyncActiveNote: "Lip Sync Studio · Beta · 30-35 Credits",
     videoStudioMissingSource:
       "Lade ein Quellbild für Video Studio hoch.",
@@ -2692,16 +2712,16 @@ const de: DeepString<typeof en> = {
       lipSync: {
         label: "Lip Sync Studio",
         description:
-          "Erstelle sprechende Creator-Clips aus Skripten, Stimme und Visuals.",
+          "Synchronisiere ein Creator-Video mit eigener Audiodatei oder KI-Stimme.",
         panel: {
           statusPlanned: "Demnächst · Geplant",
           statusActive: "Beta",
           introPlanned:
             "Lip Sync Studio ist demnächst verfügbar. Wenn aktiv, kostet es 30 Credits pro Job.",
           introActive:
-            "Lade Quellmedien und Audio hoch. Dein Lip-Sync-Video erscheint im Agent und in der Galerie.",
-          sourceLabel: "Quellmedien",
-          sourceVideoLabel: "Source Video",
+            "Synchronisiere ein Creator-Video mit eigener Audiodatei oder KI-Stimme.",
+          sourceLabel: "Quellvideo",
+          sourceVideoLabel: "Quellvideo",
           sourceVideoPlaceholder: "Source-Video-URL einfügen",
           sourceVideoHint:
             "Du kannst eine Video-URL aus dem Video Studio oder der Asset Gallery verwenden.",
@@ -2723,7 +2743,7 @@ const de: DeepString<typeof en> = {
           instructionsLabel: "Anweisungen (optional)",
           instructionsPlaceholder:
             "Beschreibe Ausdruck, Energie oder Szenenstimmung…",
-          inputModeSystemVoice: "System Voice",
+          inputModeSystemVoice: "KI-Stimme",
           inputModeUploadAudio: "Audio hochladen",
           voiceLibrary: "Voice Library",
           recommendedVoices: "Empfohlene Stimmen",
@@ -2734,16 +2754,20 @@ const de: DeepString<typeof en> = {
           previewListen: "Anhören",
           notConfiguredYet: "Noch nicht konfiguriert",
           previewNotAvailable: "Vorschau noch nicht verfügbar",
-          scriptLabel: "Skript",
-          scriptPlaceholder:
-            "Gesprochenen Text für die ElevenLabs-Systemstimme eingeben…",
+          scriptLabel: "Script für KI-Stimme",
+          scriptPlaceholder: "Schreibe, was der Creator sagen soll…",
+          voiceLabel: "Stimme",
           scriptRequired: "Skript erforderlich",
+          scriptCommandBarHint:
+            "Du kannst das Skript auch in der Command Bar oben bearbeiten.",
+          selectedVoiceLabel: "Ausgewählte Stimme",
+          sourceUploadedReady: "Video hochgeladen — bereit zum Generieren.",
           systemVoicesNotConfigured:
             "System-Stimmen sind noch nicht konfiguriert.",
           uploadAudioInstead: "Nutze stattdessen Audio-Upload.",
           usePreviousVideo: "Vorheriges Video verwenden",
           activeNote:
-            "Lip Sync unterstützt Audio-Upload (30 Credits) oder System Voice (35 Credits).",
+            "Audio-Upload (30 Credits) oder KI-Stimme + Skript (35 Credits).",
         },
       },
       videoStudio: {

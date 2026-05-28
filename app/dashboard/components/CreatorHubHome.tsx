@@ -3,8 +3,10 @@
 import { useMemo } from "react";
 import { Film, ImageIcon, Mic2, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import type { DashboardLanguage } from "../i18n";
 import { useDashboardLanguage } from "../DashboardLanguageProvider";
 import type { CreateStudioTab } from "./CreateStudioHub";
+import UserWelcomeBanner from "./UserWelcomeBanner";
 
 type HomeAsset = {
   id: string;
@@ -30,6 +32,8 @@ type CreatorHubHomeProps = {
   searchQuery?: string;
   videoStudioEnabled: boolean;
   lipSyncEnabled: boolean;
+  userName?: string;
+  currentLanguage?: DashboardLanguage;
   onOpenStudio: (tab: CreateStudioTab) => void;
   onRegenerate: (prompt: string) => void;
 };
@@ -39,7 +43,7 @@ function statusBadgeClass(status: StudioCard["status"]) {
     return "border-green-100 bg-green-50 text-green-700";
   }
   if (status === "beta") {
-    return "border-amber-100 bg-amber-50 text-amber-700";
+    return "border-orange-100 bg-orange-50 text-orange-600";
   }
   return "border-slate-200 bg-slate-100 text-slate-600";
 }
@@ -50,10 +54,13 @@ export default function CreatorHubHome({
   searchQuery = "",
   videoStudioEnabled,
   lipSyncEnabled,
+  userName,
+  currentLanguage,
   onOpenStudio,
   onRegenerate,
 }: CreatorHubHomeProps) {
-  const { copy } = useDashboardLanguage();
+  const { copy, language: contextLanguage } = useDashboardLanguage();
+  const activeLanguage = currentLanguage ?? contextLanguage;
   const h = copy.home;
 
   const studios: StudioCard[] = useMemo(
@@ -93,15 +100,31 @@ export default function CreatorHubHome({
       .slice(0, 6);
   }, [recentAssets, searchQuery]);
 
+  const collageImages = useMemo(
+    () =>
+      recentAssets
+        .map((asset) => asset.image_url ?? asset.video_url)
+        .filter((url): url is string => Boolean(url)),
+    [recentAssets]
+  );
+
   const statusLabels = h.statuses;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      <UserWelcomeBanner
+        userName={userName}
+        currentLanguage={activeLanguage}
+        recentAssets={collageImages}
+      />
+
       <section>
-        <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
+        <h2 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
           {h.chooseStudio}
         </h2>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600">{h.chooseStudioSubline}</p>
+        <p className="mt-1 max-w-2xl text-sm font-medium text-slate-600">
+          {h.chooseStudioSubline}
+        </p>
 
         <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {studios.map((studio) => {
@@ -116,7 +139,7 @@ export default function CreatorHubHome({
             return (
               <article
                 key={studio.id}
-                className="flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                className="flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
               >
                 <div>
                   <div className="flex h-40 items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100 sm:h-44">
@@ -127,7 +150,9 @@ export default function CreatorHubHome({
 
                   <div className="p-5 sm:p-6">
                     <div className="flex items-start justify-between gap-3">
-                      <h3 className="text-lg font-semibold text-slate-900">{studio.title}</h3>
+                      <h3 className="text-lg font-bold tracking-tight text-slate-900">
+                        {studio.title}
+                      </h3>
                       <span
                         className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${statusBadgeClass(
                           studio.status
@@ -157,9 +182,11 @@ export default function CreatorHubHome({
         </div>
       </section>
 
-      <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
+      <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
         <div>
-          <h3 className="text-base font-semibold text-slate-900">{h.recentAssetsTitle}</h3>
+          <h3 className="text-base font-bold tracking-tight text-slate-900">
+            {h.recentAssetsTitle}
+          </h3>
           <p className="mt-1 text-sm text-slate-600">{h.recentAssetsBody}</p>
         </div>
 
@@ -196,7 +223,7 @@ export default function CreatorHubHome({
                   key={asset.id}
                   type="button"
                   onClick={() => onRegenerate(asset.prompt)}
-                  className="group overflow-hidden rounded-xl border border-gray-100 bg-white text-left shadow-sm transition-all duration-200 hover:border-orange-200 hover:shadow-md"
+                  className="group overflow-hidden rounded-xl border border-gray-200 bg-white text-left shadow-sm transition-all duration-200 hover:border-orange-300 hover:shadow-md"
                 >
                   <div className="relative aspect-square overflow-hidden bg-gray-100">
                     {preview ? (
@@ -212,7 +239,7 @@ export default function CreatorHubHome({
                       </div>
                     )}
                   </div>
-                  <div className="border-t border-gray-100 bg-gray-50 p-3">
+                  <div className="border-t border-gray-200 bg-gray-50 p-3">
                     <p className="line-clamp-2 text-xs font-medium leading-relaxed text-slate-700">
                       {asset.prompt}
                     </p>

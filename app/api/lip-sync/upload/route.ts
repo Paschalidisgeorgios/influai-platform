@@ -3,7 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 
-const SOURCE_BUCKET = "lip-sync-sources";
+/** Lip-sync source videos use the same bucket as generated campaign videos. */
+const SOURCE_VIDEO_BUCKET = "generation-videos";
+/** Legacy bucket for image sources if ever uploaded via this route. */
+const SOURCE_IMAGE_BUCKET = "lip-sync-sources";
 const AUDIO_BUCKET = "lip-sync-audio";
 
 const MAX_SOURCE_BYTES = 50 * 1024 * 1024;
@@ -116,6 +119,13 @@ function contentTypeForExtension(ext: string, kind: UploadKind): string {
 
 export async function POST(req: Request) {
   try {
+    if (process.env.ENABLE_FAL_LIP_SYNC !== "true") {
+      return NextResponse.json(
+        { error: "Lip Sync Studio is not enabled on the server." },
+        { status: 400 }
+      );
+    }
+
     const authHeader = req.headers.get("authorization");
 
     if (!authHeader) {
@@ -200,13 +210,19 @@ export async function POST(req: Request) {
       }
     }
 
-    const bucket = uploadType === "source" ? SOURCE_BUCKET : AUDIO_BUCKET;
-    const storagePath = `${user.id}/${crypto.randomUUID()}.${extension}`;
+    const sourceKind = uploadType === "source" ? resolveSourceKind(file) : null;
+    const bucket =
+      uploadType === "audio"
+        ? AUDIO_BUCKET
+        : sourceKind === "video"
+          ? SOURCE_VIDEO_BUCKET
+          : SOURCE_IMAGE_BUCKET;
+    const storagePath = `${user.id}/lip-sync/${crypto.randomUUID()}.${extension}`;
     const contentType = contentTypeForExtension(extension, uploadType);
     const fileType =
       uploadType === "audio"
         ? "audio"
-        : resolveSourceKind(file) === "video"
+        : sourceKind === "video"
           ? "video"
           : "image";
 
@@ -220,12 +236,23 @@ export async function POST(req: Request) {
       });
 
     if (uploadError) {
-      console.error("Lip sync upload error:", uploadError);
+      console.error("Lip sync upload error:", {
+        bucket,
+        storagePath,
+        uploadType,
+        fileType,
+        mime,
+        size: file.size,
+        message: uploadError.message,
+      });
 
-      return NextResponse.json(
-        { error: "Failed to upload file." },
-        { status: 500 }
-      );
+      const userMessage =
+        uploadError.message?.includes("Bucket not found") ||
+        uploadError.message?.includes("bucket")
+          ? `Storage bucket "${bucket}" is not available. Check Supabase storage setup.`
+          : uploadError.message || "Failed to upload file.";
+
+      return NextResponse.json({ error: userMessage }, { status: 500 });
     }
 
     const {

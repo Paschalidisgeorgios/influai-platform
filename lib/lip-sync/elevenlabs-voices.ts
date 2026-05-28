@@ -303,3 +303,8 @@ export function resolveElevenLabsVoiceIdFromKey(voiceKey: string): string | null
     ? resolved.trim()
     : null;
 }
+
+/** Server-side: voice key maps to a configured ElevenLabs voice ID env var. */
+export function isServerVoiceConfigured(voiceKey: string): boolean {
+  return Boolean(resolveElevenLabsVoiceIdFromKey(voiceKey));
+}
