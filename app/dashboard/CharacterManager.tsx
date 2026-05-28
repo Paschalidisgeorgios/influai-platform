@@ -69,6 +69,14 @@ const initialForm: CharacterForm = {
   stylePrompt: "",
 };
 
+const labelClass = "mb-2 block text-sm font-semibold text-slate-800";
+const inputClass =
+  "w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-100";
+const textareaClass =
+  "min-h-[88px] w-full resize-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-100";
+const panelClass =
+  "rounded-2xl border border-gray-100 bg-white shadow-sm";
+
 export default function CharacterManager({
   onCharactersChange,
 }: CharacterManagerProps) {
@@ -469,7 +477,7 @@ export default function CharacterManager({
 
   if (loading) {
     return (
-      <section className="rounded-[1.5rem] border border-white/10 bg-white/[0.035] p-8 text-center text-white/50 sm:rounded-[2rem] sm:p-10">
+      <section className={`${panelClass} p-8 text-center text-slate-600 sm:p-10`}>
         {sp.loading}
       </section>
     );
@@ -500,75 +508,75 @@ export default function CharacterManager({
             <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d8ad5f]">
               {sp.guidanceTitle}
             </p>
-            <p className="mt-2 text-sm leading-6 text-white/55">{sp.guidanceBody}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{sp.guidanceBody}</p>
           </div>
         </div>
       </div>
 
       <form
         onSubmit={createCharacter}
-        className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-5 shadow-[0_20px_70px_rgba(0,0,0,0.25)] sm:p-6"
+        className={`${panelClass} p-5 sm:p-6`}
       >
         <div className="mb-6">
           <p className="text-[10px] font-black uppercase tracking-[0.32em] text-[#d8ad5f]">
             {sp.newProfile}
           </p>
 
-          <h3 className="mt-3 text-xl font-black tracking-tight text-white sm:text-2xl">
+          <h3 className="mt-3 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
             {sp.buildDirection}
           </h3>
 
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-white/45">
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
             {sp.buildDescription}
           </p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
+            <label className={labelClass}>
               {sp.profileName}
             </label>
             <input
               value={form.name}
               onChange={(event) => updateForm("name", event.target.value)}
               placeholder={sp.profileNamePlaceholder}
-              className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
+            <label className={labelClass}>
               {sp.creativeTag}
             </label>
             <input
               value={form.gender}
               onChange={(event) => updateForm("gender", event.target.value)}
               placeholder={sp.creativeTagPlaceholder}
-              className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
+              className={inputClass}
             />
           </div>
         </div>
 
         <div className="mt-5">
-          <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
+          <label className={labelClass}>
             {sp.profileSummary}
           </label>
           <textarea
             value={form.description}
             onChange={(event) => updateForm("description", event.target.value)}
             placeholder={sp.profileSummaryPlaceholder}
-            className="min-h-[80px] w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
+            className={textareaClass}
           />
         </div>
 
-        <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-4 sm:p-5">
+        <div className="mt-6 rounded-2xl border border-gray-100 bg-gray-50 p-4 sm:p-5">
           <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d8ad5f]">
             {sp.creativeDirection}
           </p>
 
           <div className="mt-4 space-y-4">
             <div>
-              <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
+              <label className={labelClass}>
                 {sp.appearanceDirection}
               </label>
               <textarea
@@ -577,19 +585,19 @@ export default function CharacterManager({
                   updateForm("appearancePrompt", event.target.value)
                 }
                 placeholder={sp.appearancePlaceholder}
-                className="min-h-[88px] w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
+                className={textareaClass}
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
+              <label className={labelClass}>
                 {sp.styleDirection}
               </label>
               <textarea
                 value={form.stylePrompt}
                 onChange={(event) => updateForm("stylePrompt", event.target.value)}
                 placeholder={sp.stylePlaceholder}
-                className="min-h-[88px] w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#d8ad5f]/40"
+                className={textareaClass}
               />
             </div>
           </div>
@@ -619,10 +627,10 @@ export default function CharacterManager({
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#d8ad5f]/15 text-[#d8ad5f]">
             <UserRound className="h-7 w-7" />
           </div>
-          <p className="mt-5 text-lg font-black text-white">
+          <p className="mt-5 text-lg font-semibold text-slate-900">
             {sp.emptyTitle}
           </p>
-          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/40">
+          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-600">
             {sp.emptyBody}
           </p>
         </div>
@@ -639,9 +647,9 @@ export default function CharacterManager({
             return (
               <article
                 key={character.id}
-                className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.035] shadow-[0_20px_70px_rgba(0,0,0,0.22)]"
+                className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm"
               >
-                <div className="relative aspect-[2/1] overflow-hidden bg-black/40 sm:aspect-[21/9]">
+                <div className="relative aspect-[2/1] overflow-hidden bg-gray-100 sm:aspect-[21/9]">
                   {displayImage ? (
                     <img
                       src={displayImage}
@@ -653,10 +661,10 @@ export default function CharacterManager({
                       <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-dashed border-[#d8ad5f]/30 bg-[#d8ad5f]/10 text-[#d8ad5f]">
                         <ImagePlus className="h-6 w-6" />
                       </div>
-                      <p className="text-xs font-black uppercase tracking-[0.28em] text-white/45">
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
                         {sp.noCoverYet}
                       </p>
-                      <p className="max-w-xs text-[11px] leading-5 text-white/30">
+                      <p className="max-w-xs text-[11px] leading-5 text-slate-500">
                         {sp.noCoverHint}
                       </p>
                     </div>
@@ -665,7 +673,7 @@ export default function CharacterManager({
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
 
                   <div className="absolute left-4 top-4 z-10 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-white/10 bg-black/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white backdrop-blur-xl">
+                    <span className="rounded-full border border-gray-200 bg-white/90 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-700 backdrop-blur-sm">
                       {sp.styleProfileBadge}
                     </span>
 
@@ -680,7 +688,7 @@ export default function CharacterManager({
                 <div className="space-y-5 p-5 sm:p-6">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
+                      <h3 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
                         {character.name}
                       </h3>
 
@@ -691,11 +699,11 @@ export default function CharacterManager({
                       )}
 
                         {character.description ? (
-                        <p className="mt-3 text-sm leading-6 text-white/55">
+                        <p className="mt-3 text-sm leading-6 text-slate-600">
                           {character.description}
                         </p>
                       ) : (
-                        <p className="mt-3 text-sm italic text-white/30">
+                        <p className="mt-3 text-sm italic text-slate-500">
                           {sp.noSummary}
                         </p>
                       )}
@@ -705,7 +713,7 @@ export default function CharacterManager({
                       type="button"
                       onClick={() => deleteCharacter(character.id)}
                       disabled={deletingCharacterId === character.id}
-                      className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs font-bold text-white/40 transition hover:border-red-500/25 hover:bg-red-500/10 hover:text-red-100 disabled:opacity-50"
+                      className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-full border border-gray-200 bg-gray-50 px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
                     >
                       {deletingCharacterId === character.id ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -717,35 +725,35 @@ export default function CharacterManager({
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
+                    <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
                         {sp.appearanceDirection}
                       </p>
-                      <p className="mt-2 text-sm leading-6 text-white/55">
+                      <p className="mt-2 text-sm leading-6 text-slate-600">
                         {character.appearance_prompt?.trim() || sp.notDefined}
                       </p>
                     </div>
 
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
+                    <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
                         {sp.styleDirection}
                       </p>
-                      <p className="mt-2 text-sm leading-6 text-white/55">
+                      <p className="mt-2 text-sm leading-6 text-slate-600">
                         {character.style_prompt?.trim() || sp.notDefined}
                       </p>
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-white/10 bg-black/20 p-4 sm:p-5">
+                  <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 sm:p-5">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0">
                         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#d8ad5f]">
                           {sp.visualReferences}
                         </p>
-                        <p className="mt-2 text-sm leading-6 text-white/45">
+                        <p className="mt-2 text-sm leading-6 text-slate-600">
                           {sp.uploadHint}
                         </p>
-                        <p className="mt-1 text-xs text-white/30">
+                        <p className="mt-1 text-xs text-slate-500">
                           {references.length === 1
                             ? formatCopy(sp.referenceCount, {
                                 count: references.length,
@@ -792,10 +800,10 @@ export default function CharacterManager({
                         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#d8ad5f]/15 text-[#d8ad5f]">
                           <Upload className="h-5 w-5" />
                         </div>
-                        <p className="mt-4 text-sm font-black text-white">
+                        <p className="mt-4 text-sm font-semibold text-slate-800">
                           {sp.addReferences}
                         </p>
-                        <p className="mx-auto mt-2 max-w-sm text-xs leading-5 text-white/40">
+                        <p className="mx-auto mt-2 max-w-sm text-xs leading-5 text-slate-600">
                           {sp.addReferencesHint}
                         </p>
                         <span className="mt-5 rounded-full bg-white px-4 py-2 text-xs font-black text-black">
@@ -825,8 +833,8 @@ export default function CharacterManager({
                             className={`group relative aspect-square overflow-hidden rounded-xl border sm:rounded-2xl ${
                               reference.is_primary
                                 ? "border-[#d8ad5f]/60 ring-1 ring-[#d8ad5f]/25"
-                                : "border-white/10"
-                            } bg-black/40`}
+                                : "border-gray-200"
+                            } bg-gray-100`}
                           >
                             <img
                               src={reference.image_url}
@@ -865,7 +873,7 @@ export default function CharacterManager({
                                 onClick={() =>
                                   deleteReferenceImage(reference.id)
                                 }
-                                className="flex h-8 w-9 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white/80 transition hover:border-red-500/30 hover:bg-red-500/20 hover:text-red-100 disabled:opacity-40"
+                                className="flex h-8 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
                                 title={sp.removeReference}
                                 aria-label={sp.removeReference}
                               >

@@ -629,6 +629,11 @@ const en = {
         benefit:
           "Create talking-head creator videos from scripts, voices and visual assets — ideal for UGC-style campaigns.",
       },
+      talkingCreator: {
+        title: "Talking Creator",
+        benefit:
+          "Create a talking creator clip from one image, script and voice.",
+      },
       cinemaAgent: {
         title: "Cinema Agent",
         benefit:
@@ -2243,6 +2248,11 @@ const de: DeepString<typeof en> = {
         benefit:
           "Erstelle Talking-Head-Creator-Videos aus Skripten, Stimmen und Visual Assets — ideal für UGC-ähnliche Kampagnen.",
       },
+      talkingCreator: {
+        title: "Talking Creator",
+        benefit:
+          "Erstelle einen sprechenden Creator-Clip aus Bild, Skript und Stimme.",
+      },
       cinemaAgent: {
         title: "Cinema Agent",
         benefit:
@@ -2289,7 +2299,7 @@ const de: DeepString<typeof en> = {
     templatesSubtitle:
       "Erprobte Prompts für Fitness, Beauty, UGC, Produkt, Restaurant und Brand-Kampagnen.",
     useTemplateCta: "Vorlage nutzen",
-    recentAssetsTitle: "Recent Assets",
+    recentAssetsTitle: "Neueste Assets",
     recentAssetsBody:
       "Arbeite mit deinen neuesten Kampagnenvisuals weiter.",
     recentAssetsEmpty:

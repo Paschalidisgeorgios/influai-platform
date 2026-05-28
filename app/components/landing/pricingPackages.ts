@@ -1,10 +1,16 @@
 export type PackageKey = "starter" | "professional" | "ultimate";
 
-/** Must match Stripe checkout / webhook credit grants (100, 500, 2000). */
+/**
+ * Stripe checkout + webhook currently grant 100 / 500 / 2000 credits per package.
+ * `displayCredits` is shown in dashboard billing UI until backend packages align.
+ */
 export type PricingPackage = {
   key: PackageKey;
   name: string;
+  /** Credits granted at checkout (must match app/api/stripe/*). */
   credits: number;
+  /** Marketing display in dashboard billing UI. */
+  displayCredits: number;
   priceEur: number;
   highlight?: boolean;
   badge?: string;
@@ -15,12 +21,14 @@ export const PRICING_PACKAGES: PricingPackage[] = [
     key: "starter",
     name: "Starter",
     credits: 100,
+    displayCredits: 50,
     priceEur: 9,
   },
   {
     key: "professional",
     name: "Professional",
     credits: 500,
+    displayCredits: 250,
     priceEur: 29,
     highlight: true,
     badge: "Recommended",
@@ -29,6 +37,7 @@ export const PRICING_PACKAGES: PricingPackage[] = [
     key: "ultimate",
     name: "Ultimate",
     credits: 2000,
+    displayCredits: 1000,
     priceEur: 79,
   },
 ];

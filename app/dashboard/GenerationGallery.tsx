@@ -57,15 +57,35 @@ const PAGE_SIZE = 24;
 
 function getStatusClass(status: GenerationStatus) {
   if (status === "completed") {
-    return "border-emerald-500/20 bg-emerald-500/10 text-emerald-200";
+    return "border-green-100 bg-green-50 text-green-700";
   }
 
   if (status === "processing") {
-    return "border-[#d8ad5f]/20 bg-[#d8ad5f]/10 text-[#d8ad5f]";
+    return "border-amber-100 bg-amber-50 text-amber-700";
   }
 
-  return "border-red-500/20 bg-red-500/10 text-red-200";
+  return "border-red-100 bg-red-50 text-red-700";
 }
+
+function getWorkflowBadgeClass(workflow: string | null | undefined) {
+  if (workflow === "creator_video") {
+    return "border-green-100 bg-green-50 text-green-700";
+  }
+  if (workflow === "talking_creator") {
+    return "border-sky-100 bg-sky-50 text-sky-700";
+  }
+  if (workflow === "lip_sync") {
+    return "border-violet-100 bg-violet-50 text-violet-700";
+  }
+  return "border-sky-100 bg-sky-50 text-sky-700";
+}
+
+const filterPillActive =
+  "bg-orange-500 text-white border border-orange-500";
+const filterPillInactive =
+  "border border-gray-200 bg-gray-100 text-slate-600 hover:bg-orange-50 hover:text-orange-700 transition-colors";
+const lightInputClass =
+  "w-full rounded-full border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 outline-none placeholder:text-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-100";
 
 function getStatusLabel(
   status: GenerationStatus,
@@ -439,23 +459,21 @@ export default function GenerationGallery({
   function GenerationVisual({ generation }: { generation: Generation }) {
     if (generation.status === "processing") {
       return (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-white/[0.04] p-6 text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-[#d8ad5f]" />
-          <p className="text-sm font-bold text-white">{g.processingLabel}</p>
-          <p className="line-clamp-3 text-xs text-white/45">{g.processingHint}</p>
+        <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-amber-50 p-6 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
+          <p className="text-sm font-semibold text-amber-800">{g.processingLabel}</p>
+          <p className="line-clamp-3 text-xs text-amber-700">{g.processingHint}</p>
         </div>
       );
     }
 
     if (generation.status === "failed") {
       return (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-red-500/10 p-6 text-center">
-          <AlertCircle className="h-8 w-8 text-red-200" />
-          <p className="text-sm font-bold text-red-100">{g.generationFailed}</p>
-          <p className="text-xs font-semibold text-red-100/80">
-            {g.creditsRefundedHint}
-          </p>
-          <p className="line-clamp-3 text-xs text-red-100/60">
+        <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-red-50 p-6 text-center">
+          <AlertCircle className="h-8 w-8 text-red-600" />
+          <p className="text-sm font-semibold text-red-700">{g.generationFailed}</p>
+          <p className="text-xs font-semibold text-red-600">{g.creditsRefundedHint}</p>
+          <p className="line-clamp-3 text-xs text-red-600">
             {generation.error_message ?? g.unknownError}
           </p>
         </div>
@@ -477,12 +495,12 @@ export default function GenerationGallery({
 
     if (!generation.image_url) {
       return (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-white/[0.04] p-6 text-center">
-          <ImageOff className="h-8 w-8 text-white/50" />
-          <p className="text-sm font-bold text-white">
+        <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gray-50 p-6 text-center">
+          <ImageOff className="h-8 w-8 text-slate-400" />
+          <p className="text-sm font-semibold text-slate-800">
             {isVideoGeneration(generation) ? g.videoUnavailable : g.imageUnavailable}
           </p>
-          <p className="line-clamp-3 text-xs text-white/40">
+          <p className="line-clamp-3 text-xs text-slate-600">
             {isVideoGeneration(generation) ? g.noVideoUrl : g.noImageUrl}
           </p>
         </div>
@@ -491,18 +509,18 @@ export default function GenerationGallery({
 
     if (imageErrors[generation.id]) {
       return (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-white/[0.04] p-6 text-center">
-          <ImageOff className="h-8 w-8 text-white/50" />
+        <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-gray-50 p-6 text-center">
+          <ImageOff className="h-8 w-8 text-slate-400" />
           <div>
-            <p className="text-sm font-bold text-white">{g.imageCouldNotLoad}</p>
-            <p className="mt-2 line-clamp-3 text-xs text-white/40">{g.renderFailed}</p>
+            <p className="text-sm font-semibold text-slate-800">{g.imageCouldNotLoad}</p>
+            <p className="mt-2 line-clamp-3 text-xs text-slate-600">{g.renderFailed}</p>
           </div>
 
           <a
             href={generation.image_url}
             target="_blank"
             rel="noreferrer"
-            className="rounded-full bg-white px-4 py-2 text-xs font-black text-black"
+            className="rounded-full bg-orange-500 px-4 py-2 text-xs font-bold text-white"
             onClick={(event) => event.stopPropagation()}
           >
             {g.openImageDirectly}
@@ -528,19 +546,19 @@ export default function GenerationGallery({
 
   function Toolbar() {
     return (
-      <div className="space-y-3 rounded-[1.5rem] border border-white/10 bg-white/[0.035] p-3 sm:space-y-4 sm:rounded-[2rem] sm:p-4">
+      <div className="space-y-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:space-y-4 sm:p-6">
         <div className="grid gap-3 sm:gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
           <input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder={g.searchPlaceholder}
-            className="w-full rounded-full border border-white/10 bg-black/25 px-5 py-3 text-sm font-medium text-white outline-none placeholder:text-white/35 focus:border-[#d8ad5f]/40"
+            className={lightInputClass}
           />
 
           <select
             value={selectedCharacterId}
             onChange={(event) => setSelectedCharacterId(event.target.value)}
-            className="w-full rounded-full border border-white/10 bg-black/25 px-4 py-2.5 text-sm font-bold text-white outline-none focus:border-[#d8ad5f]/40 sm:px-5 sm:py-3"
+            className={`${lightInputClass} font-semibold`}
           >
             <option value="all">{g.allStyleProfiles}</option>
             <option value="free">{g.noStyleProfile}</option>
@@ -566,10 +584,8 @@ export default function GenerationGallery({
               key={status.key}
               type="button"
               onClick={() => setStatusFilter(status.key)}
-              className={`rounded-full px-3 py-2 text-xs font-bold transition sm:px-5 sm:py-3 sm:text-sm ${
-                statusFilter === status.key
-                  ? "bg-white text-black"
-                  : "border border-white/10 bg-black/25 text-white"
+              className={`min-h-[44px] rounded-full px-3 py-2 text-xs font-semibold sm:px-5 sm:py-2.5 sm:text-sm ${
+                statusFilter === status.key ? filterPillActive : filterPillInactive
               }`}
             >
               {status.label}
@@ -583,10 +599,8 @@ export default function GenerationGallery({
                 current === "favorites" ? "all" : "favorites"
               )
             }
-            className={`rounded-full px-3 py-2 text-xs font-bold transition sm:px-5 sm:py-3 sm:text-sm ${
-              favoriteFilter === "favorites"
-                ? "bg-[#d8ad5f] text-black"
-                : "border border-white/10 bg-black/25 text-white"
+            className={`min-h-[44px] rounded-full px-3 py-2 text-xs font-semibold sm:px-5 sm:py-2.5 sm:text-sm ${
+              favoriteFilter === "favorites" ? filterPillActive : filterPillInactive
             }`}
           >
             {g.favorites}
@@ -598,7 +612,7 @@ export default function GenerationGallery({
 
   if (loading) {
     return (
-      <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] py-20 text-center text-white/60">
+      <div className="rounded-2xl border border-gray-100 bg-white py-20 text-center text-slate-600 shadow-sm">
         {g.loading}
       </div>
     );
@@ -610,8 +624,8 @@ export default function GenerationGallery({
         <Toolbar />
 
         {generations.length === 0 ? (
-          <div className="rounded-[2rem] border border-dashed border-[#d8ad5f]/20 bg-[#d8ad5f]/[0.03] px-6 py-16 text-center sm:py-20">
-            <p className="text-lg font-black text-white">
+          <div className="rounded-2xl border border-dashed border-orange-200 bg-orange-50/50 px-6 py-16 text-center sm:py-20">
+            <p className="text-lg font-semibold text-slate-900">
               {debouncedSearchQuery.trim() ||
               statusFilter !== "all" ||
               favoriteFilter === "favorites" ||
@@ -619,7 +633,7 @@ export default function GenerationGallery({
                 ? g.searchEmptyTitle
                 : g.emptyTitle}
             </p>
-            <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/45">
+            <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-600">
               {debouncedSearchQuery.trim() ||
               statusFilter !== "all" ||
               favoriteFilter === "favorites" ||
@@ -633,7 +647,7 @@ export default function GenerationGallery({
             {generations.map((generation) => (
               <div
                 key={generation.id}
-                className="group overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-[0_16px_50px_rgba(0,0,0,0.28)] sm:rounded-3xl"
+                className="group overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm sm:rounded-3xl"
               >
                 <div
                   className={`relative overflow-hidden ${getImageAspectClass(
@@ -674,10 +688,10 @@ export default function GenerationGallery({
                   </button>
                 </div>
 
-                <div className="space-y-2.5 p-3 sm:space-y-3 sm:p-4">
+                <div className="space-y-2.5 border-t border-gray-100 bg-gray-50 p-3 sm:space-y-3 sm:p-4">
                   <div className="flex flex-wrap gap-2">
                     <span
-                      className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${getStatusClass(
+                      className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wide ${getStatusClass(
                         generation.status
                       )}`}
                     >
@@ -688,7 +702,7 @@ export default function GenerationGallery({
                       })}
                     </span>
 
-                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/45">
+                    <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-600">
                       {getWorkflowLabel(generation.workflow, {
                         standard: g.standard,
                         video: g.videoBadge,
@@ -700,37 +714,53 @@ export default function GenerationGallery({
                     </span>
 
                     {generation.workflow === "creator_video" ? (
-                      <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-100">
+                      <span
+                        className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wide ${getWorkflowBadgeClass(
+                          generation.workflow
+                        )}`}
+                      >
                         {g.creatorVideoBadge}
                       </span>
                     ) : generation.workflow === "talking_creator" ? (
-                      <span className="rounded-full border border-cyan-500/25 bg-cyan-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-cyan-100">
+                      <span
+                        className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wide ${getWorkflowBadgeClass(
+                          generation.workflow
+                        )}`}
+                      >
                         {g.talkingCreatorBadge}
                       </span>
                     ) : generation.workflow === "lip_sync" ? (
-                      <span className="rounded-full border border-violet-500/25 bg-violet-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-violet-100">
+                      <span
+                        className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wide ${getWorkflowBadgeClass(
+                          generation.workflow
+                        )}`}
+                      >
                         {g.lipSyncBadge}
                       </span>
                     ) : isVideoGeneration(generation) ? (
-                      <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-sky-100">
+                      <span
+                        className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wide ${getWorkflowBadgeClass(
+                          generation.workflow
+                        )}`}
+                      >
                         {g.videoBadge}
                       </span>
                     ) : null}
 
                     {(generation.output_format ||
                       generation.social_platform) && (
-                      <span className="rounded-full border border-[#d8ad5f]/20 bg-[#d8ad5f]/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#d8ad5f]">
+                      <span className="rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-700">
                         {generation.output_format ??
                           generation.social_platform}
                       </span>
                     )}
                   </div>
 
-                  <p className="line-clamp-2 text-sm text-white/70">
+                  <p className="line-clamp-2 text-sm text-slate-700">
                     {generation.prompt}
                   </p>
 
-                  <div className="flex items-center justify-between gap-3 text-xs text-white/35">
+                  <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
                     <span>
                       {generation.credits_used != null
                         ? generation.credits_used === 1
@@ -756,7 +786,7 @@ export default function GenerationGallery({
               type="button"
               disabled={loadingMore}
               onClick={() => loadGenerations(generations.length)}
-              className="rounded-full bg-white px-6 py-3 text-sm font-bold text-black transition hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+              className="min-h-[44px] rounded-full bg-orange-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loadingMore ? g.loadingMore : g.loadMore}
             </button>

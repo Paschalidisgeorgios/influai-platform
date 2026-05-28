@@ -137,7 +137,7 @@ export function PricingSection({
                     {language === "en" ? "Credits included" : "Enthaltene Credits"}
                   </p>
                   <p className="mt-1 text-2xl font-black text-white sm:text-3xl">
-                    {formatCredits(plan.credits)}{" "}
+                    {formatCredits(plan.displayCredits)}{" "}
                     <span className="text-lg font-bold text-white/55 sm:text-xl">
                       Credits
                     </span>

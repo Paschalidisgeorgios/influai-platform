@@ -41,7 +41,7 @@ export default function DashboardTopBar({
         <h1 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
           {t.welcome}
         </h1>
-        <p className="mt-0.5 text-sm text-slate-500">{t.subline}</p>
+        <p className="mt-0.5 text-sm text-slate-600">{t.subline}</p>
         </div>
       </div>
 

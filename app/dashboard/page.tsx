@@ -111,7 +111,7 @@ function ViewShell({
               {title}
             </h2>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
               {description}
             </p>
 
@@ -386,22 +386,6 @@ function DashboardPageInner() {
     void loadHomeMetrics();
   }, [authChecked, creditsRefreshKey]);
 
-  function handleHomeQuickAction(action: "template" | "gallery" | "style" | "credits") {
-    if (action === "template") {
-      openCreateStudio("image");
-      return;
-    }
-    if (action === "gallery") {
-      openView("gallery");
-      return;
-    }
-    if (action === "style") {
-      openView("style_profiles");
-      return;
-    }
-    openView("credits");
-  }
-
   const studioWorkspaceProps = {
     charactersRefreshKey,
     regenerateDraft,
@@ -421,7 +405,6 @@ function DashboardPageInner() {
           videoStudioEnabled={VIDEO_STUDIO_PUBLIC_ENABLED}
           lipSyncEnabled={LIP_SYNC_PUBLIC_ENABLED}
           onOpenStudio={openCreateStudio}
-          onQuickAction={handleHomeQuickAction}
           onRegenerate={(prompt) => handleRegenerate(prompt, null)}
         />
       );
@@ -486,12 +469,14 @@ function DashboardPageInner() {
           title={copy.page.characters.title}
           description={copy.page.characters.description}
         >
+          <div className="pb-12">
           <CharacterManager
             onCharactersChange={() => {
               setCharactersRefreshKey((current) => current + 1);
               showStatus(copy.page.styleProfilesUpdated);
             }}
           />
+          </div>
         </ViewShell>
       );
     }
