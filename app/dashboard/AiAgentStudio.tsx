@@ -4327,9 +4327,14 @@ export default function AiAgentStudio({
     }
   }
 
+  const studioLight = Boolean(lockedWorkspace);
   const formSurfaceClass = showSplitWorkspace
-    ? "relative isolate flex h-full min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl"
-    : "relative isolate w-full max-w-3xl overflow-visible rounded-[1.75rem] border border-white/10 bg-white/[0.05] shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl";
+    ? studioLight
+      ? "relative isolate flex h-full min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+      : "relative isolate flex h-full min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+    : studioLight
+      ? "relative isolate w-full max-w-3xl overflow-visible rounded-2xl border border-gray-200 bg-white shadow-sm"
+      : "relative isolate w-full max-w-3xl overflow-visible rounded-[1.75rem] border border-white/10 bg-white/[0.05] shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl";
 
   function renderComposerContent() {
     const useCaseChips = [
@@ -4384,7 +4389,11 @@ export default function AiAgentStudio({
               onChange={(event) => setPrompt(event.target.value)}
               onKeyDown={submitFromTextarea}
               placeholder={typedExample || a.promptPlaceholder}
-              className={`w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-4 text-white outline-none placeholder:text-white/30 focus-visible:ring-2 focus-visible:ring-[#d8ad5f]/35 ${
+              className={`w-full resize-none rounded-2xl border px-4 py-4 outline-none focus-visible:ring-2 focus-visible:ring-[#d8ad5f]/35 ${
+                studioLight
+                  ? "border-gray-200 bg-gray-50 text-slate-900 placeholder:text-slate-400"
+                  : "border-white/10 bg-black/35 text-white placeholder:text-white/30"
+              } ${
                 showSplitWorkspace
                   ? "min-h-[88px] text-sm leading-relaxed"
                   : "min-h-[132px] text-base leading-relaxed sm:min-h-[148px] sm:text-lg"
@@ -4885,7 +4894,11 @@ export default function AiAgentStudio({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
-        className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur-xl"
+        className={
+          studioLight
+            ? "flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+            : "flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur-xl"
+        }
       >
         <div className="shrink-0 border-b border-white/10 px-4 py-4 sm:px-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -5461,22 +5474,38 @@ export default function AiAgentStudio({
   return (
     <section
       id="agent"
-      className="relative flex h-full min-h-0 flex-col overflow-hidden bg-[#06060a]"
+      className={`relative flex h-full min-h-0 flex-col overflow-hidden ${
+        studioLight ? "bg-gray-50" : "bg-[#06060a]"
+      }`}
     >
-      <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-50">
-        <div className="agent-film-bg absolute inset-0" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(6,6,10,0.95),rgba(6,6,10,0.88))]" />
-      </div>
+      {!studioLight ? (
+        <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-50">
+          <div className="agent-film-bg absolute inset-0" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(6,6,10,0.95),rgba(6,6,10,0.88))]" />
+        </div>
+      ) : null}
 
       <div className="relative z-10 flex h-full min-h-0 flex-col overflow-hidden px-3 py-3 sm:px-5 sm:py-4">
         {statusMessage ? (
-          <div className="mb-2 shrink-0 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-xs font-bold text-white">
+          <div
+            className={`mb-2 shrink-0 rounded-xl border px-3 py-2 text-xs font-bold ${
+              studioLight
+                ? "border-amber-200 bg-amber-50 text-amber-900"
+                : "border-white/10 bg-white/[0.06] text-white"
+            }`}
+          >
             {statusMessage}
           </div>
         ) : null}
 
         {errorMessage ? (
-          <div className="mb-2 flex shrink-0 items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-100">
+          <div
+            className={`mb-2 flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold ${
+              studioLight
+                ? "border-red-200 bg-red-50 text-red-800"
+                : "border-red-500/30 bg-red-500/10 text-red-100"
+            }`}
+          >
             <AlertCircle className="h-3.5 w-3.5 shrink-0" />
             <span>{errorMessage}</span>
           </div>

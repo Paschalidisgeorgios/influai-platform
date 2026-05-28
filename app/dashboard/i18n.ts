@@ -147,6 +147,30 @@ const en = {
       },
     },
   },
+  dashboardNav: {
+    dashboard: { label: "Dashboard", sublabel: "Overview" },
+    createStudio: {
+      label: "AI Create Studio",
+      sublabel: "Create assets",
+      workspaceTitle: "AI Create Studio",
+      workspaceSubline:
+        "Pick a mode — image, video or lip sync — and generate in one focused workspace.",
+      tabImage: "Image",
+      tabVideo: "Video",
+      tabLipSync: "Lip Sync",
+    },
+    gallery: { label: "Asset Gallery", sublabel: "Manage assets" },
+    styleProfiles: { label: "Style Profiles", sublabel: "Reusable styles" },
+    credits: { label: "Credits / Billing", sublabel: "Plans and balance" },
+    upcoming: { label: "Upcoming", sublabel: "Future tools" },
+    topBar: {
+      welcome: "Welcome back, Georgios! 👋",
+      subline: "Ready to create your next campaign asset?",
+      searchPlaceholder: "Search assets, templates or workflows…",
+      creditsAvailable: "{count} Credits available",
+      addCredits: "Add Credits",
+    },
+  },
   studioSuite: {
     title: "Studio Modes",
     description:
@@ -633,6 +657,9 @@ const en = {
     },
   },
   home: {
+    chooseStudio: "Choose your studio",
+    chooseStudioSubline:
+      "Start with images, turn assets into videos or create talking creator clips.",
     eyebrow: "Creator Command Center",
     welcome: "Welcome back, Georgios",
     intro:
@@ -650,8 +677,15 @@ const en = {
     useTemplateCta: "Use Template",
     recentAssetsTitle: "Recent Assets",
     recentAssetsBody: "Continue working with your latest campaign visuals.",
-    recentAssetsEmpty: "No assets yet — create your first visual in the AI Agent.",
-    createFirstVisual: "Create first visual",
+    recentAssetsEmpty:
+      "No assets yet. Create your first campaign visual in the AI Create Studio.",
+    createFirstVisual: "Open Image Studio",
+    quickActionsPills: {
+      useTemplate: "Use Template",
+      viewGallery: "View Gallery",
+      createStyleProfile: "Create Style Profile",
+      addCredits: "Add Credits",
+    },
     assetOpen: "Open",
     assetVariant: "Create Variant",
     assetReference: "Use as Reference",
@@ -669,20 +703,20 @@ const en = {
       enoughFor: "Enough for up to {count} standard images.",
     },
     toolCards: {
-      open: "Open",
-      start: "Start",
+      open: "Open Studio",
+      start: "Open Studio",
       comingSoon: "Coming soon",
       imageStudio: {
         title: "Image Studio",
-        body: "Create campaign-ready visuals for social media, ads and product campaigns.",
+        body: "Create campaign-ready visuals for social media, ads, product campaigns and creator content.",
       },
       videoStudio: {
         title: "Video Studio",
-        body: "Turn static visuals into short-form campaign videos.",
+        body: "Turn static visuals into short-form campaign videos for social media, launches and creator campaigns.",
       },
       lipSync: {
-        title: "Lip Sync",
-        body: "Create talking-head creator videos with voice and source video.",
+        title: "Lip-Sync Studio",
+        body: "Create talking creator clips from source videos, scripts, voices or uploaded audio.",
       },
       creatorVideo: {
         title: "Creator Video",
@@ -1726,6 +1760,30 @@ const de: DeepString<typeof en> = {
       },
     },
   },
+  dashboardNav: {
+    dashboard: { label: "Dashboard", sublabel: "Übersicht" },
+    createStudio: {
+      label: "AI Create Studio",
+      sublabel: "Assets erstellen",
+      workspaceTitle: "AI Create Studio",
+      workspaceSubline:
+        "Wähle einen Modus — Bild, Video oder Lip Sync — und generiere in einem fokussierten Workspace.",
+      tabImage: "Bild",
+      tabVideo: "Video",
+      tabLipSync: "Lip Sync",
+    },
+    gallery: { label: "Asset Gallery", sublabel: "Assets verwalten" },
+    styleProfiles: { label: "Style Profiles", sublabel: "Wiederverwendbare Styles" },
+    credits: { label: "Credits / Billing", sublabel: "Pakete und Guthaben" },
+    upcoming: { label: "Demnächst", sublabel: "Zukünftige Tools" },
+    topBar: {
+      welcome: "Willkommen zurück, Georgios! 👋",
+      subline: "Bereit für dein nächstes Kampagnen-Asset?",
+      searchPlaceholder: "Assets, Vorlagen oder Workflows suchen…",
+      creditsAvailable: "{count} Credits verfügbar",
+      addCredits: "Credits aufladen",
+    },
+  },
   studioSuite: {
     title: "Studio-Modi",
     description:
@@ -2213,6 +2271,9 @@ const de: DeepString<typeof en> = {
     },
   },
   home: {
+    chooseStudio: "Wähle dein Studio",
+    chooseStudioSubline:
+      "Starte mit Bildern, verwandle Assets in Videos oder erstelle sprechende Creator-Clips.",
     eyebrow: "Creator Command Center",
     welcome: "Willkommen zurück, Georgios",
     intro:
@@ -2232,8 +2293,14 @@ const de: DeepString<typeof en> = {
     recentAssetsBody:
       "Arbeite mit deinen neuesten Kampagnenvisuals weiter.",
     recentAssetsEmpty:
-      "Noch keine Assets — erstelle dein erstes Visual im AI Agent.",
-    createFirstVisual: "Erstes Visual erstellen",
+      "Noch keine Assets. Erstelle dein erstes Kampagnenvisual im AI Create Studio.",
+    createFirstVisual: "Image Studio öffnen",
+    quickActionsPills: {
+      useTemplate: "Vorlage nutzen",
+      viewGallery: "Galerie öffnen",
+      createStyleProfile: "Style Profile erstellen",
+      addCredits: "Credits aufladen",
+    },
     assetOpen: "Öffnen",
     assetVariant: "Variante erstellen",
     assetReference: "Als Referenz nutzen",
@@ -2251,20 +2318,20 @@ const de: DeepString<typeof en> = {
       enoughFor: "Reicht für bis zu {count} Standard-Bilder.",
     },
     toolCards: {
-      open: "Öffnen",
-      start: "Starten",
+      open: "Studio öffnen",
+      start: "Studio öffnen",
       comingSoon: "Demnächst",
       imageStudio: {
         title: "Image Studio",
-        body: "Erstelle kampagnenfähige Visuals für Social Media, Ads und Produktkampagnen.",
+        body: "Erstelle kampagnenfähige Visuals für Social Media, Ads, Produktkampagnen und Creator Content.",
       },
       videoStudio: {
         title: "Video Studio",
-        body: "Verwandle statische Visuals in kurze Kampagnenvideos.",
+        body: "Verwandle statische Visuals in kurze Kampagnenvideos für Social Media, Launches und Creator-Kampagnen.",
       },
       lipSync: {
-        title: "Lip Sync",
-        body: "Erstelle Talking-Head-Creator-Videos mit Stimme und Quellvideo.",
+        title: "Lip-Sync Studio",
+        body: "Erstelle sprechende Creator-Clips aus Quellvideos, Skripten, Stimmen oder hochgeladenem Audio.",
       },
       creatorVideo: {
         title: "Creator Video",

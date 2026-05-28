@@ -4,18 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LogOut, Menu, Sparkles, X } from "lucide-react";
-import CampaignPlanner from "./CampaignPlanner";
 import CharacterManager from "./CharacterManager";
-import CompactCredits from "./CompactCredits";
 import { DashboardLanguageProvider, useDashboardLanguage } from "./DashboardLanguageProvider";
 import CreditsCard from "./CreditsCard";
 import GenerationGallery from "./GenerationGallery";
 import LanguageSelector from "./LanguageSelector";
 import ToolsRoadmap from "./ToolsRoadmap";
+import CreateStudioHub, { type CreateStudioTab } from "./components/CreateStudioHub";
 import CreatorHubHome from "./components/CreatorHubHome";
-import DashboardToolRail, { type ToolRailView } from "./components/DashboardToolRail";
-import MotionTransferWorkspace from "./components/MotionTransferWorkspace";
-import StudioWorkspaceView from "./components/StudioWorkspaceView";
+import DashboardSidebar, { type DashboardNavView } from "./components/DashboardSidebar";
+import DashboardTopBar from "./components/DashboardTopBar";
 import { createClient } from "@/lib/supabase/client";
 import type { DashboardCopy } from "./i18n";
 
@@ -35,17 +33,9 @@ type RegenerateDraft = {
   loadedAt?: number;
 };
 
-type DashboardView =
-  | ToolRailView
-  | "planner";
+type DashboardView = DashboardNavView;
 
-const STUDIO_FULL_VIEWS: DashboardView[] = [
-  "image_studio",
-  "video_studio",
-  "lip_sync",
-  "creator_video",
-  "talking_creator",
-];
+const STUDIO_FULL_VIEWS: DashboardView[] = ["create_studio"];
 
 type DashboardHomeMetrics = {
   credits: number;
@@ -72,32 +62,27 @@ type SidebarBadge = {
 
 function getSidebarBadgeClass(variant: SidebarBadgeVariant) {
   if (variant === "beta") {
-    return "border-violet-500/30 bg-violet-500/10 text-violet-100";
+    return "border-amber-200 bg-amber-50 text-amber-700";
   }
 
   if (variant === "credits") {
-    return "border-emerald-500/25 bg-emerald-500/10 text-emerald-200";
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
 
-  return "border-emerald-500/25 bg-emerald-500/10 text-emerald-200";
+  return "border-green-200 bg-green-50 text-green-700";
 }
 
 function getViewLabel(view: DashboardView, copy: DashboardCopy) {
-  const labels: Record<string, string> = {
-    home: copy.toolRail.home,
-    image_studio: copy.toolRail.imageStudio,
-    video_studio: copy.toolRail.videoStudio,
-    lip_sync: copy.toolRail.lipSync,
-    creator_video: copy.toolRail.creatorVideo,
-    talking_creator: copy.toolRail.talkingCreator,
-    motion_transfer: copy.toolRail.motionTransfer,
-    gallery: copy.toolRail.gallery,
-    style_profiles: copy.toolRail.styleProfiles,
-    credits: copy.toolRail.credits,
-    tools: copy.toolRail.toolsOverview,
-    planner: copy.page.planner.title,
+  const nav = copy.dashboardNav;
+  const labels: Record<DashboardView, string> = {
+    home: nav.dashboard.label,
+    create_studio: nav.createStudio.label,
+    gallery: nav.gallery.label,
+    style_profiles: nav.styleProfiles.label,
+    credits: nav.credits.label,
+    upcoming: nav.upcoming.label,
   };
-  return labels[view] ?? copy.toolRail.home;
+  return labels[view];
 }
 
 function ViewShell({
@@ -115,20 +100,18 @@ function ViewShell({
 }) {
   return (
     <section className="space-y-5 sm:space-y-6">
-      <div className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.035] p-4 shadow-[0_20px_70px_rgba(0,0,0,0.28)] sm:rounded-[2rem] sm:p-6">
+      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
         <div className="relative">
-          <div className="pointer-events-none absolute right-0 top-0 h-40 w-40 rounded-full bg-[#d8ad5f]/10 blur-3xl" />
-
           <div className="relative z-10">
-            <p className="text-[10px] font-black uppercase tracking-[0.34em] text-[#d8ad5f]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400">
               {eyebrow}
             </p>
 
-            <h2 className="mt-3 text-2xl font-black tracking-tight text-white sm:text-3xl lg:text-4xl">
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
               {title}
             </h2>
 
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/45">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
               {description}
             </p>
 
@@ -164,11 +147,13 @@ export default function DashboardPage() {
 }
 
 function DashboardPageInner() {
-  const { copy, language } = useDashboardLanguage();
+  const { copy } = useDashboardLanguage();
   const supabase = createClient();
   const router = useRouter();
 
   const [activeView, setActiveView] = useState<DashboardView>("home");
+  const [createStudioTab, setCreateStudioTab] = useState<CreateStudioTab>("image");
+  const [homeSearchQuery, setHomeSearchQuery] = useState("");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const [galleryRefreshKey, setGalleryRefreshKey] = useState(0);
@@ -311,6 +296,12 @@ function DashboardPageInner() {
     setMobileSidebarOpen(false);
   }
 
+  function openCreateStudio(tab: CreateStudioTab) {
+    setCreateStudioTab(tab);
+    setActiveView("create_studio");
+    setMobileSidebarOpen(false);
+  }
+
   function handleGenerationQueued() {
     setGalleryRefreshKey((current) => current + 1);
     setCreditsRefreshKey((current) => current + 1);
@@ -327,21 +318,8 @@ function DashboardPageInner() {
       loadedAt: Date.now(),
     });
 
-    setActiveView("image_studio");
-    setMobileSidebarOpen(false);
+    openCreateStudio("image");
     showStatus(copy.page.promptLoaded);
-  }
-
-  function handleUseCampaignPrompt(prompt: string) {
-    setRegenerateDraft({
-      prompt,
-      characterId: null,
-      source: "campaign_planner",
-      loadedAt: Date.now(),
-    });
-
-    setActiveView("image_studio");
-    setMobileSidebarOpen(false);
   }
 
   function handleClearRegenerateDraft() {
@@ -404,19 +382,24 @@ function DashboardPageInner() {
   }
 
   useEffect(() => {
+    if (!authChecked) return;
     void loadHomeMetrics();
-  }, []);
+  }, [authChecked, creditsRefreshKey]);
 
-  function openAgentWithPrompt(prompt: string) {
-    setRegenerateDraft({
-      prompt,
-      characterId: null,
-      source: "gallery",
-      loadedAt: Date.now(),
-    });
-    setActiveView("image_studio");
-    setMobileSidebarOpen(false);
-    showStatus(copy.page.promptLoaded);
+  function handleHomeQuickAction(action: "template" | "gallery" | "style" | "credits") {
+    if (action === "template") {
+      openCreateStudio("image");
+      return;
+    }
+    if (action === "gallery") {
+      openView("gallery");
+      return;
+    }
+    if (action === "style") {
+      openView("style_profiles");
+      return;
+    }
+    openView("credits");
   }
 
   const studioWorkspaceProps = {
@@ -432,49 +415,30 @@ function DashboardPageInner() {
     if (activeView === "home") {
       return (
         <CreatorHubHome
-          metrics={homeMetrics}
           loading={homeLoading}
           recentAssets={recentAssets}
+          searchQuery={homeSearchQuery}
           videoStudioEnabled={VIDEO_STUDIO_PUBLIC_ENABLED}
           lipSyncEnabled={LIP_SYNC_PUBLIC_ENABLED}
-          creatorVideoEnabled={CREATOR_VIDEO_PUBLIC_ENABLED}
-          talkingCreatorEnabled={TALKING_CREATOR_PUBLIC_ENABLED}
-          onOpenTool={openView}
-          onOpenAgentWithPrompt={openAgentWithPrompt}
+          onOpenStudio={openCreateStudio}
+          onQuickAction={handleHomeQuickAction}
           onRegenerate={(prompt) => handleRegenerate(prompt, null)}
         />
       );
     }
 
-    if (activeView === "image_studio") {
-      return <StudioWorkspaceView workspace="image" {...studioWorkspaceProps} />;
-    }
-
-    if (activeView === "video_studio") {
-      return <StudioWorkspaceView workspace="video" {...studioWorkspaceProps} />;
-    }
-
-    if (activeView === "lip_sync") {
-      return <StudioWorkspaceView workspace="lip_sync" {...studioWorkspaceProps} />;
-    }
-
-    if (activeView === "creator_video") {
+    if (activeView === "create_studio") {
       return (
-        <StudioWorkspaceView workspace="creator_video" {...studioWorkspaceProps} />
+        <CreateStudioHub
+          initialTab={createStudioTab}
+          videoStudioEnabled={VIDEO_STUDIO_PUBLIC_ENABLED}
+          lipSyncEnabled={LIP_SYNC_PUBLIC_ENABLED}
+          {...studioWorkspaceProps}
+        />
       );
     }
 
-    if (activeView === "talking_creator") {
-      return (
-        <StudioWorkspaceView workspace="talking_creator" {...studioWorkspaceProps} />
-      );
-    }
-
-    if (activeView === "motion_transfer") {
-      return <MotionTransferWorkspace />;
-    }
-
-    if (activeView === "tools") {
+    if (activeView === "upcoming") {
       return (
         <ViewShell
           eyebrow={copy.page.tools.eyebrow}
@@ -487,11 +451,11 @@ function DashboardPageInner() {
             creatorVideoEnabled={CREATOR_VIDEO_PUBLIC_ENABLED}
             lipSyncEnabled={LIP_SYNC_PUBLIC_ENABLED}
             talkingCreatorEnabled={TALKING_CREATOR_PUBLIC_ENABLED}
-            onOpenImageStudio={() => openView("image_studio")}
-            onOpenVideoStudio={() => openView("video_studio")}
-            onOpenLipSync={() => openView("lip_sync")}
-            onOpenCreatorVideo={() => openView("creator_video")}
-            onOpenTalkingCreator={() => openView("talking_creator")}
+            onOpenImageStudio={() => openCreateStudio("image")}
+            onOpenVideoStudio={() => openCreateStudio("video")}
+            onOpenLipSync={() => openCreateStudio("lip_sync")}
+            onOpenCreatorVideo={() => openCreateStudio("image")}
+            onOpenTalkingCreator={() => openCreateStudio("lip_sync")}
             onOpenGallery={() => openView("gallery")}
             onOpenStyleProfiles={() => openView("style_profiles")}
             onOpenCredits={() => openView("credits")}
@@ -532,28 +496,6 @@ function DashboardPageInner() {
       );
     }
 
-    if (activeView === "planner") {
-      return (
-        <ViewShell
-          eyebrow={copy.page.planner.eyebrow}
-          title={copy.page.planner.title}
-          description={copy.page.planner.description}
-          badges={[
-            {
-              label: copy.campaignPlanner.badges.planningBeta,
-              variant: "beta",
-            },
-            {
-              label: copy.campaignPlanner.badges.noCredits,
-              variant: "credits",
-            },
-          ]}
-        >
-          <CampaignPlanner onUsePrompt={handleUseCampaignPrompt} />
-        </ViewShell>
-      );
-    }
-
     return (
       <ViewShell
         eyebrow={copy.page.credits.eyebrow}
@@ -587,38 +529,8 @@ function DashboardPageInner() {
             </div>
           </Link>
 
-          <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-white/[0.035] p-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/[0.08] text-sm font-black text-white">
-                G
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-black text-white">
-                  Georgios Paschalidis
-                </p>
-                <p className="text-xs font-medium text-white/35">
-                  {copy.sidebar.workspaceOwner}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-3">
-              <LanguageSelector compact />
-            </div>
-          </div>
-
-          <div className="mt-7">
-            <DashboardToolRail
-              activeView={
-                activeView === "planner" ? "tools" : (activeView as ToolRailView)
-              }
-              videoStudioEnabled={VIDEO_STUDIO_PUBLIC_ENABLED}
-              lipSyncEnabled={LIP_SYNC_PUBLIC_ENABLED}
-              creatorVideoEnabled={CREATOR_VIDEO_PUBLIC_ENABLED}
-              talkingCreatorEnabled={TALKING_CREATOR_PUBLIC_ENABLED}
-              onNavigate={openView}
-            />
+          <div className="mt-6">
+            <DashboardSidebar activeView={activeView} onNavigate={openView} />
           </div>
         </div>
 
@@ -638,21 +550,15 @@ function DashboardPageInner() {
 
   return (
     !authChecked ? (
-      <main className="flex h-screen items-center justify-center bg-[#050505] text-white">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-white/80">
+      <main className="flex h-screen items-center justify-center bg-gray-50 text-slate-900">
+        <div className="rounded-2xl border border-gray-100 bg-white px-5 py-3 text-sm font-semibold text-slate-600 shadow-sm">
           Loading your studio session…
         </div>
       </main>
     ) : (
-    <main className="flex h-screen flex-col overflow-hidden bg-[#050505] text-white">
-      <div className="pointer-events-none fixed inset-0">
-        <div className="absolute left-[18%] top-[14%] h-[360px] w-[360px] rounded-full bg-[#d8ad5f]/8 blur-[120px]" />
-        <div className="absolute bottom-[8%] left-[22%] h-[280px] w-[280px] rounded-full bg-violet-700/10 blur-[130px]" />
-        <div className="absolute right-[10%] top-[20%] h-[300px] w-[300px] rounded-full bg-white/[0.03] blur-[120px]" />
-      </div>
-
+    <main className="flex h-screen flex-col overflow-hidden bg-gray-50 text-slate-900">
       <div className="relative z-10 flex min-h-0 flex-1 overflow-hidden">
-        <aside className="hidden h-full w-[280px] shrink-0 border-r border-white/10 bg-black/75 p-4 backdrop-blur-2xl lg:block">
+        <aside className="hidden h-full w-[280px] shrink-0 border-r border-slate-800 bg-slate-900 p-4 lg:block">
           <div className="sticky top-4 h-[calc(100vh-32px)] overflow-y-auto overscroll-contain pr-1">
             <SidebarContent />
           </div>
@@ -660,16 +566,16 @@ function DashboardPageInner() {
 
         {mobileSidebarOpen && (
           <div
-            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm lg:hidden"
             onClick={() => setMobileSidebarOpen(false)}
             role="presentation"
           >
             <div
-              className="absolute left-0 top-0 flex h-full w-[88%] max-w-[340px] flex-col border-r border-white/10 bg-[#070707] p-4"
+              className="absolute left-0 top-0 flex h-full w-[88%] max-w-[340px] flex-col border-r border-slate-800 bg-slate-900 p-4"
               onClick={(event) => event.stopPropagation()}
             >
               <div className="mb-4 flex items-center justify-between">
-                <p className="text-sm font-black text-white">{copy.sidebar.studioMenu}</p>
+                <p className="text-sm font-semibold text-white">{copy.sidebar.studioMenu}</p>
 
                 <button
                   type="button"
@@ -687,74 +593,63 @@ function DashboardPageInner() {
           </div>
         )}
 
-        <section className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="fixed right-5 top-5 z-50 hidden items-center gap-2 lg:flex">
-            <LanguageSelector />
-            <CompactCredits
-              refreshKey={creditsRefreshKey}
-              onOpenCredits={() => setActiveView("credits")}
+        <section className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gray-50">
+          {activeView === "home" ? (
+            <DashboardTopBar
+              credits={homeMetrics.credits}
+              creditsLoading={homeLoading}
+              searchQuery={homeSearchQuery}
+              onSearchChange={setHomeSearchQuery}
+              onAddCredits={() => openView("credits")}
+              onOpenMenu={() => setMobileSidebarOpen(true)}
             />
-          </div>
-
-          <header className="sticky top-0 z-40 border-b border-white/10 bg-black/60 backdrop-blur-2xl lg:hidden">
-            <div className="flex items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-4 sm:py-4">
-              <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+          ) : (
+            <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-gray-100 bg-white px-4 py-3 sm:px-6">
+              <div className="flex min-w-0 items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setMobileSidebarOpen(true)}
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-white/70"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-slate-600 lg:hidden"
                 >
                   <Menu className="h-4 w-4" />
                 </button>
-
                 <div className="min-w-0">
-                  <p className="truncate text-[10px] font-black uppercase tracking-[0.24em] text-[#d8ad5f] sm:text-xs sm:tracking-[0.28em]">
+                  <p className="truncate text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">
                     InfluExAi
                   </p>
-                  <h1 className="truncate text-base font-black tracking-tight text-white sm:text-lg">
+                  <h1 className="truncate text-base font-semibold text-slate-900 sm:text-lg">
                     {activeLabel}
                   </h1>
                 </div>
               </div>
-
               <div className="flex shrink-0 items-center gap-2">
                 <LanguageSelector compact />
-                <CompactCredits
-                  refreshKey={creditsRefreshKey}
-                  onOpenCredits={() => setActiveView("credits")}
-                />
               </div>
-            </div>
-          </header>
+            </header>
+          )}
 
           <div
             className={
               STUDIO_FULL_VIEWS.includes(activeView)
-                ? "min-h-screen"
-                : "min-h-0 h-full overflow-y-auto overscroll-contain px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:pt-24"
+                ? "flex min-h-0 flex-1 flex-col overflow-hidden p-4 sm:p-6"
+                : "min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-6 sm:px-6 md:px-8"
             }
           >
-            {!STUDIO_FULL_VIEWS.includes(activeView) ? (
-              <div className="mx-auto w-full max-w-[1700px]">
-                {statusMessage && (
-                  <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-bold text-white shadow-[0_10px_40px_rgba(0,0,0,0.25)]">
-                    {statusMessage}
-                  </div>
-                )}
+            <div
+              className={
+                STUDIO_FULL_VIEWS.includes(activeView)
+                  ? "flex min-h-0 flex-1 flex-col"
+                  : "mx-auto w-full max-w-[1200px]"
+              }
+            >
+              {statusMessage ? (
+                <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+                  {statusMessage}
+                </div>
+              ) : null}
 
-                {renderContent()}
-              </div>
-            ) : (
-              <>
-                {statusMessage && (
-                  <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 text-sm font-bold text-white shadow-[0_10px_40px_rgba(0,0,0,0.25)]">
-                    {statusMessage}
-                  </div>
-                )}
-
-                {renderContent()}
-              </>
-            )}
+              {renderContent()}
+            </div>
           </div>
         </section>
       </div>

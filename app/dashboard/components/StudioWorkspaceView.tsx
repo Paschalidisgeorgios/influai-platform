@@ -25,7 +25,11 @@ type StudioWorkspaceViewProps = {
 };
 
 function betaBadgeClass() {
-  return "border-violet-500/30 bg-violet-500/10 text-violet-100";
+  return "border-amber-200 bg-amber-50 text-amber-700";
+}
+
+function plannedBadgeClass() {
+  return "border-gray-200 bg-gray-50 text-slate-500";
 }
 
 export default function StudioWorkspaceView({
@@ -46,6 +50,7 @@ export default function StudioWorkspaceView({
     const videoW = copy.workspaces.video;
     modelPanel = (
       <WorkspaceModelPanel
+        appearance="light"
         title={copy.workspaces.modelTitle}
         cards={[
           {
@@ -59,12 +64,12 @@ export default function StudioWorkspaceView({
           {
             name: "Seedance",
             status: statuses.planned,
-            statusClass: "border-white/10 bg-white/[0.04] text-white/40",
+            statusClass: plannedBadgeClass(),
           },
           {
             name: "Kling Pro",
             status: statuses.planned,
-            statusClass: "border-white/10 bg-white/[0.04] text-white/40",
+            statusClass: plannedBadgeClass(),
           },
         ]}
       />
@@ -75,6 +80,7 @@ export default function StudioWorkspaceView({
     const lipW = copy.workspaces.lip_sync;
     modelPanel = (
       <WorkspaceModelPanel
+        appearance="light"
         title={copy.workspaces.modelTitle}
         cards={[
           {
@@ -95,6 +101,7 @@ export default function StudioWorkspaceView({
     const creatorW = copy.workspaces.creator_video;
     modelPanel = (
       <WorkspaceModelPanel
+        appearance="light"
         title={copy.workspaces.modelTitle}
         cards={[
           {
@@ -118,6 +125,7 @@ export default function StudioWorkspaceView({
     const talkingW = copy.workspaces.talking_creator;
     modelPanel = (
       <WorkspaceModelPanel
+        appearance="light"
         title={copy.workspaces.modelTitle}
         cards={[
           {
@@ -134,7 +142,7 @@ export default function StudioWorkspaceView({
   }
 
   return (
-    <ToolWorkspaceShell modelPanel={modelPanel ?? undefined}>
+    <ToolWorkspaceShell modelPanel={modelPanel ?? undefined} appearance="light">
       <AiAgentStudio
         lockedWorkspace={workspace}
         charactersRefreshKey={charactersRefreshKey}
