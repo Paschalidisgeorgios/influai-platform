@@ -40,6 +40,27 @@ Lip Sync Studio produces **talking creator clips** from **source video + audio**
 - Default `voiceKey` when omitted: `sarah` if `ELEVENLABS_VOICE_SARAH` is set, else `female_natural` if configured, else `sarah`.
 - UI: Voice Library with Recommended, Female, Male, and Category sections. Preview via local `public/audio/voices/{voiceKey}.mp3` (no ElevenLabs call). Optional `NEXT_PUBLIC_ELEVENLABS_CONFIGURED_VOICE_KEYS` disables unlisted voices in the UI.
 
+### Local voice preview generation (dev tool)
+
+Generate missing preview MP3s from configured `ELEVENLABS_VOICE_*` IDs in `.env.local`:
+
+```bash
+node scripts/generate-elevenlabs-voice-previews.mjs
+```
+
+**Requirements**
+
+- `ELEVENLABS_API_KEY` in `.env.local` or the shell environment (never commit real keys).
+- Each target voice has its matching `ELEVENLABS_VOICE_*` variable set (e.g. `ELEVENLABS_VOICE_SARAH` for `sarah`).
+
+**Behavior**
+
+- Writes to `public/audio/voices/{voiceKey}.mp3`.
+- Skips files that already exist.
+- Logs: `created`, `skipped`, `missing env`, `failed`.
+- Uses ElevenLabs `eleven_multilingual_v2` with the same preview sentence for all voices.
+- One-time dev setup; the dashboard Listen button does not call ElevenLabs at runtime.
+
 If a selected voice key has no configured voice ID, the worker marks the job as failed with refund and
 `Selected system voice is not configured.` Upload Audio remains the fallback path.
 
