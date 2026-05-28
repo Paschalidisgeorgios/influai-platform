@@ -22,8 +22,15 @@ type ToolsRoadmapProps = {
   videoStudioEnabled: boolean;
   creatorVideoEnabled: boolean;
   lipSyncEnabled: boolean;
-  onOpenAgent: () => void;
+  talkingCreatorEnabled?: boolean;
+  onOpenImageStudio: () => void;
+  onOpenVideoStudio: () => void;
+  onOpenLipSync: () => void;
   onOpenCreatorVideo: () => void;
+  onOpenTalkingCreator: () => void;
+  onOpenGallery: () => void;
+  onOpenStyleProfiles: () => void;
+  onOpenCredits: () => void;
 };
 
 type ToolCardConfig = {
@@ -64,8 +71,15 @@ export default function ToolsRoadmap({
   videoStudioEnabled,
   creatorVideoEnabled,
   lipSyncEnabled,
-  onOpenAgent,
+  talkingCreatorEnabled = false,
+  onOpenImageStudio,
+  onOpenVideoStudio,
+  onOpenLipSync,
   onOpenCreatorVideo,
+  onOpenTalkingCreator,
+  onOpenGallery,
+  onOpenStyleProfiles,
+  onOpenCredits,
 }: ToolsRoadmapProps) {
   const t = copy.toolsPage;
   const statusLabels = t.statuses;
@@ -110,6 +124,22 @@ export default function ToolsRoadmap({
       benefit: t.cards.lipSync.benefit,
       status: lipSyncEnabled ? "beta" : "comingSoon",
       openInAgent: lipSyncEnabled,
+    },
+    {
+      id: "talking-creator",
+      icon: Mic2,
+      title: "Talking Creator",
+      benefit:
+        "Create a talking creator clip from one image, script and voice.",
+      status: talkingCreatorEnabled ? "beta" : "comingSoon",
+      openInAgent: talkingCreatorEnabled,
+    },
+    {
+      id: "motion-transfer",
+      icon: Film,
+      title: "Motion Transfer",
+      benefit: "Animate a creator image using a driving video.",
+      status: "comingSoon",
     },
     {
       id: "cinema-agent",
@@ -231,7 +261,13 @@ export default function ToolsRoadmap({
             {showOpenButton ? (
               <button
                 type="button"
-                onClick={card.id === "creator-video" ? onOpenCreatorVideo : onOpenAgent}
+                onClick={() => {
+                  if (card.id === "image-studio") onOpenImageStudio();
+                  else if (card.id === "video-studio") onOpenVideoStudio();
+                  else if (card.id === "lip-sync") onOpenLipSync();
+                  else if (card.id === "creator-video") onOpenCreatorVideo();
+                  else if (card.id === "talking-creator") onOpenTalkingCreator();
+                }}
                 className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-3 py-2.5 text-xs font-black uppercase tracking-[0.12em] text-[#f0d7a8] transition hover:border-[#d8ad5f]/50 hover:bg-[#d8ad5f]/15"
               >
                 <Sparkles className="h-3.5 w-3.5" />

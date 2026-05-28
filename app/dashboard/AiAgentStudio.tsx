@@ -331,6 +331,8 @@ type AiAgentStudioProps = {
   charactersRefreshKey?: number;
   regenerateDraft?: RegenerateDraft | null;
   preferredStudioTab?: StudioTab;
+  /** When set, locks the studio to one tool workspace and hides the tab switcher. */
+  lockedWorkspace?: StudioTab;
   onGenerationQueued?: () => void;
   onClearRegenerateDraft?: () => void;
   onOpenGallery?: () => void;
@@ -2513,6 +2515,7 @@ export default function AiAgentStudio({
   charactersRefreshKey = 0,
   regenerateDraft = null,
   preferredStudioTab = "image",
+  lockedWorkspace,
   onGenerationQueued,
   onClearRegenerateDraft,
   onOpenGallery,
@@ -2520,6 +2523,10 @@ export default function AiAgentStudio({
 }: AiAgentStudioProps) {
   const { copy, format, language } = useDashboardLanguage();
   const a = copy.agent;
+  const workspaceHeadline = lockedWorkspace
+    ? copy.workspaces[lockedWorkspace]?.headline
+    : null;
+  const composerHeadline = workspaceHeadline ?? a.searchHeadline;
   const suite = copy.studioSuite;
   const supabase = createClient();
 
@@ -2883,6 +2890,11 @@ export default function AiAgentStudio({
   }, [regenerateDraft, a.campaignPromptLoaded, a.promptLoadedRegeneration]);
 
   useEffect(() => {
+    if (lockedWorkspace) {
+      setStudioTab(lockedWorkspace);
+      return;
+    }
+
     if (preferredStudioTab === "video" && VIDEO_STUDIO_PUBLIC_ENABLED) {
       setStudioTab("video");
       return;
@@ -2900,7 +2912,7 @@ export default function AiAgentStudio({
       return;
     }
     setStudioTab("image");
-  }, [preferredStudioTab]);
+  }, [lockedWorkspace, preferredStudioTab]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -4436,6 +4448,7 @@ export default function AiAgentStudio({
         )}
 
         <div className="mt-4 space-y-4">
+          {!lockedWorkspace ? (
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -4553,6 +4566,7 @@ export default function AiAgentStudio({
               </span>
             </button>
           </div>
+          ) : null}
 
           {studioTab === "video" ? (
             <VideoStudioPanel
@@ -5475,7 +5489,7 @@ export default function AiAgentStudio({
               animate={{ opacity: 1, y: 0 }}
               className="max-w-3xl text-center text-2xl font-black tracking-[-0.04em] text-white sm:text-3xl lg:text-4xl"
             >
-              {a.searchHeadline}
+              {composerHeadline}
             </motion.h1>
             <p className="mt-3 max-w-3xl text-center text-sm leading-6 text-white/50">
               {a.subtitle}

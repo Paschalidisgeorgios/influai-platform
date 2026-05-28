@@ -19,6 +19,7 @@ import type { LucideIcon } from "lucide-react";
 import { useDashboardLanguage } from "../DashboardLanguageProvider";
 import { CAMPAIGN_TEMPLATES } from "../data/campaign-templates";
 import { formatCopy } from "../i18n";
+import type { ToolRailView } from "./DashboardToolRail";
 
 type HomeAsset = {
   id: string;
@@ -36,8 +37,6 @@ type HomeMetrics = {
   styleProfiles: number;
 };
 
-type StudioTab = "image" | "video" | "creator_video" | "lip_sync" | "talking_creator";
-
 type CreatorHubHomeProps = {
   metrics: HomeMetrics;
   loading: boolean;
@@ -46,9 +45,8 @@ type CreatorHubHomeProps = {
   lipSyncEnabled: boolean;
   creatorVideoEnabled: boolean;
   talkingCreatorEnabled: boolean;
-  onOpenAgent: (tab: StudioTab) => void;
+  onOpenTool: (view: ToolRailView) => void;
   onOpenAgentWithPrompt: (prompt: string) => void;
-  onOpenView: (view: "gallery" | "characters" | "credits" | "tools") => void;
   onRegenerate: (prompt: string) => void;
 };
 
@@ -59,9 +57,8 @@ type ToolCardConfig = {
   status: "live" | "beta" | "comingSoon";
   icon: LucideIcon;
   cta: string;
-  tab?: StudioTab;
+  view?: ToolRailView;
   disabled?: boolean;
-  action?: () => void;
 };
 
 function statusClass(status: ToolCardConfig["status"]) {
@@ -82,9 +79,8 @@ export default function CreatorHubHome({
   lipSyncEnabled,
   creatorVideoEnabled,
   talkingCreatorEnabled,
-  onOpenAgent,
+  onOpenTool,
   onOpenAgentWithPrompt,
-  onOpenView,
   onRegenerate,
 }: CreatorHubHomeProps) {
   const { copy, language } = useDashboardLanguage();
@@ -102,7 +98,7 @@ export default function CreatorHubHome({
         status: "live",
         icon: ImageIcon,
         cta: h.toolCards.open,
-        tab: "image",
+        view: "image_studio",
       },
       {
         id: "video-studio",
@@ -111,7 +107,7 @@ export default function CreatorHubHome({
         status: videoStudioEnabled ? "beta" : "comingSoon",
         icon: Film,
         cta: videoStudioEnabled ? h.toolCards.start : h.toolCards.comingSoon,
-        tab: "video",
+        view: "video_studio",
         disabled: !videoStudioEnabled,
       },
       {
@@ -121,7 +117,7 @@ export default function CreatorHubHome({
         status: lipSyncEnabled ? "beta" : "comingSoon",
         icon: Mic2,
         cta: lipSyncEnabled ? h.toolCards.start : h.toolCards.comingSoon,
-        tab: "lip_sync",
+        view: "lip_sync",
         disabled: !lipSyncEnabled,
       },
       {
@@ -131,7 +127,7 @@ export default function CreatorHubHome({
         status: creatorVideoEnabled ? "beta" : "comingSoon",
         icon: Video,
         cta: creatorVideoEnabled ? h.toolCards.start : h.toolCards.comingSoon,
-        tab: "creator_video",
+        view: "creator_video",
         disabled: !creatorVideoEnabled,
       },
       {
@@ -141,7 +137,7 @@ export default function CreatorHubHome({
         status: talkingCreatorEnabled ? "beta" : "comingSoon",
         icon: Sparkles,
         cta: talkingCreatorEnabled ? h.toolCards.start : h.toolCards.comingSoon,
-        tab: "talking_creator",
+        view: "talking_creator",
         disabled: !talkingCreatorEnabled,
       },
       {
@@ -169,7 +165,7 @@ export default function CreatorHubHome({
         title: h.recommended.title,
         body: h.recommended.createProfile,
         cta: h.recommended.createProfileCta,
-        action: () => onOpenView("characters"),
+        action: () => onOpenTool("style_profiles"),
       };
     }
 
@@ -178,7 +174,7 @@ export default function CreatorHubHome({
         title: h.recommended.lowCreditsTitle,
         body: h.recommended.lowCreditsBody,
         cta: h.recommended.lowCreditsCta,
-        action: () => onOpenView("credits"),
+        action: () => onOpenTool("credits"),
       };
     }
 
@@ -193,10 +189,10 @@ export default function CreatorHubHome({
           onRegenerate(favoriteAsset.prompt);
           return;
         }
-        onOpenAgent("image");
+        onOpenTool("image_studio");
       },
     };
-  }, [h, metrics, onOpenAgent, onOpenView, onRegenerate, recentAssets]);
+  }, [h, metrics, onOpenTool, onRegenerate, recentAssets]);
 
   function submitHubPrompt() {
     const trimmed = hubPrompt.trim();
@@ -204,7 +200,7 @@ export default function CreatorHubHome({
       onOpenAgentWithPrompt(trimmed);
       return;
     }
-    onOpenAgent("image");
+    onOpenTool("image_studio");
   }
 
   return (
@@ -213,12 +209,16 @@ export default function CreatorHubHome({
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#d8ad5f]">
           {h.eyebrow}
         </p>
-        <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">{h.welcome}</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-white/50">{h.intro}</p>
+          <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">
+            {h.heroTitle ?? h.welcome}
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/50">
+            {h.heroSubtitle ?? h.intro}
+          </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => onOpenAgent("image")}
+            onClick={() => onOpenTool("image_studio")}
             className="rounded-full bg-[#d8ad5f] px-4 py-2 text-xs font-black text-black"
           >
             {h.createVisual}
@@ -236,7 +236,7 @@ export default function CreatorHubHome({
           </button>
           <button
             type="button"
-            onClick={() => onOpenView("credits")}
+            onClick={() => onOpenTool("credits")}
             className="rounded-full border border-white/15 bg-white/[0.05] px-4 py-2 text-xs font-black text-white/85"
           >
             {h.addCredits}
@@ -348,8 +348,8 @@ export default function CreatorHubHome({
                   type="button"
                   disabled={card.disabled}
                   onClick={() => {
-                    if (card.disabled || !card.tab) return;
-                    onOpenAgent(card.tab);
+                    if (card.disabled || !card.view) return;
+                    onOpenTool(card.view);
                   }}
                   className="mt-4 inline-flex items-center justify-center rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-4 py-2 text-xs font-black text-[#f0d7a8] disabled:cursor-not-allowed disabled:opacity-40"
                 >
@@ -372,14 +372,14 @@ export default function CreatorHubHome({
             <button
               type="button"
               onClick={() => {
-                if (index === 0) onOpenAgent("image");
+                if (index === 0) onOpenTool("image_studio");
                 else if (index === 1) {
                   document
                     .getElementById("home-templates")
                     ?.scrollIntoView({ behavior: "smooth" });
-                } else if (index === 2) onOpenView("characters");
-                else if (index === 3) onOpenView("gallery");
-                else onOpenView("credits");
+                } else if (index === 2) onOpenTool("style_profiles");
+                else if (index === 3) onOpenTool("gallery");
+                else onOpenTool("credits");
               }}
               className="mt-4 inline-flex items-center justify-center rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-4 py-2 text-xs font-black text-[#f0d7a8]"
             >
@@ -430,7 +430,7 @@ export default function CreatorHubHome({
             <p className="text-sm text-white/45">{h.recentAssetsEmpty}</p>
             <button
               type="button"
-              onClick={() => onOpenAgent("image")}
+              onClick={() => onOpenTool("image_studio")}
               className="mt-3 rounded-full bg-[#d8ad5f] px-4 py-2 text-xs font-black text-black"
             >
               {h.createFirstVisual}
@@ -467,7 +467,7 @@ export default function CreatorHubHome({
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     <button
                       type="button"
-                      onClick={() => onOpenView("gallery")}
+                      onClick={() => onOpenTool("gallery")}
                       className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-bold text-white/75"
                     >
                       <FolderOpen className="mr-1 inline h-3 w-3" />

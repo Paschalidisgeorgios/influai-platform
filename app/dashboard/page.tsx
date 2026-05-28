@@ -3,20 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  Bot,
-  CreditCard,
-  GalleryVerticalEnd,
-  Home,
-  LayoutGrid,
-  LogOut,
-  Menu,
-  Sparkles,
-  UserRound,
-  X,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import AiAgentStudio from "./AiAgentStudio";
+import { LogOut, Menu, Sparkles, X } from "lucide-react";
 import CampaignPlanner from "./CampaignPlanner";
 import CharacterManager from "./CharacterManager";
 import CompactCredits from "./CompactCredits";
@@ -26,8 +13,11 @@ import GenerationGallery from "./GenerationGallery";
 import LanguageSelector from "./LanguageSelector";
 import ToolsRoadmap from "./ToolsRoadmap";
 import CreatorHubHome from "./components/CreatorHubHome";
-import DashboardSidebarTools from "./components/DashboardSidebarTools";
+import DashboardToolRail, { type ToolRailView } from "./components/DashboardToolRail";
+import MotionTransferWorkspace from "./components/MotionTransferWorkspace";
+import StudioWorkspaceView from "./components/StudioWorkspaceView";
 import { createClient } from "@/lib/supabase/client";
+import type { DashboardCopy } from "./i18n";
 
 const VIDEO_STUDIO_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO === "true";
@@ -46,13 +36,16 @@ type RegenerateDraft = {
 };
 
 type DashboardView =
-  | "home"
-  | "agent"
-  | "tools"
-  | "planner"
-  | "gallery"
-  | "characters"
-  | "credits";
+  | ToolRailView
+  | "planner";
+
+const STUDIO_FULL_VIEWS: DashboardView[] = [
+  "image_studio",
+  "video_studio",
+  "lip_sync",
+  "creator_video",
+  "talking_creator",
+];
 
 type DashboardHomeMetrics = {
   credits: number;
@@ -77,15 +70,6 @@ type SidebarBadge = {
   variant: SidebarBadgeVariant;
 };
 
-type LiveSidebarItem = {
-  id: DashboardView;
-  label: string;
-  description: string;
-  icon: LucideIcon;
-  badge?: string;
-  badges?: SidebarBadge[];
-};
-
 function getSidebarBadgeClass(variant: SidebarBadgeVariant) {
   if (variant === "beta") {
     return "border-violet-500/30 bg-violet-500/10 text-violet-100";
@@ -96,6 +80,24 @@ function getSidebarBadgeClass(variant: SidebarBadgeVariant) {
   }
 
   return "border-emerald-500/25 bg-emerald-500/10 text-emerald-200";
+}
+
+function getViewLabel(view: DashboardView, copy: DashboardCopy) {
+  const labels: Record<string, string> = {
+    home: copy.toolRail.home,
+    image_studio: copy.toolRail.imageStudio,
+    video_studio: copy.toolRail.videoStudio,
+    lip_sync: copy.toolRail.lipSync,
+    creator_video: copy.toolRail.creatorVideo,
+    talking_creator: copy.toolRail.talkingCreator,
+    motion_transfer: copy.toolRail.motionTransfer,
+    gallery: copy.toolRail.gallery,
+    style_profiles: copy.toolRail.styleProfiles,
+    credits: copy.toolRail.credits,
+    tools: copy.toolRail.toolsOverview,
+    planner: copy.page.planner.title,
+  };
+  return labels[view] ?? copy.toolRail.home;
 }
 
 function ViewShell({
@@ -166,54 +168,8 @@ function DashboardPageInner() {
   const supabase = createClient();
   const router = useRouter();
 
-  const liveItems: LiveSidebarItem[] = useMemo(
-    () => [
-      {
-        id: "home",
-        label: copy.sidebar.nav.home.label,
-        description: copy.sidebar.nav.home.description,
-        icon: Home,
-      },
-      {
-        id: "agent",
-        label: copy.sidebar.nav.agent.label,
-        description: copy.sidebar.nav.agent.description,
-        icon: Bot,
-        badge: copy.sidebar.live,
-      },
-      {
-        id: "tools",
-        label: copy.sidebar.nav.tools.label,
-        description: copy.sidebar.nav.tools.description,
-        icon: LayoutGrid,
-      },
-      {
-        id: "gallery",
-        label: copy.sidebar.nav.gallery.label,
-        description: copy.sidebar.nav.gallery.description,
-        icon: GalleryVerticalEnd,
-      },
-      {
-        id: "characters",
-        label: copy.sidebar.nav.characters.label,
-        description: copy.sidebar.nav.characters.description,
-        icon: UserRound,
-      },
-      {
-        id: "credits",
-        label: copy.sidebar.nav.credits.label,
-        description: copy.sidebar.nav.credits.description,
-        icon: CreditCard,
-      },
-    ],
-    [copy, language]
-  );
-
   const [activeView, setActiveView] = useState<DashboardView>("home");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [preferredStudioTab, setPreferredStudioTab] = useState<
-    "image" | "video" | "creator_video" | "lip_sync" | "talking_creator"
-  >("image");
 
   const [galleryRefreshKey, setGalleryRefreshKey] = useState(0);
   const [charactersRefreshKey, setCharactersRefreshKey] = useState(0);
@@ -304,7 +260,7 @@ function DashboardPageInner() {
       }
 
       timeoutId = window.setTimeout(async () => {
-        if (activeView === "agent") {
+        if (STUDIO_FULL_VIEWS.includes(activeView)) {
           resetTimer();
           return;
         }
@@ -337,12 +293,10 @@ function DashboardPageInner() {
     };
   }, [activeView, authChecked, router, supabase.auth]);
 
-  const activeLabel = useMemo(() => {
-    const match = liveItems.find((item) => item.id === activeView);
-    if (match) return match.label;
-    if (activeView === "planner") return copy.campaignPlanner.title;
-    return copy.sidebar.nav.agent.label;
-  }, [activeView, liveItems, copy]);
+  const activeLabel = useMemo(
+    () => getViewLabel(activeView, copy),
+    [activeView, copy]
+  );
 
   function showStatus(message: string) {
     setStatusMessage(message);
@@ -373,7 +327,7 @@ function DashboardPageInner() {
       loadedAt: Date.now(),
     });
 
-    setActiveView("agent");
+    setActiveView("image_studio");
     setMobileSidebarOpen(false);
     showStatus(copy.page.promptLoaded);
   }
@@ -386,7 +340,7 @@ function DashboardPageInner() {
       loadedAt: Date.now(),
     });
 
-    setActiveView("agent");
+    setActiveView("image_studio");
     setMobileSidebarOpen(false);
   }
 
@@ -453,14 +407,6 @@ function DashboardPageInner() {
     void loadHomeMetrics();
   }, []);
 
-  function openAgentWithTab(
-    tab: "image" | "video" | "creator_video" | "lip_sync" | "talking_creator"
-  ) {
-    setPreferredStudioTab(tab);
-    setActiveView("agent");
-    setMobileSidebarOpen(false);
-  }
-
   function openAgentWithPrompt(prompt: string) {
     setRegenerateDraft({
       prompt,
@@ -468,11 +414,19 @@ function DashboardPageInner() {
       source: "gallery",
       loadedAt: Date.now(),
     });
-    setPreferredStudioTab("image");
-    setActiveView("agent");
+    setActiveView("image_studio");
     setMobileSidebarOpen(false);
     showStatus(copy.page.promptLoaded);
   }
+
+  const studioWorkspaceProps = {
+    charactersRefreshKey,
+    regenerateDraft,
+    onClearRegenerateDraft: handleClearRegenerateDraft,
+    onGenerationQueued: handleGenerationQueued,
+    onOpenGallery: () => openView("gallery"),
+    onOpenCredits: () => openView("credits"),
+  };
 
   function renderContent() {
     if (activeView === "home") {
@@ -485,28 +439,39 @@ function DashboardPageInner() {
           lipSyncEnabled={LIP_SYNC_PUBLIC_ENABLED}
           creatorVideoEnabled={CREATOR_VIDEO_PUBLIC_ENABLED}
           talkingCreatorEnabled={TALKING_CREATOR_PUBLIC_ENABLED}
-          onOpenAgent={openAgentWithTab}
+          onOpenTool={openView}
           onOpenAgentWithPrompt={openAgentWithPrompt}
-          onOpenView={openView}
           onRegenerate={(prompt) => handleRegenerate(prompt, null)}
         />
       );
     }
 
-    if (activeView === "agent") {
+    if (activeView === "image_studio") {
+      return <StudioWorkspaceView workspace="image" {...studioWorkspaceProps} />;
+    }
+
+    if (activeView === "video_studio") {
+      return <StudioWorkspaceView workspace="video" {...studioWorkspaceProps} />;
+    }
+
+    if (activeView === "lip_sync") {
+      return <StudioWorkspaceView workspace="lip_sync" {...studioWorkspaceProps} />;
+    }
+
+    if (activeView === "creator_video") {
       return (
-        <>
-          <AiAgentStudio
-            preferredStudioTab={preferredStudioTab}
-            charactersRefreshKey={charactersRefreshKey}
-            regenerateDraft={regenerateDraft}
-            onClearRegenerateDraft={handleClearRegenerateDraft}
-            onGenerationQueued={handleGenerationQueued}
-            onOpenGallery={() => setActiveView("gallery")}
-            onOpenCredits={() => setActiveView("credits")}
-          />
-        </>
+        <StudioWorkspaceView workspace="creator_video" {...studioWorkspaceProps} />
       );
+    }
+
+    if (activeView === "talking_creator") {
+      return (
+        <StudioWorkspaceView workspace="talking_creator" {...studioWorkspaceProps} />
+      );
+    }
+
+    if (activeView === "motion_transfer") {
+      return <MotionTransferWorkspace />;
     }
 
     if (activeView === "tools") {
@@ -516,46 +481,20 @@ function DashboardPageInner() {
           title={copy.page.tools.title}
           description={copy.page.tools.description}
         >
-          <div className="mb-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => openAgentWithTab("image")}
-              className="rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-3 py-1.5 text-[11px] font-black text-[#f0d7a8]"
-            >
-              {copy.toolsPage.openInAgent} · Image Studio
-            </button>
-            <button
-              type="button"
-              onClick={() => openAgentWithTab("video")}
-              disabled={!VIDEO_STUDIO_PUBLIC_ENABLED}
-              className="rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-3 py-1.5 text-[11px] font-black text-[#f0d7a8] disabled:opacity-40"
-            >
-              {copy.toolsPage.openInAgent} · Video Studio
-            </button>
-            <button
-              type="button"
-              onClick={() => openAgentWithTab("creator_video")}
-              disabled={!CREATOR_VIDEO_PUBLIC_ENABLED}
-              className="rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-3 py-1.5 text-[11px] font-black text-[#f0d7a8] disabled:opacity-40"
-            >
-              {copy.toolsPage.openInAgent} · Creator Video
-            </button>
-            <button
-              type="button"
-              onClick={() => openAgentWithTab("lip_sync")}
-              disabled={!LIP_SYNC_PUBLIC_ENABLED}
-              className="rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-3 py-1.5 text-[11px] font-black text-[#f0d7a8] disabled:opacity-40"
-            >
-              {copy.toolsPage.openInAgent} · Lip Sync
-            </button>
-          </div>
           <ToolsRoadmap
             copy={copy}
             videoStudioEnabled={VIDEO_STUDIO_PUBLIC_ENABLED}
             creatorVideoEnabled={CREATOR_VIDEO_PUBLIC_ENABLED}
             lipSyncEnabled={LIP_SYNC_PUBLIC_ENABLED}
-            onOpenAgent={() => openAgentWithTab("image")}
-            onOpenCreatorVideo={() => openAgentWithTab("creator_video")}
+            talkingCreatorEnabled={TALKING_CREATOR_PUBLIC_ENABLED}
+            onOpenImageStudio={() => openView("image_studio")}
+            onOpenVideoStudio={() => openView("video_studio")}
+            onOpenLipSync={() => openView("lip_sync")}
+            onOpenCreatorVideo={() => openView("creator_video")}
+            onOpenTalkingCreator={() => openView("talking_creator")}
+            onOpenGallery={() => openView("gallery")}
+            onOpenStyleProfiles={() => openView("style_profiles")}
+            onOpenCredits={() => openView("credits")}
           />
         </ViewShell>
       );
@@ -576,7 +515,7 @@ function DashboardPageInner() {
       );
     }
 
-    if (activeView === "characters") {
+    if (activeView === "style_profiles") {
       return (
         <ViewShell
           eyebrow={copy.page.characters.eyebrow}
@@ -670,80 +609,15 @@ function DashboardPageInner() {
           </div>
 
           <div className="mt-7">
-            <p className="mb-3 px-3 text-[10px] font-black uppercase tracking-[0.3em] text-white/25">
-              {copy.sidebar.liveStudio}
-            </p>
-
-            <nav className="space-y-2">
-              {liveItems.map((item) => {
-                const Icon = item.icon;
-                const active = activeView === item.id;
-
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => openView(item.id)}
-                    className={`group flex w-full items-center gap-3 rounded-[1.3rem] px-3 py-3 text-left transition ${
-                      active
-                        ? "border border-white/12 bg-white/[0.09] text-white shadow-inner"
-                        : "border border-transparent bg-transparent text-white/60 hover:border-white/10 hover:bg-white/[0.045] hover:text-white"
-                    }`}
-                  >
-                    <div
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition ${
-                        active
-                          ? "bg-[#d8ad5f] text-black"
-                          : "bg-white/[0.05] text-white/70 group-hover:bg-white/[0.08] group-hover:text-white"
-                      }`}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="truncate text-sm font-bold">
-                          {item.label}
-                        </p>
-
-                        {item.badge ? (
-                          <span
-                            className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] ${getSidebarBadgeClass(
-                              "live"
-                            )}`}
-                          >
-                            {item.badge}
-                          </span>
-                        ) : null}
-
-                        {item.badges?.map((badge) => (
-                          <span
-                            key={badge.label}
-                            className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] ${getSidebarBadgeClass(
-                              badge.variant
-                            )}`}
-                          >
-                            {badge.label}
-                          </span>
-                        ))}
-                      </div>
-
-                      <p className="truncate text-xs text-white/30">
-                        {item.description}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </nav>
-
-            <DashboardSidebarTools
+            <DashboardToolRail
+              activeView={
+                activeView === "planner" ? "tools" : (activeView as ToolRailView)
+              }
               videoStudioEnabled={VIDEO_STUDIO_PUBLIC_ENABLED}
               lipSyncEnabled={LIP_SYNC_PUBLIC_ENABLED}
               creatorVideoEnabled={CREATOR_VIDEO_PUBLIC_ENABLED}
               talkingCreatorEnabled={TALKING_CREATOR_PUBLIC_ENABLED}
-              onOpenAgent={openAgentWithTab}
-              onOpenView={openView}
+              onNavigate={openView}
             />
           </div>
         </div>
@@ -855,12 +729,12 @@ function DashboardPageInner() {
 
           <div
             className={
-              activeView === "agent"
+              STUDIO_FULL_VIEWS.includes(activeView)
                 ? "min-h-screen"
                 : "min-h-0 h-full overflow-y-auto overscroll-contain px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:pt-24"
             }
           >
-            {activeView !== "agent" ? (
+            {!STUDIO_FULL_VIEWS.includes(activeView) ? (
               <div className="mx-auto w-full max-w-[1700px]">
                 {statusMessage && (
                   <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-bold text-white shadow-[0_10px_40px_rgba(0,0,0,0.25)]">
