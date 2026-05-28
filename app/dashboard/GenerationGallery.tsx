@@ -610,8 +610,23 @@ export default function GenerationGallery({
         <Toolbar />
 
         {generations.length === 0 ? (
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] py-20 text-center text-white/60">
-            {g.empty}
+          <div className="rounded-[2rem] border border-dashed border-[#d8ad5f]/20 bg-[#d8ad5f]/[0.03] px-6 py-16 text-center sm:py-20">
+            <p className="text-lg font-black text-white">
+              {debouncedSearchQuery.trim() ||
+              statusFilter !== "all" ||
+              favoriteFilter === "favorites" ||
+              selectedCharacterId !== "all"
+                ? g.searchEmptyTitle
+                : g.emptyTitle}
+            </p>
+            <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/45">
+              {debouncedSearchQuery.trim() ||
+              statusFilter !== "all" ||
+              favoriteFilter === "favorites" ||
+              selectedCharacterId !== "all"
+                ? g.searchEmptyBody
+                : g.emptyBody}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3 2xl:grid-cols-4">

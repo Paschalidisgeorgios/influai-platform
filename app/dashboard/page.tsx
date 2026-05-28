@@ -6,15 +6,11 @@ import { useRouter } from "next/navigation";
 import {
   Bot,
   CreditCard,
-  Download,
-  FolderOpen,
   GalleryVerticalEnd,
   Home,
-  ImagePlus,
   LayoutGrid,
   LogOut,
   Menu,
-  Plus,
   Sparkles,
   UserRound,
   X,
@@ -29,6 +25,8 @@ import CreditsCard from "./CreditsCard";
 import GenerationGallery from "./GenerationGallery";
 import LanguageSelector from "./LanguageSelector";
 import ToolsRoadmap from "./ToolsRoadmap";
+import CreatorHubHome from "./components/CreatorHubHome";
+import DashboardSidebarTools from "./components/DashboardSidebarTools";
 import { createClient } from "@/lib/supabase/client";
 
 const VIDEO_STUDIO_PUBLIC_ENABLED =
@@ -37,6 +35,8 @@ const CREATOR_VIDEO_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_CREATOR_VIDEO === "true";
 const LIP_SYNC_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC === "true";
+const TALKING_CREATOR_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_TALKING_CREATOR === "true";
 
 type RegenerateDraft = {
   prompt: string;
@@ -170,9 +170,8 @@ function DashboardPageInner() {
     () => [
       {
         id: "home",
-        label: language === "de" ? "Home" : "Home",
-        description:
-          language === "de" ? "Dashboard-Übersicht" : "Dashboard overview",
+        label: copy.sidebar.nav.home.label,
+        description: copy.sidebar.nav.home.description,
         icon: Home,
       },
       {
@@ -213,7 +212,7 @@ function DashboardPageInner() {
   const [activeView, setActiveView] = useState<DashboardView>("home");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [preferredStudioTab, setPreferredStudioTab] = useState<
-    "image" | "video" | "creator_video" | "lip_sync"
+    "image" | "video" | "creator_video" | "lip_sync" | "talking_creator"
   >("image");
 
   const [galleryRefreshKey, setGalleryRefreshKey] = useState(0);
@@ -454,238 +453,44 @@ function DashboardPageInner() {
     void loadHomeMetrics();
   }, []);
 
-  function openAgentWithTab(tab: "image" | "video" | "creator_video" | "lip_sync") {
+  function openAgentWithTab(
+    tab: "image" | "video" | "creator_video" | "lip_sync" | "talking_creator"
+  ) {
     setPreferredStudioTab(tab);
     setActiveView("agent");
     setMobileSidebarOpen(false);
   }
 
-  function renderHomeView() {
-    const t =
-      language === "de"
-        ? {
-            welcome: "Willkommen zurück, Georgios",
-            intro:
-              "Erstelle dein nächstes Kampagnenvisual, arbeite mit deinen letzten Assets weiter oder verwalte deinen kreativen Workflow.",
-            createVisual: "Visual erstellen",
-            useTemplate: "Vorlage nutzen",
-            addCredits: "Credits hinzufügen",
-            recentAssets: "Recent Assets",
-            recentAssetsBody:
-              "Arbeite mit deinen neuesten Kampagnenvisuals weiter.",
-            open: "Öffnen",
-            createVariant: "Variante erstellen",
-            useAsReference: "Als Referenz nutzen",
-            download: "Download",
-            recommended: "Empfohlener nächster Schritt",
-            createProfileHint:
-              "Erstelle vor deiner nächsten Generierung ein wiederverwendbares Style Profile für konsistente Ergebnisse.",
-            lowCreditsTitle: "Deine Credits werden knapp",
-            lowCreditsHint:
-              "Lade Credits jetzt auf, um ohne Unterbrechung weiter zu generieren.",
-            lowCreditsCta: "Credits hinzufügen",
-            variantTitle: "Mache aus deinem besten Ergebnis neue Varianten",
-            variantHint:
-              "Nutze deinen letzten Favoriten als Referenz und teste eine neue Kampagnenrichtung.",
-            variantCta: "Variante erstellen",
-            metrics: {
-              credits: "Credits verfügbar",
-              assets: "Assets erstellt",
-              favorites: "Favoriten",
-              profiles: "Style Profiles",
-              enoughFor: "Reicht für bis zu {count} Standard-Bilder.",
-            },
-          }
-        : {
-            welcome: "Welcome back, Georgios",
-            intro:
-              "Create your next campaign visual, continue recent assets or manage your creative workflow.",
-            createVisual: "Create Visual",
-            useTemplate: "Use Template",
-            addCredits: "Add Credits",
-            recentAssets: "Recent Assets",
-            recentAssetsBody:
-              "Continue working with your latest campaign visuals.",
-            open: "Open",
-            createVariant: "Create Variant",
-            useAsReference: "Use as Reference",
-            download: "Download",
-            recommended: "Recommended next step",
-            createProfileHint:
-              "Create a reusable Style Profile before your next generation to keep your visuals consistent.",
-            lowCreditsTitle: "Your credits are running low",
-            lowCreditsHint:
-              "Add credits now to continue generating campaign visuals without interruption.",
-            lowCreditsCta: "Add Credits",
-            variantTitle: "Turn your best result into variations",
-            variantHint:
-              "Use your latest favorite as a reference and generate a new campaign direction.",
-            variantCta: "Create Variant",
-            metrics: {
-              credits: "Credits Available",
-              assets: "Assets Created",
-              favorites: "Favorites",
-              profiles: "Style Profiles",
-              enoughFor: "Enough for up to {count} standard images.",
-            },
-          };
-
-    const quickCards = [
-      {
-        title: language === "de" ? "Create Campaign Visual" : "Create Campaign Visual",
-        body:
-          language === "de"
-            ? "Generiere ein einsatzbereites Visual für Social Media, Ads, Produktkampagnen oder Creator Content."
-            : "Generate a ready-to-use image for social media, ads, product campaigns or creator content.",
-        cta: language === "de" ? "Open AI Agent" : "Open AI Agent",
-        action: () => openAgentWithTab("image"),
-      },
-      {
-        title: language === "de" ? "Start with Template" : "Start with Template",
-        body:
-          language === "de"
-            ? "Wähle eine erprobte Prompt-Vorlage für Fitness, Beauty, UGC, Produkt, Restaurant oder Brand-Kampagnen."
-            : "Choose a proven prompt template for fitness, beauty, UGC, product, restaurant or brand campaigns.",
-        cta: language === "de" ? "Browse Templates" : "Browse Templates",
-        action: () => openAgentWithTab("image"),
-      },
-      {
-        title: language === "de" ? "Create Style Profile" : "Create Style Profile",
-        body:
-          language === "de"
-            ? "Speichere eine wiederverwendbare Creative Direction für konsistente zukünftige Generierungen."
-            : "Save a reusable creative direction for consistent future generations.",
-        cta: language === "de" ? "Create Profile" : "Create Profile",
-        action: () => openView("characters"),
-      },
-      {
-        title:
-          language === "de" ? "Continue Recent Assets" : "Continue Recent Assets",
-        body:
-          language === "de"
-            ? "Öffne deine letzten Visuals, erstelle Varianten oder nutze ein Asset als Referenz."
-            : "Open your latest visuals, create variants or use an asset as reference.",
-        cta: language === "de" ? "Open Gallery" : "Open Gallery",
-        action: () => openView("gallery"),
-      },
-      {
-        title: language === "de" ? "Add Credits" : "Add Credits",
-        body:
-          language === "de"
-            ? "Lade dein Guthaben auf und generiere weiter kampagnenfähige Visuals."
-            : "Top up your balance and continue generating campaign visuals.",
-        cta: language === "de" ? "View Plans" : "View Plans",
-        action: () => openView("credits"),
-      },
-    ];
-
-    const recommendedCard =
-      homeMetrics.styleProfiles === 0
-        ? {
-            title: t.recommended,
-            body: t.createProfileHint,
-            cta: language === "de" ? "Create Style Profile" : "Create Style Profile",
-            action: () => openView("characters"),
-          }
-        : homeMetrics.credits <= 25
-          ? {
-              title: t.lowCreditsTitle,
-              body: t.lowCreditsHint,
-              cta: t.lowCreditsCta,
-              action: () => openView("credits"),
-            }
-          : {
-              title: t.variantTitle,
-              body: t.variantHint,
-              cta: t.variantCta,
-              action: () => openAgentWithTab("image"),
-            };
-
-    return (
-      <section className="space-y-5 sm:space-y-6">
-        <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-5 shadow-[0_20px_70px_rgba(0,0,0,0.28)] sm:p-6">
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#d8ad5f]">
-            Dashboard
-          </p>
-          <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">{t.welcome}</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/50">{t.intro}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button onClick={() => openAgentWithTab("image")} type="button" className="rounded-full bg-[#d8ad5f] px-4 py-2 text-xs font-black text-black">
-              {t.createVisual}
-            </button>
-            <button onClick={() => openAgentWithTab("image")} type="button" className="rounded-full border border-white/15 bg-white/[0.05] px-4 py-2 text-xs font-black text-white/85">
-              {t.useTemplate}
-            </button>
-            <button onClick={() => openView("credits")} type="button" className="rounded-full border border-white/15 bg-white/[0.05] px-4 py-2 text-xs font-black text-white/85">
-              {t.addCredits}
-            </button>
-          </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">{t.metrics.credits}</p>
-            <p className="mt-2 text-2xl font-black text-[#d8ad5f]">{homeLoading ? "…" : homeMetrics.credits}</p>
-            <p className="mt-1 text-xs text-white/40">{t.metrics.enoughFor.replace("{count}", String(homeMetrics.credits))}</p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">{t.metrics.assets}</p>
-            <p className="mt-2 text-2xl font-black text-white">{homeLoading ? "…" : homeMetrics.assets}</p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">{t.metrics.favorites}</p>
-            <p className="mt-2 text-2xl font-black text-white">{homeLoading ? "…" : homeMetrics.favorites}</p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">{t.metrics.profiles}</p>
-            <p className="mt-2 text-2xl font-black text-white">{homeLoading ? "…" : homeMetrics.styleProfiles}</p>
-          </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {quickCards.map((card) => (
-            <article key={card.title} className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <h3 className="text-sm font-black text-white">{card.title}</h3>
-              <p className="mt-2 flex-1 text-xs leading-5 text-white/48">{card.body}</p>
-              <button type="button" onClick={card.action} className="mt-4 inline-flex items-center justify-center rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-4 py-2 text-xs font-black text-[#f0d7a8]">
-                {card.cta}
-              </button>
-            </article>
-          ))}
-        </div>
-
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-          <h3 className="text-lg font-black text-white">{t.recentAssets}</h3>
-          <p className="mt-1 text-sm text-white/45">{t.recentAssetsBody}</p>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {recentAssets.map((asset) => (
-              <div key={asset.id} className="rounded-xl border border-white/10 bg-black/30 p-3">
-                <p className="line-clamp-2 text-xs text-white/60">{asset.prompt}</p>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  <button type="button" onClick={() => openView("gallery")} className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-bold text-white/75"><FolderOpen className="mr-1 inline h-3 w-3"/>{t.open}</button>
-                  <button type="button" onClick={() => openAgentWithTab("image")} className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-bold text-white/75"><Plus className="mr-1 inline h-3 w-3"/>{t.createVariant}</button>
-                  <button type="button" onClick={() => openAgentWithTab("image")} className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-bold text-white/75"><ImagePlus className="mr-1 inline h-3 w-3"/>{t.useAsReference}</button>
-                  <a href={(asset.video_url || asset.image_url) ?? "#"} target="_blank" rel="noreferrer" className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-bold text-white/75"><Download className="mr-1 inline h-3 w-3"/>{t.download}</a>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-[#d8ad5f]/25 bg-[#d8ad5f]/10 p-4">
-          <h3 className="text-sm font-black text-[#f5ddb0]">{recommendedCard.title}</h3>
-          <p className="mt-2 text-sm text-white/70">{recommendedCard.body}</p>
-          <button type="button" onClick={recommendedCard.action} className="mt-3 rounded-full bg-[#d8ad5f] px-4 py-2 text-xs font-black text-black">
-            {recommendedCard.cta}
-          </button>
-        </div>
-      </section>
-    );
+  function openAgentWithPrompt(prompt: string) {
+    setRegenerateDraft({
+      prompt,
+      characterId: null,
+      source: "gallery",
+      loadedAt: Date.now(),
+    });
+    setPreferredStudioTab("image");
+    setActiveView("agent");
+    setMobileSidebarOpen(false);
+    showStatus(copy.page.promptLoaded);
   }
 
   function renderContent() {
     if (activeView === "home") {
-      return renderHomeView();
+      return (
+        <CreatorHubHome
+          metrics={homeMetrics}
+          loading={homeLoading}
+          recentAssets={recentAssets}
+          videoStudioEnabled={VIDEO_STUDIO_PUBLIC_ENABLED}
+          lipSyncEnabled={LIP_SYNC_PUBLIC_ENABLED}
+          creatorVideoEnabled={CREATOR_VIDEO_PUBLIC_ENABLED}
+          talkingCreatorEnabled={TALKING_CREATOR_PUBLIC_ENABLED}
+          onOpenAgent={openAgentWithTab}
+          onOpenAgentWithPrompt={openAgentWithPrompt}
+          onOpenView={openView}
+          onRegenerate={(prompt) => handleRegenerate(prompt, null)}
+        />
+      );
     }
 
     if (activeView === "agent") {
@@ -931,6 +736,15 @@ function DashboardPageInner() {
                 );
               })}
             </nav>
+
+            <DashboardSidebarTools
+              videoStudioEnabled={VIDEO_STUDIO_PUBLIC_ENABLED}
+              lipSyncEnabled={LIP_SYNC_PUBLIC_ENABLED}
+              creatorVideoEnabled={CREATOR_VIDEO_PUBLIC_ENABLED}
+              talkingCreatorEnabled={TALKING_CREATOR_PUBLIC_ENABLED}
+              onOpenAgent={openAgentWithTab}
+              onOpenView={openView}
+            />
           </div>
         </div>
 

@@ -490,11 +490,18 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                       )}
                     </div>
 
-                    {creditPackage.badge && (
-                      <span className="rounded-full bg-[#d8ad5f] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-black shadow-[0_8px_24px_rgba(216,173,95,0.35)]">
-                        {creditPackage.badge}
-                      </span>
-                    )}
+                    <div className="flex flex-col items-end gap-1.5">
+                      {creditPackage.badge && (
+                        <span className="rounded-full bg-[#d8ad5f] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-black shadow-[0_8px_24px_rgba(216,173,95,0.35)]">
+                          {creditPackage.badge}
+                        </span>
+                      )}
+                      {creditPackage.key === "professional" ? (
+                        <span className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/70">
+                          {copy.credits.mostPopular}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
 
                   <p className="mt-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#d8ad5f]">
@@ -576,6 +583,18 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
             );
           })}
         </div>
+
+        <ul className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {copy.credits.trustNotes.map((note) => (
+            <li
+              key={note}
+              className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-xs leading-5 text-white/55"
+            >
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#d8ad5f]" />
+              <span>{note}</span>
+            </li>
+          ))}
+        </ul>
 
         <details className="mt-4 overflow-hidden rounded-[1.35rem] border border-white/10 bg-white/[0.02] p-3.5 sm:rounded-[1.75rem] sm:p-4">
           <summary className="cursor-pointer list-none select-none">

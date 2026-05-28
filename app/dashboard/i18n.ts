@@ -21,7 +21,7 @@ const en = {
     liveStudio: "Live Studio",
     expansionModules: "Expansion modules",
     expansionIntro:
-      "Campaign orchestration and compliance tools — preview only. No API, credits or billing.",
+      "Campaign orchestration and compliance tools — coming in a future release.",
     expansionFootnote:
       "Planned modules stay disabled until a future release.",
     roadmap: "Roadmap",
@@ -47,18 +47,55 @@ const en = {
     expansionPlannedHint:
       "Image modes run in the AI Agent. Open Tools for the full studio roadmap.",
     creditCostShort: "Credits",
+    toolRailStatuses: {
+      live: "Live",
+      beta: "Beta",
+      comingSoon: "Soon",
+      planned: "Planned",
+    },
+    toolRail: {
+      sectionTitle: "Studio tools",
+      plannedSectionTitle: "Planned",
+      imageStudio: "Image Studio",
+      imageStudioTip: "Create campaign-ready stills for social, ads and products",
+      videoStudio: "Video Studio",
+      videoStudioTip: "Turn static visuals into short-form campaign videos",
+      lipSync: "Lip Sync",
+      lipSyncTip: "Talking-head creator videos with voice and source video",
+      creatorVideo: "Creator Video",
+      creatorVideoTip: "One image and prompt into a short AI creator video",
+      talkingCreator: "Talking Creator",
+      talkingCreatorTip: "Talking clip from image, script and voice",
+      motionTransfer: "Motion Transfer",
+      motionTransferTip: "Animate a creator image with a driving video",
+      brandAssets: "Brand Assets",
+      brandAssetsTip: "Brand-aligned campaign visuals and product layouts",
+      referenceEdit: "Reference Edit",
+      referenceEditTip: "Guide results with a reference image",
+      cinemaAgent: "Cinema Agent",
+      cinemaAgentTip: "Plan scenes and shot lists before generating",
+      omniAgent: "Omni Campaign Agent",
+      omniAgentTip: "One brief into visuals, video concepts and captions",
+      socialPlanner: "Social Planner",
+      socialPlannerTip: "Plan captions, hashtags and posting calendars",
+      compliance: "Compliance",
+      complianceTip: "Review claims, logos and brand safety",
+      watermark: "Watermark",
+      watermarkTip: "Watermarked promo previews for concept testing",
+    },
     nav: {
-      agent: { label: "AI Agent", description: "Generate campaign-ready visuals" },
+      home: { label: "Home", description: "Dashboard overview" },
+      agent: { label: "AI Agent", description: "Create campaign visuals" },
       tools: {
         label: "Tools",
-        description: "Studio modes, costs and roadmap",
+        description: "Explore workflows",
       },
-      gallery: { label: "Asset Gallery", description: "Review, reuse and download assets" },
+      gallery: { label: "Asset Gallery", description: "Manage generated assets" },
       characters: {
         label: "Style Profiles",
-        description: "Reusable creative direction for consistent output",
+        description: "Save reusable styles",
       },
-      credits: { label: "Credits", description: "Balance, costs and packages" },
+      credits: { label: "Credits", description: "Balance and plans" },
       planner: {
         label: "Campaign Planner",
         description:
@@ -101,7 +138,7 @@ const en = {
       socialPlanner: {
         label: "Social Planner",
         description:
-          "Plan posts and campaign calendars — preview only, no social posting API.",
+          "Plan posts and campaign calendars for upcoming campaigns.",
       },
       brandSafety: {
         label: "Brand Safety / Compliance",
@@ -502,7 +539,7 @@ const en = {
       eyebrow: "Creator Assets",
       title: "Asset Gallery",
       description:
-        "Review results, track processing jobs, save favorites, regenerate prompts and download campaign assets.",
+        "Manage every generated visual in one place — from drafts and processing jobs to favorites, downloads and final campaign assets.",
     },
     characters: {
       eyebrow: "Reusable Creative Direction",
@@ -595,6 +632,113 @@ const en = {
       },
     },
   },
+  home: {
+    eyebrow: "Creator Command Center",
+    welcome: "Welcome back, Georgios",
+    intro:
+      "Create your next campaign visual, continue recent assets or manage your creative workflow.",
+    createVisual: "Create Visual",
+    useTemplate: "Use Template",
+    addCredits: "Add Credits",
+    promptPlaceholder:
+      "Search templates or describe your next campaign visual…",
+    promptCreate: "Create",
+    studioToolsTitle: "Studio workflows",
+    templatesTitle: "Start with a template",
+    templatesSubtitle:
+      "Proven prompts for fitness, beauty, UGC, product, restaurant and brand campaigns.",
+    useTemplateCta: "Use Template",
+    recentAssetsTitle: "Recent Assets",
+    recentAssetsBody: "Continue working with your latest campaign visuals.",
+    recentAssetsEmpty: "No assets yet — create your first visual in the AI Agent.",
+    createFirstVisual: "Create first visual",
+    assetOpen: "Open",
+    assetVariant: "Create Variant",
+    assetReference: "Use as Reference",
+    assetDownload: "Download",
+    statuses: {
+      live: "Live",
+      beta: "Beta",
+      comingSoon: "Coming soon",
+    },
+    metrics: {
+      credits: "Credits Available",
+      assets: "Assets Created",
+      favorites: "Favorites",
+      profiles: "Style Profiles",
+      enoughFor: "Enough for up to {count} standard images.",
+    },
+    toolCards: {
+      open: "Open",
+      start: "Start",
+      comingSoon: "Coming soon",
+      imageStudio: {
+        title: "Image Studio",
+        body: "Create campaign-ready visuals for social media, ads and product campaigns.",
+      },
+      videoStudio: {
+        title: "Video Studio",
+        body: "Turn static visuals into short-form campaign videos.",
+      },
+      lipSync: {
+        title: "Lip Sync",
+        body: "Create talking-head creator videos with voice and source video.",
+      },
+      creatorVideo: {
+        title: "Creator Video",
+        body: "Turn one source image and prompt into a short AI creator video.",
+      },
+      talkingCreator: {
+        title: "Talking Creator",
+        body: "Create a talking creator clip from one image, script and voice.",
+      },
+      motionTransfer: {
+        title: "Motion Transfer",
+        body: "Animate a creator image using a driving video.",
+      },
+    },
+    quickActions: [
+      {
+        title: "Create Campaign Visual",
+        body: "Generate a ready-to-use image for social media, ads, product campaigns or creator content.",
+        cta: "Open AI Agent",
+      },
+      {
+        title: "Start with Template",
+        body: "Choose a proven prompt template for fitness, beauty, UGC, product, restaurant or brand campaigns.",
+        cta: "Browse Templates",
+      },
+      {
+        title: "Create Style Profile",
+        body: "Save a reusable creative direction for consistent future generations.",
+        cta: "Create Profile",
+      },
+      {
+        title: "Continue Recent Assets",
+        body: "Open your latest visuals, create variants or use an asset as reference.",
+        cta: "Open Gallery",
+      },
+      {
+        title: "Add Credits",
+        body: "Top up your balance and continue generating campaign visuals.",
+        cta: "View Plans",
+      },
+    ],
+    recommended: {
+      title: "Recommended next step",
+      createProfile:
+        "Create a reusable Style Profile before your next generation to keep your visuals consistent.",
+      createProfileCta: "Create Style Profile",
+      lowCreditsTitle: "Your credits are running low",
+      lowCreditsBody:
+        "Add credits now to continue generating campaign visuals without interruption.",
+      lowCreditsCta: "Add Credits",
+      variantTitle: "Turn your best result into variations",
+      variantBody:
+        "Use your latest favorite as a reference and generate a new campaign direction.",
+      variantCta: "Create Variant",
+    },
+  },
   compactCredits: {
     credits: "Credits",
     loadingCredits: "Loading credits",
@@ -614,10 +758,25 @@ const en = {
     resultPlaceholderHint:
       "Generate a visual to preview it live. Completed assets are saved to your gallery automatically.",
     generateButton: "Generate Campaign Visual",
+    processingTitle: "Creating your campaign visual…",
     processingStepBrief: "Analyzing campaign brief",
     processingStepDirection: "Applying visual direction",
     processingStepFormat: "Preparing social format",
+    processingStepGenerating: "Generating final image",
     processingStepSaving: "Saving to Asset Gallery",
+    promptTip:
+      "Tip: Include the product, target audience, mood, platform and visual style for better results.",
+    creditPreview:
+      "This generation will use {cost} credits. You will have {remaining} credits left.",
+    creditPreviewShort: "This generation will use {cost} credits.",
+    resultReadyTitle: "Your campaign visual is ready.",
+    resultReadyBody:
+      "Download it, create a variation or use it as a reference for your next asset.",
+    createVariant: "Create Variant",
+    useAsReference: "Use as Reference",
+    generateAnotherFormat: "Generate Another Format",
+    saveFavorite: "Save to Favorites",
+    openGallery: "Open in Gallery",
     imageModeChips: {
       standard: "Standard 1C",
       fastDraft: "Fast Draft 1C",
@@ -701,31 +860,33 @@ const en = {
       "Planned modules — preview only. No API, credits, or provider calls.",
     imageModes: {
       standard: {
-        label: "Standard Image",
-        description:
-          "Reliable campaign visuals powered by the production image workflow.",
+        label: "Standard",
+        description: "Reliable campaign visual for everyday content.",
+        creditLine: "Standard — 1 Credit",
       },
       ugcLook: {
         label: "UGC Look",
         description:
-          "Authentic smartphone-style creator visuals for TikTok, Reels and organic ads.",
+          "Authentic creator-style visual for social media and ads.",
+        creditLine: "UGC Look — 2 Credits",
         hoverHint:
           "Best for casual creator posts, product recommendations and realistic social content.",
       },
       fastDraft: {
         label: "Fast Draft",
-        description:
-          "Faster low-cost drafts for quick visual exploration.",
+        description: "Quick concept test before producing polished assets.",
+        creditLine: "Fast Draft — 1 Credit",
       },
       premium: {
-        label: "Premium Image",
+        label: "Premium",
         description:
-          "Higher-quality campaign visuals for advanced creator assets.",
+          "High-end campaign image with stronger styling, detail and polish.",
+        creditLine: "Premium — 3 Credits",
       },
       referenceEdit: {
         label: "Reference Edit",
-        description:
-          "Upload an image and guide precise campaign-ready edits.",
+        description: "Use a reference image to guide the final result.",
+        creditLine: "Reference Edit — 5 Credits",
         hoverHint:
           "Reference Edit supports source images, edit instructions and guided campaign refinements.",
         panel: {
@@ -761,7 +922,8 @@ const en = {
       brandAssets: {
         label: "Brand Assets",
         description:
-          "Generate brand-ready ad creatives, product layouts and campaign assets.",
+          "Visuals aligned with a brand, product or campaign direction.",
+        creditLine: "Brand Assets — 4 Credits",
         hoverHint:
           "Brand Assets supports ad creatives, product campaign layouts, thumbnails and social marketing visuals.",
       },
@@ -1051,6 +1213,13 @@ const en = {
   gallery: {
     loading: "Loading your Asset Gallery…",
     empty: "No assets match your filters yet.",
+    emptyTitle: "No assets yet",
+    emptyBody:
+      "Create your first campaign visual in the AI Agent and it will appear here automatically.",
+    emptyCta: "Create first visual",
+    searchEmptyTitle: "No matching assets found",
+    searchEmptyBody:
+      "Try another keyword, status filter or style profile.",
     searchPlaceholder: "Search prompts or ideas…",
     allStyleProfiles: "All style profiles",
     noStyleProfile: "No style profile",
@@ -1113,14 +1282,28 @@ const en = {
     buildDescription:
       "Create reusable creative direction for campaign visuals — look, mood and styling in one profile.",
     profileName: "Profile name",
-    profileNamePlaceholder: "e.g. Luxury fitness creator",
+    profileNamePlaceholder: "e.g. Premium Fitness Creator",
     creativeTag: "Creative tag (optional)",
-    creativeTagPlaceholder: "e.g. Editorial · Product",
+    creativeTagPlaceholder: "e.g. Fitness · UGC · Product · Luxury",
     profileSummary: "Profile summary",
-    profileSummaryPlaceholder: "Short description of this profile's creative role...",
+    profileSummaryPlaceholder:
+      "Describe what this profile should be used for, such as campaign type, audience, brand mood or creator style.",
+    guidanceTitle: "How Style Profiles work",
+    guidanceBody:
+      "Style Profiles guide the visual direction of your generations — including mood, styling, framing and brand look. They help keep your output consistent without creating fixed identity models.",
     creativeDirection: "Creative direction",
     appearanceDirection: "Appearance direction",
-    appearancePlaceholder: "Hair, wardrobe, subject framing, signature look...",
+    appearancePlaceholder:
+      "Describe appearance, wardrobe, framing, lighting, poses and recurring visual details.",
+    moodDirection: "Mood direction",
+    moodPlaceholder:
+      "Describe the emotional tone: premium, energetic, natural, cinematic, clean, bold, elegant or authentic.",
+    brandDirectionLabel: "Brand direction",
+    brandPlaceholder:
+      "Add brand colors, product focus, visual rules, do's and don'ts for consistent output.",
+    negativeDirectionLabel: "Negative direction",
+    negativePlaceholder:
+      "Describe what should be avoided, such as unrealistic skin, distorted hands, wrong logos, cheap lighting or off-brand colors.",
     styleDirection: "Style direction",
     stylePlaceholder: "Lighting, lens, color grading, mood, brand aesthetic...",
     creating: "Creating...",
@@ -1217,6 +1400,14 @@ const en = {
     footerNote:
       "Credits are added to your account after successful payment. Unused credits remain on your balance until used in the AI Agent.",
     recommended: "Recommended",
+    mostPopular: "Most Popular",
+    trustNotes: [
+      "Secure checkout via Stripe",
+      "Transparent credit usage",
+      "Credits shown before each generation",
+      "Assets saved in your gallery",
+      "Download your generated visuals",
+    ],
     sessionExpired: "Your session expired. Please sign in again.",
     loadFailed:
       "We could not load your credit balance. Please try again.",
@@ -1306,7 +1497,43 @@ const de: DeepString<typeof en> = {
     liveStudio: "Live Studio",
     expansionModules: "Erweiterungsmodule",
     expansionIntro:
-      "Kampagnen-Orchestrierung und Compliance — nur Vorschau. Keine API, Credits oder Abrechnung.",
+      "Kampagnen-Orchestrierung und Compliance — in einem zukünftigen Release.",
+    toolRailStatuses: {
+      live: "Live",
+      beta: "Beta",
+      comingSoon: "Bald",
+      planned: "Geplant",
+    },
+    toolRail: {
+      sectionTitle: "Studio-Tools",
+      plannedSectionTitle: "Geplant",
+      imageStudio: "Image Studio",
+      imageStudioTip: "Kampagnenfertige Bilder für Social, Ads und Produkte",
+      videoStudio: "Video Studio",
+      videoStudioTip: "Statische Visuals in kurze Kampagnenvideos verwandeln",
+      lipSync: "Lip Sync",
+      lipSyncTip: "Talking-Head-Videos mit Stimme und Quellvideo",
+      creatorVideo: "Creator Video",
+      creatorVideoTip: "Ein Bild und Prompt als kurzes AI-Creator-Video",
+      talkingCreator: "Talking Creator",
+      talkingCreatorTip: "Sprechender Clip aus Bild, Skript und Stimme",
+      motionTransfer: "Motion Transfer",
+      motionTransferTip: "Creator-Bild mit Driving-Video animieren",
+      brandAssets: "Brand Assets",
+      brandAssetsTip: "Markenkonforme Kampagnenvisuals und Produktlayouts",
+      referenceEdit: "Reference Edit",
+      referenceEditTip: "Ergebnis mit Referenzbild steuern",
+      cinemaAgent: "Cinema Agent",
+      cinemaAgentTip: "Szenen und Shot Lists vor der Generierung planen",
+      omniAgent: "Omni Campaign Agent",
+      omniAgentTip: "Ein Brief für Visuals, Video-Konzepte und Captions",
+      socialPlanner: "Social Planner",
+      socialPlannerTip: "Captions, Hashtags und Posting-Kalender planen",
+      compliance: "Compliance",
+      complianceTip: "Claims, Logos und Brand Safety prüfen",
+      watermark: "Watermark",
+      watermarkTip: "Wasserzeichen-Previews zum Konzepttest",
+    },
     expansionFootnote:
       "Geplante Module bleiben bis zu einem späteren Release deaktiviert.",
     roadmap: "Roadmap",
@@ -1333,23 +1560,24 @@ const de: DeepString<typeof en> = {
       "Bildmodi laufen im AI Agent. Öffne Werkzeuge für die vollständige Studio-Roadmap.",
     creditCostShort: "Credits",
     nav: {
+      home: { label: "Home", description: "Dashboard-Übersicht" },
       agent: {
         label: "AI Agent",
-        description: "Kampagnenfertige Visuals generieren",
+        description: "Kampagnenvisuals erstellen",
       },
       tools: {
-        label: "Werkzeuge",
-        description: "Studio-Modi, Kosten und Roadmap",
+        label: "Tools",
+        description: "Workflows entdecken",
       },
       gallery: {
         label: "Asset Gallery",
-        description: "Assets prüfen, wiederverwenden und downloaden",
+        description: "Assets verwalten",
       },
       characters: {
         label: "Style Profiles",
-        description: "Wiederverwendbare Creative Direction für Konsistenz",
+        description: "Styles speichern",
       },
-      credits: { label: "Credits", description: "Guthaben, Kosten und Pakete" },
+      credits: { label: "Credits", description: "Guthaben und Pakete" },
       planner: {
         label: "Campaign Planner",
         description:
@@ -1887,6 +2115,115 @@ const de: DeepString<typeof en> = {
       },
     },
   },
+  home: {
+    eyebrow: "Creator Command Center",
+    welcome: "Willkommen zurück, Georgios",
+    intro:
+      "Erstelle dein nächstes Kampagnenvisual, arbeite mit deinen letzten Assets weiter oder verwalte deinen kreativen Workflow.",
+    createVisual: "Visual erstellen",
+    useTemplate: "Vorlage nutzen",
+    addCredits: "Credits hinzufügen",
+    promptPlaceholder:
+      "Suche Vorlagen oder beschreibe dein nächstes Kampagnenvisual…",
+    promptCreate: "Erstellen",
+    studioToolsTitle: "Studio-Workflows",
+    templatesTitle: "Mit Vorlage starten",
+    templatesSubtitle:
+      "Erprobte Prompts für Fitness, Beauty, UGC, Produkt, Restaurant und Brand-Kampagnen.",
+    useTemplateCta: "Vorlage nutzen",
+    recentAssetsTitle: "Recent Assets",
+    recentAssetsBody:
+      "Arbeite mit deinen neuesten Kampagnenvisuals weiter.",
+    recentAssetsEmpty:
+      "Noch keine Assets — erstelle dein erstes Visual im AI Agent.",
+    createFirstVisual: "Erstes Visual erstellen",
+    assetOpen: "Öffnen",
+    assetVariant: "Variante erstellen",
+    assetReference: "Als Referenz nutzen",
+    assetDownload: "Download",
+    statuses: {
+      live: "Live",
+      beta: "Beta",
+      comingSoon: "Demnächst",
+    },
+    metrics: {
+      credits: "Credits verfügbar",
+      assets: "Assets erstellt",
+      favorites: "Favoriten",
+      profiles: "Style Profiles",
+      enoughFor: "Reicht für bis zu {count} Standard-Bilder.",
+    },
+    toolCards: {
+      open: "Öffnen",
+      start: "Starten",
+      comingSoon: "Demnächst",
+      imageStudio: {
+        title: "Image Studio",
+        body: "Erstelle kampagnenfähige Visuals für Social Media, Ads und Produktkampagnen.",
+      },
+      videoStudio: {
+        title: "Video Studio",
+        body: "Verwandle statische Visuals in kurze Kampagnenvideos.",
+      },
+      lipSync: {
+        title: "Lip Sync",
+        body: "Erstelle Talking-Head-Creator-Videos mit Stimme und Quellvideo.",
+      },
+      creatorVideo: {
+        title: "Creator Video",
+        body: "Ein Quellbild und Prompt als kurzes AI-Creator-Video.",
+      },
+      talkingCreator: {
+        title: "Talking Creator",
+        body: "Sprechender Creator-Clip aus Bild, Skript und Stimme.",
+      },
+      motionTransfer: {
+        title: "Motion Transfer",
+        body: "Animiere ein Creator-Bild mit einem Driving-Video.",
+      },
+    },
+    quickActions: [
+      {
+        title: "Create Campaign Visual",
+        body: "Generiere ein einsatzbereites Visual für Social Media, Ads, Produktkampagnen oder Creator Content.",
+        cta: "AI Agent öffnen",
+      },
+      {
+        title: "Mit Vorlage starten",
+        body: "Wähle eine erprobte Prompt-Vorlage für Fitness, Beauty, UGC, Produkt, Restaurant oder Brand-Kampagnen.",
+        cta: "Vorlagen ansehen",
+      },
+      {
+        title: "Style Profile erstellen",
+        body: "Speichere eine wiederverwendbare Creative Direction für konsistente zukünftige Generierungen.",
+        cta: "Profil erstellen",
+      },
+      {
+        title: "Recent Assets fortsetzen",
+        body: "Öffne deine letzten Visuals, erstelle Varianten oder nutze ein Asset als Referenz.",
+        cta: "Galerie öffnen",
+      },
+      {
+        title: "Credits hinzufügen",
+        body: "Lade dein Guthaben auf und generiere weiter kampagnenfähige Visuals.",
+        cta: "Pakete ansehen",
+      },
+    ],
+    recommended: {
+      title: "Empfohlener nächster Schritt",
+      createProfile:
+        "Erstelle vor deiner nächsten Generierung ein wiederverwendbares Style Profile für konsistente Ergebnisse.",
+      createProfileCta: "Style Profile erstellen",
+      lowCreditsTitle: "Deine Credits werden knapp",
+      lowCreditsBody:
+        "Lade Credits jetzt auf, um ohne Unterbrechung weiter zu generieren.",
+      lowCreditsCta: "Credits hinzufügen",
+      variantTitle: "Mache aus deinem besten Ergebnis neue Varianten",
+      variantBody:
+        "Nutze deinen letzten Favoriten als Referenz und teste eine neue Kampagnenrichtung.",
+      variantCta: "Variante erstellen",
+    },
+  },
   compactCredits: {
     credits: "Credits",
     loadingCredits: "Credits werden geladen",
@@ -1896,7 +2233,7 @@ const de: DeepString<typeof en> = {
       "Keine Credits mehr — öffne Credits, um ein Paket zu kaufen",
   },
   agent: {
-    title: "Kampagnenfertige Visuals erstellen",
+    title: "Erstelle dein nächstes Kampagnenvisual.",
     subtitle:
       "Beschreibe deine Idee, wähle einen visuellen Modus und generiere ein einsatzbereites Asset für Social Media, Werbung, Produktkampagnen oder Creator Content.",
     enterHint: "Enter zum Generieren · Shift+Enter für neue Zeile",
@@ -1907,10 +2244,25 @@ const de: DeepString<typeof en> = {
     resultPlaceholderHint:
       "Generiere ein Visual für die Live-Vorschau. Fertige Assets werden automatisch in deiner Gallery gespeichert.",
     generateButton: "Visual generieren",
+    processingTitle: "Dein Kampagnenvisual wird erstellt…",
     processingStepBrief: "Kampagnenbriefing analysieren",
     processingStepDirection: "Visuelle Richtung anwenden",
     processingStepFormat: "Social-Media-Format vorbereiten",
+    processingStepGenerating: "Finales Visual generieren",
     processingStepSaving: "In der Asset Gallery speichern",
+    promptTip:
+      "Tipp: Beschreibe Produkt, Zielgruppe, Stimmung, Plattform und visuellen Stil für bessere Ergebnisse.",
+    creditPreview:
+      "Diese Generierung verwendet {cost} Credits. Danach bleiben dir {remaining} Credits.",
+    creditPreviewShort: "Diese Generierung verwendet {cost} Credits.",
+    resultReadyTitle: "Dein Kampagnenvisual ist fertig.",
+    resultReadyBody:
+      "Lade es herunter, erstelle eine Variante oder nutze es als Referenz für dein nächstes Asset.",
+    createVariant: "Variante erstellen",
+    useAsReference: "Als Referenz nutzen",
+    generateAnotherFormat: "Anderes Format generieren",
+    saveFavorite: "Favorit speichern",
+    openGallery: "In Galerie öffnen",
     imageModeChips: {
       standard: "Standard 1C",
       fastDraft: "Fast Draft 1C",
@@ -1998,31 +2350,33 @@ const de: DeepString<typeof en> = {
       "Geplante Module — nur Vorschau. Keine API, Credits oder Provider-Calls.",
     imageModes: {
       standard: {
-        label: "Standard Image",
-        description:
-          "Zuverlässige Kampagnenvisuals über den Produktions-Image-Workflow.",
+        label: "Standard",
+        description: "Zuverlässiges Kampagnenvisual für den Alltag.",
+        creditLine: "Standard — 1 Credit",
       },
       ugcLook: {
         label: "UGC Look",
         description:
-          "Authentische Smartphone-/Creator-Visuals für TikTok, Reels und Organic Ads.",
+          "Authentisches Creator-Visual für Social Media und Ads.",
+        creditLine: "UGC Look — 2 Credits",
         hoverHint:
           "Ideal für lockere Creator-Posts, Produktempfehlungen und realistischen Social Content.",
       },
       fastDraft: {
         label: "Fast Draft",
-        description:
-          "Schnellere, günstigere Drafts für schnelle visuelle Exploration.",
+        description: "Schneller Konzepttest vor finalen Assets.",
+        creditLine: "Fast Draft — 1 Credit",
       },
       premium: {
-        label: "Premium Image",
+        label: "Premium",
         description:
-          "Höherwertige Kampagnenvisuals für anspruchsvolle Creator-Assets.",
+          "High-End-Kampagnenbild mit stärkerem Styling, Detail und Finish.",
+        creditLine: "Premium — 3 Credits",
       },
       referenceEdit: {
         label: "Reference Edit",
-        description:
-          "Bild hochladen und präzise kampagnenfertige Bearbeitungen anleiten.",
+        description: "Referenzbild zur Steuerung des finalen Ergebnisses.",
+        creditLine: "Reference Edit — 5 Credits",
         hoverHint:
           "Reference Edit unterstützt Quellbilder, Bearbeitungsanweisungen und geführte Kampagnen-Verfeinerungen.",
         panel: {
@@ -2059,7 +2413,8 @@ const de: DeepString<typeof en> = {
       brandAssets: {
         label: "Brand Assets",
         description:
-          "Erzeuge kampagnenfertige Ad Creatives, Produktlayouts und Brand Visuals.",
+          "Visuals passend zu Marke, Produkt oder Kampagnenrichtung.",
+        creditLine: "Brand Assets — 4 Credits",
         hoverHint:
           "Brand Assets unterstützt Ad Creatives, Produktkampagnen-Layouts, Thumbnails und Social-Marketing-Visuals.",
       },
@@ -2358,6 +2713,13 @@ const de: DeepString<typeof en> = {
   gallery: {
     loading: "Asset Gallery wird geladen…",
     empty: "Keine Assets passen zu deinen Filtern.",
+    emptyTitle: "Noch keine Assets",
+    emptyBody:
+      "Erstelle dein erstes Kampagnenvisual im AI Agent — es erscheint automatisch hier.",
+    emptyCta: "Erstes Visual erstellen",
+    searchEmptyTitle: "Keine passenden Assets gefunden",
+    searchEmptyBody:
+      "Probiere ein anderes Stichwort, einen anderen Status-Filter oder ein Style Profile.",
     searchPlaceholder: "Prompts oder Ideen suchen…",
     allStyleProfiles: "Alle Style Profiles",
     noStyleProfile: "Kein Style Profile",
@@ -2421,15 +2783,28 @@ const de: DeepString<typeof en> = {
     buildDescription:
       "Baue wiederverwendbare Creative Direction für Kampagnenvisuals — Appearance, Mood und Brand Styling in einem Profil.",
     profileName: "Profilname",
-    profileNamePlaceholder: "z. B. Luxury Fitness Creator",
+    profileNamePlaceholder: "z. B. Premium Fitness Creator",
     creativeTag: "Creative Tag (optional)",
-    creativeTagPlaceholder: "z. B. Editorial · Product",
+    creativeTagPlaceholder: "z. B. Fitness · UGC · Product · Luxury",
     profileSummary: "Profil-Zusammenfassung",
     profileSummaryPlaceholder:
-      "Kurze Beschreibung der kreativen Rolle dieses Profils...",
+      "Beschreibe, wofür dieses Profil genutzt werden soll — Kampagnentyp, Zielgruppe, Markenstimmung oder Creator-Stil.",
+    guidanceTitle: "So funktionieren Style Profiles",
+    guidanceBody:
+      "Style Profiles steuern die visuelle Richtung deiner Generierungen — inklusive Stimmung, Styling, Bildaufbau und Markenlook. Sie helfen dabei, konsistente Ergebnisse zu erzeugen, ohne feste Identitätsmodelle zu erstellen.",
     creativeDirection: "Creative Direction",
     appearanceDirection: "Appearance Direction",
-    appearancePlaceholder: "Haar, Wardrobe, Framing, Signature Look...",
+    appearancePlaceholder:
+      "Beschreibe Erscheinungsbild, Wardrobe, Framing, Licht, Posen und wiederkehrende visuelle Details.",
+    moodDirection: "Mood Direction",
+    moodPlaceholder:
+      "Beschreibe die emotionale Tonalität: premium, energiegeladen, natürlich, cineastisch, clean, bold, elegant oder authentisch.",
+    brandDirectionLabel: "Brand Direction",
+    brandPlaceholder:
+      "Markenfarben, Produktfokus, visuelle Regeln sowie Do's and Don'ts für konsistente Ergebnisse.",
+    negativeDirectionLabel: "Negative Direction",
+    negativePlaceholder:
+      "Was vermieden werden soll, z. B. unrealistische Haut, verzerrte Hände, falsche Logos, billiges Licht oder Off-Brand-Farben.",
     styleDirection: "Style Direction",
     stylePlaceholder: "Licht, Objektiv, Color Grading, Mood, Brand Aesthetic...",
     creating: "Wird erstellt...",
@@ -2529,6 +2904,14 @@ const de: DeepString<typeof en> = {
     footerNote:
       "Credits werden nach erfolgreicher Zahlung gutgeschrieben. Ungenutzte Credits bleiben auf deinem Guthaben, bis sie im AI Agent verwendet werden.",
     recommended: "Empfohlen",
+    mostPopular: "Am beliebtesten",
+    trustNotes: [
+      "Sichere Zahlung über Stripe",
+      "Transparente Credit-Nutzung",
+      "Credits werden vor jeder Generierung angezeigt",
+      "Assets werden in deiner Galerie gespeichert",
+      "Lade deine generierten Visuals herunter",
+    ],
     sessionExpired: "Deine Sitzung ist abgelaufen. Bitte erneut anmelden.",
     loadFailed:
       "Dein Credit-Guthaben konnte nicht geladen werden. Bitte erneut versuchen.",

@@ -110,14 +110,15 @@ export default function AiinflugenLanding({
       signIn: "Sign in",
       openApp: "Open Studio",
       label: "InfluExAi · AI Creator Studio",
-      title1: "Campaign-ready",
+      title1: "Create campaign-ready",
       title2: "AI visuals",
-      gold: "campaigns",
+      gold: "in minutes",
       subtitle:
-        "InfluExAi is an AI Campaign Studio for creators, brands and businesses who want to produce campaign-ready visuals faster.",
-      start: "Open Studio",
-      startCreating: "Start creating",
-      explore: "Explore features",
+        "InfluExAi helps creators, brands and businesses generate professional visuals for social media, product campaigns and digital ads — with reusable styles, visual modes and a complete asset workflow.",
+      start: "Start Creating",
+      startCreating: "Start Creating",
+      viewExamples: "View Examples",
+      explore: "View Examples",
       studioTitle: "One studio for the full visual workflow.",
       studioText:
         "Turn ideas into professional visuals for social media, product campaigns and digital ads with reusable styles and a complete asset workflow.",
@@ -164,13 +165,14 @@ export default function AiinflugenLanding({
       openApp: "Studio öffnen",
       label: "InfluExAi · AI Creator Studio",
       title1: "Kampagnenfertige",
-      title2: "AI-Visuals",
-      gold: "Kampagnen",
+      title2: "KI-Visuals",
+      gold: "in Minuten",
       subtitle:
-        "Erstelle kampagnenfähige KI-Visuals in Minuten. InfluExAi ist ein AI Campaign Studio für Creator, Marken und Unternehmen.",
-      start: "Studio öffnen",
+        "InfluExAi hilft Creatorn, Marken und Unternehmen, professionelle Visuals für Social Media, Produktkampagnen und digitale Werbung zu erstellen — mit wiederverwendbaren Styles, visuellen Modi und vollständigem Asset-Workflow.",
+      start: "Jetzt erstellen",
       startCreating: "Jetzt erstellen",
-      explore: "Features entdecken",
+      viewExamples: "Beispiele ansehen",
+      explore: "Beispiele ansehen",
       studioTitle: "Ein Studio für den gesamten Visual-Workflow.",
       studioText:
         "Verwandle Ideen in professionelle Visuals für Social Media, Produktkampagnen und digitale Werbung – mit wiederverwendbaren Styles und vollständigem Asset-Workflow.",
@@ -481,13 +483,13 @@ export default function AiinflugenLanding({
               </Link>
 
               <a
-                href="#tools"
+                href="#examples"
                 className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-8 py-4 text-sm font-extrabold text-white backdrop-blur-xl transition hover:border-[#d8ad5f]/60 hover:text-[#d8ad5f]"
               >
                 <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/20">
                   <Play className="h-4 w-4" />
                 </span>
-                {t.explore}
+                {t.viewExamples}
               </a>
             </div>
 

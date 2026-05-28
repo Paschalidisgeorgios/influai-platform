@@ -330,7 +330,7 @@ type AgentResult = {
 type AiAgentStudioProps = {
   charactersRefreshKey?: number;
   regenerateDraft?: RegenerateDraft | null;
-  preferredStudioTab?: "image" | "video" | "creator_video" | "lip_sync";
+  preferredStudioTab?: StudioTab;
   onGenerationQueued?: () => void;
   onClearRegenerateDraft?: () => void;
   onOpenGallery?: () => void;
@@ -2762,6 +2762,7 @@ export default function AiAgentStudio({
       a.processingStepBrief,
       a.processingStepDirection,
       a.processingStepFormat,
+      a.processingStepGenerating,
       a.processingStepSaving,
     ],
     [a]
@@ -2892,6 +2893,10 @@ export default function AiAgentStudio({
     }
     if (preferredStudioTab === "lip_sync" && LIP_SYNC_PUBLIC_ENABLED) {
       setStudioTab("lip_sync");
+      return;
+    }
+    if (preferredStudioTab === "talking_creator" && TALKING_CREATOR_PUBLIC_ENABLED) {
+      setStudioTab("talking_creator");
       return;
     }
     setStudioTab("image");
@@ -4117,11 +4122,21 @@ export default function AiAgentStudio({
 
   const activeModeShortLine = useMemo(() => {
     if (!selectedImageModeEntry) return "";
+    const modeCopy =
+      a.imageModes[selectedImageModeEntry.key as keyof typeof a.imageModes];
+    if (
+      modeCopy &&
+      typeof modeCopy === "object" &&
+      "creditLine" in modeCopy &&
+      typeof modeCopy.creditLine === "string"
+    ) {
+      return `${modeCopy.creditLine} · ${modeCopy.description}`;
+    }
     if ("hoverHint" in selectedImageModeEntry && selectedImageModeEntry.hoverHint) {
       return selectedImageModeEntry.hoverHint;
     }
     return selectedImageModeEntry.description;
-  }, [selectedImageModeEntry]);
+  }, [a.imageModes, selectedImageModeEntry]);
 
   useEffect(() => {
     setCaptionCopied(false);
@@ -4364,11 +4379,7 @@ export default function AiAgentStudio({
               }`}
             />
             <p className="mt-2 text-[10px] font-medium text-white/32">{a.enterHint}</p>
-            <p className="mt-1 text-[11px] text-white/45">
-              {language === "de"
-                ? "Tipp: Beschreibe Produkt, Zielgruppe, Stimmung, Plattform und visuellen Stil für bessere Ergebnisse."
-                : "Tip: Include the product, target audience, mood, platform and visual style for better results."}
-            </p>
+            <p className="mt-1 text-[11px] text-white/45">{a.promptTip}</p>
 
             <div className="mt-3">
               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/35">
@@ -4773,12 +4784,13 @@ export default function AiAgentStudio({
           !isTalkingCreatorActive ? (
             <p className="text-xs text-white/55">
               {typeof availableCredits === "number"
-                ? language === "de"
-                  ? `Diese Generierung verwendet ${requiredCreditsForCurrentSelection} Credits. Danach bleiben dir ${creditsLeftAfterGeneration ?? 0} Credits.`
-                  : `This generation will use ${requiredCreditsForCurrentSelection} credits. You will have ${creditsLeftAfterGeneration ?? 0} credits left.`
-                : language === "de"
-                  ? `Diese Generierung verwendet ${requiredCreditsForCurrentSelection} Credits.`
-                  : `This generation will use ${requiredCreditsForCurrentSelection} credits.`}
+                ? format(a.creditPreview, {
+                    cost: String(requiredCreditsForCurrentSelection),
+                    remaining: String(creditsLeftAfterGeneration ?? 0),
+                  })
+                : format(a.creditPreviewShort, {
+                    cost: String(requiredCreditsForCurrentSelection),
+                  })}
             </p>
           ) : null}
 
@@ -4952,7 +4964,8 @@ export default function AiAgentStudio({
                 </div>
               </div>
               <div>
-                <p className="text-lg font-black text-white">
+                <p className="text-lg font-black text-white">{a.processingTitle}</p>
+                <p className="mt-2 text-sm font-bold text-[#d8ad5f]">
                   {activeProcessingStep}
                 </p>
                 <p className="mt-3 text-sm leading-6 text-white/45">
@@ -5058,6 +5071,12 @@ export default function AiAgentStudio({
         </div>
 
         <div className="shrink-0 space-y-3 border-t border-white/10 p-4 sm:p-5">
+          {agentResult.status === "completed" ? (
+            <div className="mb-1">
+              <p className="text-sm font-black text-white">{a.resultReadyTitle}</p>
+              <p className="mt-1 text-xs leading-5 text-white/45">{a.resultReadyBody}</p>
+            </div>
+          ) : null}
           <p className="line-clamp-2 text-xs leading-5 text-white/45">
             {agentResult.prompt}
           </p>
@@ -5108,7 +5127,7 @@ export default function AiAgentStudio({
                 }}
                 className="inline-flex flex-1 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-bold text-white/80"
               >
-                {language === "de" ? "Variante erstellen" : "Create Variant"}
+                {a.createVariant}
               </button>
             ) : null}
             {agentResult.status === "completed" &&
@@ -5127,9 +5146,9 @@ export default function AiAgentStudio({
                       : "Reference applied. Add edit instructions and run Reference Edit."
                   );
                 }}
-                className="inline-flex flex-1 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-bold text-white/80"
+                className="inline-flex flex-1 items-center justify-center rounded-full border border-[#d8ad5f]/25 bg-[#d8ad5f]/10 px-5 py-3 text-sm font-bold text-[#f0d7a8]"
               >
-                {language === "de" ? "Als Referenz nutzen" : "Use as Reference"}
+                {a.useAsReference}
               </button>
             ) : null}
             {agentResult.status === "completed" && !agentResult.video_url ? (
@@ -5150,11 +5169,9 @@ export default function AiAgentStudio({
                       : `Format switched to ${next.label}.`
                   );
                 }}
-                className="inline-flex flex-1 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-bold text-white/80"
+                className="inline-flex flex-1 items-center justify-center rounded-full border border-[#d8ad5f]/25 bg-[#d8ad5f]/10 px-5 py-3 text-sm font-bold text-[#f0d7a8]"
               >
-                {language === "de"
-                  ? "Anderes Format generieren"
-                  : "Generate Another Format"}
+                {a.generateAnotherFormat}
               </button>
             ) : null}
             {agentResult.status === "completed" ? (

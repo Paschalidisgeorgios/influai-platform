@@ -498,9 +498,9 @@ export default function CharacterManager({
           </div>
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d8ad5f]">
-              {sp.brandDirection}
+              {sp.guidanceTitle}
             </p>
-            <p className="mt-2 text-sm leading-6 text-white/55">{sp.disclaimer}</p>
+            <p className="mt-2 text-sm leading-6 text-white/55">{sp.guidanceBody}</p>
           </div>
         </div>
       </div>
