@@ -19,7 +19,12 @@ export const LIVE_AVATAR_WORKFLOW = "live_avatar";
 
 /** Server-only feature gate. */
 export function isLiveAvatarEnabled(): boolean {
-  return process.env.ENABLE_LIVE_AVATAR === "true";
+  // Enabled by default unless explicitly turned off.
+  const serverFlag = process.env.ENABLE_LIVE_AVATAR;
+  const publicFlag = process.env.NEXT_PUBLIC_ENABLE_LIVE_AVATAR;
+  if (serverFlag === "false" || publicFlag === "false") return false;
+  if (serverFlag === "true" || publicFlag === "true") return true;
+  return true;
 }
 
 /** fal.ai model for the portrait-animation fallback (override via env). */

@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, Search } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import HeroBanner from "../studio/HeroBanner";
+import SystemTicker from "../studio/SystemTicker";
 import { useDashboardLanguage } from "../../DashboardLanguageProvider";
 import { useCreativeSuite } from "./CreativeSuiteProvider";
 
@@ -27,31 +29,22 @@ const DEMO_IMAGES = [
   "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800&q=80",
 ];
 
-function workflowLabel(workflow: string | null) {
-  if (!workflow || workflow === "standard") return "Standard";
-  return workflow.replace(/_/g, " ");
-}
-
 export default function CreativeHome() {
   const { language } = useDashboardLanguage();
+  const lang = language === "de" ? "de" : "en";
   const router = useRouter();
   const supabase = createClient();
-  const { galleryRefreshKey, handleRegenerate } = useCreativeSuite();
+  const { galleryRefreshKey } = useCreativeSuite();
 
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<HomeTab>("images");
   const [loading, setLoading] = useState(true);
   const [assets, setAssets] = useState<HomeAsset[]>([]);
 
-  const announcement =
-    language === "de"
-      ? "Erstelle kampagnenfähige Visuals mit InfluExAi."
-      : "Create campaign-ready visuals with InfluExAi.";
-
   const placeholder =
-    language === "de"
-      ? "Suche oder beschreibe dein nächstes Kampagnenvisual..."
-      : "Search or describe your next campaign visual...";
+    lang === "de"
+      ? "Suche oder beschreibe dein nächstes Kampagnenvisual…"
+      : "Search or describe your next campaign visual…";
 
   const loadAssets = useCallback(async () => {
     try {
@@ -100,17 +93,18 @@ export default function CreativeHome() {
   }
 
   const tabs: { id: HomeTab; label: string }[] = [
-    { id: "images", label: language === "de" ? "Bilder" : "Images" },
-    { id: "videos", label: language === "de" ? "Videos" : "Videos" },
+    { id: "images", label: lang === "de" ? "Bilder" : "Images" },
+    { id: "videos", label: lang === "de" ? "Videos" : "Videos" },
     { id: "moodboards", label: "Moodboards" },
   ];
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <p className="mb-8 text-sm font-semibold text-white">{announcement}</p>
+    <div className="mx-auto min-w-0 max-w-6xl">
+      <HeroBanner language={lang} />
+      <SystemTicker language={lang} />
 
-      <div className="mx-auto flex max-w-3xl items-center gap-3 rounded-full border border-white/10 bg-[#1c1c1f] px-5 py-4 shadow-2xl">
-        <Plus className="h-5 w-5 shrink-0 text-white/60" aria-hidden />
+      <div className="mx-auto mb-8 flex max-w-3xl items-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
+        <Plus className="h-5 w-5 shrink-0 text-orange-500" aria-hidden />
         <input
           type="search"
           value={query}
@@ -119,96 +113,83 @@ export default function CreativeHome() {
             if (e.key === "Enter") handleSearchSubmit();
           }}
           placeholder={placeholder}
-          className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/40"
+          className="min-w-0 flex-1 border-none bg-transparent text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400"
         />
         <button
           type="button"
           onClick={handleSearchSubmit}
-          className="shrink-0 rounded-full bg-orange-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-600"
+          className="shrink-0 rounded-full bg-orange-500 px-4 py-2 text-xs font-bold text-white hover:bg-orange-600"
         >
-          <Search className="h-4 w-4" aria-hidden />
+          {lang === "de" ? "Erstellen" : "Create"}
         </button>
       </div>
 
-      <div className="mt-12 mb-6 flex flex-wrap items-center gap-8">
-        {tabs.map((item) => (
+      <div className="mb-6 flex flex-wrap gap-2">
+        {tabs.map((t) => (
           <button
-            key={item.id}
+            key={t.id}
             type="button"
-            onClick={() => setTab(item.id)}
-            className={`text-sm transition ${
-              tab === item.id
-                ? "font-bold text-white"
-                : "font-semibold text-white/45 hover:text-white"
+            onClick={() => setTab(t.id)}
+            className={`rounded-full px-4 py-2 text-xs font-bold transition ${
+              tab === t.id
+                ? "bg-slate-900 text-white"
+                : "border border-gray-200 bg-white text-slate-600 hover:border-gray-300"
             }`}
           >
-            {item.label}
+            {t.label}
           </button>
         ))}
       </div>
 
-      {tab === "moodboards" ? (
-        <p className="text-sm text-white/50">
-          {language === "de" ? "Moodboards kommen demnächst." : "Moodboards coming soon."}
-        </p>
-      ) : loading ? (
+      {loading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-orange-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
         </div>
       ) : (
-        <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
-          {showDemo
-            ? DEMO_IMAGES.map((src, index) => (
+        <div className="columns-2 gap-4 md:columns-3 lg:columns-4">
+          {(showDemo ? DEMO_IMAGES.map((src, i) => ({ id: `demo-${i}`, src })) : []).map(
+            (item) =>
+              "src" in item ? (
                 <div
-                  key={`demo-${index}`}
-                  className="group relative mb-4 break-inside-avoid overflow-hidden rounded-2xl border border-white/10 bg-white/5"
+                  key={item.id}
+                  className="mb-4 break-inside-avoid overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
                 >
-                  <img src={src} alt="" className="w-full object-cover" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={item.src} alt="" className="w-full object-cover" />
+                  <div className="border-t border-gray-100 bg-white p-3 rounded-b-2xl">
+                    <p className="text-xs font-medium text-slate-600 line-clamp-2">
+                      {lang === "de" ? "Demo-Visual" : "Demo visual"}
+                    </p>
+                  </div>
                 </div>
-              ))
-            : null}
-          {filtered.map((asset) => (
-            <article
-              key={asset.id}
-              className="group relative mb-4 break-inside-avoid overflow-hidden rounded-2xl border border-white/10 bg-white/5 transition hover:border-white/25"
-            >
-              {asset.video_url ? (
-                <video
-                  src={asset.video_url}
-                  className="w-full object-cover"
-                  muted
-                  playsInline
-                  preload="metadata"
-                />
-              ) : asset.image_url ? (
-                <img src={asset.image_url} alt="" className="w-full object-cover" />
-              ) : (
-                <div className="flex aspect-square items-center justify-center text-white/30">
-                  …
+              ) : null
+          )}
+          {filtered.map((asset) => {
+            const media = asset.video_url ?? asset.image_url;
+            if (!media) return null;
+            return (
+              <Link
+                key={asset.id}
+                href={`/dashboard/assets`}
+                className="group mb-4 block break-inside-avoid overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:border-orange-200 hover:shadow-md"
+              >
+                {asset.video_url ? (
+                  <video src={asset.video_url} className="w-full object-cover" muted playsInline />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={asset.image_url!} alt="" className="w-full object-cover" />
+                )}
+                <div className="border-t border-gray-100 bg-white p-3 rounded-b-2xl">
+                  <p className="text-sm font-semibold text-slate-800 line-clamp-1">
+                    {asset.workflow?.replace(/_/g, " ") ?? "Asset"}
+                  </p>
+                  <p className="mt-1 text-xs font-medium text-slate-600 line-clamp-2">
+                    {asset.prompt}
+                  </p>
                 </div>
-              )}
-              <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/20 to-transparent p-3 opacity-0 transition group-hover:opacity-100">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-orange-300">
-                  {workflowLabel(asset.workflow)}
-                </p>
-                <div className="mt-2 flex gap-2">
-                  <Link
-                    href={`/dashboard/gallery/${asset.id}`}
-                    className="rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur"
-                  >
-                    {language === "de" ? "Öffnen" : "Open"}
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => handleRegenerate(asset.prompt, null)}
-                    className="rounded-full bg-orange-500 px-2.5 py-1 text-[10px] font-bold text-white"
-                  >
-                    {language === "de" ? "Variante" : "Variant"}
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

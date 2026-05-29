@@ -1,20 +1,21 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useDashboardLanguage } from "../../DashboardLanguageProvider";
 import {
   getMatrixEntry,
   pathnameToMatrixTool,
   type ActiveTool,
 } from "@/lib/dashboard/creative-tool-matrix";
 import { useCreativeSuite } from "./CreativeSuiteProvider";
-import CreativePageHeader from "./CreativePageHeader";
-import StudioWorkspaceView from "../StudioWorkspaceView";
 import CharacterManager from "../../CharacterManager";
 import LiveAvatarStudio from "./LiveAvatarStudio";
 import KreaImageToolPanel from "./KreaImageToolPanel";
 import VideoRestyleToolPanel from "./VideoRestyleToolPanel";
 import MvpPlannerWorkspace from "./MvpPlannerWorkspace";
+import VideoEngineToolPanel from "./VideoEngineToolPanel";
+import LipSyncToolPanel from "./LipSyncToolPanel";
 
 export type { ActiveTool };
 
@@ -29,13 +30,9 @@ type DashboardProps = {
  */
 export default function Dashboard({ tool: toolProp, initialPrompt }: DashboardProps) {
   const pathname = usePathname();
-  const router = useRouter();
-  const {
-    charactersRefreshKey,
-    regenerateDraft,
-    setRegenerateDraft,
-    onGenerationQueued,
-  } = useCreativeSuite();
+  const { language } = useDashboardLanguage();
+  const lang = language === "de" ? "de" : "en";
+  const { setRegenerateDraft } = useCreativeSuite();
 
   const routeTool = pathnameToMatrixTool(pathname ?? "/dashboard");
   const resolvedTool = toolProp ?? routeTool;
@@ -64,29 +61,14 @@ export default function Dashboard({ tool: toolProp, initialPrompt }: DashboardPr
     return null;
   }
 
-  const header = (
-    <CreativePageHeader
-      titleEn={entry.titleEn}
-      titleDe={entry.titleDe}
-      subtitleEn={entry.subtitleEn}
-      subtitleDe={entry.subtitleDe}
-    />
-  );
-
   const wrap = (body: ReactNode) => (
-    <div className="mx-auto w-full max-w-5xl">
-      {header}
-      {body}
-    </div>
+    <div className="mx-auto w-full min-w-0 max-w-6xl">{body}</div>
   );
 
   if (entry.workspaceKind === "style_profiles") {
     return (
-      <div className="w-full">
-        {header}
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
-          <CharacterManager />
-        </div>
+      <div className="w-full rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+        <CharacterManager />
       </div>
     );
   }
@@ -103,41 +85,27 @@ export default function Dashboard({ tool: toolProp, initialPrompt }: DashboardPr
     return wrap(<VideoRestyleToolPanel />);
   }
 
+  if (entry.workspaceKind === "studio_video") {
+    return wrap(<VideoEngineToolPanel />);
+  }
+
+  if (entry.workspaceKind === "studio_lip_sync") {
+    return wrap(<LipSyncToolPanel />);
+  }
+
   if (entry.workspaceKind === "mvp_planner" && entry.key) {
     return wrap(<MvpPlannerWorkspace toolKey={entry.key} />);
   }
 
-  if (
-    entry.workspaceKind === "studio_image" ||
-    entry.workspaceKind === "studio_video" ||
-    entry.workspaceKind === "studio_lip_sync"
-  ) {
-    const workspace =
-      entry.workspaceKind === "studio_video"
-        ? "video"
-        : entry.workspaceKind === "studio_lip_sync"
-          ? "lip_sync"
-          : "image";
-
-    return wrap(
-      <StudioWorkspaceView
-        workspace={workspace}
-        appearance="light"
-        initialImageMode={entry.initialImageMode}
-        activeTool={activeTool}
-        charactersRefreshKey={charactersRefreshKey}
-        regenerateDraft={regenerateDraft}
-        onClearRegenerateDraft={() => setRegenerateDraft(null)}
-        onGenerationQueued={onGenerationQueued}
-        onOpenGallery={() => router.push("/dashboard/assets")}
-        onOpenCredits={() => router.push("/dashboard/credits")}
-      />
-    );
+  if (entry.workspaceKind === "studio_image" && entry.key) {
+    return wrap(<KreaImageToolPanel toolKey={entry.key} />);
   }
 
   return wrap(
-    <p className="text-sm font-medium text-white/50">
-      Open this tool from the sidebar navigation.
+    <p className="text-sm font-medium text-slate-600">
+      {lang === "de"
+        ? "Öffne dieses Tool über die Sidebar-Navigation."
+        : "Open this tool from the sidebar navigation."}
     </p>
   );
 }

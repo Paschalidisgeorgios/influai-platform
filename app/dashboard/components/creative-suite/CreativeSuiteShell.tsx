@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { pathnameToActiveTool } from "@/lib/dashboard/tool-suite";
 import { useCreativeSuite } from "./CreativeSuiteProvider";
+import WorkspaceTopBar from "../studio/WorkspaceTopBar";
 import CreativeSuiteSidebar, {
   CreativeSuiteMobileHeader,
 } from "./CreativeSuiteSidebar";
@@ -43,7 +44,8 @@ export default function CreativeSuiteShell({
         />
 
         <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-          <div className="w-full px-4 py-6 sm:px-8">
+          <div className="w-full min-w-0 px-4 py-6 sm:px-8">
+            <WorkspaceTopBar showSearch={false} />
             {statusMessage ? (
               <div className="mb-4 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700 shadow-sm">
                 {statusMessage}

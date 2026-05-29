@@ -1,17 +1,58 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getDefaultModelIdForTool } from "@/lib/ai/krea-model-ui";
+import {
+  VIDEO_ENGINE_ENGINES,
+  whiteLabelCardToModelOption,
+} from "@/lib/dashboard/white-label-engines";
 import { createClient } from "@/lib/supabase/client";
 import { handleGenerateForTool } from "@/lib/dashboard/tool-generate";
+import { useWorkspaceGeneration } from "@/app/dashboard/hooks/useWorkspaceGeneration";
 import { useCreativeSuite } from "./CreativeSuiteProvider";
 import { useDashboardLanguage } from "../../DashboardLanguageProvider";
-import CreativeToolResult from "./CreativeToolResult";
+import ToolWorkspace from "../studio/ToolWorkspace";
+import { getMatrixEntry } from "@/lib/dashboard/creative-tool-matrix";
 
 export default function VideoRestyleToolPanel() {
+  const tool = getMatrixEntry("video_restyle");
   const { language } = useDashboardLanguage();
+  const lang = language === "de" ? "de" : "en";
   const { credits, onGenerationQueued } = useCreativeSuite();
   const supabase = createClient();
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const getToken = useCallback(async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return session?.access_token ?? null;
+  }, [supabase.auth]);
+
+  const {
+    preview,
+    setLoading: setPreviewLoading,
+    setError: setPreviewError,
+    clearPreviewError,
+    pollGeneration,
+  } = useWorkspaceGeneration(getToken);
+
+  const modelOptions = useMemo(
+    () =>
+      VIDEO_ENGINE_ENGINES.map((c) =>
+        whiteLabelCardToModelOption(c, lang, tool?.creditCost)
+      ),
+    [lang, tool?.creditCost]
+  );
+  const [selectedModel, setSelectedModel] = useState(
+    () => VIDEO_ENGINE_ENGINES[0]?.id ?? getDefaultModelIdForTool("video_restyle")
+  );
+
+  useEffect(() => {
+    setSelectedModel(
+      VIDEO_ENGINE_ENGINES[0]?.id ?? getDefaultModelIdForTool("video_restyle")
+    );
+  }, []);
 
   const [stylePrompt, setStylePrompt] = useState("");
   const [sourceImageUrl, setSourceImageUrl] = useState<string | null>(null);
@@ -19,20 +60,16 @@ export default function VideoRestyleToolPanel() {
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [resultImageUrl, setResultImageUrl] = useState<string | null>(null);
+  const [format, setFormat] = useState("square");
 
   const uploadImage = useCallback(
     async (file: File) => {
       setUploading(true);
       setError(null);
-      const blob = URL.createObjectURL(file);
-      setPreviewUrl(blob);
+      setPreviewUrl(URL.createObjectURL(file));
 
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        const token = session?.access_token;
+        const token = await getToken();
         if (!token) throw new Error("Session expired");
 
         const formData = new FormData();
@@ -54,27 +91,30 @@ export default function VideoRestyleToolPanel() {
         setUploading(false);
       }
     },
-    [supabase.auth]
+    [getToken]
   );
 
   const canGenerate =
     !!sourceImageUrl &&
     stylePrompt.trim().length > 0 &&
     !uploading &&
-    !loading;
+    !loading &&
+    credits >= (tool?.creditCost ?? 0);
 
   const handleGenerate = async () => {
     if (!canGenerate || !sourceImageUrl) return;
     setLoading(true);
     setError(null);
+    clearPreviewError();
+    setPreviewLoading(
+      lang === "de" ? "Restyle wird erstellt …" : "Creating restyle …"
+    );
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const token = session?.access_token;
+      const token = await getToken();
       if (!token) {
         setError("Session expired.");
+        setPreviewError("Session expired.");
         return;
       }
 
@@ -85,117 +125,104 @@ export default function VideoRestyleToolPanel() {
         token,
         sourceImageUrl,
         editInstruction,
-        outputFormat: "square",
+        outputFormat: format,
+        kreaModelId: selectedModel,
       });
 
       if (!result.success) {
         setError(result.error);
+        setPreviewError(result.error);
         return;
       }
 
       onGenerationQueued();
-      setResultImageUrl(null);
+      if (result.generationId) {
+        pollGeneration(result.generationId, lang);
+      }
     } catch {
-      setError("Generation failed.");
+      const msg = lang === "de" ? "Generierung fehlgeschlagen." : "Generation failed.";
+      setError(msg);
+      setPreviewError(msg);
     } finally {
       setLoading(false);
     }
   };
 
+  if (!tool) return null;
+
   return (
-    <div className="space-y-6">
-      <p className="text-xs font-medium text-slate-600">
-        {language === "de"
-          ? "Lade ein Referenzbild oder Frame hoch und beschreibe den gewünschten Video-Restyle. Die Vorschau nutzt die Bild-Pipeline; volles Video-Restyle folgt."
-          : "Upload a reference frame and describe the video restyle. Preview uses the image pipeline; full video restyle follows."}
-      </p>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="mb-3 text-sm font-bold text-slate-900">
-            {language === "de" ? "Referenz / Frame" : "Reference / frame"}
-          </p>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void uploadImage(f);
-              e.target.value = "";
-            }}
-          />
-          {previewUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={previewUrl} alt="" className="h-48 w-full rounded-xl object-contain bg-black" />
-          ) : (
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="flex h-48 w-full items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white text-sm text-slate-500"
-            >
-              + {language === "de" ? "Bild hochladen" : "Upload image"}
-            </button>
-          )}
-          {uploading ? (
-            <p className="mt-2 text-xs text-slate-500">
-              {language === "de" ? "Wird hochgeladen…" : "Uploading…"}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <label className="block">
-            <span className="text-sm font-bold text-slate-900">
-              {language === "de" ? "Restyle-Prompt" : "Restyle prompt"}
-            </span>
-            <textarea
-              value={stylePrompt}
-              onChange={(e) => setStylePrompt(e.target.value)}
-              rows={6}
-              className="mt-3 w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-900"
-              placeholder={
-                language === "de"
-                  ? "z.B. cinematic teal-orange, luxury brand, high contrast"
-                  : "e.g. cinematic teal-orange, luxury brand, high contrast"
-              }
-            />
-          </label>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          disabled={!canGenerate}
-          onClick={handleGenerate}
-          className="rounded-full bg-orange-500 px-6 py-3 text-sm font-bold text-white hover:bg-orange-600 disabled:opacity-40"
-        >
-          {loading
-            ? language === "de"
-              ? "Wird erstellt…"
-              : "Generating…"
-            : language === "de"
-              ? "Restyle-Vorschau erstellen"
-              : "Create restyle preview"}
-        </button>
-        <span className="text-xs font-bold text-orange-600">5 Credits</span>
-        <span className="text-xs text-slate-500">{credits} available</span>
-      </div>
-
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
-
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-        <CreativeToolResult
-          imageUrl={resultImageUrl}
-          emptyLabel={
-            language === "de"
-              ? "Vorschau in Assets nach Generierung."
-              : "Preview in Assets after generation."
-          }
+    <ToolWorkspace
+      embedded
+      title={lang === "de" ? tool.titleDe : tool.titleEn}
+      subtitle={lang === "de" ? tool.subtitleDe : tool.subtitleEn}
+      modelOptions={modelOptions}
+      selectedModel={selectedModel}
+      onModelChange={setSelectedModel}
+      promptText={stylePrompt}
+      onPromptChange={setStylePrompt}
+      selectedFormat={format}
+      onFormatChange={setFormat}
+      badges={tool.commandBarBadges}
+      creditCost={tool.creditCost}
+      availableCredits={credits}
+      onGenerate={handleGenerate}
+      generateDisabled={!canGenerate}
+      loading={loading}
+      previewState={preview}
+      idlePreviewLabel={
+        lang === "de"
+          ? "Dein Restyle erscheint hier."
+          : "Your restyle will appear here."
+      }
+      modelGridColumns={4}
+      formatVariant="popover"
+      modelLabelEn="Style Engine"
+      modelLabelDe="Style Engine"
+      generateLabel={lang === "de" ? "Restyle erstellen" : "Create restyle"}
+      promptPlaceholder={
+        lang === "de"
+          ? "z.B. cinematic teal-orange, luxury brand, high contrast"
+          : "e.g. cinematic teal-orange, luxury brand, high contrast"
+      }
+    >
+      <div className="space-y-2">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+          {lang === "de" ? "Referenz / Frame" : "Reference / frame"}
+        </p>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void uploadImage(f);
+            e.target.value = "";
+          }}
         />
+        {previewUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={previewUrl}
+            alt=""
+            className="h-48 w-full rounded-xl border border-gray-200 object-contain bg-gray-50"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="flex h-40 w-full items-center justify-center rounded-xl border border-dashed border-gray-300 bg-white text-sm text-slate-600"
+          >
+            + {lang === "de" ? "Bild hochladen" : "Upload image"}
+          </button>
+        )}
       </div>
-    </div>
+      {uploading ? (
+        <p className="text-xs text-slate-500">
+          {lang === "de" ? "Wird hochgeladen…" : "Uploading…"}
+        </p>
+      ) : null}
+      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+    </ToolWorkspace>
   );
 }

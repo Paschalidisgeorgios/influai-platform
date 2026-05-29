@@ -1,3 +1,8 @@
+import {
+  resolveKreaModelPathForWorkflow as resolveRegistryModelPath,
+  resolveKreaStoredModelForWorkflow as resolveRegistryStoredModel,
+} from "@/lib/ai/krea-model-registry";
+
 /** Server-only feature gate (ENABLE_KREA_PROVIDER). */
 export function isKreaEnabled(): boolean {
   return process.env.ENABLE_KREA_PROVIDER === "true";
@@ -57,65 +62,18 @@ export function shouldUseKreaForEnhanceWorkflow(workflow: string): boolean {
 }
 
 /** Krea API model path segment (not the stored `krea/...` id). */
-export function resolveKreaModelPathForWorkflow(workflow: string): string {
-  const fallback =
-    process.env.KREA_IMAGE_MODEL_PATH?.trim() || "bfl/flux-1-dev";
-
-  switch (workflow) {
-    case "fast_draft":
-      return (
-        process.env.KREA_MODEL_FAST_DRAFT?.trim() ||
-        process.env.KREA_FAST_DRAFT_MODEL_PATH?.trim() ||
-        fallback
-      );
-    case "premium_image":
-    case "krea_premium_image":
-      return (
-        process.env.KREA_MODEL_PREMIUM?.trim() ||
-        process.env.KREA_PREMIUM_MODEL_PATH?.trim() ||
-        fallback
-      );
-    case "brand_assets":
-      return (
-        process.env.KREA_MODEL_BRAND?.trim() ||
-        process.env.KREA_BRAND_MODEL_PATH?.trim() ||
-        fallback
-      );
-    case "ugc_look":
-      return (
-        process.env.KREA_MODEL_UGC?.trim() ||
-        process.env.KREA_UGC_MODEL_PATH?.trim() ||
-        fallback
-      );
-    case "reference_edit":
-      return (
-        process.env.KREA_MODEL_REFERENCE_EDIT?.trim() ||
-        "google/nano-banana-pro"
-      );
-    case "video_image_to_video":
-      return (
-        process.env.KREA_MODEL_VIDEO?.trim() ||
-        process.env.KREA_VIDEO_MODEL_PATH?.trim() ||
-        "kling/kling-2.5"
-      );
-    case "enhance_asset":
-      return (
-        process.env.KREA_MODEL_ENHANCE?.trim() ||
-        "enhance/topaz/standard-enhance"
-      );
-    case "standard":
-    default:
-      return (
-        process.env.KREA_MODEL_STANDARD?.trim() ||
-        process.env.KREA_STANDARD_MODEL_PATH?.trim() ||
-        fallback
-      );
-  }
+export function resolveKreaModelPathForWorkflow(
+  workflow: string,
+  modelId?: string
+): string {
+  return resolveRegistryModelPath(workflow, modelId);
 }
 
-export function resolveKreaStoredModelForWorkflow(workflow: string): string {
-  const path = resolveKreaModelPathForWorkflow(workflow).replace(/^\/+/, "");
-  return `krea/${path}`;
+export function resolveKreaStoredModelForWorkflow(
+  workflow: string,
+  modelId?: string
+): string {
+  return resolveRegistryStoredModel(workflow, modelId);
 }
 
 export function normalizeKreaWorkflowKey(workflow: string): string {

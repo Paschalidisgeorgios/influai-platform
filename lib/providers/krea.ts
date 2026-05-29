@@ -2,6 +2,12 @@ import type {
   ProviderGenerationResult,
   ProviderJobPollResult,
 } from "./provider-types";
+import {
+  extractImageUrl,
+  extractProviderJobId,
+  extractVideoUrl,
+  responseShapeKeys,
+} from "@/lib/krea/response-extract";
 import { resolveKreaModelPathForWorkflow } from "./krea-workflows";
 
 const KREA_API_BASE =
@@ -43,6 +49,7 @@ export type KreaCreateEnhanceJobInput = {
   topazModel?: string;
   scalingFactor?: number;
   workflow?: string;
+  modelPath?: string;
 };
 
 export type KreaGenerationResult = ProviderGenerationResult;
@@ -96,21 +103,39 @@ type KreaJobResponse = {
 };
 
 function extractKreaImageUrl(data: KreaJobResponse): string | undefined {
-  const urls = data.result?.urls;
-  if (Array.isArray(urls) && urls.length > 0 && typeof urls[0] === "string") {
-    return urls[0];
-  }
-  if (typeof data.result?.url === "string") {
-    return data.result.url;
-  }
-  return undefined;
+  return (
+    extractImageUrl(data) ??
+    (Array.isArray(data.result?.urls) && typeof data.result.urls[0] === "string"
+      ? data.result.urls[0]
+      : undefined) ??
+    (typeof data.result?.url === "string" ? data.result.url : undefined)
+  );
 }
 
 function extractKreaVideoUrl(data: KreaJobResponse): string | undefined {
-  if (typeof data.result?.video_url === "string") {
-    return data.result.video_url;
+  return (
+    extractVideoUrl(data) ??
+    (typeof data.result?.video_url === "string" ? data.result.video_url : undefined)
+  );
+}
+
+function normalizeKreaPollStatus(statusRaw: string): ProviderJobPollResult["status"] {
+  const s = statusRaw.toLowerCase();
+  if (
+    s === "completed" ||
+    s === "succeeded" ||
+    s === "success" ||
+    s === "done"
+  ) {
+    return "completed";
   }
-  return undefined;
+  if (s === "failed" || s === "error") return "failed";
+  if (s === "cancelled" || s === "canceled") return "cancelled";
+  if (s === "queued" || s === "backlog" || s === "pending") return "queued";
+  if (s === "running" || s === "processing" || s === "in_progress") {
+    return "processing";
+  }
+  return "processing";
 }
 
 import { isKreaEnabled } from "./krea-workflows";
@@ -203,9 +228,10 @@ export async function createKreaImageJob(
   }
 
   const providerJobId =
-    typeof data.job_id === "string" && data.job_id.trim().length > 0
+    extractProviderJobId(data) ??
+    (typeof data.job_id === "string" && data.job_id.trim().length > 0
       ? data.job_id.trim()
-      : null;
+      : null);
 
   if (!providerJobId) {
     throw new Error("Krea did not return a job_id.");
@@ -227,17 +253,17 @@ export async function pollKreaJob(jobId: string): Promise<ProviderJobPollResult>
     );
 
     const statusRaw = (data.status || "processing").toLowerCase();
-    let status: ProviderJobPollResult["status"] = "processing";
-
-    if (statusRaw === "completed") status = "completed";
-    else if (statusRaw === "failed" || statusRaw === "cancelled") {
-      status = statusRaw === "cancelled" ? "cancelled" : "failed";
-    } else if (statusRaw === "queued" || statusRaw === "backlog") {
-      status = "queued";
-    }
+    const status = normalizeKreaPollStatus(statusRaw);
 
     const imageUrl = extractKreaImageUrl(data);
     const videoUrl = extractKreaVideoUrl(data);
+
+    if (status === "completed" && !imageUrl && !videoUrl) {
+      console.info(
+        "[krea-poll] completed without url",
+        JSON.stringify({ jobId, keys: responseShapeKeys(data) })
+      );
+    }
 
     return {
       status,
@@ -298,22 +324,27 @@ export async function createKreaEditJob(
 
 const DEFAULT_KREA_ENHANCE_PATH = "topaz/standard-enhance";
 
-function resolveKreaEnhanceApiPath(): string {
+function resolveKreaEnhanceApiPath(input?: { modelPath?: string; workflow?: string }): string {
   const fromEnv = process.env.KREA_ENHANCE_API_PATH?.trim();
   if (fromEnv) {
     return fromEnv.replace(/^\/+/, "");
   }
-  const modelPath = resolveKreaModelPathForWorkflow("enhance_asset");
+  const modelPath = input?.modelPath?.trim()
+    ? input.modelPath.trim().replace(/^enhance\//, "")
+    : resolveKreaModelPathForWorkflow(input?.workflow ?? "enhance_asset");
   if (modelPath.startsWith("enhance/")) {
     return modelPath.replace(/^enhance\//, "");
   }
-  return DEFAULT_KREA_ENHANCE_PATH;
+  if (modelPath.includes("/")) {
+    return modelPath;
+  }
+  return modelPath || DEFAULT_KREA_ENHANCE_PATH;
 }
 
 export async function createKreaEnhanceJob(
   input: KreaCreateEnhanceJobInput
 ): Promise<ProviderGenerationResult> {
-  const enhancePath = resolveKreaEnhanceApiPath();
+  const enhancePath = resolveKreaEnhanceApiPath(input);
   const model = `krea/enhance/${enhancePath}`;
 
   const data = await kreaRequest<KreaJobResponse>(
@@ -445,7 +476,9 @@ export async function waitForKreaJob(
     await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
 
-  throw new Error("Krea job timed out while polling.");
+  throw new Error(
+    "Krea job timed out while polling (max wait exceeded). Credits will be refunded."
+  );
 }
 
 /** @deprecated Use waitForKreaJob */
@@ -495,7 +528,7 @@ export async function generateKreaVideo(
   return waitForKreaJob(job.providerJobId, {
     workflow: input.workflow ?? "video_image_to_video",
     expect: "video",
-    maxAttempts: 90,
+    maxAttempts: 18,
     intervalMs: 5000,
   });
 }
@@ -509,6 +542,7 @@ export async function generateKreaEnhance(
   }
   return waitForKreaJob(job.providerJobId, {
     workflow: input.workflow ?? "enhance_asset",
+    modelPath: input.modelPath,
     expect: "image",
     maxAttempts: 90,
     intervalMs: 2000,

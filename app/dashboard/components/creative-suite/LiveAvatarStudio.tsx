@@ -4,10 +4,20 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useDashboardLanguage } from "../../DashboardLanguageProvider";
+import { publicLaunchFlags } from "@/lib/launch/public-flags";
+import {
+  getDefaultModelIdForTool,
+  getModelOptionsForTool,
+} from "@/lib/ai/krea-model-ui";
+import WorkspaceResultPanel, {
+  type WorkspacePreviewState,
+} from "../studio/WorkspaceResultPanel";
+import ModelSelector from "../studio/ModelSelector";
 import { useCreativeSuite } from "./CreativeSuiteProvider";
 
 const LIVE_AVATAR_CREDITS = 60;
 const RECORD_LIMIT_SECONDS = 10;
+const MAX_DRIVING_VIDEO_BYTES = 20 * 1024 * 1024;
 
 const IMAGE_ACCEPT = "image/png,image/jpeg,image/webp";
 const VIDEO_ACCEPT = "video/mp4,video/webm,video/quicktime";
@@ -38,16 +48,16 @@ type Copy = {
 
 const COPY: Record<"en" | "de", Copy> = {
   en: {
-    imageCardTitle: "Add character",
-    imageCardHint: "PNG, JPEG or WebP",
-    videoCardTitle: "Add motion video",
-    videoCardHint: "MP4, WebM or MOV",
+    imageCardTitle: "Source Character",
+    imageCardHint: "PNG, JPEG or WebP portrait",
+    videoCardTitle: "Driving Video",
+    videoCardHint: "MP4, WebM or MOV · max 20MB",
     replace: "Replace",
     remove: "Remove",
     uploading: "Uploading…",
     consentLabel:
       "I confirm that I have the rights and consent to use this image and video and will not impersonate real people without permission.",
-    generate: "Generate Live Avatar",
+    generate: "Generate Live Avatar (60 Credits)",
     generating: "Generating…",
     credits: "60 Credits",
     record: "Record motion video",
@@ -62,10 +72,10 @@ const COPY: Record<"en" | "de", Copy> = {
     webcamDenied: "Camera access was denied. Please upload a video instead.",
   },
   de: {
-    imageCardTitle: "Creator-Bild hinzufügen",
-    imageCardHint: "PNG, JPEG oder WebP",
-    videoCardTitle: "Bewegungs-Video hinzufügen",
-    videoCardHint: "MP4, WebM oder MOV",
+    imageCardTitle: "Quell-Character",
+    imageCardHint: "PNG, JPEG oder WebP Porträt",
+    videoCardTitle: "Bewegungs-Video",
+    videoCardHint: "MP4, WebM oder MOV · max. 20MB",
     replace: "Ersetzen",
     remove: "Entfernen",
     uploading: "Wird hochgeladen…",
@@ -145,6 +155,10 @@ export default function LiveAvatarStudio() {
   const [orientation, setOrientation] = useState<
     "portrait" | "landscape" | "auto"
   >("auto");
+  const motionModelOptions = useMemo(() => getModelOptionsForTool("motion_transfer"), []);
+  const [selectedMotionModel, setSelectedMotionModel] = useState(() =>
+    getDefaultModelIdForTool("motion_transfer")
+  );
 
   const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -227,6 +241,14 @@ export default function LiveAvatarStudio() {
   const handleSelectVideo = useCallback(
     async (file: File | null) => {
       if (!file) return;
+      if (file.size > MAX_DRIVING_VIDEO_BYTES) {
+        setErrorMessage(
+          language === "de"
+            ? "Das Bewegungs-Video darf maximal 20MB groß sein."
+            : "The driving video must be under 20MB."
+        );
+        return;
+      }
       setErrorMessage(null);
       setRecordingError(null);
       setSourceVideoFile(file);
@@ -253,7 +275,7 @@ export default function LiveAvatarStudio() {
         setIsUploadingVideo(false);
       }
     },
-    [recordedVideoPreviewUrl, sourceVideoPreviewUrl, uploadToLiveAvatarStorage]
+    [language, recordedVideoPreviewUrl, sourceVideoPreviewUrl, uploadToLiveAvatarStorage]
   );
 
   const removeImage = useCallback(() => {
@@ -492,21 +514,57 @@ export default function LiveAvatarStudio() {
     return null;
   }, [recordedVideoPreviewUrl, sourceVideoPreviewUrl]);
 
+  const previewState: WorkspacePreviewState = useMemo(() => {
+    if (isGenerating) {
+      return { status: "loading", message: copy.generating };
+    }
+    if (errorMessage) {
+      return { status: "error", message: errorMessage };
+    }
+    if (resultVideoUrl) {
+      return {
+        status: "success",
+        result: { type: "video", url: resultVideoUrl, credits: LIVE_AVATAR_CREDITS },
+      };
+    }
+    return { status: "idle" };
+  }, [isGenerating, errorMessage, resultVideoUrl, copy.generating]);
+
   return (
     <div className="space-y-4">
-      {/* Compact central bar (responsive) */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch">
-          {/* Left: character image */}
-          <div className="flex-1">
+      {!publicLaunchFlags.liveAvatar ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {language === "de"
+            ? "Motion Transfer ist deaktiviert. Setze NEXT_PUBLIC_ENABLE_LIVE_AVATAR=true und ENABLE_LIVE_AVATAR=true in .env.local und starte den Dev-Server neu."
+            : "Motion Transfer is disabled. Set NEXT_PUBLIC_ENABLE_LIVE_AVATAR=true and ENABLE_LIVE_AVATAR=true in .env.local, then restart the dev server."}
+        </div>
+      ) : null}
+
+      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1.15fr)_420px]">
+        <div className="min-w-0 space-y-4">
+      {motionModelOptions.length > 0 ? (
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <ModelSelector
+            options={motionModelOptions}
+            value={selectedMotionModel || motionModelOptions[0]?.value}
+            onChange={setSelectedMotionModel}
+            label={language === "de" ? "Motion Engine" : "Motion engine"}
+            columns={2}
+          />
+        </div>
+      ) : null}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* Column 1: Source Character */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                {language === "de" ? "Character" : "Character"}
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-700">
+                {copy.imageCardTitle}
               </p>
-              <span className="text-[11px] font-medium text-slate-500">PNG/JPG/WebP</span>
+              <span className="text-[11px] font-medium text-slate-500">{copy.imageCardHint}</span>
             </div>
 
-            <div className="mt-2 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+            <div className="mt-3 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
               {sourceImagePreviewUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -560,21 +618,16 @@ export default function LiveAvatarStudio() {
             </div>
           </div>
 
-          {/* Plus */}
-          <div className="hidden w-10 items-center justify-center lg:flex">
-            <span className="text-2xl font-black text-slate-300">+</span>
-          </div>
-
-          {/* Middle: motion video / live camera */}
-          <div className="flex-[1.2]">
+          {/* Column 2: Driving Video */}
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                {language === "de" ? "Body motion & expression" : "Body motion & expression"}
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-700">
+                {copy.videoCardTitle}
               </p>
-              <span className="text-[11px] font-medium text-slate-500">MP4/WebM/MOV</span>
+              <span className="text-[11px] font-medium text-slate-500">{copy.videoCardHint}</span>
             </div>
 
-            <div className="mt-2 overflow-hidden rounded-xl border border-gray-200 bg-black">
+            <div className="mt-3 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
               {isCameraOpen && !motionPreviewSrc ? (
                 <video
                   ref={cameraVideoRef}
@@ -668,11 +721,11 @@ export default function LiveAvatarStudio() {
             ) : null}
           </div>
 
-          {/* Right: orientation + generate */}
-          <div className="flex-1">
+          {/* Column 3: Settings & Generate */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                {language === "de" ? "Orientation" : "Orientation"}
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-700">
+                {language === "de" ? "Einstellungen" : "Settings"}
               </p>
               <span className="text-[11px] font-medium text-slate-500">
                 {LIVE_AVATAR_CREDITS} Credits
@@ -723,21 +776,20 @@ export default function LiveAvatarStudio() {
               </p>
             </div>
           </div>
-        </div>
       </div>
-
-      {errorMessage ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 shadow-sm">
-          {errorMessage}
         </div>
-      ) : null}
 
-      {/* Result */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-bold text-slate-900">{copy.resultTitle}</h3>
+        <aside className="min-w-0 xl:sticky xl:top-6">
+          <WorkspaceResultPanel
+            state={previewState}
+            idleLabel={
+              language === "de"
+                ? "Dein Live Avatar erscheint hier."
+                : "Your live avatar will appear here."
+            }
+          />
           {resultVideoUrl ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               <a
                 href={resultVideoUrl}
                 download
@@ -761,22 +813,7 @@ export default function LiveAvatarStudio() {
               </button>
             </div>
           ) : null}
-        </div>
-
-        <div className="mt-3">
-          {resultVideoUrl ? (
-            <video
-              src={resultVideoUrl}
-              controls
-              playsInline
-              className="w-full rounded-xl bg-black"
-            />
-          ) : (
-            <div className="flex min-h-[240px] items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white text-sm font-medium text-slate-400">
-              {isGenerating ? copy.generating : "—"}
-            </div>
-          )}
-        </div>
+        </aside>
       </div>
     </div>
   );

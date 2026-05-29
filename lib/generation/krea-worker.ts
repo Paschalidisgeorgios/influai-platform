@@ -19,6 +19,7 @@ import {
   resolveKreaModelPathForWorkflow,
   resolveKreaStoredModelForWorkflow,
 } from "@/lib/providers/krea-workflows";
+import { logKreaWorkerEvent } from "@/lib/krea/worker-log";
 
 const REFUND_ERROR = KREA_REFUND_ERROR_MESSAGE;
 
@@ -28,7 +29,19 @@ type KreaWorkerBaseArgs = {
   finalPrompt: string;
   creditsUsed: number;
   workflow: string;
+  /** Parsed from generations.model (`krea/{path}`) when user picked a registry model */
+  modelPath?: string;
 };
+
+export function kreaModelPathFromStoredModel(
+  storedModel?: string | null
+): string | undefined {
+  if (!storedModel || typeof storedModel !== "string") return undefined;
+  const trimmed = storedModel.trim();
+  if (!trimmed.startsWith("krea/")) return undefined;
+  const path = trimmed.slice("krea/".length).replace(/^\/+/, "");
+  return path.length > 0 ? path : undefined;
+}
 
 async function failAndRefund(args: {
   generationId: string;
@@ -88,17 +101,38 @@ export async function processKreaImageWorkflow(
     args.outputHeight
   );
 
+  logKreaWorkerEvent({
+    generationId: args.generationId,
+    userId: args.userId,
+    workflow,
+    selectedModelId: args.modelPath,
+    provider: "krea",
+    promptLength: args.finalPrompt.length,
+    cost: args.creditsUsed,
+    phase: "image_start",
+  });
+
   try {
     const result = await generateKreaImage({
       prompt: args.finalPrompt,
       width,
       height,
       workflow,
+      modelPath: args.modelPath,
     });
 
     if (!result.imageUrl) {
       throw new Error("Krea did not return an image URL.");
     }
+
+    logKreaWorkerEvent({
+      generationId: args.generationId,
+      userId: args.userId,
+      workflow,
+      providerJobId: result.providerJobId,
+      imageUrl: result.imageUrl ? "[present]" : null,
+      phase: "image_provider_done",
+    });
 
     const publicUrl = await uploadImageFromRemoteUrl({
       userId: args.userId,
@@ -178,6 +212,7 @@ export async function processKreaReferenceEditWorkflow(
       prompt: args.finalPrompt,
       imageUrls: [args.sourceImageUrl],
       workflow,
+      modelPath: args.modelPath,
     });
 
     if (!result.imageUrl) {
@@ -271,6 +306,7 @@ export async function processKreaEnhanceWorkflow(
       height,
       prompt: args.finalPrompt,
       workflow,
+      modelPath: args.modelPath,
     });
 
     if (!result.imageUrl) {
@@ -350,17 +386,38 @@ export async function processKreaVideoWorkflow(
     );
   }
 
+  logKreaWorkerEvent({
+    generationId: args.generationId,
+    userId: args.userId,
+    workflow,
+    selectedModelId: args.modelPath,
+    provider: "krea",
+    promptLength: args.finalPrompt.length,
+    cost: args.creditsUsed,
+    phase: "video_start",
+  });
+
   try {
     const result = await generateKreaVideo({
       prompt: args.finalPrompt,
       imageUrl: args.sourceImageUrl,
       workflow,
       duration: 5,
+      modelPath: args.modelPath,
     });
 
     if (!result.videoUrl) {
       throw new Error("Krea did not return a video URL.");
     }
+
+    logKreaWorkerEvent({
+      generationId: args.generationId,
+      userId: args.userId,
+      workflow,
+      providerJobId: result.providerJobId,
+      videoUrl: result.videoUrl ? "[present]" : null,
+      phase: "video_provider_done",
+    });
 
     const publicUrl = await uploadVideoFromRemoteUrl({
       userId: args.userId,

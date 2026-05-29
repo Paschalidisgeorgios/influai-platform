@@ -5,9 +5,6 @@ import { useRouter } from "next/navigation";
 import StudioWorkspaceView from "../StudioWorkspaceView";
 import { useCreativeSuite } from "./CreativeSuiteProvider";
 import CreativePageHeader from "./CreativePageHeader";
-import { KreaPoweredBadge } from "../studio/KreaStudioIndicators";
-import { useDashboardLanguage } from "../../DashboardLanguageProvider";
-import { publicLaunchFlags } from "@/lib/launch/public-flags";
 
 type ImageModeKey =
   | "standard"
@@ -38,7 +35,6 @@ export default function CreativeToolWorkspace({
   initialPrompt,
 }: CreativeToolWorkspaceProps) {
   const router = useRouter();
-  const { copy } = useDashboardLanguage();
   const {
     charactersRefreshKey,
     regenerateDraft,
@@ -63,13 +59,7 @@ export default function CreativeToolWorkspace({
         titleDe={titleDe}
         subtitleEn={subtitleEn}
         subtitleDe={subtitleDe}
-        badge={
-          workspace === "image" && publicLaunchFlags.kreaProvider ? (
-            <KreaPoweredBadge
-              label={copy.dashboardNav.createStudio.poweredByKrea}
-            />
-          ) : null
-        }
+        badge={null}
       />
       <StudioWorkspaceView
         workspace={workspace}

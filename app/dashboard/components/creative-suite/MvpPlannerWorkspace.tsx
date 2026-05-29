@@ -1,13 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { getMatrixEntry, type ActiveTool } from "@/lib/dashboard/creative-tool-matrix";
 import { handleGenerateForTool } from "@/lib/dashboard/tool-generate";
+import {
+  getDefaultModelIdForActiveTool,
+  getModelOptionsForActiveTool,
+} from "@/lib/ai/krea-model-ui";
 import { useCreativeSuite } from "./CreativeSuiteProvider";
 import { useDashboardLanguage } from "../../DashboardLanguageProvider";
-import CreativeToolResult from "./CreativeToolResult";
+import ToolWorkspace from "../studio/ToolWorkspace";
+import SocialFormatSelector from "../studio/SocialFormatSelector";
+import type { WorkspacePreviewState } from "../studio/WorkspaceResultPanel";
+import { planToTextResult } from "@/app/dashboard/hooks/useWorkspaceGeneration";
 
 type MvpPlannerWorkspaceProps = {
   toolKey: ActiveTool;
@@ -20,8 +27,25 @@ function storageKey(tool: string) {
 export default function MvpPlannerWorkspace({ toolKey }: MvpPlannerWorkspaceProps) {
   const tool = getMatrixEntry(toolKey);
   const { language } = useDashboardLanguage();
-  const { onGenerationQueued } = useCreativeSuite();
+  const lang = language === "de" ? "de" : "en";
+  const { credits, onGenerationQueued } = useCreativeSuite();
   const supabase = createClient();
+
+  const showModelSelect = toolKey === "node_editor" || toolKey === "batch_generator";
+  const modelToolKey: ActiveTool = toolKey === "node_editor" ? "image" : toolKey;
+  const modelOptions = useMemo(
+    () => (showModelSelect ? getModelOptionsForActiveTool(modelToolKey) : []),
+    [showModelSelect, modelToolKey]
+  );
+  const [selectedModel, setSelectedModel] = useState(() =>
+    showModelSelect ? getDefaultModelIdForActiveTool(modelToolKey) : ""
+  );
+
+  useEffect(() => {
+    if (showModelSelect) {
+      setSelectedModel(getDefaultModelIdForActiveTool(modelToolKey));
+    }
+  }, [showModelSelect, modelToolKey]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -151,6 +175,7 @@ export default function MvpPlannerWorkspace({ toolKey }: MvpPlannerWorkspaceProp
           token,
           prompt: nodePrompt.trim(),
           outputFormat: "square",
+          kreaModelId: selectedModel || undefined,
         });
         if (!result.success) {
           setError(result.error);
@@ -236,9 +261,8 @@ export default function MvpPlannerWorkspace({ toolKey }: MvpPlannerWorkspaceProp
     }
   };
 
-  if (!tool) return null;
-
   const canSubmit =
+    !!tool &&
     !loading &&
     (toolKey === "campaign_builder"
       ? idea.trim().length > 0
@@ -252,38 +276,109 @@ export default function MvpPlannerWorkspace({ toolKey }: MvpPlannerWorkspaceProp
               ? title.trim().length > 0 || boardItems.some((b) => b.note.trim())
               : title.trim().length > 0 || notes.trim().length > 0);
 
+  const platformFormat =
+    platform === "tiktok"
+      ? "tiktok"
+      : platform === "youtube"
+        ? "youtube_thumbnail"
+        : platform === "multi"
+          ? "square"
+          : "instagram_post";
+
+  const submitLabel =
+    toolKey === "node_editor"
+      ? lang === "de"
+        ? "Pipeline starten"
+        : "Run pipeline"
+      : lang === "de"
+        ? "Plan erstellen"
+        : "Create plan";
+
+  const previewState: WorkspacePreviewState = useMemo(() => {
+    if (!tool) return { status: "idle" };
+    if (loading) {
+      return {
+        status: "loading",
+        message: lang === "de" ? "Wird erstellt …" : "Creating …",
+      };
+    }
+    if (error) {
+      return { status: "error", message: error };
+    }
+    if (plan) {
+      if (toolKey === "moodboards" && Array.isArray(plan.items)) {
+        return {
+          status: "success",
+          result: {
+            type: "text",
+            content: String(plan.title ?? "Moodboard"),
+            sections: (plan.items as { note: string; url?: string }[]).map(
+              (it, i) => ({
+                title: `#${i + 1}`,
+                content: [it.note, it.url].filter(Boolean).join("\n"),
+              })
+            ),
+          },
+        };
+      }
+      return { status: "success", result: planToTextResult(plan, lang) };
+    }
+    return { status: "idle" };
+  }, [tool, loading, error, plan, lang, toolKey]);
+
+  if (!tool) return null;
+
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm space-y-4">
+    <ToolWorkspace
+      embedded
+      title={language === "de" ? tool.titleDe : tool.titleEn}
+      subtitle={language === "de" ? tool.subtitleDe : tool.subtitleEn}
+      modelOptions={modelOptions}
+      selectedModel={selectedModel}
+      onModelChange={setSelectedModel}
+      showModelSelect={showModelSelect}
+      showPrompt={false}
+      promptText=""
+      onPromptChange={() => {}}
+      badges={tool.commandBarBadges}
+      creditCost={tool.creditCost}
+      availableCredits={credits}
+      onGenerate={() => void handleSubmit()}
+      generateDisabled={!canSubmit}
+      loading={loading}
+      generateLabel={submitLabel}
+      previewState={previewState}
+      idlePreviewLabel={
+        lang === "de"
+          ? "Dein Plan erscheint hier."
+          : "Your plan will appear here."
+      }
+    >
         {toolKey === "campaign_builder" ? (
           <>
             <label className="block">
-              <span className="text-xs font-bold text-slate-500">
+              <span className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
                 {language === "de" ? "Kampagnenidee" : "Campaign idea"}
               </span>
               <textarea
                 value={idea}
                 onChange={(e) => setIdea(e.target.value)}
                 rows={3}
-                className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-900"
+                className="pointer-events-auto mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-900 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500/30"
               />
             </label>
+            <SocialFormatSelector
+              value={platformFormat}
+              onChange={(value) => {
+                if (value === "tiktok" || value === "instagram_story") setPlatform("tiktok");
+                else if (value === "youtube_thumbnail") setPlatform("youtube");
+                else if (value === "square") setPlatform("multi");
+                else setPlatform("instagram");
+              }}
+            />
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="block">
-                <span className="text-xs font-bold text-slate-500">Platform</span>
-                <select
-                  value={platform}
-                  onChange={(e) => setPlatform(e.target.value)}
-                  className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-slate-900"
-                >
-                  <option value="instagram">Instagram</option>
-                  <option value="tiktok">TikTok</option>
-                  <option value="youtube">YouTube</option>
-                  <option value="multi">Multi-channel</option>
-                </select>
-              </label>
-              <label className="block">
-                <span className="text-xs font-bold text-slate-500">
+              <label className="block sm:col-span-2">
+                <span className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
                   {language === "de" ? "Dauer (Tage)" : "Duration (days)"}
                 </span>
                 <input
@@ -292,7 +387,7 @@ export default function MvpPlannerWorkspace({ toolKey }: MvpPlannerWorkspaceProp
                   max={30}
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
-                  className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-slate-900"
+                  className="pointer-events-auto mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-slate-900 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-500/30"
                 />
               </label>
             </div>
@@ -479,61 +574,19 @@ export default function MvpPlannerWorkspace({ toolKey }: MvpPlannerWorkspaceProp
             />
           </label>
         ) : null}
-      </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          disabled={!canSubmit}
-          onClick={handleSubmit}
-          className="rounded-full bg-orange-500 px-6 py-3 text-sm font-bold text-white hover:bg-orange-600 disabled:opacity-40"
+      {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
+
+      {plan && toolKey === "campaign_builder" ? (
+        <Link
+          href="/dashboard/image"
+          className="inline-flex rounded-full bg-orange-500 px-4 py-2 text-xs font-bold text-white hover:bg-orange-600"
         >
-          {loading
-            ? "…"
-            : toolKey === "node_editor"
-              ? language === "de"
-                ? "Pipeline starten"
-                : "Run pipeline"
-              : language === "de"
-                ? "Plan erstellen"
-                : "Create plan"}
-        </button>
-        {tool.creditCost > 0 ? (
-          <span className="text-xs font-bold text-orange-300">
-            {tool.creditCost} Credits
-          </span>
-        ) : (
-          <span className="text-xs font-bold text-white/40">
-            {language === "de" ? "Keine Credits" : "No credits"}
-          </span>
-        )}
-      </div>
-
-      {error ? <p className="text-sm text-red-300">{error}</p> : null}
-
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-        {toolKey === "moodboards" && plan && Array.isArray(plan.items) ? (
-          <CreativeToolResult
-            moodboard={{
-              title: String(plan.title ?? "Moodboard"),
-              items: (plan.items as { note: string; url?: string }[]).map((it) => ({
-                note: it.note,
-                url: it.url,
-              })),
-            }}
-          />
-        ) : (
-          <CreativeToolResult plan={plan} />
-        )}
-        {plan && toolKey === "campaign_builder" ? (
-          <Link
-            href="/dashboard/image"
-            className="mt-4 inline-flex rounded-full bg-orange-500 px-4 py-2 text-xs font-bold text-white hover:bg-orange-600"
-          >
-            {language === "de" ? "Visuals in Image Studio erstellen" : "Create visuals in Image Studio"}
-          </Link>
-        ) : null}
-      </div>
-    </div>
+          {lang === "de"
+            ? "Visuals in Image Studio erstellen"
+            : "Create visuals in Image Studio"}
+        </Link>
+      ) : null}
+    </ToolWorkspace>
   );
 }

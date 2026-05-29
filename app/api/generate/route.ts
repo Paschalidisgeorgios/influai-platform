@@ -142,15 +142,27 @@ type LipSyncInputMode = "system_voice" | "audio_upload";
 function kreaJobConfig(
   workflow: string,
   creditsUsed: number,
-  transactionSource: string
+  transactionSource: string,
+  kreaModelId?: string
 ): GenerationJobConfig {
   const normalized = normalizeKreaWorkflowKey(workflow);
   return {
     provider: "krea",
-    model: resolveKreaStoredModelForWorkflow(normalized),
+    model: resolveKreaStoredModelForWorkflow(normalized, kreaModelId),
     workflow: normalized,
     creditsUsed,
     transactionSource,
+  };
+}
+
+function applyKreaModelSelection(
+  config: GenerationJobConfig,
+  kreaModelId?: string
+): GenerationJobConfig {
+  if (!kreaModelId || config.provider !== "krea") return config;
+  return {
+    ...config,
+    model: resolveKreaStoredModelForWorkflow(config.workflow, kreaModelId),
   };
 }
 
@@ -1923,6 +1935,9 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
+    const kreaModelId =
+      typeof body.kreaModelId === "string" ? body.kreaModelId.trim() : undefined;
+
     const prompt = body.prompt;
     const promptText = typeof prompt === "string" ? prompt.trim() : "";
     const characterId = body.characterId ?? null;
@@ -2459,7 +2474,10 @@ export async function POST(req: Request) {
         );
       }
 
-      const lipSyncJobConfig = lipSyncJobConfigResult.config;
+      const lipSyncJobConfig = applyKreaModelSelection(
+        lipSyncJobConfigResult.config,
+        kreaModelId
+      );
       const lipSyncCreditsUsed = lipSyncInputMode === "system_voice" ? 35 : 30;
       const lipSyncVoiceStyle =
         lipSyncInputMode === "system_voice" ? resolvedLipSyncVoiceKey : null;
@@ -2630,7 +2648,22 @@ export async function POST(req: Request) {
     if (imageMode === "video_image_to_video") {
       if (!sourceImageUrl) {
         return NextResponse.json(
-          { error: "Source image is required for Video Studio." },
+          {
+            error:
+              "Please upload a source image before generating a video. / Bitte lade zuerst ein Quellbild hoch.",
+            reason: "missing_source_image",
+          },
+          { status: 400 }
+        );
+      }
+
+      if (sourceImageUrl.startsWith("blob:")) {
+        return NextResponse.json(
+          {
+            error:
+              "Invalid source image URL. Please upload the image again. / Ungültige Bild-URL — bitte erneut hochladen.",
+            reason: "blob_source_image",
+          },
           { status: 400 }
         );
       }
@@ -2651,7 +2684,10 @@ export async function POST(req: Request) {
         );
       }
 
-      const videoJobConfig = videoJobConfigResult.config;
+      const videoJobConfig = applyKreaModelSelection(
+        videoJobConfigResult.config,
+        kreaModelId
+      );
       const finalPrompt = buildVideoImageToVideoFinalPrompt(motionInstruction);
 
       const { count: videoActiveCount, error: videoActiveError } =
@@ -2836,7 +2872,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: jobConfigResult.error }, { status: 400 });
     }
 
-    const jobConfig = jobConfigResult.config;
+    const jobConfig = applyKreaModelSelection(
+      jobConfigResult.config,
+      kreaModelId
+    );
 
     if (imageMode === "enhance_asset") {
       if (!sourceImageUrl) {

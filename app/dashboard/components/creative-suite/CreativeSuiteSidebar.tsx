@@ -99,7 +99,7 @@ export function CreativeSuiteSidebarPanel({
       </div>
 
       <p className="px-3 pb-2 pt-5 text-[11px] font-bold uppercase tracking-[0.18em] text-white/35">
-        {language === "de" ? "Workspace" : "Workspace"}
+        Core
       </p>
       <nav className="space-y-0.5">
         {PRIMARY_NAV_ITEMS.map((item) => (

@@ -4,6 +4,7 @@ import { fal } from "@fal-ai/client";
 import OpenAI from "openai";
 import { resolveElevenLabsVoiceIdFromKey } from "@/lib/lip-sync/elevenlabs-voices";
 import {
+  kreaModelPathFromStoredModel,
   processKreaEnhanceWorkflow,
   processKreaImageWorkflow,
   processKreaReferenceEditWorkflow,
@@ -2104,6 +2105,10 @@ export async function POST(req: Request) {
     }
 
     if (provider === "krea") {
+      const kreaModelPath = kreaModelPathFromStoredModel(
+        typeof generation.model === "string" ? generation.model : null
+      );
+
       if (workflow === "enhance_asset") {
         const sourceImageUrl =
           typeof generation.source_image_url === "string" &&
@@ -2121,6 +2126,7 @@ export async function POST(req: Request) {
             finalPrompt || "Enhance image quality, clarity and resolution.",
           creditsUsed,
           workflow,
+          modelPath: kreaModelPath,
           sourceImageUrl,
           outputWidth: generation.output_width,
           outputHeight: generation.output_height,
@@ -2140,6 +2146,7 @@ export async function POST(req: Request) {
           finalPrompt,
           creditsUsed,
           workflow,
+          modelPath: kreaModelPath,
           sourceImageUrl,
         });
       }
@@ -2160,6 +2167,7 @@ export async function POST(req: Request) {
           finalPrompt,
           creditsUsed,
           workflow,
+          modelPath: kreaModelPath,
           sourceImageUrl,
         });
       }
@@ -2170,6 +2178,7 @@ export async function POST(req: Request) {
         finalPrompt,
         creditsUsed,
         workflow,
+        modelPath: kreaModelPath,
         outputWidth: generation.output_width,
         outputHeight: generation.output_height,
       });

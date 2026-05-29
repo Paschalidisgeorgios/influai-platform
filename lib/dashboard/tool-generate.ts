@@ -33,6 +33,8 @@ export type ToolGenerateInput = {
   voiceKey?: string;
   /** MVP planner payloads */
   plannerPayload?: Record<string, unknown>;
+  /** Registry model id from lib/ai/krea-model-registry */
+  kreaModelId?: string;
 };
 
 /**
@@ -97,9 +99,26 @@ export async function handleGenerateForTool(
       outputFormat: input.outputFormat ?? "square",
     };
 
+    if (input.kreaModelId?.trim()) {
+      body.kreaModelId = input.kreaModelId.trim();
+    }
+
     if (imageMode === "video_image_to_video") {
       if (!input.sourceImageUrl) {
-        return { success: false, error: "Source image is required." };
+        return {
+          success: false,
+          error:
+            "Please upload a source image before generating a video. / Bitte lade zuerst ein Quellbild hoch, um ein Video zu generieren.",
+          reason: "missing_source_image",
+        };
+      }
+      if (input.sourceImageUrl.startsWith("blob:")) {
+        return {
+          success: false,
+          error:
+            "Invalid source image. Please upload again. / Ungültiges Quellbild — bitte erneut hochladen.",
+          reason: "blob_source_image",
+        };
       }
       if (!input.motionInstruction?.trim()) {
         return { success: false, error: "Motion prompt is required." };
