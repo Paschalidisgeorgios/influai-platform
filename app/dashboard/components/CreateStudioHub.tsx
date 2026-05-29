@@ -1,11 +1,16 @@
 "use client";
 
 import { Film, ImageIcon, Mic2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  resolveCreateStudioTab,
+  type CreateStudioTab,
+} from "@/lib/launch/public-flags";
 import StudioWorkspaceView from "./StudioWorkspaceView";
 import { useDashboardLanguage } from "../DashboardLanguageProvider";
+import { publicLaunchFlags } from "@/lib/launch/public-flags";
 
-export type CreateStudioTab = "image" | "video" | "lip_sync";
+export type { CreateStudioTab };
 
 type RegenerateDraft = {
   prompt: string;
@@ -39,11 +44,29 @@ export default function CreateStudioHub({
 }: CreateStudioHubProps) {
   const { copy } = useDashboardLanguage();
   const t = copy.dashboardNav.createStudio;
-  const [tab, setTab] = useState<CreateStudioTab>(initialTab);
+  const resolvedInitialTab = useMemo(
+    () =>
+      resolveCreateStudioTab(initialTab, {
+        videoStudioEnabled,
+        lipSyncEnabled,
+      }),
+    [initialTab, videoStudioEnabled, lipSyncEnabled]
+  );
+  const [tab, setTab] = useState<CreateStudioTab>(resolvedInitialTab);
 
   useEffect(() => {
-    setTab(initialTab);
-  }, [initialTab]);
+    setTab(resolvedInitialTab);
+  }, [resolvedInitialTab]);
+
+  useEffect(() => {
+    const safeTab = resolveCreateStudioTab(tab, {
+      videoStudioEnabled,
+      lipSyncEnabled,
+    });
+    if (safeTab !== tab) {
+      setTab(safeTab);
+    }
+  }, [tab, videoStudioEnabled, lipSyncEnabled]);
 
   const tabs: {
     id: CreateStudioTab;

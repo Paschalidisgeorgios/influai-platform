@@ -51,6 +51,7 @@ type Generation = {
 type GenerationGalleryProps = {
   refreshKey?: number;
   onRegenerate?: (prompt: string, characterId: string | null) => void;
+  appearance?: "light" | "dark";
 };
 
 const PAGE_SIZE = 24;
@@ -76,6 +77,9 @@ function getWorkflowBadgeClass(workflow: string | null | undefined) {
   }
   if (workflow === "lip_sync") {
     return "border-violet-100 bg-violet-50 text-violet-700";
+  }
+  if (workflow === "krea_premium_image") {
+    return "border-amber-100 bg-amber-50 text-amber-800";
   }
   return "border-sky-100 bg-sky-50 text-sky-700";
 }
@@ -105,8 +109,19 @@ function getWorkflowLabel(
     ugcLook: string;
     talkingCreator: string;
     creatorVideo: string;
+    kreaPremium: string;
+    fastDraft: string;
+    premiumImage: string;
+    brandAssets: string;
+    referenceEdit: string;
+    enhance: string;
+    motionTransfer?: string;
   }
 ) {
+  if (workflow === "live_avatar" || workflow === "motion_transfer") {
+    return labels.motionTransfer ?? "Live Avatar";
+  }
+
   if (workflow === "creator_video") {
     return labels.creatorVideo;
   }
@@ -127,6 +142,26 @@ function getWorkflowLabel(
     return labels.ugcLook;
   }
 
+  if (workflow === "premium_image" || workflow === "krea_premium_image") {
+    return labels.premiumImage;
+  }
+
+  if (workflow === "fast_draft") {
+    return labels.fastDraft;
+  }
+
+  if (workflow === "brand_assets") {
+    return labels.brandAssets;
+  }
+
+  if (workflow === "reference_edit") {
+    return labels.referenceEdit;
+  }
+
+  if (workflow === "enhance_asset") {
+    return labels.enhance;
+  }
+
   if (!workflow || workflow === "standard" || workflow === "openai") {
     return labels.standard;
   }
@@ -140,6 +175,8 @@ function isVideoGeneration(generation: Generation) {
     generation.workflow === "talking_creator" ||
     generation.workflow === "video_image_to_video" ||
     generation.workflow === "lip_sync" ||
+    generation.workflow === "live_avatar" ||
+    generation.workflow === "motion_transfer" ||
     Boolean(generation.video_url)
   );
 }
@@ -159,10 +196,24 @@ function getImageAspectClass(generation: Generation) {
 export default function GenerationGallery({
   refreshKey = 0,
   onRegenerate,
+  appearance = "light",
 }: GenerationGalleryProps) {
   const { copy, format } = useDashboardLanguage();
   const g = copy.gallery;
   const supabase = createClient();
+  const isDark = appearance === "dark";
+  const surface = isDark
+    ? "border-white/10 bg-white/5"
+    : "border-gray-100 bg-white";
+  const cardSurface = isDark
+    ? "border-white/10 bg-white/5"
+    : "border-gray-100 bg-white";
+  const inputClass = isDark
+    ? "w-full rounded-full border border-white/15 bg-black/30 px-4 py-2.5 text-sm font-medium text-white outline-none placeholder:text-white/35 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+    : lightInputClass;
+  const pillInactive = isDark
+    ? "border border-white/15 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+    : filterPillInactive;
 
   const [generations, setGenerations] = useState<Generation[]>([]);
   const [selectedGeneration, setSelectedGeneration] =
@@ -546,19 +597,21 @@ export default function GenerationGallery({
 
   function Toolbar() {
     return (
-      <div className="space-y-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:space-y-4 sm:p-6">
+      <div
+        className={`space-y-3 rounded-2xl border p-4 shadow-sm sm:space-y-4 sm:p-6 ${surface}`}
+      >
         <div className="grid gap-3 sm:gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
           <input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder={g.searchPlaceholder}
-            className={lightInputClass}
+            className={inputClass}
           />
 
           <select
             value={selectedCharacterId}
             onChange={(event) => setSelectedCharacterId(event.target.value)}
-            className={`${lightInputClass} font-semibold`}
+            className={`${inputClass} font-semibold`}
           >
             <option value="all">{g.allStyleProfiles}</option>
             <option value="free">{g.noStyleProfile}</option>
@@ -585,7 +638,7 @@ export default function GenerationGallery({
               type="button"
               onClick={() => setStatusFilter(status.key)}
               className={`min-h-[44px] rounded-full px-3 py-2 text-xs font-semibold sm:px-5 sm:py-2.5 sm:text-sm ${
-                statusFilter === status.key ? filterPillActive : filterPillInactive
+                statusFilter === status.key ? filterPillActive : pillInactive
               }`}
             >
               {status.label}
@@ -600,7 +653,7 @@ export default function GenerationGallery({
               )
             }
             className={`min-h-[44px] rounded-full px-3 py-2 text-xs font-semibold sm:px-5 sm:py-2.5 sm:text-sm ${
-              favoriteFilter === "favorites" ? filterPillActive : filterPillInactive
+              favoriteFilter === "favorites" ? filterPillActive : pillInactive
             }`}
           >
             {g.favorites}
@@ -612,7 +665,13 @@ export default function GenerationGallery({
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-gray-100 bg-white py-20 text-center text-slate-600 shadow-sm">
+      <div
+        className={`rounded-2xl border py-20 text-center shadow-sm ${
+          isDark
+            ? "border-white/10 bg-white/5 text-white/60"
+            : "border-gray-100 bg-white text-slate-600"
+        }`}
+      >
         {g.loading}
       </div>
     );
@@ -624,8 +683,18 @@ export default function GenerationGallery({
         <Toolbar />
 
         {generations.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-orange-200 bg-orange-50/50 px-6 py-16 text-center sm:py-20">
-            <p className="text-lg font-semibold text-slate-900">
+          <div
+            className={`rounded-2xl border border-dashed px-6 py-16 text-center sm:py-20 ${
+              isDark
+                ? "border-white/15 bg-white/5"
+                : "border-orange-200 bg-orange-50/50"
+            }`}
+          >
+            <p
+              className={`text-lg font-semibold ${
+                isDark ? "text-white" : "text-slate-900"
+              }`}
+            >
               {debouncedSearchQuery.trim() ||
               statusFilter !== "all" ||
               favoriteFilter === "favorites" ||
@@ -633,7 +702,11 @@ export default function GenerationGallery({
                 ? g.searchEmptyTitle
                 : g.emptyTitle}
             </p>
-            <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-600">
+            <p
+              className={`mx-auto mt-3 max-w-md text-sm leading-6 ${
+                isDark ? "text-white/55" : "text-slate-600"
+              }`}
+            >
               {debouncedSearchQuery.trim() ||
               statusFilter !== "all" ||
               favoriteFilter === "favorites" ||
@@ -643,11 +716,19 @@ export default function GenerationGallery({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3 2xl:grid-cols-4">
+          <div
+            className={
+              isDark
+                ? "columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4"
+                : "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3 2xl:grid-cols-4"
+            }
+          >
             {generations.map((generation) => (
               <div
                 key={generation.id}
-                className="group overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm sm:rounded-3xl"
+                className={`group overflow-hidden rounded-2xl border shadow-sm sm:rounded-3xl ${
+                  isDark ? "mb-4 break-inside-avoid" : ""
+                } ${cardSurface}`}
               >
                 <div
                   className={`relative overflow-hidden ${getImageAspectClass(
@@ -688,7 +769,13 @@ export default function GenerationGallery({
                   </button>
                 </div>
 
-                <div className="space-y-2.5 border-t border-gray-100 bg-gray-50 p-3 sm:space-y-3 sm:p-4">
+                <div
+                  className={`space-y-2.5 border-t p-3 sm:space-y-3 sm:p-4 ${
+                    isDark
+                      ? "border-white/10 bg-black/20"
+                      : "border-gray-100 bg-gray-50"
+                  }`}
+                >
                   <div className="flex flex-wrap gap-2">
                     <span
                       className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wide ${getStatusClass(
@@ -710,6 +797,12 @@ export default function GenerationGallery({
                         ugcLook: g.ugcLookBadge,
                         creatorVideo: g.creatorVideoBadge,
                         talkingCreator: g.talkingCreatorBadge,
+                        kreaPremium: g.kreaPremiumBadge,
+                        fastDraft: g.fastDraftBadge,
+                        premiumImage: g.premiumImageBadge,
+                        brandAssets: g.brandAssetsBadge,
+                        referenceEdit: g.referenceEditBadge,
+                        enhance: g.enhanceBadge,
                       })}
                     </span>
 
@@ -911,6 +1004,12 @@ export default function GenerationGallery({
                       ugcLook: g.ugcLookBadge,
                       creatorVideo: g.creatorVideoBadge,
                       talkingCreator: g.talkingCreatorBadge,
+                      kreaPremium: g.kreaPremiumBadge,
+                      fastDraft: g.fastDraftBadge,
+                      premiumImage: g.premiumImageBadge,
+                      brandAssets: g.brandAssetsBadge,
+                      referenceEdit: g.referenceEditBadge,
+                      enhance: g.enhanceBadge,
                     })}
                   </span>
 

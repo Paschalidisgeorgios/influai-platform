@@ -1,5 +1,5 @@
-import GenerationGallery from "../../components/GenerationGallery";
+import { redirect } from "next/navigation";
 
-export default function GalleryPage() {
-  return <GenerationGallery />;
+export default function GalleryRedirectPage() {
+  redirect("/dashboard/assets");
 }

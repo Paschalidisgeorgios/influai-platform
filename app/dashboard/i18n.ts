@@ -36,7 +36,7 @@ const en = {
     studioMenu: "Studio Menu",
     live: "Live",
     beta: "Beta",
-    comingSoon: "Coming soon",
+    comingSoon: "Preview",
     planned: "Planned",
     roadmapBadge: "Roadmap",
     moduleUnavailable: "Not available in the current release.",
@@ -50,7 +50,7 @@ const en = {
     toolRailStatuses: {
       live: "Live",
       beta: "Beta",
-      comingSoon: "Soon",
+      comingSoon: "Preview",
       planned: "Planned",
     },
     toolRail: {
@@ -153,6 +153,7 @@ const en = {
       label: "AI Create Studio",
       sublabel: "Create assets",
       workspaceTitle: "AI Create Studio",
+      poweredByKrea: "Powered by Krea AI",
       workspaceSubline:
         "Pick a mode — image, video or lip sync — and generate in one focused workspace.",
       tabImage: "Image",
@@ -202,10 +203,20 @@ const en = {
         credits: "3 Credits",
         bestFor: "Higher-quality campaign visuals",
       },
+      kreaPremium: {
+        label: "Krea Premium",
+        credits: "3 Credits",
+        bestFor: "Premium campaign visuals via Krea AI",
+      },
       referenceEdit: {
         label: "Reference Edit",
         credits: "5 Credits",
         bestFor: "Guided image edits",
+      },
+      enhance: {
+        label: "Enhance",
+        credits: "4 Credits",
+        bestFor: "Upscale and clarity for exports",
       },
       brandAssets: {
         label: "Brand Assets",
@@ -597,7 +608,7 @@ const en = {
     statuses: {
       live: "Live",
       beta: "Beta",
-      comingSoon: "Coming soon",
+      comingSoon: "Preview",
       planned: "Planned",
     },
     imageModes: {
@@ -698,7 +709,7 @@ const en = {
     statuses: {
       live: "Live",
       beta: "Beta",
-      comingSoon: "Coming soon",
+      comingSoon: "Preview",
     },
     metrics: {
       credits: "Credits Available",
@@ -710,7 +721,7 @@ const en = {
     toolCards: {
       open: "Open Studio",
       start: "Open Studio",
-      comingSoon: "Coming soon",
+      comingSoon: "Preview",
       imageStudio: {
         title: "Image Studio",
         body: "Create campaign-ready visuals for social media, ads, product campaigns and creator content.",
@@ -804,7 +815,7 @@ const en = {
     statuses: {
       live: "Live",
       beta: "Beta",
-      comingSoon: "Coming soon",
+      comingSoon: "Preview",
       planned: "Planned",
     },
     modelTitle: "Model",
@@ -871,7 +882,7 @@ const en = {
       stepMotion: "Step 2: Add driving video",
       stepGenerate: "Step 3: Generate motion transfer",
       generateButton: "Generate Motion",
-      comingSoonNote: "Coming soon — no credits charged in this preview.",
+      comingSoonNote: "Preview mode — no credits charged.",
       modelTitle: "Model",
     },
   },
@@ -918,8 +929,10 @@ const en = {
       fastDraft: "Fast Draft 1C",
       ugcLook: "UGC Look 2C",
       premium: "Premium 3C",
+      kreaPremium: "Krea Premium 3C",
       brandAssets: "Brand Assets 4C",
       referenceEdit: "Reference Edit 5C",
+      enhance: "Enhance 4C",
     },
     promptPlaceholder:
       "Example: Create a premium fitness creator campaign for Instagram featuring a confident athlete, luxury sportswear, cinematic gym lighting and a clean product-focused composition…",
@@ -937,20 +950,22 @@ const en = {
     imageModeUGCLookActiveNote: "UGC Look · Beta · 2 Credits",
     imageModeFastDraftActiveNote: "Fast Draft · Beta · 1 Credit",
     imageModePremiumActiveNote: "Premium Image · Beta · 3 Credits",
+    imageModeKreaPremiumActiveNote: "Krea Premium · Beta · 3 Credits",
     imageModeReferenceEditActiveNote: "Reference Edit · Beta · 5 Credits",
+    imageModeEnhanceActiveNote: "Enhance · Beta · 4 Credits",
     imageModeBrandAssetsActiveNote: "Brand Assets · Beta · 4 Credits",
     imageModeVideoStudioActiveNote: "Video Studio · Beta · 25 Credits",
     imageModeCreatorVideoActiveNote: "Creator Video · Beta · 40 Credits",
     imageModeTalkingCreatorActiveNote: "Talking Creator · Beta · 60 Credits",
     studioTabImage: "Image Studio",
     studioTabVideo: "Video Studio",
-    studioTabVideoPlanned: "Video Studio · Coming soon",
+    studioTabVideoPlanned: "Video Studio · Preview",
     studioTabCreatorVideo: "Creator Video",
-    studioTabCreatorVideoPlanned: "Creator Video · Coming soon",
+    studioTabCreatorVideoPlanned: "Creator Video · Preview",
     studioTabTalkingCreator: "Talking Creator",
-    studioTabTalkingCreatorPlanned: "Talking Creator · Coming soon",
+    studioTabTalkingCreatorPlanned: "Talking Creator · Preview",
     studioTabLipSync: "Lip Sync",
-    studioTabLipSyncPlanned: "Lip Sync · Coming soon",
+    studioTabLipSyncPlanned: "Lip Sync · Preview",
     creatorVideoMissingSource: "Source image required",
     creatorVideoMissingPrompt: "Prompt required",
     creatorVideoLongerHint:
@@ -968,6 +983,7 @@ const en = {
     lipSyncMissingVoice: "Please select a voice.",
     lipSyncInvalidVoice: "Invalid voice selected.",
     lipSyncFailedRefunded: "Lip Sync failed. Your credits were refunded.",
+    kreaFailedRefunded: "Krea generation failed. Your credits were refunded.",
     lipSyncUploadingFiles: "Uploading files…",
     lipSyncWaitForVideoUpload: "Please wait until the video upload is complete.",
     lipSyncWaitForAudioUpload: "Please wait until the audio upload is complete.",
@@ -977,7 +993,7 @@ const en = {
       "Lip Sync may take longer than image generation.",
     generateLipSync: "Generate Lip Sync",
     lipSyncCreditsUpload: "30 credits with uploaded audio",
-    lipSyncCreditsVoice: "35 credits with AI voice",
+    lipSyncCreditsVoice: "35 credits with voice",
     imageModeLipSyncActiveNote: "Lip Sync Studio · Beta · 30-35 Credits",
     videoStudioMissingSource: "Upload a source image for Video Studio.",
     videoStudioMissingMotion: "Add a motion prompt for Video Studio.",
@@ -993,6 +1009,7 @@ const en = {
     referenceEditMissingSource: "Upload a source image for Reference Edit.",
     referenceEditMissingInstruction:
       "Add edit instructions for Reference Edit.",
+    enhanceMissingSource: "Upload a source image for Enhance.",
     studioRoadmapChips: [
       "Cinema Agent",
       "Omni Campaign Agent",
@@ -1026,6 +1043,11 @@ const en = {
           "High-end campaign image with stronger styling, detail and polish.",
         creditLine: "Premium — 3 Credits",
       },
+      kreaPremium: {
+        label: "Krea Premium",
+        description: "Generate premium campaign visuals with Krea AI.",
+        creditLine: "Krea Premium — 3 Credits",
+      },
       referenceEdit: {
         label: "Reference Edit",
         description: "Use a reference image to guide the final result.",
@@ -1033,7 +1055,7 @@ const en = {
         hoverHint:
           "Reference Edit supports source images, edit instructions and guided campaign refinements.",
         panel: {
-          statusPlanned: "Coming soon · Planned",
+          statusPlanned: "Planned",
           statusActive: "Beta",
           introPlanned:
             "Reference Edit is being prepared for guided image transformations.",
@@ -1062,6 +1084,38 @@ const en = {
             "Reference Edit uses your source image and instructions to create a new campaign-ready visual.",
         },
       },
+      enhance: {
+        label: "Enhance",
+        description: "Improve image quality, clarity and resolution.",
+        creditLine: "Enhance — 4 Credits",
+        hoverHint:
+          "Upscale and sharpen campaign visuals for ads, exports and high-resolution delivery.",
+        panel: {
+          statusPlanned: "Planned",
+          statusActive: "Beta",
+          introPlanned:
+            "Enhance is being prepared for upscaling and quality improvements.",
+          introActive:
+            "Upload an image to upscale and improve clarity. Results appear in the agent and gallery.",
+          sourceLabel: "Source image",
+          sourcePlaceholder: "Upload an image to enhance",
+          sourceHint: "PNG, JPEG, or WebP · max 12 MB",
+          uploadSourceImage: "Upload image",
+          uploading: "Uploading…",
+          clearImage: "Clear image",
+          invalidFile: "Please choose a JPEG, PNG, or WebP image.",
+          fileTooLarge: "Image is too large (max 12 MB).",
+          uploadFailed: "Upload failed. Please try again.",
+          optionalNotesLabel: "Optional notes",
+          optionalNotesPlaceholder:
+            "Optional: describe focus areas (faces, product, text zones)…",
+          generateDisabled: "Generate — coming soon",
+          plannedNote:
+            "Enhance will upscale and improve image quality for campaign exports.",
+          activeNote:
+            "Enhance uses Topaz-powered upscaling to improve clarity and resolution.",
+        },
+      },
       brandAssets: {
         label: "Brand Assets",
         description:
@@ -1075,7 +1129,7 @@ const en = {
         description:
           "Sync a creator video with your own audio or an AI-generated voice.",
         panel: {
-          statusPlanned: "Coming soon · Planned",
+          statusPlanned: "Planned",
           statusActive: "Beta",
           introPlanned:
             "Lip Sync Studio is coming soon. When enabled it costs 30 credits per job.",
@@ -1104,19 +1158,19 @@ const en = {
           instructionsLabel: "Instructions (optional)",
           instructionsPlaceholder:
             "Describe expression, energy, or scene mood…",
-          inputModeSystemVoice: "AI voice",
+          inputModeSystemVoice: "Voices",
           inputModeUploadAudio: "Upload audio",
-          voiceLibrary: "Voice Library",
-          recommendedVoices: "Recommended voices",
-          femaleVoices: "Female voices",
-          maleVoices: "Male voices",
-          categoryVoiceStyles: "Category voice styles",
-          preview: "Preview",
-          previewListen: "Listen",
+          voiceLibraryTitle: "Choose a voice",
+          voiceLibrarySubtitle:
+            "Choose a saved voice. Previews are played locally.",
+          femaleVoices: "Female",
+          maleVoices: "Male",
+          recommendedBadge: "Recommended",
           notConfiguredYet: "Not configured yet",
           previewNotAvailable: "Preview not available yet",
-          scriptLabel: "Script for AI voice",
+          scriptLabel: "Script",
           scriptPlaceholder: "Write what the creator should say…",
+          scriptHint: "This text is spoken by the selected voice in your video.",
           voiceLabel: "Voice",
           scriptRequired: "Script required",
           scriptCommandBarHint:
@@ -1127,7 +1181,7 @@ const en = {
           uploadAudioInstead: "Upload audio instead.",
           usePreviousVideo: "Use previous video",
           activeNote:
-            "Upload audio (30 credits) or AI voice + script (35 credits).",
+            "Upload audio (30 credits) or voice + script (35 credits).",
         },
       },
       videoStudio: {
@@ -1135,7 +1189,7 @@ const en = {
         description:
           "Animate a source image into a short cinematic social video.",
         panel: {
-          statusPlanned: "Coming soon · Planned",
+          statusPlanned: "Planned",
           statusActive: "Beta",
           introPlanned:
             "Video Studio is being prepared for image-to-video generation.",
@@ -1163,7 +1217,7 @@ const en = {
         description:
           "Turn a source image and prompt into a short AI creator video.",
         panel: {
-          statusPlanned: "Coming soon · Planned",
+          statusPlanned: "Planned",
           statusActive: "Beta",
           introPlanned:
             "Creator Video is being prepared for Nano Banana and Kling pipeline generation.",
@@ -1191,7 +1245,7 @@ const en = {
         description:
           "One-click mode: image + script + voice to a talking creator video.",
         panel: {
-          statusPlanned: "Coming soon · Planned",
+          statusPlanned: "Planned",
           statusActive: "Beta",
           introPlanned:
             "Talking Creator is being prepared for one-click talking videos.",
@@ -1209,13 +1263,12 @@ const en = {
           scriptLabel: "Script",
           scriptPlaceholder: "Enter the spoken text for your creator video…",
           voiceLabel: "Voice",
-          voiceLibrary: "Voice Library",
-          recommendedVoices: "Recommended voices",
-          femaleVoices: "Female voices",
-          maleVoices: "Male voices",
-          categoryVoiceStyles: "Category voice styles",
-          preview: "Preview",
-          previewListen: "Listen",
+          voiceLibraryTitle: "Choose a voice",
+          voiceLibrarySubtitle:
+            "Choose a saved voice. Previews are played locally.",
+          femaleVoices: "Female",
+          maleVoices: "Male",
+          recommendedBadge: "Recommended",
           notConfiguredYet: "Not configured yet",
           previewNotAvailable: "Preview not available yet.",
           activeNote:
@@ -1234,7 +1287,7 @@ const en = {
       fortyCredits: "40 Credits",
       sixtyCredits: "60 Credits",
       planned: "Planned",
-      comingSoon: "Coming soon",
+      comingSoon: "Preview",
       plannedTooltip: "Planned — not available in this release",
     },
     modes: {
@@ -1387,6 +1440,12 @@ const en = {
     talkingCreatorBadge: "Talking Creator",
     videoBadge: "Video",
     ugcLookBadge: "UGC Look",
+    kreaPremiumBadge: "Krea Premium",
+    fastDraftBadge: "Fast Draft",
+    premiumImageBadge: "Premium Image",
+    brandAssetsBadge: "Brand Assets",
+    referenceEditBadge: "Reference Edit",
+    enhanceBadge: "Enhance",
     videoUnavailable: "Video unavailable",
     noVideoUrl: "This generation has no video URL.",
     openVideoDirectly: "Open video directly",
@@ -1508,6 +1567,7 @@ const en = {
       ugcLook: "UGC Look: 2 Credits",
       fastDraft: "Fast Draft: 1 Credit",
       premium: "Premium Image: 3 Credits",
+      kreaPremium: "Krea Premium: 3 Credits",
       referenceEdit: "Reference Edit: 5 Credits",
       brandAssets: "Brand Assets: 4 Credits",
       videoStudio: "Video Studio: 25 Credits",
@@ -1695,7 +1755,7 @@ const de: DeepString<typeof en> = {
     studioMenu: "Studio-Menü",
     live: "Live",
     beta: "Beta",
-    comingSoon: "Demnächst",
+    comingSoon: "Vorschau",
     planned: "Geplant",
     roadmapBadge: "Roadmap",
     moduleUnavailable: "In der aktuellen Version nicht verfügbar.",
@@ -1782,6 +1842,7 @@ const de: DeepString<typeof en> = {
       label: "AI Create Studio",
       sublabel: "Assets erstellen",
       workspaceTitle: "AI Create Studio",
+      poweredByKrea: "Powered by Krea AI",
       workspaceSubline:
         "Wähle einen Modus — Bild, Video oder Lip Sync — und generiere in einem fokussierten Workspace.",
       tabImage: "Bild",
@@ -1791,7 +1852,7 @@ const de: DeepString<typeof en> = {
     gallery: { label: "Asset Gallery", sublabel: "Assets verwalten" },
     styleProfiles: { label: "Style Profiles", sublabel: "Wiederverwendbare Styles" },
     credits: { label: "Credits / Billing", sublabel: "Pakete und Guthaben" },
-    upcoming: { label: "Demnächst", sublabel: "Zukünftige Tools" },
+    upcoming: { label: "Vorschau", sublabel: "Tools in Planung" },
     topBar: {
       welcome: "Willkommen zurück, Georgios! 👋",
       subline: "Bereit für dein nächstes Kampagnen-Asset?",
@@ -1831,10 +1892,20 @@ const de: DeepString<typeof en> = {
         credits: "3 Credits",
         bestFor: "Höherwertige Kampagnenvisuals",
       },
+      kreaPremium: {
+        label: "Krea Premium",
+        credits: "3 Credits",
+        bestFor: "Premium-Kampagnenvisuals mit Krea AI",
+      },
       referenceEdit: {
         label: "Reference Edit",
         credits: "5 Credits",
         bestFor: "Geführte Bildbearbeitung",
+      },
+      enhance: {
+        label: "Verbessern",
+        credits: "4 Credits",
+        bestFor: "Upscale und Klarheit für Exporte",
       },
       brandAssets: {
         label: "Brand Assets",
@@ -2227,7 +2298,7 @@ const de: DeepString<typeof en> = {
     statuses: {
       live: "Live",
       beta: "Beta",
-      comingSoon: "Demnächst",
+      comingSoon: "Vorschau",
       planned: "Geplant",
     },
     imageModes: {
@@ -2329,7 +2400,7 @@ const de: DeepString<typeof en> = {
     statuses: {
       live: "Live",
       beta: "Beta",
-      comingSoon: "Demnächst",
+      comingSoon: "Vorschau",
     },
     metrics: {
       credits: "Credits verfügbar",
@@ -2341,7 +2412,7 @@ const de: DeepString<typeof en> = {
     toolCards: {
       open: "Studio öffnen",
       start: "Studio öffnen",
-      comingSoon: "Demnächst",
+      comingSoon: "Vorschau",
       imageStudio: {
         title: "Image Studio",
         body: "Erstelle kampagnenfähige Visuals für Social Media, Ads, Produktkampagnen und Creator Content.",
@@ -2435,7 +2506,7 @@ const de: DeepString<typeof en> = {
     statuses: {
       live: "Live",
       beta: "Beta",
-      comingSoon: "Demnächst",
+      comingSoon: "Vorschau",
       planned: "Geplant",
     },
     modelTitle: "Modell",
@@ -2502,7 +2573,7 @@ const de: DeepString<typeof en> = {
       stepMotion: "Schritt 2: Driving-Video hinzufügen",
       stepGenerate: "Schritt 3: Motion Transfer generieren",
       generateButton: "Motion generieren",
-      comingSoonNote: "Demnächst — in dieser Vorschau keine Credits.",
+      comingSoonNote: "Vorschau-Modus — keine Credits.",
       modelTitle: "Modell",
     },
   },
@@ -2550,8 +2621,10 @@ const de: DeepString<typeof en> = {
       fastDraft: "Fast Draft 1C",
       ugcLook: "UGC Look 2C",
       premium: "Premium 3C",
+      kreaPremium: "Krea Premium 3C",
       brandAssets: "Brand Assets 4C",
       referenceEdit: "Reference Edit 5C",
+      enhance: "Verbessern 4C",
     },
     promptPlaceholder:
       "Beispiel: Erstelle eine hochwertige Fitness-Creator-Kampagne für Instagram mit selbstbewusster Athletin, Premium-Sportswear, cineastischem Gym-Licht und klarem Produktfokus…",
@@ -2569,20 +2642,22 @@ const de: DeepString<typeof en> = {
     imageModeUGCLookActiveNote: "UGC Look · Beta · 2 Credits",
     imageModeFastDraftActiveNote: "Fast Draft · Beta · 1 Credit",
     imageModePremiumActiveNote: "Premium Image · Beta · 3 Credits",
+    imageModeKreaPremiumActiveNote: "Krea Premium · Beta · 3 Credits",
     imageModeReferenceEditActiveNote: "Reference Edit · Beta · 5 Credits",
+    imageModeEnhanceActiveNote: "Verbessern · Beta · 4 Credits",
     imageModeBrandAssetsActiveNote: "Brand Assets · Beta · 4 Credits",
     imageModeVideoStudioActiveNote: "Video Studio · Beta · 25 Credits",
     imageModeCreatorVideoActiveNote: "Creator Video · Beta · 40 Credits",
     imageModeTalkingCreatorActiveNote: "Talking Creator · Beta · 60 Credits",
     studioTabImage: "Image Studio",
     studioTabVideo: "Video Studio",
-    studioTabVideoPlanned: "Video Studio · Demnächst",
+    studioTabVideoPlanned: "Video Studio · Vorschau",
     studioTabCreatorVideo: "Creator Video",
-    studioTabCreatorVideoPlanned: "Creator Video · Demnächst",
+    studioTabCreatorVideoPlanned: "Creator Video · Vorschau",
     studioTabTalkingCreator: "Talking Creator",
-    studioTabTalkingCreatorPlanned: "Talking Creator · Demnächst",
+    studioTabTalkingCreatorPlanned: "Talking Creator · Vorschau",
     studioTabLipSync: "Lip Sync",
-    studioTabLipSyncPlanned: "Lip Sync · Demnächst",
+    studioTabLipSyncPlanned: "Lip Sync · Vorschau",
     creatorVideoMissingSource: "Quellbild erforderlich",
     creatorVideoMissingPrompt: "Prompt erforderlich",
     creatorVideoLongerHint:
@@ -2597,10 +2672,12 @@ const de: DeepString<typeof en> = {
     lipSyncMissingSource: "Bitte lade ein Quellvideo hoch.",
     lipSyncMissingAudio: "Bitte lade eine Audiodatei hoch.",
     lipSyncMissingScript: "Bitte gib ein Skript ein.",
-    lipSyncMissingVoice: "Bitte wähle eine Stimme.",
+    lipSyncMissingVoice: "Bitte wähle eine Stimme aus.",
     lipSyncInvalidVoice: "Ungültige Stimme ausgewählt.",
     lipSyncFailedRefunded:
       "Lip Sync fehlgeschlagen. Deine Credits wurden erstattet.",
+    kreaFailedRefunded:
+      "Krea-Generierung fehlgeschlagen. Deine Credits wurden erstattet.",
     lipSyncUploadingFiles: "Dateien werden hochgeladen…",
     lipSyncWaitForVideoUpload:
       "Bitte warte, bis der Video-Upload abgeschlossen ist.",
@@ -2612,7 +2689,7 @@ const de: DeepString<typeof en> = {
       "Lip Sync kann länger dauern als Bild-Generierung.",
     generateLipSync: "Lip Sync erstellen",
     lipSyncCreditsUpload: "30 Credits mit eigener Audiodatei",
-    lipSyncCreditsVoice: "35 Credits mit KI-Stimme",
+    lipSyncCreditsVoice: "35 Credits mit Stimme",
     imageModeLipSyncActiveNote: "Lip Sync Studio · Beta · 30-35 Credits",
     videoStudioMissingSource:
       "Lade ein Quellbild für Video Studio hoch.",
@@ -2631,6 +2708,7 @@ const de: DeepString<typeof en> = {
       "Lade ein Quellbild für Reference Edit hoch.",
     referenceEditMissingInstruction:
       "Füge Bearbeitungsanweisungen für Reference Edit hinzu.",
+    enhanceMissingSource: "Lade ein Quellbild für Verbessern hoch.",
     studioRoadmapChips: [
       "Cinema Agent",
       "Omni Campaign Agent",
@@ -2664,6 +2742,12 @@ const de: DeepString<typeof en> = {
           "High-End-Kampagnenbild mit stärkerem Styling, Detail und Finish.",
         creditLine: "Premium — 3 Credits",
       },
+      kreaPremium: {
+        label: "Krea Premium",
+        description:
+          "Premium-Kampagnenvisuals mit Krea AI erstellen.",
+        creditLine: "Krea Premium — 3 Credits",
+      },
       referenceEdit: {
         label: "Reference Edit",
         description: "Referenzbild zur Steuerung des finalen Ergebnisses.",
@@ -2671,7 +2755,7 @@ const de: DeepString<typeof en> = {
         hoverHint:
           "Reference Edit unterstützt Quellbilder, Bearbeitungsanweisungen und geführte Kampagnen-Verfeinerungen.",
         panel: {
-          statusPlanned: "Demnächst · Geplant",
+          statusPlanned: "Geplant",
           statusActive: "Beta",
           introPlanned:
             "Reference Edit wird für geführte Bildtransformationen vorbereitet.",
@@ -2701,6 +2785,39 @@ const de: DeepString<typeof en> = {
             "Reference Edit nutzt dein Quellbild und deine Anweisungen, um ein neues kampagnenfertiges Visual zu erstellen.",
         },
       },
+      enhance: {
+        label: "Verbessern",
+        description:
+          "Verbessere Bildqualität, Klarheit und Auflösung.",
+        creditLine: "Verbessern — 4 Credits",
+        hoverHint:
+          "Skaliere und schärfe Kampagnenvisuals für Ads, Exporte und hochauflösende Auslieferung.",
+        panel: {
+          statusPlanned: "Geplant",
+          statusActive: "Beta",
+          introPlanned:
+            "Verbessern wird für Upscaling und Qualitätsverbesserungen vorbereitet.",
+          introActive:
+            "Lade ein Bild hoch, um Auflösung und Klarheit zu verbessern. Ergebnisse erscheinen im Agent und in der Galerie.",
+          sourceLabel: "Quellbild",
+          sourcePlaceholder: "Bild zum Verbessern hochladen",
+          sourceHint: "PNG, JPEG oder WebP · max. 12 MB",
+          uploadSourceImage: "Bild hochladen",
+          uploading: "Wird hochgeladen…",
+          clearImage: "Bild entfernen",
+          invalidFile: "Bitte JPEG, PNG oder WebP wählen.",
+          fileTooLarge: "Bild zu groß (max. 12 MB).",
+          uploadFailed: "Upload fehlgeschlagen. Bitte erneut versuchen.",
+          optionalNotesLabel: "Optionale Hinweise",
+          optionalNotesPlaceholder:
+            "Optional: Fokusbereiche (Gesichter, Produkt, Textzonen)…",
+          generateDisabled: "Generieren — demnächst",
+          plannedNote:
+            "Verbessern wird Bilder für Kampagnen-Exporte hochskalieren und schärfen.",
+          activeNote:
+            "Verbessern nutzt Topaz-Upscaling für mehr Klarheit und Auflösung.",
+        },
+      },
       brandAssets: {
         label: "Brand Assets",
         description:
@@ -2714,7 +2831,7 @@ const de: DeepString<typeof en> = {
         description:
           "Synchronisiere ein Creator-Video mit eigener Audiodatei oder KI-Stimme.",
         panel: {
-          statusPlanned: "Demnächst · Geplant",
+          statusPlanned: "Geplant",
           statusActive: "Beta",
           introPlanned:
             "Lip Sync Studio ist demnächst verfügbar. Wenn aktiv, kostet es 30 Credits pro Job.",
@@ -2743,19 +2860,20 @@ const de: DeepString<typeof en> = {
           instructionsLabel: "Anweisungen (optional)",
           instructionsPlaceholder:
             "Beschreibe Ausdruck, Energie oder Szenenstimmung…",
-          inputModeSystemVoice: "KI-Stimme",
+          inputModeSystemVoice: "Stimmen",
           inputModeUploadAudio: "Audio hochladen",
-          voiceLibrary: "Voice Library",
-          recommendedVoices: "Empfohlene Stimmen",
-          femaleVoices: "Weibliche Stimmen",
-          maleVoices: "Männliche Stimmen",
-          categoryVoiceStyles: "Kategorie-Voice-Styles",
-          preview: "Vorschau",
-          previewListen: "Anhören",
+          voiceLibraryTitle: "Stimmen auswählen",
+          voiceLibrarySubtitle:
+            "Wähle eine gespeicherte Stimme. Vorschauen werden lokal abgespielt.",
+          femaleVoices: "Frauen",
+          maleVoices: "Männer",
+          recommendedBadge: "Empfohlen",
           notConfiguredYet: "Noch nicht konfiguriert",
           previewNotAvailable: "Vorschau noch nicht verfügbar",
-          scriptLabel: "Script für KI-Stimme",
+          scriptLabel: "Script",
           scriptPlaceholder: "Schreibe, was der Creator sagen soll…",
+          scriptHint:
+            "Dieser Text wird von der ausgewählten Stimme in deinem Video gesprochen.",
           voiceLabel: "Stimme",
           scriptRequired: "Skript erforderlich",
           scriptCommandBarHint:
@@ -2767,7 +2885,7 @@ const de: DeepString<typeof en> = {
           uploadAudioInstead: "Nutze stattdessen Audio-Upload.",
           usePreviousVideo: "Vorheriges Video verwenden",
           activeNote:
-            "Audio-Upload (30 Credits) oder KI-Stimme + Skript (35 Credits).",
+            "Audio-Upload (30 Credits) oder Stimme + Skript (35 Credits).",
         },
       },
       videoStudio: {
@@ -2775,7 +2893,7 @@ const de: DeepString<typeof en> = {
         description:
           "Animiere ein Quellbild zu einem kurzen cinematic Social-Video.",
         panel: {
-          statusPlanned: "Demnächst · Geplant",
+          statusPlanned: "Geplant",
           statusActive: "Beta",
           introPlanned:
             "Video Studio wird für Image-to-Video vorbereitet.",
@@ -2803,7 +2921,7 @@ const de: DeepString<typeof en> = {
         description:
           "Verwandle ein Quellbild und einen Prompt in ein kurzes AI-Creator-Video.",
         panel: {
-          statusPlanned: "Demnächst · Geplant",
+          statusPlanned: "Geplant",
           statusActive: "Beta",
           introPlanned:
             "Creator Video wird für die Nano Banana + Kling Pipeline vorbereitet.",
@@ -2832,7 +2950,7 @@ const de: DeepString<typeof en> = {
         description:
           "One-Click-Modus: Bild + Skript + Stimme zu einem sprechenden Creator-Video.",
         panel: {
-          statusPlanned: "Demnächst · Geplant",
+          statusPlanned: "Geplant",
           statusActive: "Beta",
           introPlanned:
             "Talking Creator wird für One-Click Talking Videos vorbereitet.",
@@ -2850,13 +2968,12 @@ const de: DeepString<typeof en> = {
           scriptLabel: "Skript",
           scriptPlaceholder: "Gib den gesprochenen Text für dein Creator-Video ein…",
           voiceLabel: "Stimme",
-          voiceLibrary: "Voice Library",
-          recommendedVoices: "Empfohlene Stimmen",
-          femaleVoices: "Weibliche Stimmen",
-          maleVoices: "Männliche Stimmen",
-          categoryVoiceStyles: "Kategorie-Voice-Styles",
-          preview: "Vorschau",
-          previewListen: "Anhören",
+          voiceLibraryTitle: "Stimmen auswählen",
+          voiceLibrarySubtitle:
+            "Wähle eine gespeicherte Stimme. Vorschauen werden lokal abgespielt.",
+          femaleVoices: "Frauen",
+          maleVoices: "Männer",
+          recommendedBadge: "Empfohlen",
           notConfiguredYet: "Noch nicht konfiguriert",
           previewNotAvailable: "Vorschau noch nicht verfügbar",
           activeNote:
@@ -2875,7 +2992,7 @@ const de: DeepString<typeof en> = {
       fortyCredits: "40 Credits",
       sixtyCredits: "60 Credits",
       planned: "Geplant",
-      comingSoon: "Demnächst",
+      comingSoon: "Vorschau",
       plannedTooltip: "Geplant — in diesem Release nicht verfügbar",
     },
     modes: {
@@ -3035,6 +3152,12 @@ const de: DeepString<typeof en> = {
     talkingCreatorBadge: "Talking Creator",
     videoBadge: "Video",
     ugcLookBadge: "UGC-Look",
+    kreaPremiumBadge: "Krea Premium",
+    fastDraftBadge: "Fast Draft",
+    premiumImageBadge: "Premium Image",
+    brandAssetsBadge: "Brand Assets",
+    referenceEditBadge: "Reference Edit",
+    enhanceBadge: "Verbessern",
     videoUnavailable: "Video nicht verfügbar",
     noVideoUrl: "Diese Generierung hat keine Video-URL.",
     openVideoDirectly: "Video direkt öffnen",
@@ -3159,6 +3282,7 @@ const de: DeepString<typeof en> = {
       ugcLook: "UGC Look: 2 Credits",
       fastDraft: "Fast Draft: 1 Credit",
       premium: "Premium Image: 3 Credits",
+      kreaPremium: "Krea Premium: 3 Credits",
       referenceEdit: "Reference Edit: 5 Credits",
       brandAssets: "Brand Assets: 4 Credits",
       videoStudio: "Video Studio: 25 Credits",

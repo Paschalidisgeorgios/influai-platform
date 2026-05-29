@@ -2,6 +2,12 @@
 
 import AiAgentStudio from "../AiAgentStudio";
 import { useDashboardLanguage } from "../DashboardLanguageProvider";
+import type { ActiveTool } from "@/lib/dashboard/tool-suite";
+import {
+  isPublicStudioWorkspaceEnabled,
+  type PublicStudioWorkspace,
+} from "@/lib/launch/public-flags";
+import FeatureDisabledPanel from "./FeatureDisabledPanel";
 import ToolWorkspaceShell from "./ToolWorkspaceShell";
 import { WorkspaceModelPanel } from "./workspace/WorkspaceModelPanel";
 
@@ -14,8 +20,20 @@ type RegenerateDraft = {
   loadedAt?: number;
 };
 
+type ImageModeKey =
+  | "standard"
+  | "fast_draft"
+  | "ugc_look"
+  | "premium_image"
+  | "brand_assets"
+  | "reference_edit"
+  | "enhance_asset";
+
 type StudioWorkspaceViewProps = {
   workspace: StudioTab;
+  appearance?: "light" | "dark";
+  activeTool?: ActiveTool;
+  initialImageMode?: ImageModeKey;
   charactersRefreshKey?: number;
   regenerateDraft?: RegenerateDraft | null;
   onClearRegenerateDraft?: () => void;
@@ -34,6 +52,9 @@ function plannedBadgeClass() {
 
 export default function StudioWorkspaceView({
   workspace,
+  appearance = "light",
+  activeTool = "image",
+  initialImageMode,
   charactersRefreshKey = 0,
   regenerateDraft = null,
   onClearRegenerateDraft,
@@ -44,9 +65,10 @@ export default function StudioWorkspaceView({
   const { copy } = useDashboardLanguage();
   const statuses = copy.workspaces.statuses;
 
+  const isDark = appearance === "dark";
   let modelPanel = null;
 
-  if (workspace === "video") {
+  if (!isDark && workspace === "video") {
     const videoW = copy.workspaces.video;
     modelPanel = (
       <WorkspaceModelPanel
@@ -54,29 +76,19 @@ export default function StudioWorkspaceView({
         title={copy.workspaces.modelTitle}
         cards={[
           {
-            name: videoW.modelName,
+            name: videoW.title,
             status: statuses.beta,
             statusClass: betaBadgeClass(),
             modelId: videoW.modelId,
             credits: videoW.credits,
             active: true,
           },
-          {
-            name: "Seedance",
-            status: statuses.planned,
-            statusClass: plannedBadgeClass(),
-          },
-          {
-            name: "Kling Pro",
-            status: statuses.planned,
-            statusClass: plannedBadgeClass(),
-          },
         ]}
       />
     );
   }
 
-  if (workspace === "lip_sync") {
+  if (!isDark && workspace === "lip_sync") {
     const lipW = copy.workspaces.lip_sync;
     modelPanel = (
       <WorkspaceModelPanel
@@ -84,7 +96,7 @@ export default function StudioWorkspaceView({
         title={copy.workspaces.modelTitle}
         cards={[
           {
-            name: lipW.modelName,
+            name: lipW.title,
             status: statuses.beta,
             statusClass: betaBadgeClass(),
             modelId: lipW.modelId,
@@ -97,7 +109,7 @@ export default function StudioWorkspaceView({
     );
   }
 
-  if (workspace === "creator_video") {
+  if (!isDark && workspace === "creator_video") {
     const creatorW = copy.workspaces.creator_video;
     modelPanel = (
       <WorkspaceModelPanel
@@ -105,23 +117,18 @@ export default function StudioWorkspaceView({
         title={copy.workspaces.modelTitle}
         cards={[
           {
-            name: "Nano Banana Pro Edit",
+            name: creatorW.title,
             status: statuses.beta,
             statusClass: betaBadgeClass(),
+            credits: creatorW.credits,
             active: true,
           },
-          {
-            name: "Kling Image-to-Video",
-            status: statuses.beta,
-            statusClass: betaBadgeClass(),
-          },
         ]}
-        footer={`${creatorW.pipeline} · ${creatorW.credits}`}
       />
     );
   }
 
-  if (workspace === "talking_creator") {
+  if (!isDark && workspace === "talking_creator") {
     const talkingW = copy.workspaces.talking_creator;
     modelPanel = (
       <WorkspaceModelPanel
@@ -142,9 +149,12 @@ export default function StudioWorkspaceView({
   }
 
   return (
-    <ToolWorkspaceShell modelPanel={modelPanel ?? undefined} appearance="light">
+    <ToolWorkspaceShell modelPanel={modelPanel ?? undefined} appearance={appearance}>
       <AiAgentStudio
         lockedWorkspace={workspace}
+        suiteAppearance={appearance}
+        activeTool={activeTool}
+        initialImageMode={initialImageMode}
         charactersRefreshKey={charactersRefreshKey}
         regenerateDraft={regenerateDraft}
         onClearRegenerateDraft={onClearRegenerateDraft}

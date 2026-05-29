@@ -27,6 +27,7 @@ import { formatCopy } from "./i18n";
 
 type CreditsCardProps = {
   refreshKey?: number;
+  appearance?: "light" | "dark";
 };
 
 type CreditPackage = PricingPackage & {
@@ -36,10 +37,30 @@ type CreditPackage = PricingPackage & {
   buttonLabel: string;
 };
 
-export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
+export default function CreditsCard({
+  refreshKey = 0,
+  appearance = "light",
+}: CreditsCardProps) {
   const { copy } = useDashboardLanguage();
   const supabase = createClient();
   const [packagesFocused, setPackagesFocused] = useState(false);
+  const isDark = appearance === "dark";
+  const surface = isDark
+    ? "border-white/10 bg-white/5 shadow-sm"
+    : "border-gray-100 bg-white shadow-sm";
+  const heading = isDark ? "text-white" : "text-slate-800";
+  const body = isDark ? "text-white/55" : "text-slate-600";
+  const muted = isDark ? "text-white/45" : "text-slate-500";
+  const accent = isDark ? "text-orange-400" : "text-orange-600";
+  const inputClass = isDark
+    ? "mt-2 w-full rounded-2xl border border-white/15 bg-black/30 px-4 py-2.5 text-xl font-bold tracking-tight text-white outline-none placeholder:text-white/35 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+    : "mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-2.5 text-xl font-bold tracking-tight text-slate-900 outline-none placeholder:text-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-100";
+  const balanceBox = isDark
+    ? "flex items-center gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3"
+    : "flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3";
+  const secondaryBtn = isDark
+    ? "min-h-[44px] w-full rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-white/80 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+    : "min-h-[44px] w-full rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50";
 
   const studioFeatures = useMemo(
     () => [
@@ -260,27 +281,31 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
 
   return (
     <section className="space-y-4 sm:space-y-6">
-      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm sm:rounded-3xl">
+      <div className={`overflow-hidden rounded-2xl border sm:rounded-3xl ${surface}`}>
         <div className="p-5 sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-orange-600">
+              <p className={`text-[10px] font-bold uppercase tracking-[0.28em] ${accent}`}>
                 {copy.credits.accountBalance}
               </p>
-              <h3 className="mt-1.5 text-lg font-semibold tracking-tight text-slate-800 sm:text-xl">
+              <h3 className={`mt-1.5 text-lg font-semibold tracking-tight sm:text-xl ${heading}`}>
                 {copy.credits.availableCredits}
               </h3>
-              <p className="mt-1.5 text-sm leading-5 text-slate-600">
+              <p className={`mt-1.5 text-sm leading-5 ${body}`}>
                 {copy.credits.oneCreditRule}
               </p>
             </div>
 
             <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
-              <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+              <div className={balanceBox}>
+                <div
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                    isDark ? "bg-orange-500/15 text-orange-400" : "bg-orange-50 text-orange-600"
+                  }`}
+                >
                   <CreditCard className="h-5 w-5" />
                 </div>
-                <p className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                <p className={`text-2xl font-bold tracking-tight sm:text-3xl ${heading}`}>
                   {loading ? "…" : formatCredits(credits)}
                 </p>
               </div>
@@ -290,7 +315,7 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                   type="button"
                   onClick={loadCredits}
                   disabled={loading || checkoutInProgress}
-                  className="min-h-[44px] w-full rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className={secondaryBtn}
                 >
                   {loading ? copy.credits.refreshing : copy.credits.refreshBalance}
                 </button>
@@ -326,34 +351,36 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
 
       <div
         id="custom-credit-top-up"
-        className={`scroll-mt-24 rounded-2xl border bg-white p-5 shadow-sm sm:rounded-3xl sm:p-6 ${
+        className={`scroll-mt-24 rounded-2xl border p-5 sm:rounded-3xl sm:p-6 ${surface} ${
           packagesFocused
-            ? "border-orange-300 ring-2 ring-orange-100"
-            : "border-gray-200"
+            ? isDark
+              ? "border-orange-500 ring-2 ring-orange-500/30"
+              : "border-orange-300 ring-2 ring-orange-100"
+            : ""
         }`}
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-orange-600">
+              <p className={`text-[10px] font-bold uppercase tracking-[0.28em] ${accent}`}>
                 {copy.credits.customTopUpTitle}
               </p>
-              <p className="mt-2 text-sm font-semibold leading-6 text-slate-800 sm:text-base">
+              <p className={`mt-2 text-sm font-semibold leading-6 sm:text-base ${heading}`}>
                 {copy.credits.customTopUpIntro}
               </p>
-              <p className="mt-1.5 text-sm leading-6 text-slate-600">
+              <p className={`mt-1.5 text-sm leading-6 ${body}`}>
                 {copy.credits.customTopUpPricePerCredit}
               </p>
-              <p className="mt-1 text-xs leading-5 text-slate-600">
+              <p className={`mt-1 text-xs leading-5 ${body}`}>
                 {copy.credits.customTopUpExamples}
               </p>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
+              <p className={`mt-1 text-xs leading-5 ${muted}`}>
                 {copy.credits.customTopUpPackageHint}
               </p>
             </div>
 
             <div className="flex shrink-0 flex-col items-stretch gap-3 sm:w-[min(100%,17rem)]">
               <label className="block">
-                <span className="text-sm font-semibold text-slate-800">
+                <span className={`text-sm font-semibold ${heading}`}>
                   {copy.credits.customTopUpLabel}
                 </span>
                 <input
@@ -365,7 +392,7 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                   placeholder={copy.credits.customTopUpPlaceholder}
                   value={customCredits}
                   onChange={(event) => setCustomCredits(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-gray-300 bg-white px-4 py-2.5 text-xl font-bold tracking-tight text-slate-900 outline-none placeholder:text-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                  className={inputClass}
                 />
               </label>
 
@@ -434,12 +461,12 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
             <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-orange-600">
               {copy.credits.creditPackages}
             </p>
-            <h4 className="mt-1.5 text-lg font-semibold text-slate-900 sm:text-xl">
+            <h4 className={`mt-1.5 text-lg font-semibold sm:text-xl ${heading}`}>
               {copy.credits.choosePlan}
             </h4>
           </div>
 
-          <p className="flex items-center gap-2 text-xs text-slate-500">
+          <p className={`flex items-center gap-2 text-xs ${muted}`}>
             <Lock className="h-3.5 w-3.5 shrink-0" />
             {copy.credits.secureCheckout}
           </p>
@@ -454,10 +481,14 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
             return (
               <div
                 key={creditPackage.key}
-                className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white p-5 shadow-sm transition ${
+                className={`relative flex flex-col overflow-hidden rounded-2xl border p-5 shadow-sm transition ${
                   creditPackage.highlight
-                    ? "order-first border-orange-200 shadow-md ring-1 ring-orange-100 lg:order-none"
-                    : "border-gray-100"
+                    ? isDark
+                      ? "order-first border-orange-500 bg-orange-500/10 ring-1 ring-orange-500 lg:order-none"
+                      : "order-first border-orange-200 bg-white shadow-md ring-1 ring-orange-100 lg:order-none"
+                    : isDark
+                      ? "border-white/10 bg-white/5"
+                      : "border-gray-100 bg-white"
                 }`}
               >
                 <div className="flex flex-1 flex-col">
@@ -490,32 +521,32 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                     {creditPackage.tagline}
                   </p>
 
-                  <h4 className="mt-1.5 text-xl font-bold text-slate-900 sm:text-2xl">
+                  <h4 className={`mt-1.5 text-xl font-bold sm:text-2xl ${heading}`}>
                     {creditPackage.name}
                   </h4>
 
-                  <p className="mt-1.5 text-sm leading-5 text-slate-600">
+                  <p className={`mt-1.5 text-sm leading-5 ${body}`}>
                     {creditPackage.description}
                   </p>
 
                   <div className="mt-4">
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                    <p className={`text-[10px] font-bold uppercase tracking-wide ${muted}`}>
                       {copy.credits.price}
                     </p>
-                    <p className="mt-1 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+                    <p className={`mt-1 text-3xl font-bold tracking-tight sm:text-4xl ${heading}`}>
                       {formatEurPrice(creditPackage.priceEur)}
                     </p>
 
-                    <p className="mt-3 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                    <p className={`mt-3 text-[10px] font-bold uppercase tracking-wide ${muted}`}>
                       {copy.credits.creditsIncluded}
                     </p>
-                    <p className="mt-1 text-xl font-bold text-slate-900 sm:text-2xl">
+                    <p className={`mt-1 text-xl font-bold sm:text-2xl ${heading}`}>
                       {formatCredits(shownCredits)}{" "}
-                      <span className="text-base font-semibold text-slate-600 sm:text-lg">
+                      <span className={`text-base font-semibold sm:text-lg ${body}`}>
                         {copy.credits.creditsUnit}
                       </span>
                     </p>
-                    <p className="mt-2 text-xs leading-5 text-slate-600">
+                    <p className={`mt-2 text-xs leading-5 ${body}`}>
                       {formatCopy(copy.credits.standardImages, {
                         count: shownCredits,
                       })}
@@ -526,7 +557,7 @@ export default function CreditsCard({ refreshKey = 0 }: CreditsCardProps) {
                     {creditPackage.benefits.map((benefit) => (
                       <li
                         key={benefit}
-                        className="flex items-start gap-2 text-sm leading-5 text-slate-700"
+                        className={`flex items-start gap-2 text-sm leading-5 ${isDark ? "text-white/70" : "text-slate-700"}`}
                       >
                         <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
                         <span>{benefit}</span>

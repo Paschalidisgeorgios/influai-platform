@@ -60,7 +60,7 @@ export function WorkspaceModelPanel({
                 {card.status}
               </span>
             </div>
-            {card.modelId ? (
+            {card.modelId && process.env.NODE_ENV === "development" ? (
               <p
                 className={`mt-1.5 font-mono text-[10px] leading-4 ${
                   isLight ? "text-slate-500" : "text-white/35"

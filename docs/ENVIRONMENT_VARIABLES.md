@@ -137,6 +137,46 @@ Missing files show “Preview not available yet.” in the UI.
 
 ---
 
+## Krea AI (provider migration)
+
+### `KREA_API_KEY`
+
+- **Where:** Krea → Settings → API tokens
+- **Notes:** Server only. Powers `POST /api/krea/image/generate` and `GET /api/providers/krea/health`.
+
+### `ENABLE_KREA_PROVIDER` / `NEXT_PUBLIC_ENABLE_KREA_PROVIDER`
+
+- **Notes:** Gate server/client for Krea POC. Missing key at runtime → clear API error; build does not crash.
+
+### Optional
+
+- `KREA_API_BASE_URL` (default `https://api.krea.ai`)
+- `KREA_IMAGE_MODEL_PATH` (default `bfl/flux-1-dev`)
+
+See `docs/provider-migration-plan.md`.
+
+---
+
+## Creatify AI (provider migration)
+
+### `CREATIFY_API_ID` and `CREATIFY_API_KEY`
+
+- **Where:** Creatify dashboard API credentials
+- **Notes:** Both required (`X-API-ID` + `X-API-KEY`). Server only.
+
+### `ENABLE_CREATIFY_PROVIDER` / `NEXT_PUBLIC_ENABLE_CREATIFY_PROVIDER`
+
+- **Notes:** Gate Creatify POC routes.
+
+### Optional
+
+- `CREATIFY_API_BASE_URL` (default `https://api.creatify.ai`)
+- `CREATIFY_AD_VIDEO_MODEL` — confirm via `GET /api/asset_generator/schemas/`
+
+POC routes: `POST /api/creatify/ad-video/generate`, `GET /api/creatify/ad-video/status`.
+
+---
+
 ## Talking Creator flags
 
 ### `ENABLE_TALKING_CREATOR`

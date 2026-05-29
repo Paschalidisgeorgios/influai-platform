@@ -48,7 +48,7 @@ export async function POST(req: Request) {
   try {
     if (process.env.ENABLE_FAL_LIP_SYNC !== "true") {
       return NextResponse.json(
-        { error: "Lip Sync Studio is not enabled on the server." },
+        { error: "This feature is currently disabled.", comingSoon: true },
         { status: 400 }
       );
     }

@@ -1,5 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { FEATURE_DISABLED_MESSAGE } from "@/lib/launch/messages";
+import {
+  normalizeKreaWorkflowKey,
+  resolveKreaStoredModelForWorkflow,
+  shouldUseKreaForEnhanceWorkflow,
+  shouldUseKreaForImageWorkflow,
+  shouldUseKreaForVideoWorkflow,
+} from "@/lib/providers/krea-workflows";
 import {
   LIP_SYNC_VOICE_KEYS,
   resolveDefaultLipSyncVoiceKey,
@@ -19,7 +27,8 @@ type ImageMode =
   | "premium_image"
   | "reference_edit"
   | "brand_assets"
-  | "ugc_look";
+  | "ugc_look"
+  | "enhance_asset";
 
 type GenerateMode =
   | ImageMode
@@ -72,6 +81,8 @@ function getCreditCostForImageMode(imageMode: ImageMode): number {
       return 2;
     case "reference_edit":
       return 5;
+    case "enhance_asset":
+      return 4;
     case "brand_assets":
       return 4;
     case "premium_image":
@@ -98,6 +109,7 @@ function parseImageMode(value: unknown): ImageMode {
   if (value === "reference_edit") return "reference_edit";
   if (value === "brand_assets") return "brand_assets";
   if (value === "ugc_look") return "ugc_look";
+  if (value === "enhance_asset") return "enhance_asset";
   return "standard";
 }
 
@@ -105,7 +117,7 @@ function getPlannedModeRejection(value: unknown): string | null {
   if (typeof value !== "string") return null;
   if (!PLANNED_IMAGE_MODES.has(value)) return null;
 
-  return "This image mode is not enabled.";
+  return FEATURE_DISABLED_MESSAGE;
 }
 
 function isMissingColumnError(error: { message?: string; code?: string } | null) {
@@ -127,6 +139,34 @@ type GenerationJobConfig = {
 
 type LipSyncInputMode = "system_voice" | "audio_upload";
 
+function kreaJobConfig(
+  workflow: string,
+  creditsUsed: number,
+  transactionSource: string
+): GenerationJobConfig {
+  const normalized = normalizeKreaWorkflowKey(workflow);
+  return {
+    provider: "krea",
+    model: resolveKreaStoredModelForWorkflow(normalized),
+    workflow: normalized,
+    creditsUsed,
+    transactionSource,
+  };
+}
+
+function isImageModeEnabledForServer(
+  workflow: string,
+  legacyFlagEnv: string
+): boolean {
+  if (shouldUseKreaForEnhanceWorkflow(workflow)) {
+    return true;
+  }
+  if (shouldUseKreaForImageWorkflow(workflow)) {
+    return true;
+  }
+  return process.env[legacyFlagEnv] === "true";
+}
+
 function resolveGenerationJobConfig(mode: GenerateMode):
   | { ok: true; config: GenerationJobConfig }
   | { ok: false; error: string } {
@@ -134,8 +174,7 @@ function resolveGenerationJobConfig(mode: GenerateMode):
     if (process.env.ENABLE_CREATOR_VIDEO !== "true") {
       return {
         ok: false,
-        error:
-          "Creator Video is not enabled. Set ENABLE_CREATOR_VIDEO=true on the server.",
+        error: FEATURE_DISABLED_MESSAGE,
       };
     }
 
@@ -155,8 +194,7 @@ function resolveGenerationJobConfig(mode: GenerateMode):
     if (process.env.ENABLE_TALKING_CREATOR !== "true") {
       return {
         ok: false,
-        error:
-          "Talking Creator is not enabled. Set ENABLE_TALKING_CREATOR=true on the server.",
+        error: FEATURE_DISABLED_MESSAGE,
       };
     }
 
@@ -173,11 +211,24 @@ function resolveGenerationJobConfig(mode: GenerateMode):
   }
 
   if (mode === "video_image_to_video") {
-    if (process.env.ENABLE_FAL_VIDEO_STUDIO !== "true") {
+    if (
+      !shouldUseKreaForVideoWorkflow("video_image_to_video") &&
+      process.env.ENABLE_FAL_VIDEO_STUDIO !== "true"
+    ) {
       return {
         ok: false,
-        error:
-          "Video Studio is not enabled. Set ENABLE_FAL_VIDEO_STUDIO=true on the server.",
+        error: FEATURE_DISABLED_MESSAGE,
+      };
+    }
+
+    if (shouldUseKreaForVideoWorkflow("video_image_to_video")) {
+      return {
+        ok: true,
+        config: kreaJobConfig(
+          "video_image_to_video",
+          getCreditCostForMode("video_image_to_video"),
+          "video_image_to_video_generation_job"
+        ),
       };
     }
 
@@ -197,8 +248,7 @@ function resolveGenerationJobConfig(mode: GenerateMode):
     if (process.env.ENABLE_FAL_LIP_SYNC !== "true") {
       return {
         ok: false,
-        error:
-          "Lip Sync Studio is not enabled. Set ENABLE_FAL_LIP_SYNC=true on the server.",
+        error: FEATURE_DISABLED_MESSAGE,
       };
     }
 
@@ -217,10 +267,21 @@ function resolveGenerationJobConfig(mode: GenerateMode):
   const imageMode = mode as ImageMode;
 
   if (imageMode === "fast_draft") {
-    if (process.env.ENABLE_FAL_FAST_DRAFT !== "true") {
+    if (!isImageModeEnabledForServer("fast_draft", "ENABLE_FAL_FAST_DRAFT")) {
       return {
         ok: false,
-        error: "Fast Draft is not enabled. Set ENABLE_FAL_FAST_DRAFT=true on the server.",
+        error: FEATURE_DISABLED_MESSAGE,
+      };
+    }
+
+    if (shouldUseKreaForImageWorkflow("fast_draft")) {
+      return {
+        ok: true,
+        config: kreaJobConfig(
+          "fast_draft",
+          getCreditCostForImageMode("fast_draft"),
+          "fast_draft_generation_job"
+        ),
       };
     }
 
@@ -237,11 +298,21 @@ function resolveGenerationJobConfig(mode: GenerateMode):
   }
 
   if (imageMode === "premium_image") {
-    if (process.env.ENABLE_FAL_PREMIUM_IMAGE !== "true") {
+    if (!isImageModeEnabledForServer("premium_image", "ENABLE_FAL_PREMIUM_IMAGE")) {
       return {
         ok: false,
-        error:
-          "Premium Image is not enabled. Set ENABLE_FAL_PREMIUM_IMAGE=true on the server.",
+        error: FEATURE_DISABLED_MESSAGE,
+      };
+    }
+
+    if (shouldUseKreaForImageWorkflow("premium_image")) {
+      return {
+        ok: true,
+        config: kreaJobConfig(
+          "premium_image",
+          getCreditCostForImageMode("premium_image"),
+          "premium_image_generation_job"
+        ),
       };
     }
 
@@ -257,12 +328,40 @@ function resolveGenerationJobConfig(mode: GenerateMode):
     };
   }
 
-  if (imageMode === "reference_edit") {
-    if (process.env.ENABLE_FAL_REFERENCE_EDIT !== "true") {
+  if (imageMode === "enhance_asset") {
+    if (!shouldUseKreaForEnhanceWorkflow("enhance_asset")) {
       return {
         ok: false,
-        error:
-          "Reference Edit is not enabled. Set ENABLE_FAL_REFERENCE_EDIT=true on the server.",
+        error: FEATURE_DISABLED_MESSAGE,
+      };
+    }
+
+    return {
+      ok: true,
+      config: kreaJobConfig(
+        "enhance_asset",
+        getCreditCostForImageMode("enhance_asset"),
+        "enhance_asset_generation_job"
+      ),
+    };
+  }
+
+  if (imageMode === "reference_edit") {
+    if (!isImageModeEnabledForServer("reference_edit", "ENABLE_FAL_REFERENCE_EDIT")) {
+      return {
+        ok: false,
+        error: FEATURE_DISABLED_MESSAGE,
+      };
+    }
+
+    if (shouldUseKreaForImageWorkflow("reference_edit")) {
+      return {
+        ok: true,
+        config: kreaJobConfig(
+          "reference_edit",
+          getCreditCostForImageMode("reference_edit"),
+          "reference_edit_generation_job"
+        ),
       };
     }
 
@@ -279,11 +378,21 @@ function resolveGenerationJobConfig(mode: GenerateMode):
   }
 
   if (imageMode === "brand_assets") {
-    if (process.env.ENABLE_FAL_BRAND_ASSETS !== "true") {
+    if (!isImageModeEnabledForServer("brand_assets", "ENABLE_FAL_BRAND_ASSETS")) {
       return {
         ok: false,
-        error:
-          "Brand Assets is not enabled. Set ENABLE_FAL_BRAND_ASSETS=true on the server.",
+        error: FEATURE_DISABLED_MESSAGE,
+      };
+    }
+
+    if (shouldUseKreaForImageWorkflow("brand_assets")) {
+      return {
+        ok: true,
+        config: kreaJobConfig(
+          "brand_assets",
+          getCreditCostForImageMode("brand_assets"),
+          "brand_assets_generation_job"
+        ),
       };
     }
 
@@ -300,10 +409,21 @@ function resolveGenerationJobConfig(mode: GenerateMode):
   }
 
   if (imageMode === "ugc_look") {
-    if (process.env.ENABLE_UGC_LOOK !== "true") {
+    if (!isImageModeEnabledForServer("ugc_look", "ENABLE_UGC_LOOK")) {
       return {
         ok: false,
-        error: "UGC Look is not enabled. Set ENABLE_UGC_LOOK=true on the server.",
+        error: FEATURE_DISABLED_MESSAGE,
+      };
+    }
+
+    if (shouldUseKreaForImageWorkflow("ugc_look")) {
+      return {
+        ok: true,
+        config: kreaJobConfig(
+          "ugc_look",
+          getCreditCostForImageMode("ugc_look"),
+          "ugc_look_generation_job"
+        ),
       };
     }
 
@@ -316,6 +436,17 @@ function resolveGenerationJobConfig(mode: GenerateMode):
         creditsUsed: getCreditCostForImageMode("ugc_look"),
         transactionSource: "ugc_look_generation_job",
       },
+    };
+  }
+
+  if (shouldUseKreaForImageWorkflow("standard")) {
+    return {
+      ok: true,
+      config: kreaJobConfig(
+        "standard",
+        getCreditCostForImageMode("standard"),
+        "standard_generation_job"
+      ),
     };
   }
 
@@ -2707,6 +2838,15 @@ export async function POST(req: Request) {
 
     const jobConfig = jobConfigResult.config;
 
+    if (imageMode === "enhance_asset") {
+      if (!sourceImageUrl) {
+        return NextResponse.json(
+          { error: "Source image is required for Enhance." },
+          { status: 400 }
+        );
+      }
+    }
+
     if (imageMode === "reference_edit") {
       if (!sourceImageUrl) {
         return NextResponse.json(
@@ -2723,7 +2863,11 @@ export async function POST(req: Request) {
       }
     }
 
-    if (imageMode !== "reference_edit" && (!prompt || typeof prompt !== "string")) {
+    if (
+      imageMode !== "reference_edit" &&
+      imageMode !== "enhance_asset" &&
+      (!prompt || typeof prompt !== "string")
+    ) {
       return NextResponse.json(
         { error: "Prompt is required" },
         { status: 400 }
@@ -2733,14 +2877,20 @@ export async function POST(req: Request) {
     const effectivePrompt =
       imageMode === "reference_edit"
         ? editInstruction
-        : typeof prompt === "string"
-          ? prompt
-          : "";
+        : imageMode === "enhance_asset"
+          ? typeof prompt === "string" && prompt.trim().length > 0
+            ? prompt.trim()
+            : "Enhance image quality, clarity and resolution."
+          : typeof prompt === "string"
+            ? prompt
+            : "";
 
     let finalPrompt =
       imageMode === "reference_edit"
         ? buildReferenceEditFinalPrompt(editInstruction)
-        : imageMode === "brand_assets"
+        : imageMode === "enhance_asset"
+          ? effectivePrompt
+          : imageMode === "brand_assets"
           ? buildBrandAssetsFinalPrompt({
               prompt: effectivePrompt,
               outputFormat,
@@ -2757,9 +2907,16 @@ export async function POST(req: Request) {
 
     let usedCharacterId: string | null = null;
     let referenceImageUrl: string | null =
-      imageMode === "reference_edit" ? sourceImageUrl : null;
+      imageMode === "reference_edit" || imageMode === "enhance_asset"
+        ? sourceImageUrl
+        : null;
 
-    if (imageMode !== "reference_edit" && characterId && typeof characterId === "string") {
+    if (
+      imageMode !== "reference_edit" &&
+      imageMode !== "enhance_asset" &&
+      characterId &&
+      typeof characterId === "string"
+    ) {
       const { data: character, error: characterError } = await supabaseAdmin
         .from("ai_characters")
         .select(
@@ -2887,7 +3044,12 @@ export async function POST(req: Request) {
             source_image_url: sourceImageUrl,
             edit_instruction: editInstruction,
           }
-        : generationInsertBase;
+        : imageMode === "enhance_asset"
+          ? {
+              ...generationInsertBase,
+              source_image_url: sourceImageUrl,
+            }
+          : generationInsertBase;
 
     let generationCreateError: { message?: string; code?: string } | null =
       null;
@@ -2966,7 +3128,10 @@ export async function POST(req: Request) {
       provider: jobConfig.provider,
       model: jobConfig.model,
       referenceImageUrl,
-      sourceImageUrl: imageMode === "reference_edit" ? sourceImageUrl : undefined,
+      sourceImageUrl:
+        imageMode === "reference_edit" || imageMode === "enhance_asset"
+          ? sourceImageUrl
+          : undefined,
       outputFormat,
     });
   } catch (error) {

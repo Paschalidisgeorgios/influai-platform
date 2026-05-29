@@ -38,12 +38,19 @@ import {
 import UnifiedCommandBar, {
   type CommandBarPill,
 } from "./components/studio/UnifiedCommandBar";
+import LipSyncVoiceLibrary from "./components/studio/LipSyncVoiceLibrary";
 import VisualFormatGrid from "./components/studio/VisualFormatGrid";
+import {
+  StudioProviderDebugLine,
+} from "./components/studio/KreaStudioIndicators";
+import {
+  getCommandBarBadgePills,
+  type ActiveTool,
+} from "@/lib/dashboard/tool-suite";
+import { publicLaunchFlags } from "@/lib/launch/public-flags";
 import { createClient } from "@/lib/supabase/client";
 import {
   ELEVENLABS_NAMED_VOICES,
-  LIP_SYNC_RECOMMENDED_VOICE_KEYS,
-  type ElevenLabsVoiceDefinition,
   isClientVoiceConfigured,
 } from "@/lib/lip-sync/elevenlabs-voices";
 import { isBlobMediaUrl, isRemoteMediaUrl } from "@/lib/lip-sync/media-url";
@@ -71,22 +78,30 @@ type ImageModeKey =
   | "fast_draft"
   | "premium_image"
   | "reference_edit"
+  | "enhance_asset"
   | "brand_assets"
   | "ugc_look";
 type ImageModeCardStatus = "live" | "beta" | "planned";
 
+const KREA_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_KREA_PROVIDER === "true";
 const FAST_DRAFT_PUBLIC_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_FAL_FAST_DRAFT === "true";
+  process.env.NEXT_PUBLIC_ENABLE_FAL_FAST_DRAFT === "true" || KREA_PUBLIC_ENABLED;
 const PREMIUM_IMAGE_PUBLIC_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_FAL_PREMIUM_IMAGE === "true";
+  process.env.NEXT_PUBLIC_ENABLE_FAL_PREMIUM_IMAGE === "true" ||
+  KREA_PUBLIC_ENABLED;
 const REFERENCE_EDIT_PUBLIC_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_FAL_REFERENCE_EDIT === "true";
+  process.env.NEXT_PUBLIC_ENABLE_FAL_REFERENCE_EDIT === "true" ||
+  KREA_PUBLIC_ENABLED;
 const BRAND_ASSETS_PUBLIC_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_FAL_BRAND_ASSETS === "true";
+  process.env.NEXT_PUBLIC_ENABLE_FAL_BRAND_ASSETS === "true" ||
+  KREA_PUBLIC_ENABLED;
 const UGC_LOOK_PUBLIC_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_UGC_LOOK === "true";
+  process.env.NEXT_PUBLIC_ENABLE_UGC_LOOK === "true" || KREA_PUBLIC_ENABLED;
+const ENHANCE_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_KREA_ENHANCE === "true" || KREA_PUBLIC_ENABLED;
 const VIDEO_STUDIO_PUBLIC_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO === "true";
+  process.env.NEXT_PUBLIC_ENABLE_FAL_VIDEO_STUDIO === "true" || KREA_PUBLIC_ENABLED;
 const LIP_SYNC_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_FAL_LIP_SYNC === "true";
 const TALKING_CREATOR_PUBLIC_ENABLED =
@@ -109,226 +124,6 @@ type StudioTab = "image" | "video" | "creator_video" | "lip_sync" | "talking_cre
 const LIP_SYNC_SOURCE_MAX_BYTES = 50 * 1024 * 1024;
 const LIP_SYNC_AUDIO_MAX_BYTES = 25 * 1024 * 1024;
 type LipSyncInputMode = "system_voice" | "audio_upload";
-
-type LipSyncVoiceLibraryCopy = {
-  voiceLibrary: string;
-  recommendedVoices: string;
-  femaleVoices: string;
-  maleVoices: string;
-  categoryVoiceStyles: string;
-  preview: string;
-  previewListen: string;
-  notConfiguredYet: string;
-  previewNotAvailable: string;
-};
-
-function LipSyncVoiceCard({
-  voice,
-  selected,
-  configured,
-  copy,
-  onSelect,
-  isLight = false,
-}: {
-  voice: ElevenLabsVoiceDefinition;
-  selected: boolean;
-  configured: boolean;
-  copy: LipSyncVoiceLibraryCopy;
-  onSelect: (key: string) => void;
-  isLight?: boolean;
-}) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [previewUnavailable, setPreviewUnavailable] = useState(false);
-
-  useEffect(() => {
-    setPreviewUnavailable(false);
-  }, [voice.key]);
-
-  async function handlePreview(event: React.MouseEvent<HTMLButtonElement>) {
-    event.stopPropagation();
-    if (!configured || previewUnavailable) return;
-
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    try {
-      audio.currentTime = 0;
-      await audio.play();
-    } catch {
-      setPreviewUnavailable(true);
-    }
-  }
-
-  return (
-    <div
-      className={`rounded-2xl border px-2 py-1.5 transition ${
-        selected
-          ? isLight
-            ? "border-orange-500 bg-orange-50/40 ring-1 ring-orange-500"
-            : "border-orange-400/60 bg-orange-500/15 ring-1 ring-orange-500/50"
-          : isLight
-            ? "border-gray-200 bg-white"
-            : "border-white/10 bg-black/25"
-      } ${!configured ? "opacity-55" : ""}`}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <button
-          type="button"
-          disabled={!configured}
-          onClick={() => onSelect(voice.key)}
-          className="min-w-0 flex-1 text-left disabled:cursor-not-allowed"
-        >
-          <p
-            className={`flex flex-wrap items-center gap-1 text-[10px] font-bold ${
-              isLight ? "text-slate-900" : "text-white/85"
-            }`}
-          >
-            {voice.label}
-            {LIP_SYNC_RECOMMENDED_VOICE_KEYS.includes(
-              voice.key as (typeof LIP_SYNC_RECOMMENDED_VOICE_KEYS)[number]
-            ) ? (
-              <span
-                className={`rounded-full px-1.5 py-0 text-[7px] font-bold uppercase tracking-wide ${
-                  isLight
-                    ? "bg-orange-100 text-orange-700"
-                    : "bg-orange-500/20 text-orange-100"
-                }`}
-              >
-                ★
-              </span>
-            ) : null}
-          </p>
-          <p className={`text-[9px] ${isLight ? "text-slate-500" : "text-white/45"}`}>
-            {voice.description}
-          </p>
-        </button>
-        <button
-          type="button"
-          onClick={handlePreview}
-          disabled={!configured || previewUnavailable}
-          title={copy.preview}
-          className={`shrink-0 rounded-full border px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] transition disabled:cursor-not-allowed disabled:opacity-45 ${
-            isLight
-              ? "border-gray-200 bg-gray-50 text-slate-600 hover:border-violet-300 hover:text-violet-700"
-              : "border-white/15 bg-black/35 text-white/65 hover:border-violet-400/35 hover:text-violet-100"
-          }`}
-        >
-          {copy.previewListen}
-        </button>
-      </div>
-      {!configured ? (
-        <p className="mt-1 text-[8px] font-medium text-amber-200/85">
-          {copy.notConfiguredYet}
-        </p>
-      ) : null}
-      {previewUnavailable ? (
-        <p
-          className={`mt-1 text-[8px] ${isLight ? "text-slate-500" : "text-white/38"}`}
-        >
-          {copy.previewNotAvailable}
-        </p>
-      ) : null}
-      <audio
-        ref={audioRef}
-        src={voice.previewPath}
-        preload="none"
-        onError={() => setPreviewUnavailable(true)}
-        className="sr-only"
-      />
-    </div>
-  );
-}
-
-function LipSyncVoiceLibrary({
-  copy,
-  voiceKey,
-  onVoiceKeyChange,
-  isEnabled,
-  appearance = "dark",
-}: {
-  copy: LipSyncVoiceLibraryCopy;
-  voiceKey: string;
-  onVoiceKeyChange: (value: string) => void;
-  isEnabled: boolean;
-  appearance?: "light" | "dark";
-}) {
-  const isLight = appearance === "light";
-  const recommendedVoices = LIP_SYNC_RECOMMENDED_VOICE_KEYS.map((key) =>
-    ELEVENLABS_NAMED_VOICES.find((voice) => voice.key === key)
-  ).filter((voice): voice is ElevenLabsVoiceDefinition => Boolean(voice));
-  const femaleVoices = ELEVENLABS_NAMED_VOICES.filter((voice) => voice.group === "female");
-  const maleVoices = ELEVENLABS_NAMED_VOICES.filter((voice) => voice.group === "male");
-  function renderVoiceGrid(voices: ElevenLabsVoiceDefinition[]) {
-    return (
-      <div className="mt-1.5 grid gap-1.5 sm:grid-cols-2">
-        {voices.map((voice) => (
-          <LipSyncVoiceCard
-            key={voice.key}
-            voice={voice}
-            selected={voiceKey === voice.key}
-            configured={isEnabled && isClientVoiceConfigured(voice.key)}
-            copy={copy}
-            onSelect={onVoiceKeyChange}
-            isLight={isLight}
-          />
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={
-        isLight
-          ? "rounded-lg border border-gray-200 bg-white p-2.5 shadow-sm"
-          : "rounded-lg border border-white/12 bg-black/25 p-2.5"
-      }
-    >
-      <p
-        className={
-          isLight
-            ? "text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500"
-            : "text-[9px] font-black uppercase tracking-[0.12em] text-white/40"
-        }
-      >
-        {copy.voiceLibrary}
-      </p>
-
-      <p
-        className={
-          isLight
-            ? "mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-700"
-            : "mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-200/85"
-        }
-      >
-        {copy.recommendedVoices}
-      </p>
-      {renderVoiceGrid(recommendedVoices)}
-
-      <p
-        className={
-          isLight
-            ? "mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-700"
-            : "mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-200/85"
-        }
-      >
-        {copy.femaleVoices}
-      </p>
-      {renderVoiceGrid(femaleVoices)}
-
-      <p
-        className={
-          isLight
-            ? "mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-700"
-            : "mt-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-violet-200/85"
-        }
-      >
-        {copy.maleVoices}
-      </p>
-      {renderVoiceGrid(maleVoices)}
-    </div>
-  );
-}
 
 function isLipSyncWorkflow(workflow?: string | null) {
   return workflow === "lip_sync";
@@ -357,6 +152,10 @@ function resolveSubmitImageMode(imageMode: ImageModeKey): ImageModeKey {
 
   if (imageMode === "reference_edit" && REFERENCE_EDIT_PUBLIC_ENABLED) {
     return "reference_edit";
+  }
+
+  if (imageMode === "enhance_asset" && ENHANCE_PUBLIC_ENABLED) {
+    return "enhance_asset";
   }
 
   if (imageMode === "fast_draft" && FAST_DRAFT_PUBLIC_ENABLED) {
@@ -407,6 +206,9 @@ type AiAgentStudioProps = {
   preferredStudioTab?: StudioTab;
   /** When set, locks the studio to one tool workspace and hides the tab switcher. */
   lockedWorkspace?: StudioTab;
+  suiteAppearance?: "light" | "dark";
+  activeTool?: ActiveTool;
+  initialImageMode?: ImageModeKey;
   onGenerationQueued?: () => void;
   onClearRegenerateDraft?: () => void;
   onOpenGallery?: () => void;
@@ -488,8 +290,47 @@ function workflowToImageMode(workflow: string | null | undefined): ImageModeKey 
       return "premium_image";
     case "reference_edit":
       return "reference_edit";
+    case "enhance_asset":
+      return "enhance_asset";
+    case "krea_premium_image":
+      return "premium_image";
     default:
       return "standard";
+  }
+}
+
+function outputFormatToAspectRatio(formatKey: OutputFormatKey): string {
+  switch (formatKey) {
+    case "tiktok":
+    case "instagram_story":
+    case "youtube_shorts":
+      return "9:16";
+    case "instagram_post":
+      return "4:5";
+    case "youtube_thumbnail":
+      return "16:9";
+    case "square":
+    default:
+      return "1:1";
+  }
+}
+
+function kreaDimensionsForFormat(formatKey: OutputFormatKey): {
+  width: number;
+  height: number;
+} {
+  switch (formatKey) {
+    case "tiktok":
+    case "instagram_story":
+    case "youtube_shorts":
+      return { width: 768, height: 1344 };
+    case "instagram_post":
+      return { width: 1024, height: 1280 };
+    case "youtube_thumbnail":
+      return { width: 1344, height: 768 };
+    case "square":
+    default:
+      return { width: 1024, height: 1024 };
   }
 }
 
@@ -793,6 +634,8 @@ function getRequiredCreditsForImageMode(imageMode: ImageModeKey): number {
       return 3;
     case "reference_edit":
       return 5;
+    case "enhance_asset":
+      return 4;
     case "brand_assets":
       return 4;
     case "fast_draft":
@@ -1075,11 +918,7 @@ function ModeCardBody({
         </p>
       ) : null}
 
-      {comingSoonNote && !isLive ? (
-        <p className="relative mt-1 text-[8px] font-bold uppercase tracking-[0.1em] text-[#d8ad5f]/60">
-          {comingSoonNote}
-        </p>
-      ) : null}
+      {/* Intentionally no \"coming soon\" UI in the suite. */}
 
       {showLock && (
         <Lock className="relative mt-1 h-2.5 w-2.5 text-white/25 sm:h-3 sm:w-3" aria-hidden />
@@ -1150,6 +989,8 @@ function getImageModeChipLabel(
     premium: string;
     brandAssets: string;
     referenceEdit: string;
+    enhance: string;
+    kreaPremium: string;
   }
 ) {
   switch (key) {
@@ -1163,6 +1004,8 @@ function getImageModeChipLabel(
       return chips.brandAssets;
     case "reference_edit":
       return chips.referenceEdit;
+    case "enhance_asset":
+      return chips.enhance;
     case "standard":
     default:
       return chips.standard;
@@ -1465,6 +1308,233 @@ function ReferenceEditPanel({
       ) : (
         <p className="mt-2.5 text-[9px] leading-4 text-white/32">{copy.activeNote}</p>
       )}
+    </motion.div>
+  );
+}
+
+function EnhanceAssetPanel({
+  label,
+  copy,
+  panelRef,
+  getAccessToken,
+  isEnabled,
+  sourcePreviewUrl,
+  onSourcePreviewUrlChange,
+}: {
+  label: string;
+  copy: {
+    statusPlanned: string;
+    statusActive: string;
+    introPlanned: string;
+    introActive: string;
+    sourceLabel: string;
+    sourcePlaceholder: string;
+    sourceHint: string;
+    uploadSourceImage: string;
+    uploading: string;
+    clearImage: string;
+    invalidFile: string;
+    fileTooLarge: string;
+    uploadFailed: string;
+    plannedNote: string;
+    activeNote: string;
+  };
+  panelRef: React.RefObject<HTMLDivElement | null>;
+  getAccessToken: () => Promise<string | null>;
+  isEnabled: boolean;
+  sourcePreviewUrl: string | null;
+  onSourcePreviewUrlChange: (url: string | null) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const blobPreviewRef = useRef<string | null>(null);
+  const [localFileError, setLocalFileError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (blobPreviewRef.current) {
+        URL.revokeObjectURL(blobPreviewRef.current);
+      }
+    };
+  }, []);
+
+  function revokeBlobPreview() {
+    if (blobPreviewRef.current) {
+      URL.revokeObjectURL(blobPreviewRef.current);
+      blobPreviewRef.current = null;
+    }
+  }
+
+  function clearSourceImage() {
+    revokeBlobPreview();
+    onSourcePreviewUrlChange(null);
+    setLocalFileError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }
+
+  async function handleSourceFileChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const mime = file.type.toLowerCase();
+    const allowedMime = new Set([
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/webp",
+    ]);
+    const allowedByName = /\.(png|jpe?g|webp)$/i.test(file.name);
+
+    if (!(allowedMime.has(mime) || (allowedByName && file.type.startsWith("image/")))) {
+      setLocalFileError(copy.invalidFile);
+      return;
+    }
+
+    if (file.size > REFERENCE_EDIT_MAX_BYTES) {
+      setLocalFileError(copy.fileTooLarge);
+      return;
+    }
+
+    setLocalFileError(null);
+    revokeBlobPreview();
+
+    const blobUrl = URL.createObjectURL(file);
+    blobPreviewRef.current = blobUrl;
+    onSourcePreviewUrlChange(blobUrl);
+    setUploading(true);
+
+    try {
+      const token = await getAccessToken();
+      if (!token) {
+        setLocalFileError(copy.uploadFailed);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/reference-sources/upload", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = (await response.json()) as {
+        imageUrl?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !data.imageUrl) {
+        setLocalFileError(data.error ?? copy.uploadFailed);
+        return;
+      }
+
+      revokeBlobPreview();
+      onSourcePreviewUrlChange(data.imageUrl);
+    } catch {
+      setLocalFileError(copy.uploadFailed);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }
+
+  const panelStatus = isEnabled ? copy.statusActive : copy.statusPlanned;
+  const panelIntro = isEnabled ? copy.introActive : copy.introPlanned;
+
+  return (
+    <motion.div
+      ref={panelRef}
+      id="enhance-asset-panel"
+      aria-label={copy.sourceLabel}
+      initial={false}
+      className="mt-2.5 rounded-xl border border-[#d8ad5f]/15 bg-[linear-gradient(165deg,rgba(216,173,95,0.07)_0%,rgba(0,0,0,0.35)_45%)] p-2.5 sm:p-3"
+    >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+        onChange={handleSourceFileChange}
+      />
+
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-black text-white/85 sm:text-xs">{label}</p>
+          <p className="mt-0.5 text-[9px] leading-4 text-white/38">{panelIntro}</p>
+        </div>
+        <span className="shrink-0 rounded-full border border-[#d8ad5f]/25 bg-[#d8ad5f]/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.1em] text-[#d8ad5f]/90">
+          {panelStatus}
+        </span>
+      </div>
+
+      <div className="mt-2.5 rounded-lg border border-dashed border-white/12 bg-black/30 p-2">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[9px] font-black uppercase tracking-[0.12em] text-white/40">
+            {copy.sourceLabel}
+          </p>
+          {sourcePreviewUrl ? (
+            <button
+              type="button"
+              onClick={clearSourceImage}
+              disabled={uploading}
+              className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white/45 transition hover:bg-white/[0.06] hover:text-white/70 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <X className="h-3 w-3" aria-hidden />
+              {copy.clearImage}
+            </button>
+          ) : null}
+        </div>
+
+        {sourcePreviewUrl ? (
+          <div className="relative mt-2 overflow-hidden rounded-lg border border-white/10 bg-black/50">
+            <img
+              src={sourcePreviewUrl}
+              alt=""
+              className="max-h-[8rem] w-full object-contain"
+            />
+          </div>
+        ) : (
+          <div className="mt-2 flex flex-col items-center justify-center gap-1.5 py-4 text-center">
+            <Upload className="h-5 w-5 text-white/30" aria-hidden />
+            <p className="text-[10px] font-semibold text-white/50">
+              {copy.sourcePlaceholder}
+            </p>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="mt-0.5 inline-flex items-center justify-center gap-1.5 rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.08em] text-[#d8ad5f]/90 transition hover:bg-[#d8ad5f]/18 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                  {copy.uploading}
+                </>
+              ) : (
+                copy.uploadSourceImage
+              )}
+            </button>
+          </div>
+        )}
+
+        <p className="mt-1.5 text-center text-[9px] text-white/28">{copy.sourceHint}</p>
+        {localFileError ? (
+          <p className="mt-1 text-center text-[9px] font-medium text-amber-200/80">
+            {localFileError}
+          </p>
+        ) : null}
+      </div>
+
+      <p className="mt-2.5 text-[9px] leading-4 text-white/32">{copy.activeNote}</p>
     </motion.div>
   );
 }
@@ -1912,6 +1982,7 @@ function TalkingCreatorPanel({
   onScriptKeyDown,
   voiceKey,
   onVoiceKeyChange,
+  language,
 }: {
   label: string;
   copy: {
@@ -1930,17 +2001,16 @@ function TalkingCreatorPanel({
     uploadFailed: string;
     scriptLabel: string;
     scriptPlaceholder: string;
-    voiceLibrary: string;
-    recommendedVoices: string;
+    voiceLibraryTitle: string;
+    voiceLibrarySubtitle: string;
     femaleVoices: string;
     maleVoices: string;
-    categoryVoiceStyles: string;
-    preview: string;
-    previewListen: string;
+    recommendedBadge: string;
     notConfiguredYet: string;
     previewNotAvailable: string;
     activeNote: string;
   };
+  language: DashboardLanguage;
   panelRef: React.RefObject<HTMLDivElement | null>;
   getAccessToken: () => Promise<string | null>;
   isEnabled: boolean;
@@ -2104,22 +2174,23 @@ function TalkingCreatorPanel({
             placeholder={copy.scriptPlaceholder}
             className="min-h-[4.8rem] resize-y rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] leading-4 text-white/70 placeholder:text-white/22 outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/30 disabled:opacity-50"
           />
-          <LipSyncVoiceLibrary
-            copy={{
-              voiceLibrary: copy.voiceLibrary,
-              recommendedVoices: copy.recommendedVoices,
-              femaleVoices: copy.femaleVoices,
-              maleVoices: copy.maleVoices,
-              categoryVoiceStyles: copy.categoryVoiceStyles,
-              preview: copy.preview,
-              previewListen: copy.previewListen,
-              notConfiguredYet: copy.notConfiguredYet,
-              previewNotAvailable: copy.previewNotAvailable,
-            }}
-            voiceKey={voiceKey}
-            onVoiceKeyChange={onVoiceKeyChange}
-            isEnabled={isEnabled}
-          />
+          <div className="mt-3">
+            <LipSyncVoiceLibrary
+              copy={{
+                title: copy.voiceLibraryTitle,
+                subtitle: copy.voiceLibrarySubtitle,
+                femaleSection: copy.femaleVoices,
+                maleSection: copy.maleVoices,
+                recommendedBadge: copy.recommendedBadge,
+                notConfiguredYet: copy.notConfiguredYet,
+                previewNotAvailable: copy.previewNotAvailable,
+              }}
+              voiceKey={voiceKey}
+              onVoiceKeyChange={onVoiceKeyChange}
+              isEnabled={isEnabled}
+              language={language}
+            />
+          </div>
         </div>
       </div>
       <p className="mt-2.5 text-[9px] leading-4 text-white/32">{copy.activeNote}</p>
@@ -2152,6 +2223,7 @@ function LipSyncStudioPanel({
   onVoiceKeyChange,
   systemVoiceAvailable,
   previousVideoUrl,
+  language,
   hideTextInputs = false,
   sourceUploadTriggerRef,
   audioUploadTriggerRef,
@@ -2187,16 +2259,15 @@ function LipSyncStudioPanel({
     activeNote: string;
     inputModeSystemVoice: string;
     inputModeUploadAudio: string;
-    voiceLibrary: string;
-    recommendedVoices: string;
+    voiceLibraryTitle: string;
+    voiceLibrarySubtitle: string;
     femaleVoices: string;
     maleVoices: string;
-    categoryVoiceStyles: string;
-    preview: string;
-    previewListen: string;
+    recommendedBadge: string;
     notConfiguredYet: string;
     previewNotAvailable: string;
     scriptLabel: string;
+    scriptHint: string;
     scriptPlaceholder: string;
     scriptRequired: string;
     scriptCommandBarHint: string;
@@ -2232,6 +2303,7 @@ function LipSyncStudioPanel({
   onVoiceKeyChange: (value: string) => void;
   systemVoiceAvailable: boolean;
   previousVideoUrl: string | null;
+  language: DashboardLanguage;
   hideTextInputs?: boolean;
   sourceUploadTriggerRef?: React.MutableRefObject<(() => void) | null>;
   audioUploadTriggerRef?: React.MutableRefObject<(() => void) | null>;
@@ -2808,44 +2880,12 @@ function LipSyncStudioPanel({
       </div>
 
       {inputMode === "system_voice" ? (
-        <div className="mt-2.5 space-y-2.5">
-          <p
-            className={`text-[10px] font-semibold ${
-              lightSurface ? "text-slate-700" : "text-white/70"
-            }`}
-          >
-            {copy.selectedVoiceLabel}:{" "}
-            <span className={lightSurface ? "text-orange-600" : "text-orange-200"}>
-              {selectedVoiceLabel}
-            </span>
-          </p>
-          <div id="lip-sync-voice-library">
-            <LipSyncVoiceLibrary
-              copy={{
-                voiceLibrary: copy.voiceLibrary,
-                recommendedVoices: copy.recommendedVoices,
-                femaleVoices: copy.femaleVoices,
-                maleVoices: copy.maleVoices,
-                categoryVoiceStyles: copy.categoryVoiceStyles,
-                preview: copy.preview,
-                previewListen: copy.previewListen,
-                notConfiguredYet: copy.notConfiguredYet,
-                previewNotAvailable: copy.previewNotAvailable,
-              }}
-              voiceKey={voiceKey}
-              onVoiceKeyChange={onVoiceKeyChange}
-              isEnabled={isEnabled && systemVoiceAvailable}
-              appearance={lightSurface ? "light" : "dark"}
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="lip-sync-script"
-              className={fieldLabelClass}
-            >
+        <div className="mt-4 space-y-4">
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <label htmlFor="lip-sync-script" className="text-sm font-bold text-slate-900">
               {copy.scriptLabel}
             </label>
+            <p className="mt-1 text-xs text-slate-500">{copy.scriptHint}</p>
             <textarea
               id="lip-sync-script"
               value={scriptText}
@@ -2854,19 +2894,36 @@ function LipSyncStudioPanel({
               rows={4}
               disabled={!isEnabled || !systemVoiceAvailable}
               placeholder={copy.scriptPlaceholder}
-              className={`mt-1.5 w-full resize-y rounded-lg border px-2 py-2 text-sm leading-relaxed outline-none focus-visible:ring-2 disabled:opacity-50 ${
-                lightSurface
-                  ? "border-gray-200 bg-white text-slate-800 placeholder:text-gray-400 focus-visible:ring-orange-500/30"
-                  : "border-white/10 bg-black/40 text-white/70 placeholder:text-white/22 focus-visible:ring-violet-500/30"
-              }`}
+              className="mt-3 w-full resize-y rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-800 outline-none placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-orange-500/30 disabled:opacity-50"
             />
             {!scriptText.trim() ? (
-              <p className={`mt-1 text-[9px] ${hintClass}`}>{copy.scriptRequired}</p>
+              <p className="mt-2 text-xs text-slate-400">{copy.scriptRequired}</p>
             ) : null}
             {hideTextInputs ? (
-              <p className={`mt-1 text-[9px] ${hintClass}`}>{copy.scriptCommandBarHint}</p>
+              <p className="mt-2 text-xs text-slate-400">{copy.scriptCommandBarHint}</p>
             ) : null}
           </div>
+
+          <p className="text-sm font-semibold text-slate-700">
+            {copy.selectedVoiceLabel}:{" "}
+            <span className="text-orange-600">{selectedVoiceLabel}</span>
+          </p>
+
+          <LipSyncVoiceLibrary
+            copy={{
+              title: copy.voiceLibraryTitle,
+              subtitle: copy.voiceLibrarySubtitle,
+              femaleSection: copy.femaleVoices,
+              maleSection: copy.maleVoices,
+              recommendedBadge: copy.recommendedBadge,
+              notConfiguredYet: copy.notConfiguredYet,
+              previewNotAvailable: copy.previewNotAvailable,
+            }}
+            voiceKey={voiceKey}
+            onVoiceKeyChange={onVoiceKeyChange}
+            isEnabled={isEnabled && systemVoiceAvailable}
+            language={language}
+          />
         </div>
       ) : hideTextInputs ? null : (
       <div className="mt-2.5">
@@ -2938,6 +2995,9 @@ export default function AiAgentStudio({
   regenerateDraft = null,
   preferredStudioTab = "image",
   lockedWorkspace,
+  suiteAppearance = "light",
+  activeTool = "image",
+  initialImageMode,
   onGenerationQueued,
   onClearRegenerateDraft,
   onOpenGallery,
@@ -2948,7 +3008,11 @@ export default function AiAgentStudio({
   const workspaceHeadline = lockedWorkspace
     ? copy.workspaces[lockedWorkspace]?.headline
     : null;
-  const composerHeadline = workspaceHeadline ?? a.searchHeadline;
+  const launchImageHeadline = "Create your next campaign visual.";
+  const composerHeadline =
+    lockedWorkspace === "image"
+      ? launchImageHeadline
+      : workspaceHeadline ?? a.searchHeadline;
   const suite = copy.studioSuite;
   const supabase = createClient();
 
@@ -3021,6 +3085,19 @@ export default function AiAgentStudio({
         bestFor: suite.modes.referenceEdit.bestFor,
         icon: PenLine,
       },
+      {
+        key: "enhance_asset" as const,
+        label: a.imageModes.enhance.label,
+        description: a.imageModes.enhance.description,
+        hoverHint: a.imageModes.enhance.hoverHint,
+        comingSoonNote: a.imageModes.comingSoon,
+        status: (ENHANCE_PUBLIC_ENABLED
+          ? "beta"
+          : "planned") as ImageModeCardStatus,
+        creditNote: suite.modes.enhance.credits,
+        bestFor: suite.modes.enhance.bestFor,
+        icon: BadgeCheck,
+      },
     ],
     [a, suite]
   );
@@ -3083,6 +3160,7 @@ export default function AiAgentStudio({
     string | null
   >(null);
   const [referenceEditInstruction, setReferenceEditInstruction] = useState("");
+  const [enhanceSourceUrl, setEnhanceSourceUrl] = useState<string | null>(null);
 
   const isVideoStudioActive =
     studioTab === "video" && VIDEO_STUDIO_PUBLIC_ENABLED;
@@ -3130,6 +3208,9 @@ export default function AiAgentStudio({
     if (imageMode === "reference_edit" && REFERENCE_EDIT_PUBLIC_ENABLED) {
       return a.imageModeReferenceEditActiveNote;
     }
+    if (imageMode === "enhance_asset" && ENHANCE_PUBLIC_ENABLED) {
+      return a.imageModeEnhanceActiveNote;
+    }
     if (imageMode === "fast_draft" && FAST_DRAFT_PUBLIC_ENABLED) {
       return a.imageModeFastDraftActiveNote;
     }
@@ -3154,11 +3235,15 @@ export default function AiAgentStudio({
     (imageMode === "ugc_look" && UGC_LOOK_PUBLIC_ENABLED) ||
     (imageMode === "brand_assets" && BRAND_ASSETS_PUBLIC_ENABLED) ||
     (imageMode === "reference_edit" && REFERENCE_EDIT_PUBLIC_ENABLED) ||
+    (imageMode === "enhance_asset" && ENHANCE_PUBLIC_ENABLED) ||
     (imageMode === "fast_draft" && FAST_DRAFT_PUBLIC_ENABLED) ||
     (imageMode === "premium_image" && PREMIUM_IMAGE_PUBLIC_ENABLED);
 
   const isReferenceEditActive =
     imageMode === "reference_edit" && REFERENCE_EDIT_PUBLIC_ENABLED;
+
+  const isEnhanceActive =
+    imageMode === "enhance_asset" && ENHANCE_PUBLIC_ENABLED;
 
   const referenceEditReady =
     isReferenceEditActive &&
@@ -3167,6 +3252,11 @@ export default function AiAgentStudio({
 
   const referenceEditSubmitBlocked =
     isReferenceEditActive && !referenceEditReady;
+
+  const enhanceReady =
+    isEnhanceActive && Boolean(enhanceSourceUrl?.trim());
+
+  const enhanceSubmitBlocked = isEnhanceActive && !enhanceReady;
   const [agentMode, setAgentMode] = useState<AgentMode>("auto");
   const [outputFormatKey, setOutputFormatKey] =
     useState<OutputFormatKey>("square");
@@ -4363,8 +4453,15 @@ export default function AiAgentStudio({
     const cleanPrompt = prompt.trim();
     const isReferenceEditMode =
       imageMode === "reference_edit" && REFERENCE_EDIT_PUBLIC_ENABLED;
+    const isEnhanceMode =
+      imageMode === "enhance_asset" && ENHANCE_PUBLIC_ENABLED;
 
-    if (isReferenceEditMode) {
+    if (isEnhanceMode) {
+      if (!enhanceSourceUrl?.trim()) {
+        setErrorMessage(a.enhanceMissingSource);
+        return;
+      }
+    } else if (isReferenceEditMode) {
       if (!referenceEditSourceUrl?.trim()) {
         setErrorMessage(a.referenceEditMissingSource);
         return;
@@ -4381,7 +4478,9 @@ export default function AiAgentStudio({
 
     const effectivePrompt = isReferenceEditMode
       ? referenceEditInstruction.trim()
-      : cleanPrompt;
+      : isEnhanceMode
+        ? cleanPrompt || a.imageModes.enhance.description
+        : cleanPrompt;
 
     const temporaryGenerationId = `temp-${Date.now()}`;
 
@@ -4429,9 +4528,10 @@ export default function AiAgentStudio({
         return;
       }
 
-      const agentPrompt = isReferenceEditMode
-        ? effectivePrompt
-        : buildAgentPrompt(cleanPrompt, agentMode);
+      const agentPrompt =
+        isReferenceEditMode || isEnhanceMode
+          ? effectivePrompt
+          : buildAgentPrompt(cleanPrompt, agentMode);
 
       const response = await fetch("/api/generate", {
         method: "POST",
@@ -4441,7 +4541,10 @@ export default function AiAgentStudio({
         },
         body: JSON.stringify({
           prompt: agentPrompt,
-          characterId: isReferenceEditMode ? null : selectedCharacterId || null,
+          characterId:
+            isReferenceEditMode || isEnhanceMode
+              ? null
+              : selectedCharacterId || null,
           workflow,
           imageMode: resolveSubmitImageMode(imageMode),
           outputFormat: outputFormatKey,
@@ -4449,6 +4552,11 @@ export default function AiAgentStudio({
             ? {
                 sourceImageUrl: referenceEditSourceUrl,
                 editInstruction: referenceEditInstruction.trim(),
+              }
+            : {}),
+          ...(isEnhanceMode
+            ? {
+                sourceImageUrl: enhanceSourceUrl,
               }
             : {}),
         }),
@@ -4782,29 +4890,24 @@ export default function AiAgentStudio({
     }
   }
 
-  const studioLight = Boolean(lockedWorkspace);
+  const studioLight =
+    Boolean(lockedWorkspace) && suiteAppearance !== "dark";
+  const isLaunchImageStudio = lockedWorkspace === "image" && studioLight;
   const showUnifiedCommandBar =
     lockedWorkspace === "image" ||
     lockedWorkspace === "video" ||
     lockedWorkspace === "lip_sync";
 
-  const selectableImageModes = useMemo(
-    () =>
-      imageModes.filter(
-        (mode) => mode.status === "live" || mode.status === "beta"
-      ),
-    [imageModes]
-  );
+  useEffect(() => {
+    if (isLaunchImageStudio && PREMIUM_IMAGE_PUBLIC_ENABLED) {
+      setImageMode("premium_image");
+    }
+  }, [isLaunchImageStudio]);
 
-  const activeImageModeLabel = useMemo(() => {
-    const mode = imageModes.find((item) => item.key === imageMode);
-    return mode ? getImageModeChipLabel(mode.key, a.imageModeChips) : "Model";
-  }, [imageMode, imageModes, a.imageModeChips]);
-
-  const qualityLabel =
-    imageMode === "premium_image" && PREMIUM_IMAGE_PUBLIC_ENABLED
-      ? a.imageModeChips.premium
-      : a.imageModeChips.standard;
+  useEffect(() => {
+    if (!initialImageMode) return;
+    setImageMode(initialImageMode);
+  }, [initialImageMode]);
 
   function requestComposerSubmit() {
     if (isSubmitBlocked) {
@@ -4812,18 +4915,6 @@ export default function AiAgentStudio({
       return;
     }
     formRef.current?.requestSubmit();
-  }
-
-  function cycleImageMode() {
-    if (selectableImageModes.length === 0) return;
-    const currentIndex = selectableImageModes.findIndex(
-      (mode) => mode.key === imageMode
-    );
-    const nextIndex =
-      currentIndex >= 0
-        ? (currentIndex + 1) % selectableImageModes.length
-        : 0;
-    setImageMode(selectableImageModes[nextIndex]!.key);
   }
 
   function toggleImageQuality() {
@@ -4840,6 +4931,7 @@ export default function AiAgentStudio({
     const submitBlockedForStudio =
       isSubmitBlocked ||
       referenceEditSubmitBlocked ||
+      enhanceSubmitBlocked ||
       videoSubmitBlocked ||
       creatorVideoSubmitBlocked ||
       lipSyncSubmitBlocked ||
@@ -4854,36 +4946,14 @@ export default function AiAgentStudio({
     let helperText: string | undefined;
 
     if (lockedWorkspace === "image") {
-      commandPills = [
-        {
-          id: "model",
-          label: activeImageModeLabel,
-          title: "Image model / mode",
-          icon: <Wand2 className="h-3.5 w-3.5" aria-hidden />,
-          onClick: cycleImageMode,
-        },
-        {
-          id: "aspect",
-          label: selectedOutputFormat.ratio,
-          title: a.socialFormat,
-          icon: <Crop className="h-3.5 w-3.5" aria-hidden />,
-          onClick: () => {
-            document
-              .getElementById("visual-format-grid")
-              ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-          },
-        },
-        {
-          id: "quality",
-          label: qualityLabel,
-          title: "Image quality",
-          icon: <BadgeCheck className="h-3.5 w-3.5" aria-hidden />,
-          active: imageMode === "premium_image",
-          onClick: toggleImageQuality,
-          disabled: !PREMIUM_IMAGE_PUBLIC_ENABLED,
-        },
-      ];
-      helperText = a.promptTip;
+      const badgePills = getCommandBarBadgePills(activeTool ?? "image");
+      commandPills = badgePills.map((badge) => ({
+        id: badge.id,
+        label: badge.label,
+        title: badge.label,
+        disabled: true,
+      }));
+      helperText = undefined;
     }
 
     if (lockedWorkspace === "video") {
@@ -4893,31 +4963,20 @@ export default function AiAgentStudio({
         a.imageModes.videoStudio.panel.motionPlaceholder ||
         "Describe camera motion and press generate...";
       submitLabel = a.generateVideo;
+      const videoBadges = getCommandBarBadgePills(activeTool ?? "video").map((badge) => ({
+        id: badge.id,
+        label: badge.label,
+        title: badge.label,
+        disabled: true,
+      }));
       commandPills = [
-        {
-          id: "model",
-          label: "Kling",
-          title: copy.workspaces.video.modelName,
-          icon: <Film className="h-3.5 w-3.5" aria-hidden />,
-        },
+        ...videoBadges,
         {
           id: "start-frame",
           label: videoSourceUrl ? "Start Frame ✓" : "Start Frame",
           title: a.imageModes.videoStudio.panel.uploadSourceImage,
           icon: <ImageIcon className="h-3.5 w-3.5" aria-hidden />,
           onClick: () => videoUploadTriggerRef.current?.(),
-        },
-        {
-          id: "resolution",
-          label: "768p",
-          title: "Output resolution",
-          icon: <Monitor className="h-3.5 w-3.5" aria-hidden />,
-        },
-        {
-          id: "duration",
-          label: "6s",
-          title: "Clip duration",
-          icon: <Clock className="h-3.5 w-3.5" aria-hidden />,
         },
       ];
       helperText = a.imageModes.videoStudio.panel.motionHint;
@@ -4934,9 +4993,17 @@ export default function AiAgentStudio({
 
       const selectedVoice =
         ELEVENLABS_NAMED_VOICES.find((voice) => voice.key === lipSyncVoiceKey)?.label ??
-        "Voice";
+        (language === "de" ? "Stimme" : "Voice");
+
+      const lipBadges = getCommandBarBadgePills(activeTool ?? "lipsync").map((badge) => ({
+        id: badge.id,
+        label: badge.label,
+        title: badge.label,
+        disabled: true,
+      }));
 
       commandPills = [
+        ...lipBadges,
         {
           id: "source-video",
           label: isRemoteMediaUrl(lipSyncSourceUrl) ? "Source ✓" : "Source Video",
@@ -4947,7 +5014,7 @@ export default function AiAgentStudio({
         {
           id: "voice",
           label: voiceFlow ? selectedVoice : "Voice",
-          title: a.imageModes.lipSync.panel.inputModeSystemVoice,
+          title: a.imageModes.lipSync.panel.voiceLibraryTitle,
           icon: <Mic2 className="h-3.5 w-3.5" aria-hidden />,
           active: voiceFlow,
           disabled: !ELEVENLABS_TTS_PUBLIC_ENABLED,
@@ -4989,6 +5056,7 @@ export default function AiAgentStudio({
         submitAriaLabel={submitLabel}
         inputAriaLabel={commandPlaceholder}
         helperText={helperText}
+        variant={studioLight ? "light" : "dark"}
       />
     );
   }
@@ -5047,11 +5115,53 @@ export default function AiAgentStudio({
       },
     ];
 
+    const launchFormatSubtitle = (() => {
+      const platformLabel =
+        outputFormatKey === "square"
+          ? "General"
+          : selectedOutputFormat.platform;
+      return `${platformLabel}: ${selectedOutputFormat.ratio}`;
+    })();
+
+    const renderSocialFormatSection = (className = "") => (
+      <div
+        className={`w-full max-w-2xl mx-auto space-y-3 ${className}`}
+      >
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-600">
+            {isLaunchImageStudio ? "Social Format" : a.socialFormat}
+          </p>
+          <p className="mt-1 text-xs font-medium text-slate-500">
+            {isLaunchImageStudio
+              ? launchFormatSubtitle
+              : `${selectedOutputFormat.platform} · ${selectedOutputFormat.ratio}`}
+          </p>
+        </div>
+        <VisualFormatGrid
+          variant={studioLight ? "light" : "dark"}
+          ariaLabel={isLaunchImageStudio ? "Social Format" : a.socialFormat}
+          options={localizedOutputFormats.map((formatOption) => ({
+            id: formatOption.key,
+            label: formatOption.label,
+            description: formatOption.description,
+            value: formatOption.key,
+            ratio: formatOption.ratio,
+          }))}
+          value={outputFormatKey}
+          onChange={(nextValue) =>
+            setOutputFormatKey(nextValue as OutputFormatKey)
+          }
+        />
+      </div>
+    );
+
     return (
       <>
         {showUnifiedCommandBar ? (
           <div className="flex justify-center px-1">{renderStudioCommandBar()}</div>
         ) : null}
+
+        {isLaunchImageStudio ? renderSocialFormatSection("mt-6") : null}
 
         {studioTab === "image" && !showUnifiedCommandBar ? (
           <>
@@ -5314,6 +5424,7 @@ export default function AiAgentStudio({
               onVoiceKeyChange={setLipSyncVoiceKey}
               systemVoiceAvailable={ELEVENLABS_TTS_PUBLIC_ENABLED}
               previousVideoUrl={agentResult?.video_url ?? null}
+              language={language}
               hideTextInputs={showUnifiedCommandBar}
               sourceUploadTriggerRef={lipSyncSourceUploadRef}
               audioUploadTriggerRef={lipSyncAudioUploadRef}
@@ -5335,10 +5446,11 @@ export default function AiAgentStudio({
               onScriptKeyDown={submitTalkingCreatorFromScript}
               voiceKey={talkingCreatorVoiceKey}
               onVoiceKeyChange={setTalkingCreatorVoiceKey}
+              language={language}
             />
           ) : null}
 
-          {studioTab === "image" ? (
+          {studioTab === "image" && !isLaunchImageStudio ? (
             <>
               <div id="image-mode-chips" className="flex flex-wrap gap-2">
                 {imageModes.map((mode) => {
@@ -5380,6 +5492,7 @@ export default function AiAgentStudio({
                   {activeModeShortLine}
                 </p>
               ) : null}
+              <StudioProviderDebugLine imageMode={imageMode} studioTab="image" />
               {isReferenceEditActive ? (
                 <ReferenceEditPanel
                   label={a.imageModes.referenceEdit.label}
@@ -5393,41 +5506,29 @@ export default function AiAgentStudio({
                   onEditInstructionChange={setReferenceEditInstruction}
                 />
               ) : null}
+              {isEnhanceActive ? (
+                <EnhanceAssetPanel
+                  label={a.imageModes.enhance.label}
+                  copy={a.imageModes.enhance.panel}
+                  panelRef={referenceEditPanelRef}
+                  getAccessToken={getAccessToken}
+                  isEnabled={ENHANCE_PUBLIC_ENABLED}
+                  sourcePreviewUrl={enhanceSourceUrl}
+                  onSourcePreviewUrlChange={setEnhanceSourceUrl}
+                />
+              ) : null}
             </>
           ) : null}
 
-          {studioTab === "image" ? (
-            <div className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-              <div>
-                <p
-                  className={`text-[10px] font-bold uppercase tracking-[0.18em] ${
-                    studioLight ? "text-slate-600" : "text-white/35"
-                  }`}
-                >
-                  {a.socialFormat}
-                </p>
-                <p
-                  className={`mt-1 text-xs font-medium ${
-                    studioLight ? "text-slate-500" : "text-white/40"
-                  }`}
-                >
-                  {selectedOutputFormat.platform} · {selectedOutputFormat.ratio}
-                </p>
-              </div>
-              <VisualFormatGrid
-                ariaLabel={a.socialFormat}
-                options={localizedOutputFormats.map((formatOption) => ({
-                  id: formatOption.key,
-                  label: formatOption.label,
-                  description: formatOption.description,
-                  value: formatOption.key,
-                  ratio: formatOption.ratio,
-                }))}
-                value={outputFormatKey}
-                onChange={(nextValue) =>
-                  setOutputFormatKey(nextValue as OutputFormatKey)
-                }
-              />
+          {studioTab === "image" && !isLaunchImageStudio ? (
+            <div
+              className={`space-y-3 rounded-2xl border p-4 ${
+                studioLight
+                  ? "border-gray-200 bg-white shadow-sm"
+                  : "border-white/10 bg-white/5"
+              }`}
+            >
+              {renderSocialFormatSection()}
             </div>
           ) : null}
 
@@ -5494,6 +5595,7 @@ export default function AiAgentStudio({
             disabled={
               isSubmitBlocked ||
               referenceEditSubmitBlocked ||
+              enhanceSubmitBlocked ||
               videoSubmitBlocked ||
               creatorVideoSubmitBlocked ||
               lipSyncSubmitBlocked ||
@@ -6198,16 +6300,42 @@ export default function AiAgentStudio({
                 : "min-h-0 flex-1 items-center justify-center overflow-y-auto overscroll-contain lg:overflow-hidden"
             }`}
           >
-            {lockedWorkspace && workspaceHeadline ? (
+            {lockedWorkspace && workspaceHeadline && studioLight ? (
               <div className="mb-6 w-full max-w-2xl">
-                <motion.h1
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl"
-                >
-                  {workspaceHeadline}
-                </motion.h1>
-                <p className="mt-1 text-sm leading-6 text-slate-500">{a.subtitle}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <motion.h1
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl"
+                  >
+                    {lockedWorkspace === "image" && studioLight
+                      ? launchImageHeadline
+                      : workspaceHeadline}
+                  </motion.h1>
+                </div>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  {lockedWorkspace === "image" && studioLight
+                    ? "Create campaign-ready visuals for social media, ads, product campaigns and creator content."
+                    : lockedWorkspace === "image"
+                      ? copy.workspaces.image.subtitle
+                      : a.subtitle}
+                </p>
+                {lockedWorkspace === "image" ? (
+                  <StudioProviderDebugLine
+                    imageMode={imageMode}
+                    studioTab="image"
+                  />
+                ) : lockedWorkspace === "video" ? (
+                  <StudioProviderDebugLine
+                    imageMode={imageMode}
+                    studioTab="video"
+                  />
+                ) : lockedWorkspace === "lip_sync" ? (
+                  <StudioProviderDebugLine
+                    imageMode={imageMode}
+                    studioTab="lip_sync"
+                  />
+                ) : null}
               </div>
             ) : (
               <>

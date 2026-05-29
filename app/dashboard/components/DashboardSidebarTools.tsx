@@ -13,6 +13,7 @@ import {
   Wand2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { publicLaunchFlags } from "@/lib/launch/public-flags";
 import { useDashboardLanguage } from "../DashboardLanguageProvider";
 
 type StudioTab = "image" | "video" | "creator_video" | "lip_sync" | "talking_creator";
@@ -118,16 +119,18 @@ export default function DashboardSidebarTools({
       id: "brand-assets",
       label: t.brandAssets,
       icon: Palette,
-      status: "live",
+      status: publicLaunchFlags.brandAssets ? "beta" : "comingSoon",
       tab: "image",
+      disabled: !publicLaunchFlags.brandAssets,
       tooltip: t.brandAssetsTip,
     },
     {
       id: "reference-edit",
       label: t.referenceEdit,
       icon: PenLine,
-      status: "live",
+      status: publicLaunchFlags.referenceEdit ? "beta" : "comingSoon",
       tab: "image",
+      disabled: !publicLaunchFlags.referenceEdit,
       tooltip: t.referenceEditTip,
     },
   ];

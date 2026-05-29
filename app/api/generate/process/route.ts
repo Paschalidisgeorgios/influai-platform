@@ -3,6 +3,18 @@ import { createClient } from "@supabase/supabase-js";
 import { fal } from "@fal-ai/client";
 import OpenAI from "openai";
 import { resolveElevenLabsVoiceIdFromKey } from "@/lib/lip-sync/elevenlabs-voices";
+import {
+  processKreaEnhanceWorkflow,
+  processKreaImageWorkflow,
+  processKreaReferenceEditWorkflow,
+  processKreaVideoWorkflow,
+} from "@/lib/generation/krea-worker";
+import {
+  normalizeKreaWorkflowKey,
+  shouldUseKreaForEnhanceWorkflow,
+  shouldUseKreaForImageWorkflow,
+  shouldUseKreaForVideoWorkflow,
+} from "@/lib/providers/krea-workflows";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -2050,11 +2062,20 @@ export async function POST(req: Request) {
 
     workerCreditsUsed = creditsUsed;
 
-    const workflow = normalizeWorkflow(generation.workflow);
-    const provider =
-      workflow === "ugc_look"
-        ? "openai"
-        : normalizeProvider(generation.provider);
+    let workflow = normalizeKreaWorkflowKey(
+      normalizeWorkflow(generation.workflow)
+    );
+    let provider = normalizeProvider(generation.provider);
+
+    if (
+      shouldUseKreaForImageWorkflow(workflow) ||
+      shouldUseKreaForVideoWorkflow(workflow) ||
+      shouldUseKreaForEnhanceWorkflow(workflow)
+    ) {
+      provider = "krea";
+    } else if (workflow === "ugc_look") {
+      provider = "openai";
+    }
 
     console.log("Processing generation", {
       generationId,
@@ -2068,7 +2089,7 @@ export async function POST(req: Request) {
       ""
     ).trim();
 
-    if (!finalPrompt) {
+    if (!finalPrompt && workflow !== "enhance_asset") {
       await markFailedAndRefund({
         generationId,
         userId: generation.user_id,
@@ -2080,6 +2101,78 @@ export async function POST(req: Request) {
         { error: "Prompt is missing. Credits refunded." },
         { status: 400 }
       );
+    }
+
+    if (provider === "krea") {
+      if (workflow === "enhance_asset") {
+        const sourceImageUrl =
+          typeof generation.source_image_url === "string" &&
+          generation.source_image_url.trim().length > 0
+            ? generation.source_image_url.trim()
+            : typeof generation.reference_image_url === "string" &&
+                generation.reference_image_url.trim().length > 0
+              ? generation.reference_image_url.trim()
+              : null;
+
+        return processKreaEnhanceWorkflow({
+          generationId,
+          userId: generation.user_id,
+          finalPrompt:
+            finalPrompt || "Enhance image quality, clarity and resolution.",
+          creditsUsed,
+          workflow,
+          sourceImageUrl,
+          outputWidth: generation.output_width,
+          outputHeight: generation.output_height,
+        });
+      }
+
+      if (workflow === "reference_edit") {
+        const sourceImageUrl =
+          typeof generation.reference_image_url === "string" &&
+          generation.reference_image_url.trim().length > 0
+            ? generation.reference_image_url.trim()
+            : null;
+
+        return processKreaReferenceEditWorkflow({
+          generationId,
+          userId: generation.user_id,
+          finalPrompt,
+          creditsUsed,
+          workflow,
+          sourceImageUrl,
+        });
+      }
+
+      if (workflow === "video_image_to_video") {
+        const sourceImageUrl =
+          typeof generation.source_image_url === "string" &&
+          generation.source_image_url.trim().length > 0
+            ? generation.source_image_url.trim()
+            : typeof generation.reference_image_url === "string" &&
+                generation.reference_image_url.trim().length > 0
+              ? generation.reference_image_url.trim()
+              : null;
+
+        return processKreaVideoWorkflow({
+          generationId,
+          userId: generation.user_id,
+          finalPrompt,
+          creditsUsed,
+          workflow,
+          sourceImageUrl,
+        });
+      }
+
+      return processKreaImageWorkflow({
+        generationId,
+        userId: generation.user_id,
+        finalPrompt,
+        creditsUsed,
+        workflow,
+        outputWidth: generation.output_width,
+        outputHeight: generation.output_height,
+      });
     }
 
     if (isOpenAiImageWorkflow(workflow, provider)) {
