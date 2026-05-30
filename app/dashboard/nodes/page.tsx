@@ -1,5 +1,10 @@
-import Dashboard from "../components/creative-suite/Dashboard";
+import ObsidianLayout from "../components/obsidian/ObsidianLayout";
+import ObsidianComingSoon from "../components/obsidian/ObsidianComingSoon";
 
-export default function NodeEditorPage() {
-  return <Dashboard tool="node_editor" />;
+export default function NodesPage() {
+  return (
+    <ObsidianLayout>
+      <ObsidianComingSoon titleEn="Node Editor" titleDe="Node Editor" />
+    </ObsidianLayout>
+  );
 }

@@ -1,5 +1,10 @@
-import Dashboard from "../components/creative-suite/Dashboard";
+import ObsidianLayout from "../components/obsidian/ObsidianLayout";
+import ObsidianComingSoon from "../components/obsidian/ObsidianComingSoon";
 
-export default function Objects3DPage() {
-  return <Dashboard tool="3d_objects" />;
+export default function ThreeDPage() {
+  return (
+    <ObsidianLayout>
+      <ObsidianComingSoon titleEn="3D Object Render" titleDe="3D Object Render" />
+    </ObsidianLayout>
+  );
 }

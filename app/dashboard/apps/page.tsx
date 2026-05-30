@@ -1,5 +1,3 @@
-import Dashboard from "../components/creative-suite/Dashboard";
+import DashboardLegacyRedirect from "../components/shell/dashboard-legacy-redirect";
 
-export default function AppsWorkflowsPage() {
-  return <Dashboard tool="apps" />;
-}
+export default DashboardLegacyRedirect;

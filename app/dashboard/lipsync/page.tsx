@@ -1,5 +1,10 @@
-import Dashboard from "../components/creative-suite/Dashboard";
+import ObsidianLayout from "../components/obsidian/ObsidianLayout";
+import StudioWhiteLipSyncStudio from "../components/studio-white/StudioWhiteLipSyncStudio";
 
-export default function LipSyncPage() {
-  return <Dashboard tool="lipsync" />;
+export default function LipSyncStudioPage() {
+  return (
+    <ObsidianLayout>
+      <StudioWhiteLipSyncStudio />
+    </ObsidianLayout>
+  );
 }

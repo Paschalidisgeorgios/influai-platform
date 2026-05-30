@@ -2,18 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { KG } from "@/lib/kinetic-glass/classes";
+import { MOTION_TRANSFER_ENGINES } from "@/lib/dashboard/white-label-engines";
 import { useDashboardLanguage } from "../../DashboardLanguageProvider";
 import { publicLaunchFlags } from "@/lib/launch/public-flags";
-import {
-  getDefaultModelIdForTool,
-  getModelOptionsForTool,
-} from "@/lib/ai/krea-model-ui";
-import WorkspaceResultPanel, {
-  type WorkspacePreviewState,
-} from "../studio/WorkspaceResultPanel";
-import ModelSelector from "../studio/ModelSelector";
 import { useCreativeSuite } from "./CreativeSuiteProvider";
+import { useStudioUpsell } from "../studio-white/StudioUpsellProvider";
+import EngineCardGrid from "../studio-white/EngineCardGrid";
+import StudioMediaCanvas from "../studio-white/StudioMediaCanvas";
 
 const LIVE_AVATAR_CREDITS = 60;
 const RECORD_LIMIT_SECONDS = 10;
@@ -118,6 +116,7 @@ export default function LiveAvatarStudio() {
   const router = useRouter();
   const { language } = useDashboardLanguage();
   const { credits, onGenerationQueued } = useCreativeSuite();
+  const { handleInsufficientCredits } = useStudioUpsell();
   const copy = COPY[language === "de" ? "de" : "en"];
 
   const supabaseRef = useRef(createClient());
@@ -155,9 +154,8 @@ export default function LiveAvatarStudio() {
   const [orientation, setOrientation] = useState<
     "portrait" | "landscape" | "auto"
   >("auto");
-  const motionModelOptions = useMemo(() => getModelOptionsForTool("motion_transfer"), []);
-  const [selectedMotionModel, setSelectedMotionModel] = useState(() =>
-    getDefaultModelIdForTool("motion_transfer")
+  const [selectedMotionEngine, setSelectedMotionEngine] = useState(
+    MOTION_TRANSFER_ENGINES[0]?.id ?? "runway-motion-pro"
   );
 
   const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -489,6 +487,7 @@ export default function LiveAvatarStudio() {
       const data = await res.json();
 
       if (!res.ok || !data.success || !data.videoUrl) {
+        handleInsufficientCredits(res.status, data.code);
         setErrorMessage(data.error || "Generation failed.");
         setIsGenerating(false);
         return;
@@ -514,307 +513,288 @@ export default function LiveAvatarStudio() {
     return null;
   }, [recordedVideoPreviewUrl, sourceVideoPreviewUrl]);
 
-  const previewState: WorkspacePreviewState = useMemo(() => {
-    if (isGenerating) {
-      return { status: "loading", message: copy.generating };
-    }
-    if (errorMessage) {
-      return { status: "error", message: errorMessage };
-    }
-    if (resultVideoUrl) {
-      return {
-        status: "success",
-        result: { type: "video", url: resultVideoUrl, credits: LIVE_AVATAR_CREDITS },
-      };
-    }
-    return { status: "idle" };
-  }, [isGenerating, errorMessage, resultVideoUrl, copy.generating]);
+  const previewSrc = resultVideoUrl ?? motionPreviewSrc;
 
   return (
-    <div className="space-y-4">
+    <div className="relative mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-5xl flex-col items-center px-4 pb-10">
       {!publicLaunchFlags.liveAvatar ? (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className={`mb-6 w-full max-w-4xl text-sm text-amber-300 ${KG.glassFloat}`}>
           {language === "de"
             ? "Motion Transfer ist deaktiviert. Setze NEXT_PUBLIC_ENABLE_LIVE_AVATAR=true und ENABLE_LIVE_AVATAR=true in .env.local und starte den Dev-Server neu."
             : "Motion Transfer is disabled. Set NEXT_PUBLIC_ENABLE_LIVE_AVATAR=true and ENABLE_LIVE_AVATAR=true in .env.local, then restart the dev server."}
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1.15fr)_420px]">
-        <div className="min-w-0 space-y-4">
-      {motionModelOptions.length > 0 ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <ModelSelector
-            options={motionModelOptions}
-            value={selectedMotionModel || motionModelOptions[0]?.value}
-            onChange={setSelectedMotionModel}
-            label={language === "de" ? "Motion Engine" : "Motion engine"}
-            columns={2}
-          />
+      {isGenerating ? (
+        <div className={`mx-auto mb-6 flex h-[40vh] w-full max-w-4xl flex-col items-center justify-center ${KG.glassFloat}`}>
+          <Loader2 className="h-10 w-10 animate-spin text-amber-500" />
+          <p className="mt-3 text-sm font-medium text-neutral-400">{copy.generating}</p>
         </div>
-      ) : null}
+      ) : (
+        <StudioMediaCanvas
+          src={previewSrc}
+          kind="video"
+          emptyLabel={
+            language === "de"
+              ? "Dein Live Avatar erscheint hier — vollständig sichtbar, zentriert."
+              : "Your live avatar appears here — fully visible, centered."
+          }
+        />
+      )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Column 1: Source Character */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-700">
-                {copy.imageCardTitle}
-              </p>
-              <span className="text-[11px] font-medium text-slate-500">{copy.imageCardHint}</span>
-            </div>
+      <EngineCardGrid
+        engines={MOTION_TRANSFER_ENGINES}
+        selectedId={selectedMotionEngine}
+        onSelect={setSelectedMotionEngine}
+      />
 
-            <div className="mt-3 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
-              {sourceImagePreviewUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={sourceImagePreviewUrl}
-                  alt=""
-                  className="h-44 w-full object-cover sm:h-40"
-                />
-              ) : (
+      <div className="mt-6 grid w-full max-w-4xl grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className={KG.glassCard}>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">
+              {copy.imageCardTitle}
+            </p>
+            <span className="text-[11px] font-medium text-neutral-500">{copy.imageCardHint}</span>
+          </div>
+
+          <div className="mt-3 overflow-hidden rounded-2xl border border-neutral-800/50 bg-neutral-900/40">
+            {sourceImagePreviewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={sourceImagePreviewUrl}
+                alt=""
+                className={`mx-auto ${KG.previewCanvas}`}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => document.getElementById("live-avatar-image")?.click()}
+                className="flex h-44 w-full items-center justify-center text-sm font-semibold text-neutral-400 hover:text-white"
+              >
+                + {copy.imageCardTitle}
+              </button>
+            )}
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <input
+              id="live-avatar-image"
+              type="file"
+              accept={IMAGE_ACCEPT}
+              className="hidden"
+              onChange={(e) => {
+                void handleSelectImage(e.target.files?.[0] ?? null);
+                e.currentTarget.value = "";
+              }}
+            />
+            {sourceImagePreviewUrl ? (
+              <>
                 <button
                   type="button"
                   onClick={() => document.getElementById("live-avatar-image")?.click()}
-                  className="flex h-44 w-full items-center justify-center text-sm font-semibold text-slate-500 sm:h-40"
+                  className="rounded-full border border-neutral-700 bg-neutral-900/60 px-3 py-1.5 text-xs font-bold text-neutral-300 hover:border-white/30"
                 >
-                  + {copy.imageCardTitle}
+                  {copy.replace}
                 </button>
-              )}
-            </div>
-
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <input
-                id="live-avatar-image"
-                type="file"
-                accept={IMAGE_ACCEPT}
-                className="hidden"
-                onChange={(e) => {
-                  void handleSelectImage(e.target.files?.[0] ?? null);
-                  e.currentTarget.value = "";
-                }}
-              />
-              {sourceImagePreviewUrl ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => document.getElementById("live-avatar-image")?.click()}
-                    className="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-gray-200"
-                  >
-                    {copy.replace}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={removeImage}
-                    className="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-gray-200"
-                  >
-                    {copy.remove}
-                  </button>
-                </>
-              ) : null}
-              {isUploadingImage ? (
-                <span className="text-xs font-medium text-slate-500">{copy.uploading}</span>
-              ) : null}
-            </div>
-          </div>
-
-          {/* Column 2: Driving Video */}
-          <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-700">
-                {copy.videoCardTitle}
-              </p>
-              <span className="text-[11px] font-medium text-slate-500">{copy.videoCardHint}</span>
-            </div>
-
-            <div className="mt-3 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
-              {isCameraOpen && !motionPreviewSrc ? (
-                <video
-                  ref={cameraVideoRef}
-                  playsInline
-                  muted
-                  className="h-44 w-full object-cover sm:h-40"
-                />
-              ) : motionPreviewSrc ? (
-                <video
-                  src={motionPreviewSrc}
-                  controls
-                  playsInline
-                  className="h-44 w-full object-cover sm:h-40"
-                />
-              ) : (
-                <div className="flex h-44 w-full items-center justify-center bg-gray-50 text-sm font-semibold text-slate-500 sm:h-40">
-                  {language === "de" ? "Video hochladen oder Kamera öffnen" : "Upload a video or open camera"}
-                </div>
-              )}
-            </div>
-
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <input
-                id="live-avatar-video"
-                type="file"
-                accept={VIDEO_ACCEPT}
-                className="hidden"
-                onChange={(e) => {
-                  void handleSelectVideo(e.target.files?.[0] ?? null);
-                  e.currentTarget.value = "";
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => document.getElementById("live-avatar-video")?.click()}
-                className="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-gray-200"
-              >
-                {language === "de" ? "Video hochladen" : "Upload video"}
-              </button>
-
-              {!isCameraOpen ? (
                 <button
                   type="button"
-                  onClick={openCamera}
-                  className="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-gray-200"
-                >
-                  {language === "de" ? "Kamera öffnen" : "Open camera"}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={closeCamera}
-                  className="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-gray-200"
-                >
-                  {language === "de" ? "Kamera schließen" : "Close camera"}
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={isRecording ? stopRecording : startRecording}
-                disabled={!isCameraOpen || isUploadingVideo}
-                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
-                  isRecording
-                    ? "bg-red-600 text-white hover:bg-red-700"
-                    : "bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-40"
-                }`}
-              >
-                {isRecording
-                  ? `${copy.stopRecording} (${RECORD_LIMIT_SECONDS - recordingSeconds}s)`
-                  : copy.record}
-              </button>
-
-              {sourceVideoPreviewUrl ? (
-                <button
-                  type="button"
-                  onClick={removeVideo}
-                  className="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-gray-200"
+                  onClick={removeImage}
+                  className="rounded-full border border-neutral-700 bg-neutral-900/60 px-3 py-1.5 text-xs font-bold text-neutral-400 hover:border-white/30"
                 >
                   {copy.remove}
                 </button>
-              ) : null}
+              </>
+            ) : null}
+            {isUploadingImage ? (
+              <span className="text-xs font-medium text-neutral-500">{copy.uploading}</span>
+            ) : null}
+          </div>
+        </div>
 
-              {isUploadingVideo ? (
-                <span className="text-xs font-medium text-slate-500">{copy.uploading}</span>
-              ) : null}
-            </div>
+        <div className={`border-dashed ${KG.glassCard}`}>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">
+              {copy.videoCardTitle}
+            </p>
+            <span className="text-[11px] font-medium text-neutral-500">{copy.videoCardHint}</span>
+          </div>
 
-            {recordingError ? (
-              <p className="mt-2 text-xs font-medium text-red-600">{recordingError}</p>
+          <div className="mt-3 overflow-hidden rounded-2xl border border-neutral-800/50 bg-neutral-900/40">
+            {isCameraOpen && !motionPreviewSrc ? (
+              <video
+                ref={cameraVideoRef}
+                playsInline
+                muted
+                className={`mx-auto ${KG.previewCanvas}`}
+              />
+            ) : motionPreviewSrc ? (
+              <video
+                src={motionPreviewSrc}
+                controls
+                playsInline
+                className={`mx-auto ${KG.previewCanvas}`}
+              />
+            ) : (
+              <div className="flex h-44 w-full items-center justify-center text-sm font-semibold text-neutral-500">
+                {language === "de" ? "Video hochladen oder Kamera öffnen" : "Upload a video or open camera"}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <input
+              id="live-avatar-video"
+              type="file"
+              accept={VIDEO_ACCEPT}
+              className="hidden"
+              onChange={(e) => {
+                void handleSelectVideo(e.target.files?.[0] ?? null);
+                e.currentTarget.value = "";
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => document.getElementById("live-avatar-video")?.click()}
+              className="rounded-full border border-neutral-700 bg-neutral-900/60 px-3 py-1.5 text-xs font-bold text-neutral-300 hover:border-white/30"
+            >
+              {language === "de" ? "Video hochladen" : "Upload video"}
+            </button>
+
+            {!isCameraOpen ? (
+              <button
+                type="button"
+                onClick={openCamera}
+                className="rounded-full border border-neutral-700 bg-neutral-900/60 px-3 py-1.5 text-xs font-bold text-neutral-300 hover:border-white/30"
+              >
+                {language === "de" ? "Kamera öffnen" : "Open camera"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={closeCamera}
+                className="rounded-full border border-neutral-700 bg-neutral-900/60 px-3 py-1.5 text-xs font-bold text-neutral-300 hover:border-white/30"
+              >
+                {language === "de" ? "Kamera schließen" : "Close camera"}
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={!isCameraOpen || isUploadingVideo}
+              className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                isRecording
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : "bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-40"
+              }`}
+            >
+              {isRecording
+                ? `${copy.stopRecording} (${RECORD_LIMIT_SECONDS - recordingSeconds}s)`
+                : copy.record}
+            </button>
+
+            {sourceVideoPreviewUrl ? (
+              <button
+                type="button"
+                onClick={removeVideo}
+                className="rounded-full border border-neutral-700 bg-neutral-900/60 px-3 py-1.5 text-xs font-bold text-neutral-400 hover:border-white/30"
+              >
+                {copy.remove}
+              </button>
+            ) : null}
+
+            {isUploadingVideo ? (
+              <span className="text-xs font-medium text-neutral-500">{copy.uploading}</span>
             ) : null}
           </div>
 
-          {/* Column 3: Settings & Generate */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-700">
-                {language === "de" ? "Einstellungen" : "Settings"}
-              </p>
-              <span className="text-[11px] font-medium text-slate-500">
-                {LIVE_AVATAR_CREDITS} Credits
-              </span>
-            </div>
-
-            <div className="mt-2 rounded-xl border border-gray-200 bg-gray-50 p-3">
-              <select
-                value={orientation}
-                onChange={(e) =>
-                  setOrientation(e.target.value as "portrait" | "landscape" | "auto")
-                }
-                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900"
-              >
-                <option value="auto">{language === "de" ? "Auto" : "Auto"}</option>
-                <option value="portrait">{language === "de" ? "Porträt" : "Portrait"}</option>
-                <option value="landscape">{language === "de" ? "Landscape" : "Landscape"}</option>
-              </select>
-
-              <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-white p-3">
-                <input
-                  type="checkbox"
-                  checked={consentAccepted}
-                  onChange={(e) => setConsentAccepted(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 shrink-0 accent-orange-500"
-                />
-                <span className="text-[11px] font-medium leading-4 text-slate-700">
-                  {copy.consentLabel}
-                </span>
-              </label>
-
-              <button
-                type="button"
-                onClick={handleGenerate}
-                disabled={!canGenerate}
-                className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {isGenerating ? copy.generating : copy.generate}
-              </button>
-              <p className="mt-2 text-[11px] font-medium text-slate-500">
-                {language === "de"
-                  ? "Schritt 3: Generieren (Credits werden nur bei Erfolg behalten)."
-                  : "Step 3: Generate (credits are refunded on failure)."}
-              </p>
-
-              <p className="mt-2 text-xs font-medium text-slate-500">
-                {credits} {language === "de" ? "Credits verfügbar" : "credits available"}
-              </p>
-            </div>
-          </div>
-      </div>
+          {recordingError ? (
+            <p className="mt-2 text-xs font-medium text-red-400">{recordingError}</p>
+          ) : null}
         </div>
 
-        <aside className="min-w-0 xl:sticky xl:top-6">
-          <WorkspaceResultPanel
-            state={previewState}
-            idleLabel={
-              language === "de"
-                ? "Dein Live Avatar erscheint hier."
-                : "Your live avatar will appear here."
-            }
-          />
-          {resultVideoUrl ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              <a
-                href={resultVideoUrl}
-                download
-                className="inline-flex items-center rounded-full bg-gray-100 px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-gray-200"
-              >
-                {copy.download}
-              </a>
-              <button
-                type="button"
-                onClick={() => router.push("/dashboard/assets")}
-                className="inline-flex items-center rounded-full bg-gray-100 px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-gray-200"
-              >
-                {copy.openInAssets}
-              </button>
-              <button
-                type="button"
-                onClick={resetForAgain}
-                className="inline-flex items-center rounded-full bg-orange-500 px-4 py-2 text-xs font-bold text-white transition hover:bg-orange-600"
-              >
-                {copy.generateAgain}
-              </button>
-            </div>
-          ) : null}
-        </aside>
+        <div className={KG.glassCard}>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">
+              {language === "de" ? "Einstellungen" : "Settings"}
+            </p>
+            <span className="text-[11px] font-medium text-neutral-500">{copy.credits}</span>
+          </div>
+
+          <div className="mt-3 rounded-2xl border border-neutral-800/50 bg-neutral-900/40 p-3">
+            <select
+              value={orientation}
+              onChange={(e) =>
+                setOrientation(e.target.value as "portrait" | "landscape" | "auto")
+              }
+              className="w-full rounded-xl border border-neutral-800 bg-neutral-950/60 px-3 py-2 text-sm font-semibold text-white"
+            >
+              <option value="auto">{language === "de" ? "Auto" : "Auto"}</option>
+              <option value="portrait">{language === "de" ? "Porträt" : "Portrait"}</option>
+              <option value="landscape">{language === "de" ? "Landscape" : "Landscape"}</option>
+            </select>
+
+            <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-neutral-800 bg-neutral-950/40 p-3">
+              <input
+                type="checkbox"
+                checked={consentAccepted}
+                onChange={(e) => setConsentAccepted(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-amber-500"
+              />
+              <span className="text-[11px] font-medium leading-4 text-neutral-300">
+                {copy.consentLabel}
+              </span>
+            </label>
+
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={!canGenerate}
+              className={`mt-3 inline-flex w-full items-center justify-center px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40 ${KG.amberBtn}`}
+            >
+              {isGenerating ? copy.generating : copy.generate}
+            </button>
+
+            <p className="mt-2 text-[11px] font-medium text-neutral-500">
+              {credits} {language === "de" ? "Credits verfügbar" : "credits available"}
+            </p>
+          </div>
+        </div>
       </div>
+
+      {errorMessage ? (
+        <p className="mt-4 text-sm font-medium text-red-400">{errorMessage}</p>
+      ) : null}
+
+      {!canGenerate && !resultVideoUrl && !isGenerating ? (
+        <p className="mt-4 text-xs font-medium text-neutral-500">{copy.needInputs}</p>
+      ) : null}
+
+      {resultVideoUrl ? (
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
+          <a
+            href={resultVideoUrl}
+            download
+            className="rounded-full border border-neutral-700 bg-neutral-900/60 px-4 py-2 text-xs font-bold text-neutral-300 transition hover:border-white/30"
+          >
+            {copy.download}
+          </a>
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard/assets")}
+            className="rounded-full border border-neutral-700 bg-neutral-900/60 px-4 py-2 text-xs font-bold text-neutral-300 transition hover:border-white/30"
+          >
+            {copy.openInAssets}
+          </button>
+          <button
+            type="button"
+            onClick={resetForAgain}
+            className={`rounded-full px-4 py-2 text-xs font-bold ${KG.amberBtn}`}
+          >
+            {copy.generateAgain}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,5 +1,3 @@
-import { redirect } from "next/navigation";
+import DashboardRedirectAssets from "../components/shell/dashboard-redirect-assets";
 
-export default function GalleryRedirectPage() {
-  redirect("/dashboard/assets");
-}
+export default DashboardRedirectAssets;

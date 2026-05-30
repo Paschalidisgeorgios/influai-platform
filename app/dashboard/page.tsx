@@ -1,5 +1,10 @@
-import CreativeHome from "./components/creative-suite/CreativeHome";
+import ObsidianIntelligentStudio from "./components/obsidian/ObsidianIntelligentStudio";
+import ObsidianLayout from "./components/obsidian/ObsidianLayout";
 
 export default function DashboardPage() {
-  return <CreativeHome />;
+  return (
+    <ObsidianLayout>
+      <ObsidianIntelligentStudio />
+    </ObsidianLayout>
+  );
 }

@@ -31,7 +31,7 @@ export const PRICING_PACKAGES: PricingPackage[] = [
     displayCredits: 250,
     priceEur: 29,
     highlight: true,
-    badge: "Recommended",
+    badge: "Most Popular",
   },
   {
     key: "ultimate",

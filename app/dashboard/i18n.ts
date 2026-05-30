@@ -1,13 +1,6 @@
 export type DashboardLanguage = "en" | "de";
 
-export const LANGUAGE_STORAGE_KEY = "influexai_language";
-
-export function readStoredLanguage(): DashboardLanguage {
-  if (typeof window === "undefined") return "en";
-
-  const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-  return stored === "de" ? "de" : "en";
-}
+export { APP_LANGUAGE_KEY as LANGUAGE_STORAGE_KEY, readAppLanguage as readStoredLanguage } from "@/lib/i18n/language";
 
 const en = {
   language: {
@@ -832,7 +825,7 @@ const en = {
       subtitle: "Turn a source image into a short-form campaign video.",
       headline: "Generate your campaign video.",
       modelName: "Kling Image-to-Video",
-      modelId: "fal-ai/kling-video/v2.1/standard/image-to-video",
+      modelId: "kling-3",
       credits: "25 Credits",
       addSourceImage: "Add Source Image",
       motionPrompt: "Motion Prompt",
@@ -845,7 +838,7 @@ const en = {
         "Create talking-head creator videos from a source video and voice.",
       headline: "Generate your lip sync video.",
       modelName: "Sync Lip Sync Pro",
-      modelId: "fal-ai/sync-lipsync/v2/pro",
+      modelId: "lipsync-unavailable",
       credits: "30–35 Credits",
       addSourceVideo: "Add Source Video",
       generateLipSync: "Generate Lip Sync",
@@ -983,7 +976,7 @@ const en = {
     lipSyncMissingVoice: "Please select a voice.",
     lipSyncInvalidVoice: "Invalid voice selected.",
     lipSyncFailedRefunded: "Lip Sync failed. Your credits were refunded.",
-    kreaFailedRefunded: "Krea generation failed. Your credits were refunded.",
+    kreaFailedRefunded: "Generation failed. Your credits were refunded.",
     lipSyncUploadingFiles: "Uploading files…",
     lipSyncWaitForVideoUpload: "Please wait until the video upload is complete.",
     lipSyncWaitForAudioUpload: "Please wait until the audio upload is complete.",
@@ -2523,7 +2516,7 @@ const de: DeepString<typeof en> = {
       subtitle: "Verwandle ein Quellbild in ein kurzes Kampagnenvideo.",
       headline: "Generiere dein Kampagnenvideo.",
       modelName: "Kling Image-to-Video",
-      modelId: "fal-ai/kling-video/v2.1/standard/image-to-video",
+      modelId: "kling-3",
       credits: "25 Credits",
       addSourceImage: "Quellbild hinzufügen",
       motionPrompt: "Motion Prompt",
@@ -2536,7 +2529,7 @@ const de: DeepString<typeof en> = {
         "Erstelle Talking-Head-Creator-Videos aus Quellvideo und Stimme.",
       headline: "Generiere dein Lip-Sync-Video.",
       modelName: "Sync Lip Sync Pro",
-      modelId: "fal-ai/sync-lipsync/v2/pro",
+      modelId: "lipsync-unavailable",
       credits: "30–35 Credits",
       addSourceVideo: "Quellvideo hinzufügen",
       generateLipSync: "Lip Sync generieren",
@@ -2677,7 +2670,7 @@ const de: DeepString<typeof en> = {
     lipSyncFailedRefunded:
       "Lip Sync fehlgeschlagen. Deine Credits wurden erstattet.",
     kreaFailedRefunded:
-      "Krea-Generierung fehlgeschlagen. Deine Credits wurden erstattet.",
+      "Generierung fehlgeschlagen. Deine Credits wurden erstattet.",
     lipSyncUploadingFiles: "Dateien werden hochgeladen…",
     lipSyncWaitForVideoUpload:
       "Bitte warte, bis der Video-Upload abgeschlossen ist.",

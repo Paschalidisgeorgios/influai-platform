@@ -6,8 +6,13 @@ import {
   uploadImageFromRemoteUrl,
   uploadVideoFromRemoteUrl,
 } from "@/lib/generation/poc-shared";
+import {
+  buildGenerationErrorFromCause,
+  buildGenerationErrorPayload,
+  encodeStoredGenerationError,
+  type GenerationErrorPayload,
+} from "@/lib/generation/generation-errors";
 import { assertKreaConfigured } from "@/lib/providers/flags";
-import { KREA_REFUND_ERROR_MESSAGE } from "@/lib/providers/krea-capabilities";
 import {
   generateKreaEdit,
   generateKreaEnhance,
@@ -19,9 +24,11 @@ import {
   resolveKreaModelPathForWorkflow,
   resolveKreaStoredModelForWorkflow,
 } from "@/lib/providers/krea-workflows";
+import {
+  getKreaModelByPath,
+  isKreaModelExecutable,
+} from "@/lib/ai/krea-model-registry";
 import { logKreaWorkerEvent } from "@/lib/krea/worker-log";
-
-const REFUND_ERROR = KREA_REFUND_ERROR_MESSAGE;
 
 type KreaWorkerBaseArgs = {
   generationId: string;
@@ -43,21 +50,58 @@ export function kreaModelPathFromStoredModel(
   return path.length > 0 ? path : undefined;
 }
 
-async function failAndRefund(args: {
+async function refundAndMarkFailed(
+  generationId: string,
+  userId: string,
+  creditsUsed: number,
+  payload: GenerationErrorPayload
+) {
+  await markGenerationFailed({
+    generationId,
+    errorMessage: encodeStoredGenerationError(payload),
+  });
+  await refundUserCredits({
+    userId,
+    creditsToRefund: creditsUsed,
+    source: "krea_worker_failure",
+  });
+}
+
+async function handleKreaWorkerFailure(args: {
   generationId: string;
   userId: string;
   creditsUsed: number;
-  errorMessage: string;
-}) {
-  await markGenerationFailed({
+  cause: unknown;
+  workflow: string;
+  phase: string;
+}): Promise<GenerationErrorPayload> {
+  const internalMessage =
+    args.cause instanceof Error ? args.cause.message : String(args.cause);
+  const payload = buildGenerationErrorFromCause(args.cause, {
+    refunded: true,
+    requestId: args.generationId,
+  });
+
+  console.error("[krea-worker] failure", {
     generationId: args.generationId,
-    errorMessage: args.errorMessage.slice(0, 500),
+    workflow: args.workflow,
+    phase: args.phase,
+    code: payload.code,
+    internal: internalMessage.slice(0, 300),
   });
-  await refundUserCredits({
-    userId: args.userId,
-    creditsToRefund: args.creditsUsed,
-    source: "krea_worker_failure",
-  });
+
+  await refundAndMarkFailed(
+    args.generationId,
+    args.userId,
+    args.creditsUsed,
+    payload
+  );
+
+  return payload;
+}
+
+function errorResponse(payload: GenerationErrorPayload, status = 500) {
+  return NextResponse.json(payload, { status });
 }
 
 function resolveDimensions(
@@ -71,6 +115,19 @@ function resolveDimensions(
   return { width, height };
 }
 
+function assertExecutableModelPath(modelPath?: string): void {
+  if (!modelPath?.trim()) return;
+  const entry = getKreaModelByPath(modelPath);
+  if (entry && !isKreaModelExecutable(entry)) {
+    throw new Error(
+      `Model "${entry.label}" is not configured for generation.`
+    );
+  }
+  if (modelPath.trim().startsWith("pending/")) {
+    throw new Error("Selected model endpoint is not configured yet.");
+  }
+}
+
 export async function processKreaImageWorkflow(
   args: KreaWorkerBaseArgs & {
     outputWidth: unknown;
@@ -81,19 +138,17 @@ export async function processKreaImageWorkflow(
 
   try {
     assertKreaConfigured();
+    assertExecutableModelPath(args.modelPath);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Krea is not configured.";
-    await failAndRefund({
+    const payload = await handleKreaWorkerFailure({
       generationId: args.generationId,
       userId: args.userId,
       creditsUsed: args.creditsUsed,
-      errorMessage: message,
+      cause: error,
+      workflow,
+      phase: "image_config",
     });
-    return NextResponse.json(
-      { error: `${message} Credits refunded.` },
-      { status: 500 }
-    );
+    return errorResponse(payload);
   }
 
   const { width, height } = resolveDimensions(
@@ -122,7 +177,7 @@ export async function processKreaImageWorkflow(
     });
 
     if (!result.imageUrl) {
-      throw new Error("Krea did not return an image URL.");
+      throw new Error("Provider completed but did not return an image URL.");
     }
 
     logKreaWorkerEvent({
@@ -154,19 +209,15 @@ export async function processKreaImageWorkflow(
       model: result.model ?? resolveKreaStoredModelForWorkflow(workflow),
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Krea image generation failed.";
-    console.error("Krea image worker error:", message);
-    await failAndRefund({
+    const payload = await handleKreaWorkerFailure({
       generationId: args.generationId,
       userId: args.userId,
       creditsUsed: args.creditsUsed,
-      errorMessage: REFUND_ERROR,
+      cause: error,
+      workflow,
+      phase: "image_run",
     });
-    return NextResponse.json(
-      { error: REFUND_ERROR, refunded: true },
-      { status: 500 }
-    );
+    return errorResponse(payload);
   }
 }
 
@@ -178,33 +229,34 @@ export async function processKreaReferenceEditWorkflow(
   const workflow = "reference_edit";
 
   if (!args.sourceImageUrl) {
-    await failAndRefund({
-      generationId: args.generationId,
-      userId: args.userId,
-      creditsUsed: args.creditsUsed,
-      errorMessage: "Reference Edit source image is missing.",
-    });
-    return NextResponse.json(
-      { error: "Reference Edit source image is missing. Credits refunded." },
-      { status: 400 }
+    const payload: GenerationErrorPayload = {
+      ...buildGenerationErrorPayload("GENERATION_FAILED"),
+      reason: "Reason: Source image is required.",
+      requestId: args.generationId,
+      refunded: true,
+    };
+    await refundAndMarkFailed(
+      args.generationId,
+      args.userId,
+      args.creditsUsed,
+      payload
     );
+    return errorResponse(payload, 400);
   }
 
   try {
     assertKreaConfigured();
+    assertExecutableModelPath(args.modelPath);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Krea is not configured.";
-    await failAndRefund({
+    const payload = await handleKreaWorkerFailure({
       generationId: args.generationId,
       userId: args.userId,
       creditsUsed: args.creditsUsed,
-      errorMessage: message,
+      cause: error,
+      workflow,
+      phase: "edit_config",
     });
-    return NextResponse.json(
-      { error: `${message} Credits refunded.` },
-      { status: 500 }
-    );
+    return errorResponse(payload);
   }
 
   try {
@@ -216,7 +268,7 @@ export async function processKreaReferenceEditWorkflow(
     });
 
     if (!result.imageUrl) {
-      throw new Error("Krea did not return an image URL.");
+      throw new Error("Provider completed but did not return an image URL.");
     }
 
     const publicUrl = await uploadImageFromRemoteUrl({
@@ -239,19 +291,15 @@ export async function processKreaReferenceEditWorkflow(
       model: result.model ?? resolveKreaStoredModelForWorkflow(workflow),
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Krea reference edit failed.";
-    console.error("Krea reference edit worker error:", message);
-    await failAndRefund({
+    const payload = await handleKreaWorkerFailure({
       generationId: args.generationId,
       userId: args.userId,
       creditsUsed: args.creditsUsed,
-      errorMessage: REFUND_ERROR,
+      cause: error,
+      workflow,
+      phase: "edit_run",
     });
-    return NextResponse.json(
-      { error: REFUND_ERROR, refunded: true },
-      { status: 500 }
-    );
+    return errorResponse(payload);
   }
 }
 
@@ -265,33 +313,29 @@ export async function processKreaEnhanceWorkflow(
   const workflow = "enhance_asset";
 
   if (!args.sourceImageUrl) {
-    await failAndRefund({
-      generationId: args.generationId,
-      userId: args.userId,
-      creditsUsed: args.creditsUsed,
-      errorMessage: "Enhance source image is missing.",
-    });
-    return NextResponse.json(
-      { error: "Enhance source image is missing. Credits refunded." },
-      { status: 400 }
-    );
+    const payload: GenerationErrorPayload = {
+      ...buildGenerationErrorPayload("GENERATION_FAILED"),
+      reason: "Reason: Source image is required.",
+      requestId: args.generationId,
+      refunded: true,
+    };
+    await refundAndMarkFailed(args.generationId, args.userId, args.creditsUsed, payload);
+    return errorResponse(payload, 400);
   }
 
   try {
     assertKreaConfigured();
+    assertExecutableModelPath(args.modelPath);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Krea is not configured.";
-    await failAndRefund({
+    const payload = await handleKreaWorkerFailure({
       generationId: args.generationId,
       userId: args.userId,
       creditsUsed: args.creditsUsed,
-      errorMessage: message,
+      cause: error,
+      workflow,
+      phase: "enhance_config",
     });
-    return NextResponse.json(
-      { error: `${message} Credits refunded.` },
-      { status: 500 }
-    );
+    return errorResponse(payload);
   }
 
   const { width, height } = resolveDimensions(
@@ -310,7 +354,7 @@ export async function processKreaEnhanceWorkflow(
     });
 
     if (!result.imageUrl) {
-      throw new Error("Krea did not return an image URL.");
+      throw new Error("Provider completed but did not return an image URL.");
     }
 
     const publicUrl = await uploadImageFromRemoteUrl({
@@ -333,19 +377,15 @@ export async function processKreaEnhanceWorkflow(
       model: result.model ?? resolveKreaStoredModelForWorkflow(workflow),
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Krea enhance failed.";
-    console.error("Krea enhance worker error:", message);
-    await failAndRefund({
+    const payload = await handleKreaWorkerFailure({
       generationId: args.generationId,
       userId: args.userId,
       creditsUsed: args.creditsUsed,
-      errorMessage: REFUND_ERROR,
+      cause: error,
+      workflow,
+      phase: "enhance_run",
     });
-    return NextResponse.json(
-      { error: REFUND_ERROR, refunded: true },
-      { status: 500 }
-    );
+    return errorResponse(payload);
   }
 }
 
@@ -357,33 +397,29 @@ export async function processKreaVideoWorkflow(
   const workflow = "video_image_to_video";
 
   if (!args.sourceImageUrl) {
-    await failAndRefund({
-      generationId: args.generationId,
-      userId: args.userId,
-      creditsUsed: args.creditsUsed,
-      errorMessage: "Video Studio source image is missing.",
-    });
-    return NextResponse.json(
-      { error: "Video Studio source image is missing. Credits refunded." },
-      { status: 400 }
-    );
+    const payload: GenerationErrorPayload = {
+      ...buildGenerationErrorPayload("GENERATION_FAILED"),
+      reason: "Reason: Source image is required.",
+      requestId: args.generationId,
+      refunded: true,
+    };
+    await refundAndMarkFailed(args.generationId, args.userId, args.creditsUsed, payload);
+    return errorResponse(payload, 400);
   }
 
   try {
     assertKreaConfigured();
+    assertExecutableModelPath(args.modelPath);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Krea is not configured.";
-    await failAndRefund({
+    const payload = await handleKreaWorkerFailure({
       generationId: args.generationId,
       userId: args.userId,
       creditsUsed: args.creditsUsed,
-      errorMessage: message,
+      cause: error,
+      workflow,
+      phase: "video_config",
     });
-    return NextResponse.json(
-      { error: `${message} Credits refunded.` },
-      { status: 500 }
-    );
+    return errorResponse(payload);
   }
 
   logKreaWorkerEvent({
@@ -407,7 +443,7 @@ export async function processKreaVideoWorkflow(
     });
 
     if (!result.videoUrl) {
-      throw new Error("Krea did not return a video URL.");
+      throw new Error("Provider completed but did not return a video URL.");
     }
 
     logKreaWorkerEvent({
@@ -439,18 +475,14 @@ export async function processKreaVideoWorkflow(
       model: result.model ?? resolveKreaStoredModelForWorkflow(workflow),
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Krea video generation failed.";
-    console.error("Krea video worker error:", message);
-    await failAndRefund({
+    const payload = await handleKreaWorkerFailure({
       generationId: args.generationId,
       userId: args.userId,
       creditsUsed: args.creditsUsed,
-      errorMessage: REFUND_ERROR,
+      cause: error,
+      workflow,
+      phase: "video_run",
     });
-    return NextResponse.json(
-      { error: REFUND_ERROR, refunded: true },
-      { status: 500 }
-    );
+    return errorResponse(payload);
   }
 }

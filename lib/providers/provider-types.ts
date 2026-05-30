@@ -1,10 +1,5 @@
 /** Normalized provider identifiers stored on `generations` rows. */
-export type GenerationProviderName =
-  | "openai"
-  | "fal"
-  | "elevenlabs"
-  | "krea"
-  | "creatify";
+export type GenerationProviderName = "krea" | "creatify" | "openai" | "elevenlabs";
 
 export type ProviderGenerationResult = {
   provider: GenerationProviderName;

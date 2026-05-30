@@ -1,6 +1,11 @@
+// LEGACY: old dashboard generation API — not used by the new dashboard (use /api/krea/image/generate).
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { FEATURE_DISABLED_MESSAGE } from "@/lib/launch/messages";
+import {
+  buildGenerationErrorPayload,
+  type GenerationErrorCode,
+} from "@/lib/generation/generation-errors";
 import {
   normalizeKreaWorkflowKey,
   resolveKreaStoredModelForWorkflow,
@@ -8,6 +13,14 @@ import {
   shouldUseKreaForImageWorkflow,
   shouldUseKreaForVideoWorkflow,
 } from "@/lib/providers/krea-workflows";
+import { assertKreaModelExecutable } from "@/lib/ai/krea-model-registry";
+import {
+  hasElevenLabsApiKey,
+  isExplicitElevenLabsVoiceEnabled,
+  resolveLipSyncProvider,
+} from "@/lib/providers/provider-strategy";
+import { KREA_PLATFORM_BLOCKED_IMAGE_MODES } from "@/lib/platform/krea-only-platform";
+import { isKreaEnabled } from "@/lib/providers/krea-workflows";
 import {
   LIP_SYNC_VOICE_KEYS,
   resolveDefaultLipSyncVoiceKey,
@@ -36,13 +49,6 @@ type GenerateMode =
   | "lip_sync"
   | "talking_creator"
   | "creator_video";
-
-const FAL_KLING_I2V_MODEL = "fal-ai/kling-video/v2.1/standard/image-to-video";
-/** Video + audio → lip-synced video (fal.ai Sync Lipsync 2 Pro) */
-const FAL_LIP_SYNC_VIDEO_MODEL = "fal-ai/sync-lipsync/v2/pro";
-
-/** Brand Assets — FLUX Dev via fal.ai (stable; Recraft endpoint returned 422) */
-const FAL_BRAND_ASSETS_MODEL = "fal-ai/flux/dev";
 
 const ACTIVE_GENERATION_LIMIT = 2;
 
@@ -93,6 +99,106 @@ function getCreditCostForImageMode(imageMode: ImageMode): number {
     default:
       return 1;
   }
+}
+
+function getVideoCreditCost(durationSeconds: number): number {
+  return durationSeconds >= 10 ? 50 : 25;
+}
+
+function resolveRequiredCredits(params: {
+  imageMode: GenerateMode;
+  durationSeconds: number;
+  lipSyncInputMode: LipSyncInputMode | null;
+}): number {
+  if (params.imageMode === "video_image_to_video") {
+    return getVideoCreditCost(params.durationSeconds);
+  }
+  if (params.imageMode === "lip_sync") {
+    return params.lipSyncInputMode === "system_voice" ? 35 : 30;
+  }
+  return getCreditCostForMode(params.imageMode);
+}
+
+async function assertSufficientCreditBalance(
+  userId: string,
+  requiredCredits: number
+): Promise<NextResponse | null> {
+  if (requiredCredits <= 0) return null;
+
+  const { data, error } = await supabaseAdmin
+    .from("user_credits")
+    .select("credits")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Credit balance fetch error:", error);
+    return NextResponse.json({ error: "Credit check failed" }, { status: 500 });
+  }
+
+  const balance = data?.credits ?? 0;
+  if (balance < requiredCredits) {
+    return NextResponse.json(
+      {
+        error: "Not enough credits",
+        requiredCredits,
+        currentCredits: balance,
+        reason: "insufficient_credits",
+      },
+      { status: 402 }
+    );
+  }
+
+  return null;
+}
+
+function systemFaultResponse(
+  message: string,
+  detail?: string,
+  status = 503
+): NextResponse {
+  return NextResponse.json(
+    {
+      success: false,
+      status: "SYSTEM_FAULT",
+      error: message,
+      detail,
+      reason: "system_fault",
+    },
+    { status }
+  );
+}
+
+function isAllowedAssetUrl(url: string): boolean {
+  const trimmed = url.trim();
+  if (!trimmed || trimmed.startsWith("blob:")) return false;
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== "https:") return false;
+    const supabaseBase = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+    if (supabaseBase) {
+      const supabaseHost = new URL(supabaseBase).host;
+      if (parsed.host === supabaseHost) {
+        return parsed.pathname.includes("/storage/v1/object/public/");
+      }
+    }
+    return parsed.pathname.includes("/storage/v1/object/public/");
+  } catch {
+    return false;
+  }
+}
+
+function validateAssetUrls(urls: string[]): NextResponse | null {
+  for (const url of urls) {
+    if (url && !isAllowedAssetUrl(url)) {
+      return systemFaultResponse(
+        "Invalid asset URL. Only HTTPS Supabase Storage paths are permitted.",
+        `Rejected: ${url.slice(0, 120)}`,
+        400
+      );
+    }
+  }
+  return null;
 }
 
 function parseGenerateMode(value: unknown): GenerateMode {
@@ -166,311 +272,110 @@ function applyKreaModelSelection(
   };
 }
 
-function isImageModeEnabledForServer(
-  workflow: string,
-  legacyFlagEnv: string
-): boolean {
-  if (shouldUseKreaForEnhanceWorkflow(workflow)) {
-    return true;
-  }
-  if (shouldUseKreaForImageWorkflow(workflow)) {
-    return true;
-  }
-  return process.env[legacyFlagEnv] === "true";
-}
-
 function resolveGenerationJobConfig(mode: GenerateMode):
   | { ok: true; config: GenerationJobConfig }
-  | { ok: false; error: string } {
-  if (mode === "creator_video") {
-    if (process.env.ENABLE_CREATOR_VIDEO !== "true") {
-      return {
-        ok: false,
-        error: FEATURE_DISABLED_MESSAGE,
-      };
-    }
-
+  | { ok: false; error: string; code?: GenerationErrorCode } {
+  if (KREA_PLATFORM_BLOCKED_IMAGE_MODES.has(mode)) {
     return {
-      ok: true,
-      config: {
-        provider: "fal",
-        model: "creator_video_pipeline",
-        workflow: "creator_video",
-        creditsUsed: getCreditCostForMode("creator_video"),
-        transactionSource: "creator_video_generation_job",
-      },
+      ok: false,
+      error: FEATURE_DISABLED_MESSAGE,
+      code:
+        mode === "lip_sync"
+          ? "KREA_LIPSYNC_NOT_IMPLEMENTED"
+          : "GENERATION_FAILED",
     };
   }
 
-  if (mode === "talking_creator") {
-    if (process.env.ENABLE_TALKING_CREATOR !== "true") {
-      return {
-        ok: false,
-        error: FEATURE_DISABLED_MESSAGE,
-      };
-    }
-
+  if (!isKreaEnabled()) {
     return {
-      ok: true,
-      config: {
-        provider: "fal",
-        model: "talking_creator_pipeline",
-        workflow: "talking_creator",
-        creditsUsed: getCreditCostForMode("talking_creator"),
-        transactionSource: "talking_creator_generation_job",
-      },
+      ok: false,
+      error: FEATURE_DISABLED_MESSAGE,
+      code: "ENGINE_NOT_CONFIGURED",
     };
   }
 
-  if (mode === "video_image_to_video") {
-    if (
-      !shouldUseKreaForVideoWorkflow("video_image_to_video") &&
-      process.env.ENABLE_FAL_VIDEO_STUDIO !== "true"
-    ) {
-      return {
-        ok: false,
-        error: FEATURE_DISABLED_MESSAGE,
-      };
-    }
+  const kreaWorkflowSources: Record<
+    GenerateMode,
+    { workflow: string; credits: number; source: string } | null
+  > = {
+    standard: {
+      workflow: "standard",
+      credits: getCreditCostForImageMode("standard"),
+      source: "standard_generation_job",
+    },
+    fast_draft: {
+      workflow: "fast_draft",
+      credits: getCreditCostForImageMode("fast_draft"),
+      source: "fast_draft_generation_job",
+    },
+    premium_image: {
+      workflow: "premium_image",
+      credits: getCreditCostForImageMode("premium_image"),
+      source: "premium_image_generation_job",
+    },
+    reference_edit: {
+      workflow: "reference_edit",
+      credits: getCreditCostForImageMode("reference_edit"),
+      source: "reference_edit_generation_job",
+    },
+    brand_assets: {
+      workflow: "brand_assets",
+      credits: getCreditCostForImageMode("brand_assets"),
+      source: "brand_assets_generation_job",
+    },
+    ugc_look: {
+      workflow: "ugc_look",
+      credits: getCreditCostForImageMode("ugc_look"),
+      source: "ugc_look_generation_job",
+    },
+    enhance_asset: {
+      workflow: "enhance_asset",
+      credits: getCreditCostForImageMode("enhance_asset"),
+      source: "enhance_asset_generation_job",
+    },
+    video_image_to_video: {
+      workflow: "video_image_to_video",
+      credits: getCreditCostForMode("video_image_to_video"),
+      source: "video_image_to_video_generation_job",
+    },
+    lip_sync: null,
+    talking_creator: null,
+    creator_video: null,
+  };
 
-    if (shouldUseKreaForVideoWorkflow("video_image_to_video")) {
-      return {
-        ok: true,
-        config: kreaJobConfig(
-          "video_image_to_video",
-          getCreditCostForMode("video_image_to_video"),
-          "video_image_to_video_generation_job"
-        ),
-      };
-    }
-
+  const entry = kreaWorkflowSources[mode];
+  if (!entry) {
     return {
-      ok: true,
-      config: {
-        provider: "fal",
-        model: FAL_KLING_I2V_MODEL,
-        workflow: "video_image_to_video",
-        creditsUsed: getCreditCostForMode("video_image_to_video"),
-        transactionSource: "video_image_to_video_generation_job",
-      },
+      ok: false,
+      error: FEATURE_DISABLED_MESSAGE,
+      code: "GENERATION_FAILED",
     };
   }
 
-  if (mode === "lip_sync") {
-    if (process.env.ENABLE_FAL_LIP_SYNC !== "true") {
-      return {
-        ok: false,
-        error: FEATURE_DISABLED_MESSAGE,
-      };
-    }
-
+  if (mode === "video_image_to_video" && !shouldUseKreaForVideoWorkflow(mode)) {
     return {
-      ok: true,
-      config: {
-        provider: "fal",
-        model: FAL_LIP_SYNC_VIDEO_MODEL,
-        workflow: "lip_sync",
-        creditsUsed: getCreditCostForMode("lip_sync"),
-        transactionSource: "lip_sync_generation_job",
-      },
+      ok: false,
+      error: FEATURE_DISABLED_MESSAGE,
+      code: "KREA_VIDEO_NOT_IMPLEMENTED",
     };
   }
 
-  const imageMode = mode as ImageMode;
-
-  if (imageMode === "fast_draft") {
-    if (!isImageModeEnabledForServer("fast_draft", "ENABLE_FAL_FAST_DRAFT")) {
-      return {
-        ok: false,
-        error: FEATURE_DISABLED_MESSAGE,
-      };
-    }
-
-    if (shouldUseKreaForImageWorkflow("fast_draft")) {
-      return {
-        ok: true,
-        config: kreaJobConfig(
-          "fast_draft",
-          getCreditCostForImageMode("fast_draft"),
-          "fast_draft_generation_job"
-        ),
-      };
-    }
-
+  if (
+    mode !== "video_image_to_video" &&
+    mode !== "enhance_asset" &&
+    !shouldUseKreaForImageWorkflow(entry.workflow) &&
+    !shouldUseKreaForEnhanceWorkflow(entry.workflow)
+  ) {
     return {
-      ok: true,
-      config: {
-        provider: "fal",
-        model: "fal-ai/flux/schnell",
-        workflow: "fast_draft",
-        creditsUsed: getCreditCostForImageMode("fast_draft"),
-        transactionSource: "fast_draft_generation_job",
-      },
-    };
-  }
-
-  if (imageMode === "premium_image") {
-    if (!isImageModeEnabledForServer("premium_image", "ENABLE_FAL_PREMIUM_IMAGE")) {
-      return {
-        ok: false,
-        error: FEATURE_DISABLED_MESSAGE,
-      };
-    }
-
-    if (shouldUseKreaForImageWorkflow("premium_image")) {
-      return {
-        ok: true,
-        config: kreaJobConfig(
-          "premium_image",
-          getCreditCostForImageMode("premium_image"),
-          "premium_image_generation_job"
-        ),
-      };
-    }
-
-    return {
-      ok: true,
-      config: {
-        provider: "fal",
-        model: "fal-ai/flux/dev",
-        workflow: "premium_image",
-        creditsUsed: getCreditCostForImageMode("premium_image"),
-        transactionSource: "premium_image_generation_job",
-      },
-    };
-  }
-
-  if (imageMode === "enhance_asset") {
-    if (!shouldUseKreaForEnhanceWorkflow("enhance_asset")) {
-      return {
-        ok: false,
-        error: FEATURE_DISABLED_MESSAGE,
-      };
-    }
-
-    return {
-      ok: true,
-      config: kreaJobConfig(
-        "enhance_asset",
-        getCreditCostForImageMode("enhance_asset"),
-        "enhance_asset_generation_job"
-      ),
-    };
-  }
-
-  if (imageMode === "reference_edit") {
-    if (!isImageModeEnabledForServer("reference_edit", "ENABLE_FAL_REFERENCE_EDIT")) {
-      return {
-        ok: false,
-        error: FEATURE_DISABLED_MESSAGE,
-      };
-    }
-
-    if (shouldUseKreaForImageWorkflow("reference_edit")) {
-      return {
-        ok: true,
-        config: kreaJobConfig(
-          "reference_edit",
-          getCreditCostForImageMode("reference_edit"),
-          "reference_edit_generation_job"
-        ),
-      };
-    }
-
-    return {
-      ok: true,
-      config: {
-        provider: "fal",
-        model: "fal-ai/nano-banana-pro/edit",
-        workflow: "reference_edit",
-        creditsUsed: getCreditCostForImageMode("reference_edit"),
-        transactionSource: "reference_edit_generation_job",
-      },
-    };
-  }
-
-  if (imageMode === "brand_assets") {
-    if (!isImageModeEnabledForServer("brand_assets", "ENABLE_FAL_BRAND_ASSETS")) {
-      return {
-        ok: false,
-        error: FEATURE_DISABLED_MESSAGE,
-      };
-    }
-
-    if (shouldUseKreaForImageWorkflow("brand_assets")) {
-      return {
-        ok: true,
-        config: kreaJobConfig(
-          "brand_assets",
-          getCreditCostForImageMode("brand_assets"),
-          "brand_assets_generation_job"
-        ),
-      };
-    }
-
-    return {
-      ok: true,
-      config: {
-        provider: "fal",
-        model: FAL_BRAND_ASSETS_MODEL,
-        workflow: "brand_assets",
-        creditsUsed: getCreditCostForImageMode("brand_assets"),
-        transactionSource: "brand_assets_generation_job",
-      },
-    };
-  }
-
-  if (imageMode === "ugc_look") {
-    if (!isImageModeEnabledForServer("ugc_look", "ENABLE_UGC_LOOK")) {
-      return {
-        ok: false,
-        error: FEATURE_DISABLED_MESSAGE,
-      };
-    }
-
-    if (shouldUseKreaForImageWorkflow("ugc_look")) {
-      return {
-        ok: true,
-        config: kreaJobConfig(
-          "ugc_look",
-          getCreditCostForImageMode("ugc_look"),
-          "ugc_look_generation_job"
-        ),
-      };
-    }
-
-    return {
-      ok: true,
-      config: {
-        provider: "openai",
-        model: "gpt-image-1",
-        workflow: "ugc_look",
-        creditsUsed: getCreditCostForImageMode("ugc_look"),
-        transactionSource: "ugc_look_generation_job",
-      },
-    };
-  }
-
-  if (shouldUseKreaForImageWorkflow("standard")) {
-    return {
-      ok: true,
-      config: kreaJobConfig(
-        "standard",
-        getCreditCostForImageMode("standard"),
-        "standard_generation_job"
-      ),
+      ok: false,
+      error: FEATURE_DISABLED_MESSAGE,
+      code: "ENGINE_NOT_CONFIGURED",
     };
   }
 
   return {
     ok: true,
-    config: {
-      provider: "openai",
-      model: "gpt-image-1",
-      workflow: "standard",
-      creditsUsed: getCreditCostForImageMode("standard"),
-      transactionSource: "standard_generation_job",
-    },
+    config: kreaJobConfig(entry.workflow, entry.credits, entry.source),
   };
 }
 
@@ -1938,6 +1843,24 @@ export async function POST(req: Request) {
     const kreaModelId =
       typeof body.kreaModelId === "string" ? body.kreaModelId.trim() : undefined;
 
+    if (kreaModelId) {
+      try {
+        assertKreaModelExecutable(kreaModelId);
+      } catch (modelError) {
+        return NextResponse.json(
+          {
+            error:
+              modelError instanceof Error
+                ? modelError.message
+                : "Selected model is not available.",
+            reason: "model_not_configured",
+            code: "ENGINE_NOT_CONFIGURED" satisfies GenerationErrorCode,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const prompt = body.prompt;
     const promptText = typeof prompt === "string" ? prompt.trim() : "";
     const characterId = body.characterId ?? null;
@@ -1983,6 +1906,30 @@ export async function POST(req: Request) {
       voiceKey && LIP_SYNC_VOICE_KEYS.has(voiceKey)
         ? voiceKey
         : resolveDefaultLipSyncVoiceKey();
+
+    const durationSeconds =
+      typeof body.durationSeconds === "number" && body.durationSeconds >= 10
+        ? 10
+        : 5;
+
+    const creditGuard = await assertSufficientCreditBalance(
+      user.id,
+      resolveRequiredCredits({
+        imageMode,
+        durationSeconds,
+        lipSyncInputMode,
+      })
+    );
+    if (creditGuard) return creditGuard;
+
+    const assetGuard = validateAssetUrls(
+      [sourceImageUrl, sourceVideoUrl, sourceMediaUrl, audioUrl].filter(Boolean)
+    );
+    if (assetGuard) return assetGuard;
+
+    if (!isKreaEnabled()) {
+      return systemFaultResponse("Neural engine offline — Krea provider unavailable.");
+    }
 
     if (imageMode === "creator_video") {
       if (!sourceImageUrl) {
@@ -2410,17 +2357,12 @@ export async function POST(req: Request) {
       }
 
       if (lipSyncInputMode === "system_voice") {
-        if (process.env.ENABLE_ELEVENLABS_TTS !== "true") {
+        if (!isExplicitElevenLabsVoiceEnabled() || !hasElevenLabsApiKey()) {
           return NextResponse.json(
-            { error: "System Voice is not enabled. Set ENABLE_ELEVENLABS_TTS=true." },
-            { status: 400 }
-          );
-        }
-
-        if (!process.env.ELEVENLABS_API_KEY) {
-          return NextResponse.json(
-            { error: "ELEVENLABS_API_KEY is not configured." },
-            { status: 500 }
+            buildGenerationErrorPayload("ENGINE_NOT_CONFIGURED", {
+              refunded: false,
+            }),
+            { status: 503 }
           );
         }
 
@@ -2453,10 +2395,13 @@ export async function POST(req: Request) {
         }
       }
 
-      if (!process.env.FAL_KEY?.trim()) {
+      const lipProviderEarly = resolveLipSyncProvider(kreaModelId);
+      if (lipProviderEarly === "not_implemented") {
         return NextResponse.json(
-          { error: "FAL_KEY is not configured." },
-          { status: 500 }
+          buildGenerationErrorPayload("KREA_LIPSYNC_NOT_IMPLEMENTED", {
+            refunded: false,
+          }),
+          { status: 503 }
         );
       }
 
@@ -2469,8 +2414,11 @@ export async function POST(req: Request) {
 
       if (!lipSyncJobConfigResult.ok) {
         return NextResponse.json(
-          { error: lipSyncJobConfigResult.error },
-          { status: 400 }
+          buildGenerationErrorPayload(
+            lipSyncJobConfigResult.code ?? "KREA_LIPSYNC_NOT_IMPLEMENTED",
+            { refunded: false }
+          ),
+          { status: 503 }
         );
       }
 
@@ -2478,6 +2426,7 @@ export async function POST(req: Request) {
         lipSyncJobConfigResult.config,
         kreaModelId
       );
+
       const lipSyncCreditsUsed = lipSyncInputMode === "system_voice" ? 35 : 30;
       const lipSyncVoiceStyle =
         lipSyncInputMode === "system_voice" ? resolvedLipSyncVoiceKey : null;
@@ -2648,11 +2597,7 @@ export async function POST(req: Request) {
     if (imageMode === "video_image_to_video") {
       if (!sourceImageUrl) {
         return NextResponse.json(
-          {
-            error:
-              "Please upload a source image before generating a video. / Bitte lade zuerst ein Quellbild hoch.",
-            reason: "missing_source_image",
-          },
+          buildGenerationErrorPayload("MISSING_SOURCE_IMAGE", { refunded: false }),
           { status: 400 }
         );
       }
@@ -2679,8 +2624,11 @@ export async function POST(req: Request) {
 
       if (!videoJobConfigResult.ok) {
         return NextResponse.json(
-          { error: videoJobConfigResult.error },
-          { status: 400 }
+          buildGenerationErrorPayload(
+            videoJobConfigResult.code ?? "KREA_VIDEO_NOT_IMPLEMENTED",
+            { refunded: false }
+          ),
+          { status: 503 }
         );
       }
 
@@ -2688,6 +2636,7 @@ export async function POST(req: Request) {
         videoJobConfigResult.config,
         kreaModelId
       );
+      videoJobConfig.creditsUsed = getVideoCreditCost(durationSeconds);
       const finalPrompt = buildVideoImageToVideoFinalPrompt(motionInstruction);
 
       const { count: videoActiveCount, error: videoActiveError } =
@@ -2761,7 +2710,7 @@ export async function POST(req: Request) {
         output_width: outputFormat.width,
         output_height: outputFormat.height,
         credits_used: videoJobConfig.creditsUsed,
-        duration_seconds: 5,
+        duration_seconds: durationSeconds,
         character_id: null,
         error_message: null,
         started_at: new Date().toISOString(),
@@ -3179,9 +3128,8 @@ export async function POST(req: Request) {
       error instanceof Error ? error.message : JSON.stringify(error, null, 2)
     );
 
-    return NextResponse.json(
-      { error: "Failed to create generation job." },
-      { status: 500 }
+    return systemFaultResponse(
+      error instanceof Error ? error.message : "Generation pipeline fault."
     );
   }
 }

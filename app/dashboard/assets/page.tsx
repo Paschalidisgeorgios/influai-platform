@@ -1,5 +1,10 @@
-import CreativeAssets from "../components/creative-suite/CreativeAssets";
+import ObsidianLayout from "../components/obsidian/ObsidianLayout";
+import NewAssetsEmpty from "../components/reset/NewAssetsEmpty";
 
 export default function AssetsPage() {
-  return <CreativeAssets />;
+  return (
+    <ObsidianLayout>
+      <NewAssetsEmpty />
+    </ObsidianLayout>
+  );
 }

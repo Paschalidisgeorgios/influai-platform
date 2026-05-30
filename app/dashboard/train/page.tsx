@@ -1,5 +1,10 @@
-import Dashboard from "../components/creative-suite/Dashboard";
+import ObsidianLayout from "../components/obsidian/ObsidianLayout";
+import StudioWhiteTrainLoRA from "../components/studio-white/StudioWhiteTrainLoRA";
 
-export default function TrainStylePage() {
-  return <Dashboard tool="train_lora" />;
+export default function TrainPage() {
+  return (
+    <ObsidianLayout>
+      <StudioWhiteTrainLoRA />
+    </ObsidianLayout>
+  );
 }

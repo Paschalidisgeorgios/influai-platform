@@ -3,9 +3,11 @@ import {
   resolveKreaStoredModelForWorkflow as resolveRegistryStoredModel,
 } from "@/lib/ai/krea-model-registry";
 
-/** Server-only feature gate (ENABLE_KREA_PROVIDER). */
+/** Server-only feature gate — Krea-first when API key is present unless disabled. */
 export function isKreaEnabled(): boolean {
-  return process.env.ENABLE_KREA_PROVIDER === "true";
+  if (process.env.ENABLE_KREA_PROVIDER === "false") return false;
+  if (process.env.ENABLE_KREA_PROVIDER === "true") return true;
+  return Boolean(process.env.KREA_API_KEY?.trim());
 }
 
 /** Image workflows routed through Krea when enabled (workflow keys preserved). */
@@ -21,12 +23,14 @@ export const KREA_IMAGE_WORKFLOWS = [
 
 export type KreaImageWorkflow = (typeof KREA_IMAGE_WORKFLOWS)[number];
 
+/** @deprecated Legacy providers removed — always false. */
 export function isLegacyOpenAiEnabled(): boolean {
-  return process.env.ENABLE_LEGACY_OPENAI === "true";
+  return false;
 }
 
+/** @deprecated Legacy fal.ai removed — always false. */
 export function isLegacyFalEnabled(): boolean {
-  return process.env.ENABLE_LEGACY_FAL === "true";
+  return false;
 }
 
 export function isKreaImageWorkflow(workflow: string): boolean {
@@ -35,19 +39,20 @@ export function isKreaImageWorkflow(workflow: string): boolean {
 
 export function shouldUseKreaForImageWorkflow(workflow: string): boolean {
   if (!isKreaEnabled()) return false;
-  if (!isKreaImageWorkflow(workflow)) return false;
-
-  if (workflow === "standard" || workflow === "ugc_look") {
-    return !isLegacyOpenAiEnabled();
-  }
-
-  return !isLegacyFalEnabled();
+  return isKreaImageWorkflow(workflow);
 }
 
-export function shouldUseKreaForVideoWorkflow(workflow: string): boolean {
+export function shouldUseKreaForVideoWorkflow(
+  workflow: string,
+  modelId?: string
+): boolean {
   if (!isKreaEnabled()) return false;
   if (workflow !== "video_image_to_video") return false;
-  return !isLegacyFalEnabled();
+  if (modelId?.trim()) {
+    const path = resolveKreaModelPathForWorkflow(workflow, modelId);
+    if (path?.toLowerCase().startsWith("fal/")) return false;
+  }
+  return true;
 }
 
 export function isKreaEnhanceEnabled(): boolean {
@@ -77,6 +82,7 @@ export function resolveKreaStoredModelForWorkflow(
 }
 
 export function normalizeKreaWorkflowKey(workflow: string): string {
-  if (workflow === "krea_premium_image") return "premium_image";
-  return workflow;
+  const key = workflow.trim().toLowerCase();
+  if (key === "krea_premium_image") return "premium_image";
+  return key;
 }

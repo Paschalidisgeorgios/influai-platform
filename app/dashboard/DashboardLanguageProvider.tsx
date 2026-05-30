@@ -2,21 +2,18 @@
 
 import {
   createContext,
-  useCallback,
   useContext,
   useMemo,
-  useState,
   type ReactNode,
 } from "react";
 
 import {
   formatCopy,
   getDashboardCopy,
-  LANGUAGE_STORAGE_KEY,
-  readStoredLanguage,
   type DashboardCopy,
   type DashboardLanguage,
 } from "./i18n";
+import { useLanguage } from "@/hooks/useLanguage";
 
 type DashboardLanguageContextValue = {
   language: DashboardLanguage;
@@ -29,15 +26,7 @@ const DashboardLanguageContext =
   createContext<DashboardLanguageContextValue | null>(null);
 
 export function DashboardLanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<DashboardLanguage>(() =>
-    readStoredLanguage()
-  );
-
-  const setLanguage = useCallback((next: DashboardLanguage) => {
-    setLanguageState(next);
-    localStorage.setItem(LANGUAGE_STORAGE_KEY, next);
-  }, []);
-
+  const { language, setLanguage } = useLanguage();
   const copy = useMemo(() => getDashboardCopy(language), [language]);
 
   const value = useMemo(
@@ -68,3 +57,6 @@ export function useDashboardLanguage() {
 
   return context;
 }
+
+/** @deprecated Prefer `useLanguage` from `@/hooks/useLanguage` */
+export { useLanguage } from "@/hooks/useLanguage";

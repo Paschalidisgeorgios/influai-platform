@@ -1,5 +1,10 @@
-import { redirect } from "next/navigation";
+import { Suspense } from "react";
+import AuthWorkspace from "./AuthWorkspace";
 
 export default function AuthPage() {
-  redirect("/login");
+  return (
+    <Suspense fallback={null}>
+      <AuthWorkspace />
+    </Suspense>
+  );
 }

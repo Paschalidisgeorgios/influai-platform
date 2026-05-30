@@ -1,3 +1,7 @@
+import {
+  formatGenerationErrorFromApi,
+  type GenerationLanguage,
+} from "@/lib/generation/generation-errors";
 import { getMatrixEntry, type ActiveTool } from "./creative-tool-matrix";
 
 export type ToolGenerateResult =
@@ -13,6 +17,8 @@ export type ToolGenerateResult =
       success: false;
       error: string;
       reason?: string;
+      code?: string;
+      status?: number;
     };
 
 export type ToolGenerateInput = {
@@ -35,6 +41,8 @@ export type ToolGenerateInput = {
   plannerPayload?: Record<string, unknown>;
   /** Registry model id from lib/ai/krea-model-registry */
   kreaModelId?: string;
+  /** Video engine duration in seconds (5 or 10) */
+  durationSeconds?: 5 | 10;
 };
 
 /**
@@ -83,12 +91,59 @@ export async function handleGenerateForTool(
     });
     const data = await res.json();
     if (!res.ok || !data.success) {
-      return { success: false, error: data.error || "Generation failed." };
+      return {
+        success: false,
+        error: data.error || "Generation failed.",
+        reason: typeof data.reason === "string" ? data.reason : undefined,
+        code: typeof data.code === "string" ? data.code : undefined,
+        status: res.status,
+      };
     }
     return {
       success: true,
       generationId: data.generationId,
       videoUrl: data.videoUrl,
+    };
+  }
+
+  if (tool.generateRoute === "/api/krea/image/generate") {
+    if (!input.prompt?.trim()) {
+      return { success: false, error: "Prompt is required." };
+    }
+
+    const body: Record<string, unknown> = {
+      prompt: input.prompt.trim(),
+      outputFormat: input.outputFormat ?? "square",
+    };
+
+    if (input.kreaModelId?.trim()) {
+      body.kreaModelId = input.kreaModelId.trim();
+    }
+
+    const res = await fetch("/api/krea/image/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${input.token}`,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      return {
+        success: false,
+        error: typeof data.error === "string" ? data.error : "Generation failed.",
+        reason: typeof data.reason === "string" ? data.reason : undefined,
+        code: typeof data.code === "string" ? data.code : undefined,
+        status: res.status,
+      };
+    }
+
+    return {
+      success: true,
+      generationId: data.generationId,
+      imageUrl: typeof data.imageUrl === "string" ? data.imageUrl : undefined,
     };
   }
 
@@ -125,6 +180,7 @@ export async function handleGenerateForTool(
       }
       body.sourceImageUrl = input.sourceImageUrl;
       body.motionInstruction = input.motionInstruction.trim();
+      body.durationSeconds = input.durationSeconds ?? 5;
     } else if (imageMode === "lip_sync") {
       const videoUrl = input.sourceVideoUrl;
       if (!videoUrl) {
@@ -177,10 +233,19 @@ export async function handleGenerateForTool(
     const data = await res.json();
 
     if (!res.ok) {
+      const systemFault =
+        data.status === "SYSTEM_FAULT" || data.reason === "system_fault";
       return {
         success: false,
-        error: data.error || "Generation failed.",
-        reason: data.reason,
+        error:
+          typeof data.error === "string"
+            ? data.error
+            : systemFault
+              ? "System fault — engine temporarily unavailable."
+              : "Generation failed.",
+        reason: typeof data.reason === "string" ? data.reason : undefined,
+        code: typeof data.code === "string" ? data.code : undefined,
+        status: res.status,
       };
     }
 
@@ -196,4 +261,12 @@ export async function handleGenerateForTool(
 
 export function getCreditCostForTool(key: ActiveTool): number {
   return getMatrixEntry(key)?.creditCost ?? 0;
+}
+
+/** White-label API / poll errors for studio tool panels. */
+export function formatToolGenerateError(
+  result: { error: string; reason?: string; code?: string },
+  language: GenerationLanguage
+): string {
+  return formatGenerationErrorFromApi(result, language);
 }

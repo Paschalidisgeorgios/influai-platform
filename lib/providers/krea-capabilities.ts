@@ -5,7 +5,6 @@
 
 export type KreaCapabilityStatus =
   | "production"
-  | "legacy_fallback"
   | "coming_soon"
   | "not_supported";
 
@@ -82,23 +81,22 @@ export const KREA_CAPABILITY_MATRIX: readonly KreaCapabilityRow[] = [
   },
   {
     workflow: "lip_sync",
-    status: "legacy_fallback",
-    notes:
-      "fal Sync Lipsync + optional ElevenLabs TTS until Krea lip-sync is confirmed.",
+    status: "not_supported",
+    notes: "Krea lip-sync endpoint not wired — generation blocked on Krea-only platform.",
     credits: 30,
   },
   {
     workflow: "talking_creator",
-    status: "legacy_fallback",
-    notes: "fal pipeline until Krea talking-head flow is confirmed.",
+    status: "not_supported",
+    notes: "Talking-head pipeline not wired via Krea yet.",
     credits: 60,
   },
   {
     workflow: "creator_video",
-    status: "legacy_fallback",
+    status: "not_supported",
     credits: 40,
   },
 ] as const;
 
-export const KREA_REFUND_ERROR_MESSAGE =
-  "Krea generation failed. Your credits were refunded.";
+/** @deprecated Use lib/generation/generation-errors — white-label copy only. */
+export { GENERATION_FAILED_REFUNDED_EN as KREA_REFUND_ERROR_MESSAGE } from "@/lib/generation/generation-errors";

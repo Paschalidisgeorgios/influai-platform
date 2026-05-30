@@ -32,7 +32,7 @@ type CreativeSuiteContextValue = {
   refreshCredits: () => void;
   refreshGallery: () => void;
   refreshCharacters: () => void;
-  onGenerationQueued: () => void;
+  onGenerationQueued: (options?: { creditsSpent?: number }) => void;
   setRegenerateDraft: (draft: RegenerateDraft | null) => void;
   handleRegenerate: (prompt: string, characterId: string | null) => void;
   showStatus: (message: string) => void;
@@ -153,7 +153,10 @@ export function CreativeSuiteProvider({ children }: { children: ReactNode }) {
       refreshCredits: () => setCreditsRefreshKey((c) => c + 1),
       refreshGallery: () => setGalleryRefreshKey((c) => c + 1),
       refreshCharacters: () => setCharactersRefreshKey((c) => c + 1),
-      onGenerationQueued: () => {
+      onGenerationQueued: (options) => {
+        if (options?.creditsSpent && options.creditsSpent > 0) {
+          setCredits((current) => Math.max(0, current - options.creditsSpent!));
+        }
         setGalleryRefreshKey((c) => c + 1);
         setCreditsRefreshKey((c) => c + 1);
         setRegenerateDraft(null);

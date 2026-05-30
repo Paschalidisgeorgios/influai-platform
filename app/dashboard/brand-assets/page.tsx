@@ -1,5 +1,3 @@
-import Dashboard from "../components/creative-suite/Dashboard";
+import DashboardLegacyRedirect from "../components/shell/dashboard-legacy-redirect";
 
-export default function BrandAssetsPage() {
-  return <Dashboard tool="brand_assets" />;
-}
+export default DashboardLegacyRedirect;

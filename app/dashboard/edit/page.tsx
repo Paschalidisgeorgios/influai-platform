@@ -1,5 +1,10 @@
-import Dashboard from "../components/creative-suite/Dashboard";
+import ObsidianLayout from "../components/obsidian/ObsidianLayout";
+import ObsidianComingSoon from "../components/obsidian/ObsidianComingSoon";
 
-export default function EditToolPage() {
-  return <Dashboard tool="edit" />;
+export default function EditPage() {
+  return (
+    <ObsidianLayout>
+      <ObsidianComingSoon titleEn="Advanced Canvas Edit" titleDe="Canvas Edit" />
+    </ObsidianLayout>
+  );
 }

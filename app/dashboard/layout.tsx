@@ -1,8 +1,8 @@
 "use client";
 
 import { DashboardLanguageProvider } from "./DashboardLanguageProvider";
+import ObsidianShell from "./components/obsidian/ObsidianShell";
 import { CreativeSuiteProvider } from "./components/creative-suite/CreativeSuiteProvider";
-import CreativeSuiteShell from "./components/creative-suite/CreativeSuiteShell";
 
 export default function DashboardLayout({
   children,
@@ -12,7 +12,7 @@ export default function DashboardLayout({
   return (
     <DashboardLanguageProvider>
       <CreativeSuiteProvider>
-        <CreativeSuiteShell>{children}</CreativeSuiteShell>
+        <ObsidianShell>{children}</ObsidianShell>
       </CreativeSuiteProvider>
     </DashboardLanguageProvider>
   );

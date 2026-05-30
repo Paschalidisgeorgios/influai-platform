@@ -1,5 +1,10 @@
-import Dashboard from "../components/creative-suite/Dashboard";
+import ObsidianLayout from "../components/obsidian/ObsidianLayout";
+import ObsidianComingSoon from "../components/obsidian/ObsidianComingSoon";
 
-export default function EnhancerToolPage() {
-  return <Dashboard tool="enhancer" />;
+export default function EnhancerPage() {
+  return (
+    <ObsidianLayout>
+      <ObsidianComingSoon titleEn="Asset Enhancer" titleDe="Asset Enhancer" />
+    </ObsidianLayout>
+  );
 }

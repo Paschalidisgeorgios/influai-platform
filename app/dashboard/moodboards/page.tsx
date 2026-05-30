@@ -1,5 +1,10 @@
-import Dashboard from "../components/creative-suite/Dashboard";
+import ObsidianLayout from "../components/obsidian/ObsidianLayout";
+import ObsidianComingSoon from "../components/obsidian/ObsidianComingSoon";
 
 export default function MoodboardsPage() {
-  return <Dashboard tool="moodboards" />;
+  return (
+    <ObsidianLayout>
+      <ObsidianComingSoon titleEn="Moodboards" titleDe="Moodboards" />
+    </ObsidianLayout>
+  );
 }

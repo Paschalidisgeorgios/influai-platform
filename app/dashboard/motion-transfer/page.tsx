@@ -1,5 +1,10 @@
-import Dashboard from "../components/creative-suite/Dashboard";
+import ObsidianLayout from "../components/obsidian/ObsidianLayout";
+import LiveAvatarStudio from "../components/creative-suite/LiveAvatarStudio";
 
 export default function MotionTransferPage() {
-  return <Dashboard tool="motion_transfer" />;
+  return (
+    <ObsidianLayout>
+      <LiveAvatarStudio />
+    </ObsidianLayout>
+  );
 }

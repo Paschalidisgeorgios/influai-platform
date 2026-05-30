@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { WorkspaceResult } from "../components/studio/WorkspaceResultPanel";
+import { formatStoredGenerationError } from "@/lib/generation/generation-errors";
+import type { WorkspaceResult } from "@/lib/dashboard/workspace-types";
 
 export type WorkspacePreviewState =
   | { status: "idle" }
@@ -132,12 +133,7 @@ export function useWorkspaceGeneration(getToken: () => Promise<string | null>) {
         }
 
         if (status === "failed" || status === "error" || status === "cancelled") {
-          setError(
-            row.error_message?.trim() ||
-              (language === "de"
-                ? "Generierung fehlgeschlagen. Credits wurden erstattet."
-                : "Generation failed. Credits were refunded.")
-          );
+          setError(formatStoredGenerationError(row.error_message, language));
           return;
         }
 

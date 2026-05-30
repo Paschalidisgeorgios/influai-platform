@@ -1,6 +1,5 @@
 /**
- * Creative suite navigation — re-exports from creative-tool-matrix.
- * All tools are active; no coming_soon state.
+ * Creative suite navigation — Krea-only active tools from creative-tool-matrix.
  */
 
 import {

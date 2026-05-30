@@ -199,27 +199,78 @@ function resolveModelPathForInput(
   return resolveModelPath();
 }
 
+/** Maps studio aspect ratios to Krea API `aspect_ratio` enum values. */
+export function kreaApiAspectRatio(aspectRatio?: string): string {
+  switch (aspectRatio?.trim()) {
+    case "16:9":
+      return "16:9";
+    case "9:16":
+      return "9:16";
+    case "4:5":
+      return "4:5";
+    case "4:3":
+      return "4:3";
+    case "3:2":
+      return "3:2";
+    case "2:3":
+      return "2:3";
+    case "2.35:1":
+      return "2.35:1";
+    case "3:4":
+      return "2:3";
+    case "1:1":
+    default:
+      return "1:1";
+  }
+}
+
+function buildKreaImageJobBody(
+  input: KreaCreateImageJobInput,
+  modelPath: string
+): Record<string, unknown> {
+  const aspectRatio = kreaApiAspectRatio(input.aspectRatio);
+  const fromAspect = kreaDimensionsFromAspectRatio(aspectRatio);
+  const width = input.width ?? fromAspect.width;
+  const height = input.height ?? fromAspect.height;
+
+  // Krea proprietary models require aspect_ratio (+ resolution), not width/height alone.
+  if (modelPath.startsWith("krea/krea-")) {
+    return {
+      prompt: input.prompt,
+      aspect_ratio: aspectRatio,
+      resolution: "1K",
+    };
+  }
+
+  // BFL Flux endpoints accept width/height only — aspect_ratio causes 422.
+  if (modelPath.startsWith("bfl/")) {
+    return {
+      prompt: input.prompt,
+      width,
+      height,
+    };
+  }
+
+  return {
+    prompt: input.prompt,
+    width,
+    height,
+    aspect_ratio: aspectRatio,
+  };
+}
+
 export async function createKreaImageJob(
   input: KreaCreateImageJobInput
 ): Promise<ProviderGenerationResult> {
   const modelPath = resolveModelPathForInput(input);
   const model = resolveKreaModelId(modelPath);
-  const fromAspect = input.aspectRatio
-    ? kreaDimensionsFromAspectRatio(input.aspectRatio)
-    : null;
-  const width = input.width ?? fromAspect?.width ?? 1024;
-  const height = input.height ?? fromAspect?.height ?? 1024;
 
   let data: KreaJobResponse;
 
   try {
     data = await kreaRequest<KreaJobResponse>(`/generate/image/${modelPath}`, {
       method: "POST",
-      body: JSON.stringify({
-        prompt: input.prompt,
-        width,
-        height,
-      }),
+      body: JSON.stringify(buildKreaImageJobBody(input, modelPath)),
     });
   } catch (error) {
     const message =

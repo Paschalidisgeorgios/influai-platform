@@ -1,5 +1,3 @@
-import Dashboard from "../components/creative-suite/Dashboard";
+import DashboardLegacyRedirect from "../components/shell/dashboard-legacy-redirect";
 
-export default function VideoRestylePage() {
-  return <Dashboard tool="video_restyle" />;
-}
+export default DashboardLegacyRedirect;

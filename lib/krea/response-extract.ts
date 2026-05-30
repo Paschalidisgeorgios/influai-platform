@@ -50,10 +50,18 @@ export function extractImageUrl(response: unknown): string | null {
       ? root.images
       : null;
 
+  const artifacts = Array.isArray(data.artifacts)
+    ? data.artifacts
+    : Array.isArray(root.artifacts)
+      ? root.artifacts
+      : null;
+
   const firstOutput = outputArray?.[0];
   const firstImage = images?.[0];
+  const firstArtifact = artifacts?.[0];
   const firstOutputRec = asRecord(firstOutput);
   const firstImageRec = asRecord(firstImage);
+  const firstArtifactRec = asRecord(firstArtifact);
 
   return firstString([
     data.image_url,
@@ -71,8 +79,14 @@ export function extractImageUrl(response: unknown): string | null {
     firstOutputRec?.url,
     firstOutputRec?.image_url,
     firstImageRec?.url,
+    firstImageRec?.image_url,
+    firstArtifactRec?.url,
+    firstArtifactRec?.image_url,
     Array.isArray(result?.urls) ? (result.urls as unknown[])[0] : null,
     Array.isArray(data.urls) ? (data.urls as unknown[])[0] : null,
+    Array.isArray(result?.artifacts)
+      ? asRecord((result.artifacts as unknown[])[0])?.url
+      : null,
   ]);
 }
 
@@ -83,6 +97,19 @@ export function extractVideoUrl(response: unknown): string | null {
   const data = asRecord(root.data) ?? root;
   const result = asRecord(data.result) ?? asRecord(root.result);
   const output = asRecord(data.output) ?? asRecord(root.output);
+
+  const outputArray = Array.isArray(data.output)
+    ? data.output
+    : Array.isArray(root.output)
+      ? root.output
+      : null;
+  const artifacts = Array.isArray(data.artifacts)
+    ? data.artifacts
+    : Array.isArray(root.artifacts)
+      ? root.artifacts
+      : null;
+  const firstOutputRec = asRecord(outputArray?.[0]);
+  const firstArtifactRec = asRecord(artifacts?.[0]);
 
   return firstString([
     data.video_url,
@@ -96,6 +123,10 @@ export function extractVideoUrl(response: unknown): string | null {
     output?.url,
     result?.url,
     data.url,
+    firstOutputRec?.url,
+    firstOutputRec?.video_url,
+    firstArtifactRec?.url,
+    firstArtifactRec?.video_url,
   ]);
 }
 

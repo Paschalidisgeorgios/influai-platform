@@ -1,5 +1,3 @@
-import { redirect } from "next/navigation";
+import DashboardRedirectImage from "../components/shell/dashboard-redirect-image";
 
-export default function ImageGeneratorRedirectPage() {
-  redirect("/dashboard/image");
-}
+export default DashboardRedirectImage;

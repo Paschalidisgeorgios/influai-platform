@@ -1,6 +1,6 @@
 /**
  * InfluExAi Creative Suite — tool status matrix (source of truth).
- * Every tool is active; no "coming_soon" state in the product UI.
+ * Sidebar shows Krea-only active tools; legacy entries remain for archived routes.
  */
 
 import type { LucideIcon } from "lucide-react";
@@ -26,7 +26,10 @@ import {
   Workflow,
   Zap,
 } from "lucide-react";
-import { publicLaunchFlags } from "@/lib/launch/public-flags";
+import {
+  isKreaPlatformToolEnabled,
+  KREA_PLATFORM_ACTIVE_TOOLS,
+} from "@/lib/platform/krea-only-platform";
 
 export type ActiveTool =
   | null
@@ -104,21 +107,15 @@ export type CreativeToolMatrixEntry = {
   /** For studio_image workspace */
   initialImageMode?: ImageModeKey;
   /** API route used by handleGenerateForTool */
-  generateRoute?: "/api/generate" | "/api/live-avatar/generate";
+  generateRoute?: "/api/generate" | "/api/live-avatar/generate" | "/api/krea/image/generate";
   /** Body field for imageMode / workflow on /api/generate */
   imageMode?: string;
 };
 
-function resolveVideoImplementation(): ImplementationType {
-  return publicLaunchFlags.kreaProvider && !publicLaunchFlags.legacyFal
-    ? "krea"
-    : publicLaunchFlags.videoStudio
-      ? "fallback"
-      : "krea";
-}
-
-function resolveLipsyncImplementation(): ImplementationType {
-  return publicLaunchFlags.lipSync ? "fallback" : "mvp";
+function filterActiveMatrixEntries(
+  entries: CreativeToolMatrixEntry[]
+): CreativeToolMatrixEntry[] {
+  return entries.filter((entry) => isKreaPlatformToolEnabled(entry.key));
 }
 
 export const CREATIVE_TOOL_MATRIX: CreativeToolMatrixEntry[] = [
@@ -142,7 +139,7 @@ export const CREATIVE_TOOL_MATRIX: CreativeToolMatrixEntry[] = [
     creditCost: 1,
     workspaceKind: "studio_image",
     initialImageMode: "standard",
-    generateRoute: "/api/generate",
+    generateRoute: "/api/krea/image/generate",
     imageMode: "standard",
   },
   {
@@ -159,7 +156,7 @@ export const CREATIVE_TOOL_MATRIX: CreativeToolMatrixEntry[] = [
     descriptionEn: "Image-to-video motion for social campaigns.",
     descriptionDe: "Image-to-Video-Motion für Social-Kampagnen.",
     commandBarBadges: ["Kling 3.0", "Seedance", "6s Clip"],
-    implementationType: resolveVideoImplementation(),
+    implementationType: "krea",
     workflow: "video_image_to_video",
     outputType: "video",
     creditCost: 25,
@@ -249,8 +246,8 @@ export const CREATIVE_TOOL_MATRIX: CreativeToolMatrixEntry[] = [
     subtitleDe: "Synchronisiere Creator-Videos mit Audio oder generierter Stimme.",
     descriptionEn: "Lip-sync video with uploaded or system voice audio.",
     descriptionDe: "Lip-Sync-Video mit hochgeladenem oder System-Audio.",
-    commandBarBadges: ["ElevenLabs Voice", "Audio Sync", "Video Dialogue"],
-    implementationType: resolveLipsyncImplementation(),
+    commandBarBadges: ["Voice Sync", "Audio Sync", "Video Dialogue"],
+    implementationType: "mvp",
     workflow: "lip_sync",
     outputType: "video",
     creditCost: 30,
@@ -274,7 +271,7 @@ export const CREATIVE_TOOL_MATRIX: CreativeToolMatrixEntry[] = [
     descriptionEn: "Animate a portrait with motion from a driving video.",
     descriptionDe: "Animiere ein Porträt mit Bewegung aus einem Referenzvideo.",
     commandBarBadges: ["Driving Video", "Character Motion", "Expression Transfer"],
-    implementationType: publicLaunchFlags.liveAvatar ? "fallback" : "mvp",
+    implementationType: "mvp",
     workflow: "live_avatar",
     outputType: "video",
     creditCost: 60,
@@ -496,15 +493,15 @@ export const CREATIVE_TOOL_MATRIX: CreativeToolMatrixEntry[] = [
     key: "train_lora",
     href: "/dashboard/train",
     icon: Palette,
-    labelEn: "Train Lora",
-    labelDe: "Train Lora",
+    labelEn: "Style Training",
+    labelDe: "Style Training",
     category: "primary",
-    titleEn: "Train Style",
-    titleDe: "Train Style",
-    subtitleEn: "Build style profiles from reference images.",
-    subtitleDe: "Erstelle Style-Profile aus Referenzbildern.",
-    descriptionEn: "Style profile MVP (reference images + prompts).",
-    descriptionDe: "Style-Profile-MVP (Referenzbilder + Prompts).",
+    titleEn: "Style Training",
+    titleDe: "Style Training",
+    subtitleEn: "Train reusable LoRA styles from reference images.",
+    subtitleDe: "Trainiere wiederverwendbare LoRA-Stile aus Referenzbildern.",
+    descriptionEn: "Style LoRA training workflow (reference images → custom profile).",
+    descriptionDe: "Style-LoRA-Training (Referenzbilder → Custom Profile).",
     commandBarBadges: ["References", "Style Lock", "Consistency"],
     implementationType: "mvp",
     workflow: "train_style",
@@ -544,30 +541,6 @@ export const PRIMARY_NAV_MATRIX = [
     workspaceKind: "home" as const,
   },
   {
-    id: "moodboards" as const,
-    href: "/dashboard/moodboards",
-    icon: Film,
-    labelEn: "Moodboards",
-    labelDe: "Moodboards",
-    workspaceKind: "mvp_planner" as const,
-  },
-  {
-    id: "train" as const,
-    href: "/dashboard/train",
-    icon: Palette,
-    labelEn: "Train Lora",
-    labelDe: "Train Lora",
-    workspaceKind: "style_profiles" as const,
-  },
-  {
-    id: "nodes" as const,
-    href: "/dashboard/nodes",
-    icon: Network,
-    labelEn: "Node Editor",
-    labelDe: "Node Editor",
-    workspaceKind: "mvp_planner" as const,
-  },
-  {
     id: "assets" as const,
     href: "/dashboard/assets",
     icon: GalleryVerticalEnd,
@@ -587,11 +560,21 @@ export function getAllMatrixTools(): CreativeToolMatrixEntry[] {
 }
 
 export function getEngineMatrixTools(): CreativeToolMatrixEntry[] {
-  return CREATIVE_TOOL_MATRIX.filter((t) => t.category === "engines");
+  return filterActiveMatrixEntries(
+    CREATIVE_TOOL_MATRIX.filter((t) => t.category === "engines")
+  );
 }
 
 export function getOptionalMatrixTools(): CreativeToolMatrixEntry[] {
-  return CREATIVE_TOOL_MATRIX.filter((t) => t.category === "optional");
+  return filterActiveMatrixEntries(
+    CREATIVE_TOOL_MATRIX.filter((t) => t.category === "optional")
+  );
+}
+
+export function getActiveKreaPlatformTools(): CreativeToolMatrixEntry[] {
+  return CREATIVE_TOOL_MATRIX.filter((t) =>
+    KREA_PLATFORM_ACTIVE_TOOLS.has(t.key)
+  );
 }
 
 export function pathnameToMatrixTool(pathname: string): ActiveTool {
@@ -627,7 +610,7 @@ export function getCommandBarBadgePills(key: ActiveTool): { id: string; label: s
   }));
 }
 
-/** @deprecated All tools are active in the creative suite. */
-export function isToolActive(_key: ActiveTool): boolean {
-  return _key !== null;
+export function isToolActive(key: ActiveTool): boolean {
+  if (!key) return false;
+  return isKreaPlatformToolEnabled(key);
 }

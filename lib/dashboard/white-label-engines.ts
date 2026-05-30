@@ -95,6 +95,41 @@ export const VIDEO_ENGINE_ENGINES: WhiteLabelEngineCard[] = [
   },
 ];
 
+export const MOTION_TRANSFER_ENGINES: WhiteLabelEngineCard[] = [
+  {
+    id: "runway-motion-pro",
+    labelEn: "Runway Motion Pro",
+    labelDe: "Runway Motion Pro",
+    descriptionEn:
+      "Anatomical movement vector skeleton mapping for live motion transfer.",
+    descriptionDe:
+      "Anatomisches Bewegungs-Vektor-Skelett-Mapping für Live Motion Transfer.",
+    badgeEn: "Recommended",
+    badgeDe: "Empfohlen",
+  },
+  {
+    id: "kling-motion",
+    labelEn: "Kling 3.0 Cinematic",
+    labelDe: "Kling 3.0 Cinematic",
+    descriptionEn: "Temporal physics engine for cinematic body dynamics.",
+    descriptionDe: "Temporale Physik-Engine für cineastische Körperdynamik.",
+  },
+  {
+    id: "flux-motion-draft",
+    labelEn: "Flux Fast Draft",
+    labelDe: "Flux Fast Draft",
+    descriptionEn: "Rapid motion preview pipeline for iteration cycles.",
+    descriptionDe: "Schnelle Motion-Preview-Pipeline für Iterationszyklen.",
+  },
+  {
+    id: "nano-motion",
+    labelEn: "Nano Realtime Render",
+    labelDe: "Nano Realtime Render",
+    descriptionEn: "Low-latency motion retargeting for social formats.",
+    descriptionDe: "Niedriglatente Motion-Retargeting-Pipeline für Social Formate.",
+  },
+];
+
 export const ENHANCER_ENGINES: WhiteLabelEngineCard[] = [
   {
     id: "topaz-standard",

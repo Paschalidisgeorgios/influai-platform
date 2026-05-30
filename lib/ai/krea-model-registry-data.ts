@@ -4,19 +4,48 @@
  */
 
 import type { KreaModelConfig } from "./krea-model-registry";
+import { KREA_MODEL_REGISTRY_EXT } from "./krea-model-registry-ext";
 
-type RegistryEntry = KreaModelConfig;
+type RegistryEntryInput = Omit<
+  KreaModelConfig,
+  "internalModel" | "descriptionEn" | "descriptionDe"
+> & {
+  internalModel?: string;
+  /** @deprecated Use internalModel */
+  model?: string;
+  descriptionEn?: string;
+  descriptionDe?: string;
+  /** @deprecated Use descriptionEn */
+  description?: string;
+};
 
-/** Factory keeps entries consistent; `model` = Krea API path after /generate/{kind}/ */
-function m(entry: RegistryEntry): RegistryEntry {
+/** Factory keeps entries consistent; internalModel = Krea API path after /generate/{kind}/ */
+function m(entry: RegistryEntryInput): KreaModelConfig {
+  const internalModel = (entry.internalModel ?? entry.model ?? "").replace(
+    /^\/+/,
+    ""
+  );
+  const descriptionEn =
+    entry.descriptionEn ?? entry.description ?? entry.label;
+  const descriptionDe = entry.descriptionDe ?? descriptionEn;
   const endpointKind =
     entry.endpointKind ??
     (entry.category === "video"
       ? "video"
       : entry.category === "enhancer"
         ? "enhance"
-        : "image");
-  return { ...entry, endpointKind };
+        : entry.category === "training" || entry.category === "style_training"
+          ? "training"
+          : "image");
+
+  return {
+    ...entry,
+    internalModel,
+    model: internalModel,
+    descriptionEn,
+    descriptionDe,
+    endpointKind,
+  };
 }
 
 export const KREA_MODEL_REGISTRY_ENTRIES: readonly KreaModelConfig[] = [
@@ -62,7 +91,7 @@ export const KREA_MODEL_REGISTRY_ENTRIES: readonly KreaModelConfig[] = [
     capabilities: ["text_to_image", "image_to_image"],
     description: "Fast baseline; LoRA-friendly.",
     credits: 1,
-    availability: "active",
+    availability: "experimental",
     outputType: "image",
     workflowKeys: ["standard", "fast_draft", "ugc_look"],
     envOverride: "KREA_MODEL_STANDARD",
@@ -77,7 +106,7 @@ export const KREA_MODEL_REGISTRY_ENTRIES: readonly KreaModelConfig[] = [
     capabilities: ["text_to_image"],
     description: "Higher quality Flux generation.",
     credits: 3,
-    availability: "active",
+    availability: "experimental",
     outputType: "image",
     isPremium: true,
     workflowKeys: ["premium_image", "brand_assets"],
@@ -107,7 +136,7 @@ export const KREA_MODEL_REGISTRY_ENTRIES: readonly KreaModelConfig[] = [
     capabilities: ["edit", "image_to_image"],
     description: "Image editing and kontext transforms.",
     credits: 5,
-    availability: "active",
+    availability: "experimental",
     outputType: "image",
     requires: ["source_image_url"],
     workflowKeys: ["reference_edit"],
@@ -124,9 +153,8 @@ export const KREA_MODEL_REGISTRY_ENTRIES: readonly KreaModelConfig[] = [
     capabilities: ["edit", "image_to_image", "text_to_image"],
     description: "Reference edit and semantic image changes.",
     credits: 5,
-    availability: "active",
+    availability: "experimental",
     outputType: "image",
-    isRecommended: true,
     requires: ["source_image_url"],
     workflowKeys: ["reference_edit"],
     envOverride: "KREA_MODEL_REFERENCE_EDIT",
@@ -140,7 +168,7 @@ export const KREA_MODEL_REGISTRY_ENTRIES: readonly KreaModelConfig[] = [
     tools: ["image", "realtime"],
     capabilities: ["text_to_image", "image_to_image"],
     credits: 2,
-    availability: "experimental",
+    availability: "active",
     outputType: "image",
   }),
   m({
@@ -165,7 +193,7 @@ export const KREA_MODEL_REGISTRY_ENTRIES: readonly KreaModelConfig[] = [
     capabilities: ["text_to_image"],
     description: "Google photorealism and prompt adherence.",
     credits: 3,
-    availability: "active",
+    availability: "experimental",
     outputType: "image",
     isPremium: true,
   }),
@@ -218,7 +246,7 @@ export const KREA_MODEL_REGISTRY_ENTRIES: readonly KreaModelConfig[] = [
     capabilities: ["text_to_image", "edit", "image_to_image"],
     description: "ChatGPT image (GPT-IMG) with multi-reference support.",
     credits: 4,
-    availability: "active",
+    availability: "not_configured",
     outputType: "image",
     isPremium: true,
   }),
@@ -232,7 +260,7 @@ export const KREA_MODEL_REGISTRY_ENTRIES: readonly KreaModelConfig[] = [
     capabilities: ["edit", "image_to_image", "text_to_image"],
     description: "Smart editing with up to 4K output.",
     credits: 5,
-    availability: "active",
+    availability: "not_configured",
     outputType: "image",
     isPremium: true,
   }),
@@ -247,7 +275,7 @@ export const KREA_MODEL_REGISTRY_ENTRIES: readonly KreaModelConfig[] = [
     tools: ["image", "product_photography"],
     capabilities: ["text_to_image"],
     credits: 2,
-    availability: "active",
+    availability: "experimental",
     outputType: "image",
   }),
   m({
@@ -352,7 +380,7 @@ export const KREA_MODEL_REGISTRY_ENTRIES: readonly KreaModelConfig[] = [
     capabilities: ["text_to_video", "image_to_video"],
     description: "Frontier motion with optional native audio.",
     credits: 25,
-    availability: "active",
+    availability: "experimental",
     outputType: "video",
     isRecommended: true,
     workflowKeys: ["video_image_to_video"],
@@ -378,7 +406,7 @@ export const KREA_MODEL_REGISTRY_ENTRIES: readonly KreaModelConfig[] = [
     tools: ["video"],
     capabilities: ["image_to_video"],
     credits: 25,
-    availability: "active",
+    availability: "experimental",
     outputType: "video",
     workflowKeys: ["video_image_to_video"],
     envOverride: "KREA_MODEL_VIDEO",
@@ -407,7 +435,7 @@ export const KREA_MODEL_REGISTRY_ENTRIES: readonly KreaModelConfig[] = [
     capabilities: ["text_to_video", "image_to_video"],
     description: "Highest-quality Veo with audio.",
     credits: 30,
-    availability: "active",
+    availability: "experimental",
     outputType: "video",
     isPremium: true,
   }),
@@ -458,7 +486,7 @@ export const KREA_MODEL_REGISTRY_ENTRIES: readonly KreaModelConfig[] = [
     tools: ["video", "video_restyle"],
     capabilities: ["text_to_video", "image_to_video", "video_to_video"],
     credits: 28,
-    availability: "active",
+    availability: "experimental",
     outputType: "video",
     isPremium: true,
   }),
@@ -471,7 +499,7 @@ export const KREA_MODEL_REGISTRY_ENTRIES: readonly KreaModelConfig[] = [
     tools: ["video"],
     capabilities: ["text_to_video", "image_to_video"],
     credits: 22,
-    availability: "active",
+    availability: "experimental",
     outputType: "video",
   }),
   m({
@@ -548,7 +576,7 @@ export const KREA_MODEL_REGISTRY_ENTRIES: readonly KreaModelConfig[] = [
     tools: ["enhancer"],
     capabilities: ["enhance", "upscale"],
     credits: 4,
-    availability: "active",
+    availability: "experimental",
     outputType: "image",
     isRecommended: true,
     requires: ["source_image_url"],
@@ -594,53 +622,164 @@ export const KREA_MODEL_REGISTRY_ENTRIES: readonly KreaModelConfig[] = [
     category: "3d",
     tools: ["3d_objects", "product_photography"],
     capabilities: ["3d_object", "text_to_image"],
-    description: "Photoreal 3D-style renders via Krea 2 (mesh API planned).",
+    descriptionEn: "Photoreal 3D-style renders (dedicated mesh API planned).",
+    descriptionDe: "Fotorealistische 3D-Renderings (dedizierte Mesh-API geplant).",
     credits: 3,
-    availability: "active",
+    availability: "experimental",
     outputType: "image",
   }),
 
-  // —— Not yet on Krea API (fallback / hidden from selectors) ——
+  // —— Extended catalog (not_configured until wired) ——
+  ...KREA_MODEL_REGISTRY_EXT,
+
+  // —— Legacy placeholders ——
   m({
-    id: "lipsync-sync",
-    label: "Dialogue Sync",
+    id: "lipsync-pending",
+    label: "Lip Sync Studio",
     provider: "krea",
-    model: "fal/sync-lipsync",
+    internalModel: "pending/lipsync",
     category: "lipsync",
     tools: ["lipsync"],
-    capabilities: ["lipsync"],
-    description: "Specialized lip-sync pipeline (fal fallback when Krea path unavailable).",
+    capabilities: ["lipsync", "audio_to_video"],
+    descriptionEn: "Talking-head lip sync — Krea endpoint not wired yet.",
+    descriptionDe: "Talking-Head Lip-Sync — Krea-Endpunkt noch nicht angebunden.",
     credits: 30,
-    availability: "experimental",
-    outputType: "video",
-    isRecommended: true,
-    requires: ["source_video_url"],
-    workflowKeys: ["lip_sync"],
-  }),
-  m({
-    id: "lipsync-expressive",
-    label: "Expressive Sync",
-    provider: "krea",
-    model: "fal/sync-lipsync",
-    category: "lipsync",
-    tools: ["lipsync"],
-    capabilities: ["lipsync"],
-    credits: 30,
-    availability: "experimental",
-    outputType: "video",
-    requires: ["source_video_url"],
-  }),
-  m({
-    id: "motion-transfer-fallback",
-    label: "Motion Transfer",
-    provider: "krea",
-    model: "fal/live-portrait",
-    category: "motion_transfer",
-    tools: ["motion_transfer"],
-    capabilities: ["motion_transfer"],
-    credits: 60,
     availability: "not_configured",
     outputType: "video",
-    requires: ["source_image_url", "source_video_url"],
+    requires: ["source_video_url", "audio_url"],
   }),
+  m({
+    id: "motion-transfer-pending",
+    label: "Motion Transfer",
+    provider: "krea",
+    internalModel: "pending/motion-transfer",
+    category: "motion_transfer",
+    tools: ["motion_transfer"],
+    capabilities: ["motion_transfer", "image_to_video"],
+    descriptionEn: "Portrait motion transfer — Krea endpoint not wired yet.",
+    descriptionDe: "Portrait-Motion-Transfer — Krea-Endpunkt noch nicht angebunden.",
+    credits: 25,
+    availability: "not_configured",
+    outputType: "video",
+    requires: ["source_image_url", "driving_video_url"],
+  }),
+  m({
+    id: "audio-pending",
+    label: "Voice & Audio",
+    provider: "krea",
+    internalModel: "pending/audio",
+    category: "audio",
+    tools: ["audio"],
+    capabilities: ["text_to_audio"],
+    descriptionEn: "Text-to-speech and voiceover — Krea endpoint not wired yet.",
+    descriptionDe: "Text-zu-Sprache und Voiceover — Krea-Endpunkt noch nicht angebunden.",
+    credits: 5,
+    availability: "not_configured",
+    outputType: "audio",
+  }),
+  m({
+    id: "apps-workflow-pending",
+    label: "Creative Apps",
+    provider: "krea",
+    internalModel: "pending/apps",
+    category: "workflow",
+    tools: ["apps"],
+    capabilities: ["workflow", "planning"],
+    descriptionEn: "Multi-step creative apps — orchestration not wired yet.",
+    descriptionDe: "Multi-Step Creative Apps — Orchestrierung noch nicht angebunden.",
+    credits: 0,
+    availability: "not_configured",
+    outputType: "text",
+  }),
+  m({
+    id: "style-profiles-pending",
+    label: "Style Profiles",
+    provider: "krea",
+    internalModel: "pending/style-profiles",
+    category: "workflow",
+    tools: ["style_profiles"],
+    capabilities: ["workflow", "image_to_image"],
+    descriptionEn: "Character and style profile training — not wired yet.",
+    descriptionDe: "Charakter- und Style-Profile — noch nicht angebunden.",
+    credits: 0,
+    availability: "not_configured",
+    outputType: "text",
+  }),
+
+  // —— LoRA / Style Training (Krea styles/train — not image generate) ——
+  m({
+    id: "style_lora_training",
+    label: "Style LoRA Training",
+    provider: "krea",
+    internalModel: "styles/train",
+    category: "training",
+    tools: ["train_lora", "style_profiles", "style_training"],
+    capabilities: ["train_lora", "train_style", "custom_style"],
+    descriptionEn:
+      "Train a reusable visual style from reference images and apply it to future campaign assets.",
+    descriptionDe:
+      "Trainiere einen wiederverwendbaren visuellen Stil aus Referenzbildern und nutze ihn für zukünftige Kampagnenassets.",
+    credits: 100,
+    outputType: "style",
+    availability: "experimental",
+    isRecommended: true,
+    requires: ["reference_images"],
+    workflowKeys: ["train_style"],
+  }),
+  m({
+    id: "character_lora_training",
+    label: "Character LoRA Training",
+    provider: "krea",
+    internalModel: "styles/train",
+    category: "training",
+    tools: ["train_lora", "style_profiles", "style_training"],
+    capabilities: ["train_lora", "train_character", "custom_style"],
+    descriptionEn:
+      "Train a consistent creator or character identity from a curated image set.",
+    descriptionDe:
+      "Trainiere eine konsistente Creator- oder Character-Identität aus einem kuratierten Bildset.",
+    credits: 150,
+    outputType: "style",
+    availability: "experimental",
+    requires: ["reference_images"],
+    workflowKeys: ["train_character"],
+  }),
+  m({
+    id: "object_product_lora_training",
+    label: "Product / Object LoRA Training",
+    provider: "krea",
+    internalModel: "styles/train",
+    category: "training",
+    tools: ["train_lora", "product_photography", "brand_assets", "style_training"],
+    capabilities: ["train_lora", "train_object", "train_product", "custom_style"],
+    descriptionEn:
+      "Train a product or object style for repeatable product visuals and brand assets.",
+    descriptionDe:
+      "Trainiere einen Produkt- oder Objektstil für wiederholbare Produktvisuals und Brand Assets.",
+    credits: 150,
+    outputType: "style",
+    availability: "experimental",
+    requires: ["reference_images"],
+    workflowKeys: ["train_product"],
+  }),
+  m({
+    id: "brand_style_training",
+    label: "Brand Style Training",
+    provider: "krea",
+    internalModel: "styles/train",
+    category: "training",
+    tools: ["train_lora", "brand_assets", "style_profiles", "style_training"],
+    capabilities: ["train_lora", "train_style", "custom_style"],
+    descriptionEn:
+      "Create a reusable brand style system for consistent campaigns across formats.",
+    descriptionDe:
+      "Erstelle ein wiederverwendbares Markenstil-System für konsistente Kampagnen über mehrere Formate hinweg.",
+    credits: 200,
+    outputType: "style",
+    availability: "experimental",
+    isPremium: true,
+    requires: ["reference_images"],
+    workflowKeys: ["train_brand"],
+  }),
+
 ] as const;

@@ -1,5 +1,3 @@
-import Dashboard from "../components/creative-suite/Dashboard";
+import DashboardLegacyRedirect from "../components/shell/dashboard-legacy-redirect";
 
-export default function ProductPhotographyPage() {
-  return <Dashboard tool="product_photography" />;
-}
+export default DashboardLegacyRedirect;
