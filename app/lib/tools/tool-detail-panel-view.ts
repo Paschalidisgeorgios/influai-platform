@@ -7,6 +7,7 @@ import {
   getCreatorToolDetailForPanel,
   getCreatorToolLabel,
   getToolDetailPanelPrimaryCtaLabel,
+  isSocialAssetPackDeploymentReady,
   resolveToolDetailPanelPrimaryCta,
   TOOL_DETAIL_PANEL_COPY,
   type CreatorToolId,
@@ -285,6 +286,36 @@ export function resolveToolDetailPanelView(
   options?: { simpleOverlay?: boolean }
 ): ToolDetailPanelView {
   const simpleOverlay = options?.simpleOverlay === true;
+
+  if (
+    resolved.tool.id === "social_asset_pack" &&
+    isSocialAssetPackDeploymentReady()
+  ) {
+    const detail = getCreatorToolDetailForPanel(resolved.tool, language);
+    return {
+      toolId: resolved.tool.id,
+      toolName: getCreatorToolLabel(resolved.tool, language),
+      benefit: detail.benefit,
+      whatItDoes: detail.whatItDoes,
+      creditsDisplay: formatCreditsDisplay(
+        detail.estimatedCredits,
+        language,
+        detail.creditsEstimateLabel
+      ),
+      statusLabel: getPublicToolStatusLabel("live", language),
+      publicStatus: "live",
+      requirements: resolveRequirements(
+        { ...resolved, status: "live", canRun: true, canPreview: true },
+        language
+      ),
+      ctas: resolveLiveCtas(resolved.tool.id, language),
+      legacyPrimaryCta: null,
+      showNonLiveNote: false,
+      contextMessage: sanitizeContextMessage(launchContext, language),
+      canRun: true,
+    };
+  }
+
   const detail = getCreatorToolDetailForPanel(resolved.tool, language);
   const statusMeta = resolveToolStatusMetadata({
     status: resolved.status,

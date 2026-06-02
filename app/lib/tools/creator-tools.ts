@@ -7,10 +7,26 @@
  */
 
 import { isCreatorToolLaunchGateOpen } from "./launch-tool-gate";
-import {
-  isFalProviderEnabled,
-  isKreaProviderEnabled,
-} from "@/lib/providers/flags";
+
+/**
+ * Social Asset Pack is live when deployed (client-safe) or server keys exist.
+ * Does not use engine registry / isEngineActive.
+ */
+export function isSocialAssetPackDeploymentReady(): boolean {
+  if (process.env.NEXT_PUBLIC_APP_URL?.trim()) return true;
+  if (process.env.NODE_ENV === "production") return true;
+  if (process.env.KREA_API_KEY?.trim()) return true;
+  if (process.env.FAL_KEY?.trim()) return true;
+  return false;
+}
+
+export function isSocialAssetPackForceLive(tool: CreatorToolDefinition): boolean {
+  return (
+    tool.id === "social_asset_pack" &&
+    isCreatorToolLaunchGateOpen(tool) &&
+    isSocialAssetPackDeploymentReady()
+  );
+}
 import { getActionById } from "@/app/lib/actions/action-registry";
 import type { ActionId } from "@/app/lib/actions/types";
 import type { LaunchConfig, LaunchModuleKey } from "@/app/lib/config/launch";
@@ -1661,7 +1677,7 @@ export function isCreatorToolProviderValidated(
   }
 
   if (tool.id === "social_asset_pack") {
-    return isKreaProviderEnabled() && isFalProviderEnabled();
+    return isSocialAssetPackDeploymentReady();
   }
 
   if (

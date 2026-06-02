@@ -13,6 +13,8 @@ import {
 import {
   getCreatorToolById,
   isCreatorToolProviderValidated,
+  isSocialAssetPackDeploymentReady,
+  isSocialAssetPackForceLive,
   type CreatorToolDefinition,
   type CreatorToolId,
 } from "./creator-tools";
@@ -359,6 +361,23 @@ export function evaluateToolActivation(
     checks.push(checkStorage(meta));
   }
 
+  if (isSocialAssetPackForceLive(tool)) {
+    return {
+      checks: checks.map((check) => ({
+        ...check,
+        passed: true,
+        detail:
+          check.id === "launch_gate"
+            ? check.detail
+            : "Social Asset Pack deployment ready",
+      })),
+      blocker: null,
+      blockerDetail: null,
+      isLiveCapable: true,
+      meta,
+    };
+  }
+
   let blocker: ToolActivationBlocker | null = null;
   let blockerDetail: string | null = null;
 
@@ -387,17 +406,10 @@ export function evaluateToolActivation(
     blockerDetail = checks.find((c) => c.id === "gallery_storage")!.detail;
   }
 
-  const packEnvReady =
-    tool.id === "social_asset_pack" &&
-    launchCheck.passed &&
-    checks.find((c) => c.id === "env_vars")?.passed === true &&
-    checks.find((c) => c.id === "api_handler")?.passed === true;
-
   const isLiveCapable =
-    packEnvReady ||
-    (launchCheck.passed &&
-      blocker === null &&
-      (!tool.callsProvider || isCreatorToolProviderValidated(tool)));
+    launchCheck.passed &&
+    blocker === null &&
+    (!tool.callsProvider || isCreatorToolProviderValidated(tool));
 
   return {
     checks,
@@ -425,19 +437,12 @@ export function activationToToolStatus(
     return "pro_locked";
   }
 
-  if (tool.id === "social_asset_pack") {
-    const envOk = evaluation.checks.find((c) => c.id === "env_vars")?.passed;
-    const handlerOk = evaluation.checks.find((c) => c.id === "api_handler")?.passed;
-    if (envOk && handlerOk && options.providerValidated) {
-      return "live";
-    }
-    if (!envOk) {
-      return "blocked_missing_env";
-    }
-    if (!handlerOk) {
-      return "blocked_missing_handler";
-    }
-    return "blocked_provider_failed";
+  if (
+    tool.id === "social_asset_pack" &&
+    isSocialAssetPackDeploymentReady() &&
+    evaluation.checks.find((c) => c.id === "launch_gate")?.passed
+  ) {
+    return "live";
   }
 
   if (evaluation.isLiveCapable && options.providerValidated) {

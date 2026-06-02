@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import RequestAccessPanel from "./RequestAccessPanel";
 import {
   TOOL_DETAIL_PANEL_COPY,
+  isSocialAssetPackDeploymentReady,
   type ToolDetailPanelPrimaryCta,
 } from "@/app/lib/tools/creator-tools";
 import type { ResolvedCreatorTool } from "@/app/lib/tools/resolve-tool";
@@ -70,9 +71,27 @@ export default function ToolDetailPanel({
     setView("detail");
   }, [resolved.tool.id]);
 
-  const panel = resolveToolDetailPanelView(resolved, language, launchContext, {
-    simpleOverlay: simpleOverlay && !resolved.canRun,
-  });
+  const effectiveResolved =
+    resolved.tool.id === "social_asset_pack" &&
+    isSocialAssetPackDeploymentReady()
+      ? {
+          ...resolved,
+          status: "live" as const,
+          canRun: true,
+          canPreview: true,
+          providerValidated: true,
+          reasonIfUnavailable: null,
+        }
+      : resolved;
+
+  const panel = resolveToolDetailPanelView(
+    effectiveResolved,
+    language,
+    launchContext,
+    {
+      simpleOverlay: simpleOverlay && !effectiveResolved.canRun,
+    }
+  );
 
   if (!open) return null;
 

@@ -24,6 +24,8 @@ import {
 
   isCreatorToolProviderValidated,
 
+  isSocialAssetPackForceLive,
+
   normalizeCreatorToolId,
 
   resolveCreatorToolCreditCost,
@@ -160,7 +162,10 @@ function buildResolvedTool(
 
   const language = ctx.language === "de" ? "de" : "en";
 
-  const providerValidated = isCreatorToolProviderValidated(tool);
+  const packForceLive = isSocialAssetPackForceLive(tool);
+
+  const providerValidated =
+    packForceLive || isCreatorToolProviderValidated(tool);
 
   const activation = evaluateToolActivation(tool);
 
@@ -168,13 +173,13 @@ function buildResolvedTool(
 
 
 
-  const status = activationToToolStatus(tool, activation, {
-
-    providerValidated,
-
-    planBlocked,
-
-  });
+  const status =
+    packForceLive && !planBlocked
+      ? "live"
+      : activationToToolStatus(tool, activation, {
+          providerValidated,
+          planBlocked,
+        });
 
 
 
@@ -192,7 +197,7 @@ function buildResolvedTool(
 
     allowsPreview: tool.allowsPreview,
 
-    providerValidated,
+    providerValidated: packForceLive || providerValidated,
 
     chargesCredits: chargesCredits && status === "live",
 
@@ -202,7 +207,7 @@ function buildResolvedTool(
 
   const requiresCredits =
 
-    flags.requiresCredits && providerValidated && status === "live";
+    flags.requiresCredits && (packForceLive || providerValidated) && status === "live";
 
   const requiredCredits = requiresCredits ? resolveCreatorToolCreditCost(tool) : 0;
 
@@ -214,13 +219,13 @@ function buildResolvedTool(
 
     status,
 
-    providerValidated,
+    providerValidated: packForceLive || providerValidated,
 
     activation,
 
     canShowToUser: flags.canShowToUser,
 
-    canRun: flags.canRun,
+    canRun: packForceLive ? true : flags.canRun,
 
     canPreview:
 
