@@ -9,6 +9,7 @@ import { resolveProviderGenerationContext } from "@/app/lib/providers/provider-r
 import {
   getAllCreatorTools,
   getCreatorToolById,
+  isSocialAssetPackDeploymentReady,
   normalizeCreatorToolId,
   type CreatorToolDefinition,
   type CreatorToolId,
@@ -140,6 +141,18 @@ function assertProviderRouteForTool(
 ): void {
   if (!tool.callsProvider) return;
 
+  /** Pack orchestrates Krea + Fal internally — no single launch engine id. */
+  if (tool.id === "social_asset_pack") {
+    if (!isSocialAssetPackDeploymentReady()) {
+      block(
+        "PROVIDER_ROUTE_MISSING",
+        language,
+        "social_asset_pack: deployment env not ready"
+      );
+    }
+    return;
+  }
+
   const action = tool.actionId ? getActionById(tool.actionId) : null;
   const candidateEngineIds = [
     engineId?.trim(),
@@ -228,7 +241,14 @@ export function assertToolCanRun(
     );
   }
 
-  if (resolved.tool.callsProvider && !resolved.providerValidated) {
+  if (
+    resolved.tool.callsProvider &&
+    !resolved.providerValidated &&
+    !(
+      resolved.tool.id === "social_asset_pack" &&
+      isSocialAssetPackDeploymentReady()
+    )
+  ) {
     block("ENGINE_INACTIVE", language, "provider not validated");
   }
 
