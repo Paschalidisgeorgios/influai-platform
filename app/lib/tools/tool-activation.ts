@@ -387,10 +387,17 @@ export function evaluateToolActivation(
     blockerDetail = checks.find((c) => c.id === "gallery_storage")!.detail;
   }
 
-  const isLiveCapable =
+  const packEnvReady =
+    tool.id === "social_asset_pack" &&
     launchCheck.passed &&
-    blocker === null &&
-    (!tool.callsProvider || isCreatorToolProviderValidated(tool));
+    checks.find((c) => c.id === "env_vars")?.passed === true &&
+    checks.find((c) => c.id === "api_handler")?.passed === true;
+
+  const isLiveCapable =
+    packEnvReady ||
+    (launchCheck.passed &&
+      blocker === null &&
+      (!tool.callsProvider || isCreatorToolProviderValidated(tool)));
 
   return {
     checks,
@@ -416,6 +423,21 @@ export function activationToToolStatus(
 
   if (options.planBlocked) {
     return "pro_locked";
+  }
+
+  if (tool.id === "social_asset_pack") {
+    const envOk = evaluation.checks.find((c) => c.id === "env_vars")?.passed;
+    const handlerOk = evaluation.checks.find((c) => c.id === "api_handler")?.passed;
+    if (envOk && handlerOk && options.providerValidated) {
+      return "live";
+    }
+    if (!envOk) {
+      return "blocked_missing_env";
+    }
+    if (!handlerOk) {
+      return "blocked_missing_handler";
+    }
+    return "blocked_provider_failed";
   }
 
   if (evaluation.isLiveCapable && options.providerValidated) {

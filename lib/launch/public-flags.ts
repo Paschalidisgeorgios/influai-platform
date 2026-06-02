@@ -4,6 +4,7 @@ const kreaPublic = process.env.NEXT_PUBLIC_ENABLE_KREA_PROVIDER !== "false";
 
 /** Client-safe feature flags (NEXT_PUBLIC_* only). */
 export const publicLaunchFlags = {
+  socialAssetPack: LAUNCH_CONFIG.enableSocialAssetPack,
   fastDraft: LAUNCH_CONFIG.enableImageGeneration && kreaPublic,
   premiumImage: LAUNCH_CONFIG.enableImageGeneration && kreaPublic,
   referenceEdit: LAUNCH_CONFIG.enableReferenceEdit && kreaPublic,

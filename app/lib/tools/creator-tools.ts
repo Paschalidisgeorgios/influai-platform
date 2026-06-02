@@ -7,6 +7,10 @@
  */
 
 import { isCreatorToolLaunchGateOpen } from "./launch-tool-gate";
+import {
+  isFalProviderEnabled,
+  isKreaProviderEnabled,
+} from "@/lib/providers/flags";
 import { getActionById } from "@/app/lib/actions/action-registry";
 import type { ActionId } from "@/app/lib/actions/types";
 import type { LaunchConfig, LaunchModuleKey } from "@/app/lib/config/launch";
@@ -1657,12 +1661,7 @@ export function isCreatorToolProviderValidated(
   }
 
   if (tool.id === "social_asset_pack") {
-    const imageEngine = getEngineById("smart_auto_pilot");
-    const videoEngine = getEngineById("fal_kling_v3_t2v");
-    return Boolean(
-      imageEngine && isEngineActive(imageEngine) &&
-        videoEngine && isEngineActive(videoEngine)
-    );
+    return isKreaProviderEnabled() && isFalProviderEnabled();
   }
 
   if (
