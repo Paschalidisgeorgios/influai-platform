@@ -3,9 +3,16 @@
  * Internal logs may still reference provider names.
  */
 
+import { isDevRuntime } from "@/lib/env/runtime-ui";
+
 export type GenerationErrorCode =
   | "MODEL_NOT_CONFIGURED"
   | "ENGINE_NOT_CONFIGURED"
+  | "INSUFFICIENT_CREDITS"
+  | "ACTION_UNAVAILABLE"
+  | "PROMPT_ASSIST_FAILED"
+  | "GALLERY_SAVE_FAILED"
+  | "FAL_BALANCE_EXHAUSTED"
   | "NO_OUTPUT_URL"
   | "GENERATION_TIMEOUT"
   | "UPLOAD_FAILED"
@@ -38,23 +45,52 @@ const COPY: Record<
 > = {
   MODEL_NOT_CONFIGURED: {
     error: {
-      en: "Generation failed. Your credits were refunded.",
-      de: "Generierung fehlgeschlagen. Deine Credits wurden erstattet.",
+      en: "This creation mode is not available yet. Your credits were not charged.",
+      de: "Dieser Erstellungsmodus ist noch nicht verfügbar. Es wurden keine Credits abgebucht.",
     },
-    reason: {
-      en: "Reason: The selected model is not configured.",
-      de: "Grund: Das Modell ist nicht konfiguriert.",
-    },
+    reason: { en: "", de: "" },
   },
   ENGINE_NOT_CONFIGURED: {
     error: {
-      en: "The selected engine is not fully connected yet. No credits were charged.",
-      de: "Die ausgewählte Engine ist noch nicht vollständig angebunden. Es wurden keine Credits abgezogen.",
+      en: "This creation mode is not available yet. Your credits were not charged.",
+      de: "Dieser Erstellungsmodus ist noch nicht verfügbar. Es wurden keine Credits abgebucht.",
     },
-    reason: {
-      en: "Reason: The processing engine is not configured.",
-      de: "Grund: Die Rechen-Engine ist nicht konfiguriert.",
+    reason: { en: "", de: "" },
+  },
+  INSUFFICIENT_CREDITS: {
+    error: {
+      en: "You need more credits to generate this. Your credits were not charged.",
+      de: "Du brauchst mehr Credits für diese Generierung. Es wurden keine Credits abgebucht.",
     },
+    reason: { en: "", de: "" },
+  },
+  ACTION_UNAVAILABLE: {
+    error: {
+      en: "This action is not available yet.",
+      de: "Diese Aktion ist noch nicht verfügbar.",
+    },
+    reason: { en: "", de: "" },
+  },
+  PROMPT_ASSIST_FAILED: {
+    error: {
+      en: "Prompt assist is temporarily unavailable. Your original prompt was kept.",
+      de: "Prompt Assist ist vorübergehend nicht verfügbar. Dein ursprünglicher Prompt blieb erhalten.",
+    },
+    reason: { en: "", de: "" },
+  },
+  GALLERY_SAVE_FAILED: {
+    error: {
+      en: "We could not save this to your Creator Gallery. Please try again.",
+      de: "Speichern in der Creator Gallery ist fehlgeschlagen. Bitte erneut versuchen.",
+    },
+    reason: { en: "", de: "" },
+  },
+  FAL_BALANCE_EXHAUSTED: {
+    error: {
+      en: "Video generation is temporarily unavailable. Your credits were not charged.",
+      de: "Video-Generierung ist vorübergehend nicht verfügbar. Es wurden keine Credits abgebucht.",
+    },
+    reason: { en: "", de: "" },
   },
   MISSING_SOURCE_IMAGE: {
     error: {
@@ -68,83 +104,59 @@ const COPY: Record<
   },
   KREA_MOTION_NOT_IMPLEMENTED: {
     error: {
-      en: "The selected engine is not fully connected yet. No credits were charged.",
-      de: "Die ausgewählte Engine ist noch nicht vollständig angebunden. Es wurden keine Credits abgezogen.",
+      en: "This action is not available yet. Your credits were not charged.",
+      de: "Diese Aktion ist noch nicht verfügbar. Es wurden keine Credits abgebucht.",
     },
-    reason: {
-      en: "Reason: Motion transfer is not available on this engine yet.",
-      de: "Grund: Motion Transfer ist für diese Engine noch nicht verfügbar.",
-    },
+    reason: { en: "", de: "" },
   },
   KREA_LIPSYNC_NOT_IMPLEMENTED: {
     error: {
-      en: "The selected engine is not fully connected yet. No credits were charged.",
-      de: "Die ausgewählte Engine ist noch nicht vollständig angebunden. Es wurden keine Credits abgezogen.",
+      en: "This action is not available yet. Your credits were not charged.",
+      de: "Diese Aktion ist noch nicht verfügbar. Es wurden keine Credits abgebucht.",
     },
-    reason: {
-      en: "Reason: Lip sync is not available on this engine yet.",
-      de: "Grund: Lip Sync ist für diese Engine noch nicht verfügbar.",
-    },
+    reason: { en: "", de: "" },
   },
   KREA_VIDEO_NOT_IMPLEMENTED: {
     error: {
-      en: "The selected engine is not fully connected yet. No credits were charged.",
-      de: "Die ausgewählte Engine ist noch nicht vollständig angebunden. Es wurden keine Credits abgezogen.",
+      en: "Video generation is temporarily unavailable. Your credits were not charged.",
+      de: "Video-Generierung ist vorübergehend nicht verfügbar. Es wurden keine Credits abgebucht.",
     },
-    reason: {
-      en: "Reason: Video generation is not available on this engine yet.",
-      de: "Grund: Video-Generierung ist für diese Engine noch nicht verfügbar.",
-    },
+    reason: { en: "", de: "" },
   },
   NO_OUTPUT_URL: {
     error: {
-      en: "Generation failed. Your credits were refunded.",
-      de: "Generierung fehlgeschlagen. Deine Credits wurden erstattet.",
+      en: "Generation failed. Credits were refunded.",
+      de: "Generierung fehlgeschlagen. Credits wurden erstattet.",
     },
-    reason: {
-      en: "Reason: The engine did not return an output URL.",
-      de: "Grund: Das Modell hat keine Ausgabe-URL zurückgegeben.",
-    },
+    reason: { en: "", de: "" },
   },
   GENERATION_TIMEOUT: {
     error: {
-      en: "Generation failed. Your credits were refunded.",
-      de: "Generierung fehlgeschlagen. Deine Credits wurden erstattet.",
+      en: "Generation timed out. Credits were refunded.",
+      de: "Zeitüberschreitung bei der Generierung. Credits wurden erstattet.",
     },
-    reason: {
-      en: "Reason: The generation timed out.",
-      de: "Grund: Die Generierung hat zu lange gedauert.",
-    },
+    reason: { en: "", de: "" },
   },
   UPLOAD_FAILED: {
     error: {
-      en: "Generation failed. Your credits were refunded.",
-      de: "Generierung fehlgeschlagen. Deine Credits wurden erstattet.",
+      en: "We could not save your result. Credits were refunded.",
+      de: "Ergebnis konnte nicht gespeichert werden. Credits wurden erstattet.",
     },
-    reason: {
-      en: "Reason: The upload failed.",
-      de: "Grund: Der Upload ist fehlgeschlagen.",
-    },
+    reason: { en: "", de: "" },
   },
   PROVIDER_ERROR: {
     error: {
-      en: "The rendering engine returned an error. Your credits were refunded.",
-      de: "Die Rechen-Engine hat einen Fehler zurückgegeben. Deine Credits wurden erstattet.",
+      en: "Generation failed. Credits were refunded.",
+      de: "Generierung fehlgeschlagen. Credits wurden erstattet.",
     },
-    reason: {
-      en: "Reason: The processing engine returned an error.",
-      de: "Grund: Die Rechen-Engine hat einen Fehler zurückgegeben.",
-    },
+    reason: { en: "", de: "" },
   },
   GENERATION_FAILED: {
     error: {
-      en: "Generation failed. Your credits were refunded.",
-      de: "Generierung fehlgeschlagen. Deine Credits wurden erstattet.",
+      en: "Generation failed. Credits were refunded.",
+      de: "Generierung fehlgeschlagen. Credits wurden erstattet.",
     },
-    reason: {
-      en: "Reason: The generation could not be completed.",
-      de: "Grund: Die Generierung konnte nicht abgeschlossen werden.",
-    },
+    reason: { en: "", de: "" },
   },
 };
 
@@ -161,6 +173,40 @@ export function classifyGenerationError(cause: unknown): GenerationErrorCode {
         : "Generation failed";
 
   const lower = message.toLowerCase();
+
+  if (
+    lower.includes("insufficient credits") ||
+    lower.includes("not enough credits") ||
+    lower.includes("insufficient_credits")
+  ) {
+    return "INSUFFICIENT_CREDITS";
+  }
+
+  if (
+    lower.includes("not available yet") ||
+    lower.includes("action is not available")
+  ) {
+    return "ACTION_UNAVAILABLE";
+  }
+
+  if (lower.includes("prompt assist") || lower.includes("enhance prompt")) {
+    return "PROMPT_ASSIST_FAILED";
+  }
+
+  if (
+    lower.includes("gallery") &&
+    (lower.includes("save") || lower.includes("insert failed"))
+  ) {
+    return "GALLERY_SAVE_FAILED";
+  }
+
+  if (
+    lower.includes("exhausted balance") ||
+    lower.includes("user is locked") ||
+    lower.includes("fal_balance_exhausted")
+  ) {
+    return "FAL_BALANCE_EXHAUSTED";
+  }
 
   if (
     lower.includes("fal_key") ||
@@ -244,12 +290,13 @@ export function buildGenerationErrorPayload(
   const lang = options?.language ?? "en";
   const includeReason = options?.includeReason !== false;
   const block = COPY[code];
+  const reason = block.reason[lang]?.trim();
 
   return {
     success: false,
     code,
     error: block.error[lang],
-    ...(includeReason ? { reason: block.reason[lang] } : {}),
+    ...(includeReason && reason ? { reason } : {}),
     ...(options?.requestId ? { requestId: options.requestId } : {}),
     ...(options?.refunded !== undefined ? { refunded: options.refunded } : {}),
   };
@@ -353,6 +400,12 @@ export function sanitizeLegacyErrorMessage(
   return text.slice(0, 500);
 }
 
+function looksLikeInternalApiError(message: string): boolean {
+  return /localhost|127\.0\.0\.1|^\s*at\s+\S|stack trace|debugReason|requestId|kreaModelId|validationStatus|providerPayload|GEN_ERR:|KREA_API_KEY/im.test(
+    message
+  );
+}
+
 export function formatStoredGenerationError(
   raw: string | null | undefined,
   language: GenerationLanguage
@@ -373,15 +426,30 @@ export function formatGenerationErrorFromApi(
     return formatGenerationErrorDisplay(code, language, { includeReason: false });
   }
 
+  if (
+    data.code?.toUpperCase() === "INSUFFICIENT_CREDITS" ||
+    data.error?.toLowerCase().includes("not enough credits")
+  ) {
+    return formatGenerationErrorDisplay("INSUFFICIENT_CREDITS", language, {
+      includeReason: false,
+    });
+  }
+
   const main = data.error?.trim();
   if (main) {
+    const fallback = formatGenerationErrorDisplay("GENERATION_FAILED", language);
     const sanitized = sanitizeLegacyErrorMessage(main, language);
+    if (!isDevRuntime() && looksLikeInternalApiError(sanitized)) {
+      return fallback;
+    }
     if (data.reason?.trim()) {
-      const reasonSanitized = data.reason
-        .replace(/\bkrea\b/gi, "engine")
-        .trim();
+      const reasonSanitized = sanitizeLegacyErrorMessage(
+        data.reason.replace(/\bkrea\b/gi, "engine"),
+        language
+      );
       if (
         reasonSanitized &&
+        !looksLikeInternalApiError(reasonSanitized) &&
         !sanitized.includes(reasonSanitized) &&
         !sanitized.includes("Grund:") &&
         !sanitized.includes("Reason:")

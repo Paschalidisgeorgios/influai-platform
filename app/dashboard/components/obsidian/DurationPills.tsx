@@ -47,12 +47,12 @@ export default function DurationPills({
             <motion.button
               key={opt.seconds}
               type="button"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ ...OBS_SPRING, delay: index * 0.04 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => onChange(opt.seconds)}
-              className={`rounded-full border px-3 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm ${
+              className={`rounded-full px-3 py-2 text-xs font-semibold transition-[box-shadow,transform] sm:px-4 sm:text-sm ${
                 selected ? OBS.pillActive : OBS.pillIdle
               }`}
             >

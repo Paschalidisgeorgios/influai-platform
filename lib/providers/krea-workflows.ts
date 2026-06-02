@@ -28,9 +28,10 @@ export function isLegacyOpenAiEnabled(): boolean {
   return false;
 }
 
-/** @deprecated Legacy fal.ai removed — always false. */
+/** @deprecated Legacy fal image modes — use isFalProviderEnabled() for engine registry. */
 export function isLegacyFalEnabled(): boolean {
-  return false;
+  if (process.env.ENABLE_FAL_PROVIDER === "false") return false;
+  return Boolean(process.env.FAL_KEY?.trim());
 }
 
 export function isKreaImageWorkflow(workflow: string): boolean {

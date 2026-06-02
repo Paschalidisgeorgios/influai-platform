@@ -351,7 +351,7 @@ export async function createKreaEditJob(
       method: "POST",
       body: JSON.stringify({
         prompt: input.prompt,
-        imageUrls: input.imageUrls,
+        image_urls: input.imageUrls,
       }),
     }
   );
@@ -446,7 +446,7 @@ export async function createKreaVideoJob(
       method: "POST",
       body: JSON.stringify({
         prompt: input.prompt,
-        image_url: input.imageUrl,
+        start_image: input.imageUrl,
         duration: input.duration ?? 5,
       }),
     }
@@ -543,13 +543,16 @@ export async function waitForKreaImageJob(
 export async function generateKreaImage(
   input: KreaCreateImageJobInput
 ): Promise<KreaGenerationResult> {
-  const job = await createKreaImageJob(input);
-  if (!job.providerJobId) {
-    throw new Error("Krea did not return a job_id.");
-  }
-  return waitForKreaJob(job.providerJobId, {
-    workflow: input.workflow,
-    modelPath: resolveModelPathForInput(input),
+  const modelPath = resolveModelPathForInput(input);
+  const { generateViaKreaSubscribe } = await import(
+    "@/lib/krea/krea-subscribe-generation"
+  );
+  return generateViaKreaSubscribe({
+    modelPath,
+    prompt: input.prompt,
+    width: input.width,
+    height: input.height,
+    aspectRatio: input.aspectRatio,
     expect: "image",
   });
 }
@@ -572,15 +575,19 @@ export async function generateKreaEdit(
 export async function generateKreaVideo(
   input: KreaCreateVideoJobInput
 ): Promise<KreaGenerationResult> {
-  const job = await createKreaVideoJob(input);
-  if (!job.providerJobId) {
-    throw new Error("Krea did not return a job_id.");
-  }
-  return waitForKreaJob(job.providerJobId, {
+  const modelPath = resolveModelPathForInput({
+    modelPath: input.modelPath,
     workflow: input.workflow ?? "video_image_to_video",
+  });
+  const { generateViaKreaSubscribe } = await import(
+    "@/lib/krea/krea-subscribe-generation"
+  );
+  return generateViaKreaSubscribe({
+    modelPath,
+    prompt: input.prompt,
+    sourceImageUrl: input.imageUrl,
+    duration: input.duration ?? 5,
     expect: "video",
-    maxAttempts: 18,
-    intervalMs: 5000,
   });
 }
 

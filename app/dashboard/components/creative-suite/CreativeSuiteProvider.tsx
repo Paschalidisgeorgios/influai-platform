@@ -24,6 +24,7 @@ type CreativeSuiteContextValue = {
   authChecked: boolean;
   credits: number;
   creditsLoading: boolean;
+  creditsError: boolean;
   creditsRefreshKey: number;
   galleryRefreshKey: number;
   charactersRefreshKey: number;
@@ -32,7 +33,10 @@ type CreativeSuiteContextValue = {
   refreshCredits: () => void;
   refreshGallery: () => void;
   refreshCharacters: () => void;
-  onGenerationQueued: (options?: { creditsSpent?: number }) => void;
+  onGenerationQueued: (options?: {
+    creditsSpent?: number;
+    creditsAfter?: number | null;
+  }) => void;
   setRegenerateDraft: (draft: RegenerateDraft | null) => void;
   handleRegenerate: (prompt: string, characterId: string | null) => void;
   showStatus: (message: string) => void;
@@ -58,6 +62,7 @@ export function CreativeSuiteProvider({ children }: { children: ReactNode }) {
   const [authChecked, setAuthChecked] = useState(false);
   const [credits, setCredits] = useState(0);
   const [creditsLoading, setCreditsLoading] = useState(true);
+  const [creditsError, setCreditsError] = useState(false);
   const [creditsRefreshKey, setCreditsRefreshKey] = useState(0);
   const [galleryRefreshKey, setGalleryRefreshKey] = useState(0);
   const [charactersRefreshKey, setCharactersRefreshKey] = useState(0);
@@ -102,21 +107,37 @@ export function CreativeSuiteProvider({ children }: { children: ReactNode }) {
   }, [router, supabase.auth]);
 
   const loadCredits = useCallback(async () => {
+    setCreditsLoading(true);
+    setCreditsError(false);
     try {
-      setCreditsLoading(true);
       const {
         data: { session },
       } = await supabase.auth.getSession();
       const token = session?.access_token;
-      if (!token) return;
+      if (!token) {
+        setCreditsError(true);
+        return;
+      }
 
       const res = await fetch("/api/credits", {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) {
+        setCreditsError(true);
+        return;
+      }
+
       const data = await res.json();
-      setCredits(typeof data.credits === "number" ? data.credits : 0);
+      if (typeof data.credits !== "number") {
+        setCreditsError(true);
+        return;
+      }
+
+      setCredits(data.credits);
+      setCreditsError(false);
     } catch (error) {
       console.error("Credits load error:", error);
+      setCreditsError(true);
     } finally {
       setCreditsLoading(false);
     }
@@ -145,6 +166,7 @@ export function CreativeSuiteProvider({ children }: { children: ReactNode }) {
       authChecked,
       credits,
       creditsLoading,
+      creditsError,
       creditsRefreshKey,
       galleryRefreshKey,
       charactersRefreshKey,
@@ -154,7 +176,9 @@ export function CreativeSuiteProvider({ children }: { children: ReactNode }) {
       refreshGallery: () => setGalleryRefreshKey((c) => c + 1),
       refreshCharacters: () => setCharactersRefreshKey((c) => c + 1),
       onGenerationQueued: (options) => {
-        if (options?.creditsSpent && options.creditsSpent > 0) {
+        if (typeof options?.creditsAfter === "number") {
+          setCredits(options.creditsAfter);
+        } else if (options?.creditsSpent && options.creditsSpent > 0) {
           setCredits((current) => Math.max(0, current - options.creditsSpent!));
         }
         setGalleryRefreshKey((c) => c + 1);
@@ -178,6 +202,7 @@ export function CreativeSuiteProvider({ children }: { children: ReactNode }) {
       authChecked,
       credits,
       creditsLoading,
+      creditsError,
       creditsRefreshKey,
       galleryRefreshKey,
       charactersRefreshKey,

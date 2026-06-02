@@ -1,0 +1,140 @@
+/**
+ * Landing AI background motion — opacity / transform / filter only.
+ * Loaded by AIBackgroundField (landing only).
+ */
+
+@keyframes ai-bg-amber-breathe {
+  0%,
+  100% {
+    opacity: 0.42;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.58;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+
+@keyframes ai-bg-amber-drift {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: translate(calc(-50% + 2%), calc(-50% + 1.5%)) scale(1.04);
+  }
+}
+
+@keyframes ai-bg-aurora-a {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.72;
+    transform: translate(3%, 2%) scale(1.06);
+  }
+}
+
+@keyframes ai-bg-aurora-b {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.68;
+    transform: translate(-2.5%, 1.5%) scale(1.05);
+  }
+}
+
+@keyframes ai-bg-aurora-c {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: translate(2%, -2%) scale(1.04);
+  }
+}
+
+@keyframes ai-bg-cyan-flow {
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: translateX(0);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translateX(1.5%);
+  }
+}
+
+@keyframes ai-bg-cyan-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.08);
+  }
+}
+
+.ai-bg-amber-primary {
+  animation: ai-bg-amber-breathe 14s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.ai-bg-amber-secondary {
+  animation: ai-bg-amber-drift 18s ease-in-out infinite;
+  animation-delay: -4s;
+  will-change: opacity, transform;
+}
+
+.ai-bg-aurora-a {
+  animation: ai-bg-aurora-a 22s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.ai-bg-aurora-b {
+  animation: ai-bg-aurora-b 26s ease-in-out infinite;
+  animation-delay: -6s;
+  will-change: opacity, transform;
+}
+
+.ai-bg-aurora-c {
+  animation: ai-bg-aurora-c 20s ease-in-out infinite;
+  animation-delay: -9s;
+  will-change: opacity, transform;
+}
+
+.ai-bg-cyan-flow {
+  animation: ai-bg-cyan-flow 16s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.ai-bg-cyan-node {
+  animation: ai-bg-cyan-pulse 12s ease-in-out infinite;
+  animation-delay: -3s;
+  will-change: opacity, transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-bg-amber-primary,
+  .ai-bg-amber-secondary,
+  .ai-bg-aurora-a,
+  .ai-bg-aurora-b,
+  .ai-bg-aurora-c,
+  .ai-bg-cyan-flow,
+  .ai-bg-cyan-node {
+    animation: none !important;
+    will-change: auto;
+  }
+}

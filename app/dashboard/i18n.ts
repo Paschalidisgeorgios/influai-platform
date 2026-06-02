@@ -50,9 +50,9 @@ const en = {
       sectionTitle: "Studio tools",
       plannedSectionTitle: "Planned",
       imageStudio: "Image Studio",
-      imageStudioTip: "Create campaign-ready stills for social, ads and products",
+      imageStudioTip: "Create creator visuals, product shots and social assets",
       videoStudio: "Video Studio",
-      videoStudioTip: "Turn static visuals into short-form campaign videos",
+      videoStudioTip: "Turn an idea into a short AI-generated social video",
       lipSync: "Lip Sync",
       lipSyncTip: "Talking-head creator videos with voice and source video",
       creatorVideo: "Creator Video",
@@ -63,7 +63,7 @@ const en = {
       motionTransferTip: "Animate a creator image with a driving video",
       brandAssets: "Brand Assets",
       brandAssetsTip: "Brand-aligned campaign visuals and product layouts",
-      referenceEdit: "Reference Edit",
+      referenceEdit: "Referenz & Bearbeiten",
       referenceEditTip: "Guide results with a reference image",
       cinemaAgent: "Cinema Agent",
       cinemaAgentTip: "Plan scenes and shot lists before generating",
@@ -78,12 +78,12 @@ const en = {
     },
     nav: {
       home: { label: "Home", description: "Dashboard overview" },
-      agent: { label: "AI Agent", description: "Create campaign visuals" },
+      agent: { label: "Create", description: "Create images and videos" },
       tools: {
         label: "Tools",
         description: "Explore workflows",
       },
-      gallery: { label: "Asset Gallery", description: "Manage generated assets" },
+      gallery: { label: "Creator Gallery", description: "Browse your creations" },
       characters: {
         label: "Style Profiles",
         description: "Save reusable styles",
@@ -143,26 +143,26 @@ const en = {
   dashboardNav: {
     dashboard: { label: "Dashboard", sublabel: "Overview" },
     createStudio: {
-      label: "AI Create Studio",
-      sublabel: "Create assets",
-      workspaceTitle: "AI Create Studio",
-      poweredByKrea: "Powered by Krea AI",
+      label: "AI Creator Studio",
+      sublabel: "Create content",
+      workspaceTitle: "AI Creator Studio",
+      poweredByKrea: "AI-powered creation",
       workspaceSubline:
-        "Pick a mode — image, video or lip sync — and generate in one focused workspace.",
-      tabImage: "Image",
-      tabVideo: "Video",
+        "Create images, videos and social-ready content in one focused workspace.",
+      tabImage: "Create Image",
+      tabVideo: "Create Video",
       tabLipSync: "Lip Sync",
     },
-    gallery: { label: "Asset Gallery", sublabel: "Manage assets" },
+    gallery: { label: "Creator Gallery", sublabel: "Your creations" },
     styleProfiles: { label: "Style Profiles", sublabel: "Reusable styles" },
-    credits: { label: "Credits / Billing", sublabel: "Plans and balance" },
+    credits: { label: "Credits", sublabel: "Balance and plans" },
     upcoming: { label: "Upcoming", sublabel: "Future tools" },
     topBar: {
       welcome: "Welcome back, Georgios! 👋",
-      subline: "Ready to create your next campaign asset?",
-      searchPlaceholder: "Search assets, templates or workflows…",
+      subline: "What do you want to create today?",
+      searchPlaceholder: "Search gallery, prompts or workflows…",
       creditsAvailable: "{count} Credits available",
-      addCredits: "Add Credits",
+      addCredits: "Upgrade or buy credits",
     },
   },
   studioSuite: {
@@ -207,7 +207,7 @@ const en = {
         bestFor: "Guided image edits",
       },
       enhance: {
-        label: "Enhance",
+        label: "Render in HD",
         credits: "4 Credits",
         bestFor: "Upscale and clarity for exports",
       },
@@ -552,7 +552,7 @@ const en = {
       caption2:
         "New from {brand}. {idea} — crafted for {goal}. See the full visual set in feed.",
       caption3:
-        "Your next scroll-stopper from {brand}. {idea} — premium visuals, ready for {platform}.",
+        "Your next creator post from {brand}. {idea} — premium visuals, ready for {platform}.",
     },
   },
   page: {
@@ -564,10 +564,10 @@ const en = {
     campaignPromptLoaded: "Campaign prompt loaded into AI Agent.",
     styleProfilesUpdated: "Style profiles updated.",
     gallery: {
-      eyebrow: "Creator Assets",
-      title: "Asset Gallery",
+      eyebrow: "Creator Gallery",
+      title: "Creator Gallery",
       description:
-        "Manage every generated visual in one place — from drafts and processing jobs to favorites, downloads and final campaign assets.",
+        "Manage every generated image and video in one place — from drafts and processing jobs to favorites, exports and finished creator assets.",
     },
     characters: {
       eyebrow: "Reusable Creative Direction",
@@ -610,7 +610,7 @@ const en = {
       ugcLook: "UGC Look",
       premium: "Premium",
       brandAssets: "Brand Assets",
-      referenceEdit: "Reference Edit",
+      referenceEdit: "Referenz & Bearbeiten",
     },
     cards: {
       imageStudio: {
@@ -687,8 +687,8 @@ const en = {
     recentAssetsTitle: "Recent Assets",
     recentAssetsBody: "Continue working with your latest campaign visuals.",
     recentAssetsEmpty:
-      "No assets yet. Create your first campaign visual in the AI Create Studio.",
-    createFirstVisual: "Open Image Studio",
+      "No assets yet. Create your first image or video in the AI Creator Studio.",
+    createFirstVisual: "Start Creating",
     quickActionsPills: {
       useTemplate: "Use Template",
       viewGallery: "View Gallery",
@@ -712,8 +712,8 @@ const en = {
       enoughFor: "Enough for up to {count} standard images.",
     },
     toolCards: {
-      open: "Open Studio",
-      start: "Open Studio",
+      open: "Start Creating",
+      start: "Start Creating",
       comingSoon: "Preview",
       imageStudio: {
         title: "Image Studio",
@@ -793,7 +793,7 @@ const en = {
     creatorVideo: "Creator Video",
     talkingCreator: "Talking Creator",
     motionTransfer: "Motion Transfer",
-    gallery: "Asset Gallery",
+    gallery: "Creator Gallery",
     styleProfiles: "Style Profiles",
     credits: "Credits",
     toolsOverview: "Tools",
@@ -903,7 +903,7 @@ const en = {
     processingStepDirection: "Applying visual direction",
     processingStepFormat: "Preparing social format",
     processingStepGenerating: "Generating final image",
-    processingStepSaving: "Saving to Asset Gallery",
+    processingStepSaving: "Saving to Creator Gallery",
     promptTip:
       "Tip: Include the product, target audience, mood, platform and visual style for better results.",
     creditPreview:
@@ -1132,7 +1132,7 @@ const en = {
           sourceVideoLabel: "Source video",
           sourceVideoPlaceholder: "Paste source video URL",
           sourceVideoHint:
-            "You can use a video URL from Video Studio or the Asset Gallery.",
+            "You can use a video URL from Video Studio or the Creator Gallery.",
           sourcePlaceholder: "Upload source video",
           sourceHint: "Video: MP4/WebM/MOV · max 50 MB",
           uploadSource: "Upload source media",
@@ -1404,7 +1404,7 @@ const en = {
     campaignPromptLoaded: "Campaign prompt loaded into AI Agent.",
   },
   gallery: {
-    loading: "Loading your Asset Gallery…",
+    loading: "Loading your Creator Gallery…",
     empty: "No assets match your filters yet.",
     emptyTitle: "No assets yet",
     emptyBody:
@@ -1627,51 +1627,51 @@ const en = {
         "Watermarked promo exports — planned. Low-cost watermarked exports for early testing and brand discovery.",
       upgradeNote: "Upgrade later to export without watermark.",
       notAvailable:
-        "Not available for purchase in this release. Starter, Professional and Ultimate remain the active packages.",
+        "Not available for purchase in this release. Starter, Creator and Pro remain the active packages.",
     },
     features: {
       aiAgent: "AI Agent",
       socialFormats: "Social Formats",
       styleProfiles: "Style Profiles",
-      assetGallery: "Asset Gallery",
+      assetGallery: "Creator Gallery",
     },
     packages: {
       starter: {
-        tagline: "For Testing",
+        tagline: "Starter",
         description:
-          "Explore InfluExAi, test prompts and create your first campaign visuals before scaling production.",
+          "Good for testing ideas and creating first assets.",
         benefits: [
           "100 credits included",
           "AI Agent image generation",
           "Social media format presets",
-          "Asset Gallery storage",
+          "Creator Gallery storage",
           "Great for first tests and early ideas",
         ],
-        button: "Start with Starter",
+        button: "Buy Starter",
       },
       professional: {
-        tagline: "Recommended for Regular Creators",
+        tagline: "Creator",
         description:
-          "The best choice for consistent content production, reusable Style Profiles and regular campaign visuals.",
+          "Best for regular content creation, variants and video workflows.",
         benefits: [
+          "500 credits included",
           "Everything in Starter",
-          "Style Profiles for reusable creative direction",
           "Built for weekly creator workflows",
           "Best value for ongoing production",
         ],
-        button: "Choose Professional",
+        button: "Buy Creator",
       },
       ultimate: {
-        tagline: "For Teams & High-Volume Workflows",
+        tagline: "Pro",
         description:
-          "Scale campaign production with a large credit reserve for businesses, agencies and power users.",
+          "For frequent creators, premium rendering and larger workflows.",
         benefits: [
-          "Everything in Professional",
+          "2000 credits included",
+          "Everything in Creator",
           "High-volume generation",
-          "Suitable for teams and agencies",
-          "Ideal for testing multiple creative directions",
+          "Ideal for premium rendering and larger workflows",
         ],
-        button: "Scale with Ultimate",
+        button: "Buy Pro",
       },
     },
   },
@@ -1701,16 +1701,16 @@ const de: DeepString<typeof en> = {
     toolRailStatuses: {
       live: "Live",
       beta: "Beta",
-      comingSoon: "Bald",
+      comingSoon: "Demnächst",
       planned: "Geplant",
     },
     toolRail: {
       sectionTitle: "Studio-Tools",
       plannedSectionTitle: "Geplant",
-      imageStudio: "Image Studio",
-      imageStudioTip: "Kampagnenfertige Bilder für Social, Ads und Produkte",
-      videoStudio: "Video Studio",
-      videoStudioTip: "Statische Visuals in kurze Kampagnenvideos verwandeln",
+      imageStudio: "Bild-Studio",
+      imageStudioTip: "Creator-Visuals, Produktshots und Social Assets erstellen",
+      videoStudio: "Video-Studio",
+      videoStudioTip: "Verwandle eine Idee in ein kurzes KI-Social-Video",
       lipSync: "Lip Sync",
       lipSyncTip: "Talking-Head-Videos mit Stimme und Quellvideo",
       creatorVideo: "Creator Video",
@@ -1721,7 +1721,7 @@ const de: DeepString<typeof en> = {
       motionTransferTip: "Creator-Bild mit Driving-Video animieren",
       brandAssets: "Brand Assets",
       brandAssetsTip: "Markenkonforme Kampagnenvisuals und Produktlayouts",
-      referenceEdit: "Reference Edit",
+      referenceEdit: "Referenz & Bearbeiten",
       referenceEditTip: "Ergebnis mit Referenzbild steuern",
       cinemaAgent: "Cinema Agent",
       cinemaAgentTip: "Szenen und Shot Lists vor der Generierung planen",
@@ -1762,16 +1762,16 @@ const de: DeepString<typeof en> = {
     nav: {
       home: { label: "Home", description: "Dashboard-Übersicht" },
       agent: {
-        label: "AI Agent",
-        description: "Kampagnenvisuals erstellen",
+        label: "Erstellen",
+        description: "Bilder und Videos erstellen",
       },
       tools: {
         label: "Tools",
         description: "Workflows entdecken",
       },
       gallery: {
-        label: "Asset Gallery",
-        description: "Assets verwalten",
+        label: "Creator Gallery",
+        description: "Deine Kreationen durchsuchen",
       },
       characters: {
         label: "Style Profiles",
@@ -1832,26 +1832,26 @@ const de: DeepString<typeof en> = {
   dashboardNav: {
     dashboard: { label: "Dashboard", sublabel: "Übersicht" },
     createStudio: {
-      label: "AI Create Studio",
-      sublabel: "Assets erstellen",
-      workspaceTitle: "AI Create Studio",
-      poweredByKrea: "Powered by Krea AI",
+      label: "AI Creator Studio",
+      sublabel: "Inhalte erstellen",
+      workspaceTitle: "AI Creator Studio",
+      poweredByKrea: "KI-gestützte Erstellung",
       workspaceSubline:
-        "Wähle einen Modus — Bild, Video oder Lip Sync — und generiere in einem fokussierten Workspace.",
-      tabImage: "Bild",
-      tabVideo: "Video",
+        "Erstelle Bilder, Videos und social-ready Content in einem fokussierten Workspace.",
+      tabImage: "Bild erstellen",
+      tabVideo: "Video erstellen",
       tabLipSync: "Lip Sync",
     },
-    gallery: { label: "Asset Gallery", sublabel: "Assets verwalten" },
+    gallery: { label: "Creator Gallery", sublabel: "Deine Kreationen" },
     styleProfiles: { label: "Style Profiles", sublabel: "Wiederverwendbare Styles" },
-    credits: { label: "Credits / Billing", sublabel: "Pakete und Guthaben" },
+    credits: { label: "Credits", sublabel: "Guthaben und Pakete" },
     upcoming: { label: "Vorschau", sublabel: "Tools in Planung" },
     topBar: {
       welcome: "Willkommen zurück, Georgios! 👋",
-      subline: "Bereit für dein nächstes Kampagnen-Asset?",
-      searchPlaceholder: "Assets, Vorlagen oder Workflows suchen…",
+      subline: "Was möchtest du heute erstellen?",
+      searchPlaceholder: "Galerie, Prompts oder Workflows suchen…",
       creditsAvailable: "{count} Credits verfügbar",
-      addCredits: "Credits aufladen",
+      addCredits: "Upgrade oder Credits kaufen",
     },
   },
   studioSuite: {
@@ -1896,7 +1896,7 @@ const de: DeepString<typeof en> = {
         bestFor: "Geführte Bildbearbeitung",
       },
       enhance: {
-        label: "Verbessern",
+        label: "In HD rendern",
         credits: "4 Credits",
         bestFor: "Upscale und Klarheit für Exporte",
       },
@@ -2071,7 +2071,7 @@ const de: DeepString<typeof en> = {
       },
     },
     exportPackage: {
-      title: "Export Package Preview",
+      title: "Export-Paket-Vorschau",
       intro:
         "Export-Pakete sind geplant. Aktuell kannst du den Kampagnenplan manuell kopieren.",
       packageContents: "Paketinhalt",
@@ -2241,7 +2241,7 @@ const de: DeepString<typeof en> = {
       caption2:
         "Neu von {brand}. {idea} — crafted für {goal}. Sieh das volle Visual Set im Feed.",
       caption3:
-        "Dein nächster Scroll-Stopper von {brand}. {idea} — premium Visuals, bereit für {platform}.",
+        "Your next creator post from {brand}. {idea} — premium visuals, ready for {platform}.",
     },
   },
   page: {
@@ -2255,7 +2255,7 @@ const de: DeepString<typeof en> = {
     styleProfilesUpdated: "Style Profiles aktualisiert.",
     gallery: {
       eyebrow: "Creator Assets",
-      title: "Asset Gallery",
+      title: "Creator Gallery",
       description:
         "Ergebnisse prüfen, Processing verfolgen, Favoriten speichern, Prompts regenerieren und Kampagnen-Assets herunterladen.",
     },
@@ -2300,16 +2300,16 @@ const de: DeepString<typeof en> = {
       ugcLook: "UGC Look",
       premium: "Premium",
       brandAssets: "Brand Assets",
-      referenceEdit: "Reference Edit",
+      referenceEdit: "Referenz & Bearbeiten",
     },
     cards: {
       imageStudio: {
-        title: "Bild Studio",
+        title: "Bild-Studio",
         benefit:
-          "Kampagnenfertige Stills mit sechs Bild-Workflows — Standard, Draft, UGC, Premium, Brand und Reference Edit.",
+          "Kampagnenfertige Stills mit sechs Bild-Workflows — Standard, Draft, UGC, Premium, Brand und Referenzbearbeitung.",
       },
       videoStudio: {
-        title: "Video Studio",
+        title: "Video-Studio",
         benefit:
           "Verwandle statische Visuals in kurze Kampagnenvideos für Social Media, Produktlaunches und Creator Ads.",
       },
@@ -2378,8 +2378,8 @@ const de: DeepString<typeof en> = {
     recentAssetsBody:
       "Arbeite mit deinen neuesten Kampagnenvisuals weiter.",
     recentAssetsEmpty:
-      "Noch keine Assets. Erstelle dein erstes Kampagnenvisual im AI Create Studio.",
-    createFirstVisual: "Image Studio öffnen",
+      "Noch keine Assets. Erstelle dein erstes Bild oder Video im AI Creator Studio.",
+    createFirstVisual: "Jetzt erstellen",
     quickActionsPills: {
       useTemplate: "Vorlage nutzen",
       viewGallery: "Galerie öffnen",
@@ -2403,8 +2403,8 @@ const de: DeepString<typeof en> = {
       enoughFor: "Reicht für bis zu {count} Standard-Bilder.",
     },
     toolCards: {
-      open: "Studio öffnen",
-      start: "Studio öffnen",
+      open: "Jetzt erstellen",
+      start: "Jetzt erstellen",
       comingSoon: "Vorschau",
       imageStudio: {
         title: "Image Studio",
@@ -2484,7 +2484,7 @@ const de: DeepString<typeof en> = {
     creatorVideo: "Creator Video",
     talkingCreator: "Talking Creator",
     motionTransfer: "Motion Transfer",
-    gallery: "Asset Gallery",
+    gallery: "Creator Gallery",
     styleProfiles: "Style Profiles",
     credits: "Credits",
     toolsOverview: "Tools",
@@ -2504,15 +2504,15 @@ const de: DeepString<typeof en> = {
     },
     modelTitle: "Modell",
     image: {
-      eyebrow: "Image Studio",
-      title: "Image Studio",
+      eyebrow: "Bild erstellen",
+      title: "Bild-Studio",
       subtitle:
         "Erstelle kampagnenfähige Visuals für Social Media, Ads, Produktkampagnen und Creator Content.",
       headline: "Erstelle dein nächstes Kampagnenvisual.",
     },
     video: {
-      eyebrow: "Video Studio",
-      title: "Video Studio",
+      eyebrow: "Motion-Video erstellen",
+      title: "Video-Studio",
       subtitle: "Verwandle ein Quellbild in ein kurzes Kampagnenvideo.",
       headline: "Generiere dein Kampagnenvideo.",
       modelName: "Kling Image-to-Video",
@@ -2595,7 +2595,7 @@ const de: DeepString<typeof en> = {
     processingStepDirection: "Visuelle Richtung anwenden",
     processingStepFormat: "Social-Media-Format vorbereiten",
     processingStepGenerating: "Finales Visual generieren",
-    processingStepSaving: "In der Asset Gallery speichern",
+    processingStepSaving: "In der Creator Gallery speichern",
     promptTip:
       "Tipp: Beschreibe Produkt, Zielgruppe, Stimmung, Plattform und visuellen Stil für bessere Ergebnisse.",
     creditPreview:
@@ -2642,9 +2642,9 @@ const de: DeepString<typeof en> = {
     imageModeVideoStudioActiveNote: "Video Studio · Beta · 25 Credits",
     imageModeCreatorVideoActiveNote: "Creator Video · Beta · 40 Credits",
     imageModeTalkingCreatorActiveNote: "Talking Creator · Beta · 60 Credits",
-    studioTabImage: "Image Studio",
-    studioTabVideo: "Video Studio",
-    studioTabVideoPlanned: "Video Studio · Vorschau",
+    studioTabImage: "Bild erstellen",
+    studioTabVideo: "Video-Studio",
+    studioTabVideoPlanned: "Video-Studio · Vorschau",
     studioTabCreatorVideo: "Creator Video",
     studioTabCreatorVideoPlanned: "Creator Video · Vorschau",
     studioTabTalkingCreator: "Talking Creator",
@@ -2834,7 +2834,7 @@ const de: DeepString<typeof en> = {
           sourceVideoLabel: "Quellvideo",
           sourceVideoPlaceholder: "Source-Video-URL einfügen",
           sourceVideoHint:
-            "Du kannst eine Video-URL aus dem Video Studio oder der Asset Gallery verwenden.",
+            "Du kannst eine Video-URL aus dem Video Studio oder der Creator Gallery verwenden.",
           sourcePlaceholder: "Quellvideo hochladen",
           sourceHint: "Video: MP4/WebM/MOV · max. 50 MB",
           uploadSource: "Quellmedien hochladen",
@@ -3116,7 +3116,7 @@ const de: DeepString<typeof en> = {
     campaignPromptLoaded: "Kampagnen-Prompt in den AI Agent geladen.",
   },
   gallery: {
-    loading: "Asset Gallery wird geladen…",
+    loading: "Creator Gallery wird geladen…",
     empty: "Keine Assets passen zu deinen Filtern.",
     emptyTitle: "Noch keine Assets",
     emptyBody:
@@ -3344,51 +3344,51 @@ const de: DeepString<typeof en> = {
       upgradeNote:
         "Später Upgrade für Export ohne Wasserzeichen.",
       notAvailable:
-        "In diesem Release nicht kaufbar. Starter, Professional und Ultimate bleiben die aktiven Pakete.",
+        "In diesem Release nicht kaufbar. Starter, Creator und Pro bleiben die aktiven Pakete.",
     },
     features: {
       aiAgent: "AI Agent",
       socialFormats: "Social Formats",
       styleProfiles: "Style Profiles",
-      assetGallery: "Asset Gallery",
+      assetGallery: "Creator Gallery",
     },
     packages: {
       starter: {
-        tagline: "Zum Testen",
+        tagline: "Starter",
         description:
-          "Entdecke InfluExAi, teste Prompts und erstelle erste Kampagnenvisuals, bevor du skalierst.",
+          "Ideal zum Testen von Ideen und ersten Assets.",
         benefits: [
           "100 Credits enthalten",
           "AI Agent Bildgenerierung",
           "Social-Media-Format-Presets",
-          "Asset Gallery Speicherung",
+          "Creator Gallery Speicherung",
           "Ideal für erste Tests und frühe Ideen",
         ],
-        button: "Mit Starter starten",
+        button: "Starter kaufen",
       },
       professional: {
-        tagline: "Empfohlen für regelmäßige Creator",
+        tagline: "Creator",
         description:
-          "Die beste Wahl für kontinuierliche Produktion, wiederverwendbare Style Profiles und regelmäßige Kampagnenvisuals.",
+          "Am besten für regelmäßige Content-Erstellung, Varianten und Video-Workflows.",
         benefits: [
+          "500 Credits enthalten",
           "Alles aus Starter",
-          "Style Profiles für wiederverwendbare Creative Direction",
           "Für wöchentliche Creator-Workflows",
           "Bestes Preis-Leistungs-Verhältnis",
         ],
-        button: "Professional wählen",
+        button: "Creator kaufen",
       },
       ultimate: {
-        tagline: "Für Teams & High-Volume-Workflows",
+        tagline: "Pro",
         description:
-          "Skaliere Kampagnenproduktion mit großer Credit-Reserve für Unternehmen, Agenturen und Power User.",
+          "Für häufige Creator, Premium-Rendering und größere Workflows.",
         benefits: [
-          "Alles aus Professional",
+          "2000 Credits enthalten",
+          "Alles aus Creator",
           "High-Volume Generierung",
-          "Geeignet für Teams und Agenturen",
-          "Ideal für das Testen mehrerer Creative-Richtungen",
+          "Ideal für Premium-Rendering und größere Workflows",
         ],
-        button: "Mit Ultimate skalieren",
+        button: "Pro kaufen",
       },
     },
   },

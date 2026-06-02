@@ -28,6 +28,19 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 5.75rem;
+}
+
+@media (min-width: 1024px) {
+  html {
+    scroll-padding-top: 5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 body {
@@ -48,7 +61,7 @@ body {
 }
 
 ::selection {
-  background: #c7a36a;
+  background: #d8ad5f;
   color: #000000;
 }
 
@@ -93,4 +106,24 @@ body {
   .landing-ticker-track {
     animation: none;
   }
+}
+
+/* Keyboard focus — visible rings without mouse-click outlines */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid rgb(245 158 11 / 0.88);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid rgb(245 158 11 / 0.88);
+  outline-offset: 2px;
 }

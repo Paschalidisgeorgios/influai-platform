@@ -1,30 +1,31 @@
+import { LAUNCH_CONFIG } from "@/app/lib/config/launch";
+
 const kreaPublic = process.env.NEXT_PUBLIC_ENABLE_KREA_PROVIDER === "true";
-const enhancePublic =
-  process.env.NEXT_PUBLIC_ENABLE_KREA_ENHANCE === "true" || kreaPublic;
 
 /** Client-safe feature flags (NEXT_PUBLIC_* only). */
 export const publicLaunchFlags = {
-  fastDraft: kreaPublic,
-  premiumImage: kreaPublic,
-  referenceEdit: kreaPublic,
-  brandAssets: kreaPublic,
-  ugcLook: kreaPublic,
-  videoStudio: kreaPublic,
-  enhance: enhancePublic,
-  lipSync: false,
-  talkingCreator: false,
-  creatorVideo: false,
+  fastDraft: LAUNCH_CONFIG.enableImageGeneration && kreaPublic,
+  premiumImage: LAUNCH_CONFIG.enableImageGeneration && kreaPublic,
+  referenceEdit: false,
+  brandAssets: false,
+  ugcLook: false,
+  videoStudio: LAUNCH_CONFIG.enableTextToVideo,
+  enhance: LAUNCH_CONFIG.enableEnhancer,
+  lipSync: LAUNCH_CONFIG.enableLipSync,
+  talkingCreator: LAUNCH_CONFIG.enableAvatar,
+  creatorVideo: LAUNCH_CONFIG.enableImageToVideo,
   elevenLabsTts: false,
-  cinemaAgent: process.env.NEXT_PUBLIC_ENABLE_CINEMA_AGENT === "true",
-  omniCampaignAgent:
-    process.env.NEXT_PUBLIC_ENABLE_OMNI_CAMPAIGN_AGENT === "true",
-  socialPlanner: process.env.NEXT_PUBLIC_ENABLE_SOCIAL_PLANNER === "true",
-  watermarkedPromo: process.env.NEXT_PUBLIC_ENABLE_WATERMARKED_PROMO === "true",
-  liveAvatar: false,
+  cinemaAgent: false,
+  omniCampaignAgent: false,
+  socialPlanner: false,
+  watermarkedPromo: false,
+  motionTransfer: LAUNCH_CONFIG.enableAvatar,
+  /** @deprecated alias — use motionTransfer */
+  liveAvatar: LAUNCH_CONFIG.enableAvatar,
   kreaProvider: kreaPublic,
   legacyOpenAi: false,
   legacyFal: false,
-  creatifyProvider: process.env.NEXT_PUBLIC_ENABLE_CREATIFY_PROVIDER === "true",
+  creatifyProvider: false,
 } as const;
 
 export function isKreaPrimaryStudio(): boolean {

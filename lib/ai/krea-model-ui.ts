@@ -8,22 +8,38 @@ import { sanitizeUserFacingEngineText } from "@/lib/dashboard/white-label-engine
 import type { ActiveTool } from "@/lib/dashboard/creative-tool-matrix";
 import type { LandingLanguage } from "@/app/components/landing/magnificContent";
 import {
-  getDefaultKreaImageStudioModel,
   getKreaImageStudioModel,
   KREA_IMAGE_MODELS,
 } from "./krea-image-studio-models";
 import { isModelPickerSelectable } from "@/lib/dashboard/studio-white/model-availability";
 import {
+  filterModelOptionsToLaunchActive,
+  getDefaultLaunchImageStudioId,
+  getDefaultLaunchVideoEngineId,
+  getLaunchCreditsForPickerValue,
+  isLaunchActivePickerValue,
+} from "@/lib/dashboard/launch-engine-picker";
+import {
+  getDefaultEngineModelForTool,
+  getEngineModelById,
+  getEngineModelCatalogForTool,
+  getEngineModelDescription,
+  isEnginePlanLimitedModel,
+  kreaPlanLimitUserMessage,
+  type EngineModelConfig,
+  type EngineToolKey,
+  type EngineAvailability,
+} from "./model-registry";
+import {
   getDefaultKreaModelForTool,
   getKreaModelById,
-  getKreaModelCatalogForTool,
   getKreaModelDescription,
   getKreaModelSelectOptionsForTool,
+  getKreaMotionTransferModels,
   type KreaToolKey,
-  type ModelAvailability,
 } from "./krea-model-registry";
 
-const TOOL_KEY_MAP: Partial<Record<NonNullable<ActiveTool>, KreaToolKey>> = {
+const TOOL_KEY_MAP: Partial<Record<NonNullable<ActiveTool>, EngineToolKey>> = {
   image: "image",
   video: "video",
   enhancer: "enhancer",
@@ -45,19 +61,17 @@ const TOOL_KEY_MAP: Partial<Record<NonNullable<ActiveTool>, KreaToolKey>> = {
 
 export function activeToolToRegistryKey(
   tool: ActiveTool
-): KreaToolKey | null {
+): EngineToolKey | null {
   if (!tool) return null;
   return TOOL_KEY_MAP[tool] ?? null;
 }
 
 function availabilityNote(
-  availability: ModelAvailability,
+  availability: EngineAvailability,
   language: LandingLanguage
 ): string | null {
   if (availability === "not_configured") {
-    return language === "de"
-      ? "Diese Engine ist noch nicht vollständig angebunden."
-      : "This engine is not fully connected yet.";
+    return language === "de" ? "Demnächst verfügbar." : "Coming soon.";
   }
   return null;
 }
@@ -68,8 +82,11 @@ export function getImageStudioModelCatalog(
 ): ModelOption[] {
   const lang = language === "de" ? "de" : "en";
 
-  return KREA_IMAGE_MODELS.filter((entry) => entry.availability !== "hidden").map(
-    (entry) => ({
+  return filterModelOptionsToLaunchActive(
+    KREA_IMAGE_MODELS.filter(
+      (entry) =>
+        entry.availability !== "hidden" && isLaunchActivePickerValue(entry.id)
+    ).map((entry) => ({
       value: entry.id,
       label: sanitizeUserFacingEngineText(entry.label),
       note: sanitizeUserFacingEngineText(
@@ -83,13 +100,14 @@ export function getImageStudioModelCatalog(
       ),
       disabled: entry.availability === "not_configured",
       availability: entry.availability,
-      credits: entry.credits,
-    })
+      credits: getLaunchCreditsForPickerValue(entry.id) ?? entry.credits,
+      isRecommended: entry.isRecommended === true,
+    }))
   );
 }
 
 export function getDefaultImageStudioModelId(): string {
-  return getDefaultKreaImageStudioModel().id;
+  return getDefaultLaunchImageStudioId();
 }
 
 export function isImageStudioModelSelectable(modelId: string): boolean {
@@ -113,30 +131,32 @@ export function getModelCatalogForActiveTool(
 
 /** Full catalog — includes not_configured models as disabled options. */
 export function getModelCatalogForTool(
-  tool: KreaToolKey,
+  tool: EngineToolKey,
   language: LandingLanguage = "en"
 ): ModelOption[] {
   const lang = language === "de" ? "de" : "en";
 
-  return getKreaModelCatalogForTool(tool)
-    .filter((entry) => entry.availability !== "hidden")
-    .map((entry) => ({
-    value: entry.id,
-    label: sanitizeUserFacingEngineText(entry.label),
-    note: sanitizeUserFacingEngineText(
-      [
-        getKreaModelDescription(entry, lang),
-        entry.isRecommended ? (lang === "de" ? "Empfohlen" : "Recommended") : null,
-        entry.isPremium ? "Premium" : null,
-        availabilityNote(entry.availability, language),
-      ]
-        .filter(Boolean)
-        .join(" · ")
-    ),
-    disabled: entry.availability === "not_configured",
-    availability: entry.availability,
-    credits: entry.credits,
-  }));
+  return filterModelOptionsToLaunchActive(
+    getEngineModelCatalogForTool(tool)
+      .filter((entry) => entry.availability !== "hidden")
+      .map((entry) => ({
+        value: entry.id,
+        label: sanitizeUserFacingEngineText(entry.label),
+        note: sanitizeUserFacingEngineText(
+          [
+            getEngineModelDescription(entry, lang),
+            entry.isRecommended ? (lang === "de" ? "Empfohlen" : "Recommended") : null,
+            entry.isPremium ? "Premium" : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")
+        ),
+        disabled: false,
+        availability: entry.availability,
+        credits: getLaunchCreditsForPickerValue(entry.id) ?? entry.credits,
+        isRecommended: entry.isRecommended,
+      }))
+  );
 }
 
 export function getModelOptionsForActiveTool(tool: ActiveTool): ModelOption[] {
@@ -157,7 +177,7 @@ export function getModelOptionsForTool(tool: KreaToolKey): ModelOption[] {
         opt.isRecommended ? "Recommended" : null,
         opt.isPremium ? "Premium" : null,
         opt.availability === "not_configured"
-          ? "This engine is not fully connected yet."
+          ? "Coming soon."
           : null,
       ]
         .filter(Boolean)
@@ -172,23 +192,35 @@ export function getModelOptionsForTool(tool: KreaToolKey): ModelOption[] {
 export function getDefaultModelIdForActiveTool(tool: ActiveTool): string {
   const key = activeToolToRegistryKey(tool);
   if (!key) return "";
-  return getDefaultKreaModelForTool(key)?.id ?? "";
+  return getDefaultModelIdForTool(key);
 }
 
-export function getDefaultModelIdForTool(tool: KreaToolKey): string {
-  return getDefaultKreaModelForTool(tool)?.id ?? "";
+export function getDefaultModelIdForTool(tool: EngineToolKey): string {
+  if (tool === "video") return getDefaultLaunchVideoEngineId();
+  if (tool === "image") return getDefaultLaunchImageStudioId();
+  return getDefaultEngineModelForTool(tool)?.id ?? "";
 }
 
 export function getCreditsForModelId(modelId: string): number | undefined {
-  return getImageStudioCredits(modelId) ?? getKreaModelById(modelId)?.credits;
+  return getImageStudioCredits(modelId) ?? getEngineModelById(modelId)?.credits;
 }
 
-export function isModelSelectable(modelId: string, tool: ActiveTool): boolean {
-  if (tool === "image" && getKreaImageStudioModel(modelId)) {
-    return isImageStudioModelSelectable(modelId);
-  }
-  const key = activeToolToRegistryKey(tool);
-  if (!key) return false;
-  const entry = getKreaModelCatalogForTool(key).find((m) => m.id === modelId);
-  return entry ? isModelPickerSelectable(entry.availability) : false;
+export function getMotionTransferModelCatalog(
+  language: LandingLanguage = "en"
+): ModelOption[] {
+  return getModelCatalogForTool("motion_transfer", language);
+}
+
+export function getDefaultMotionTransferModelId(): string {
+  return getDefaultEngineModelForTool("motion_transfer")?.id ?? "";
+}
+
+export function getMotionTransferCredits(modelId: string): number | undefined {
+  return getEngineModelById(modelId)?.credits;
+}
+
+export function isMotionTransferModelSelectable(modelId: string): boolean {
+  const entry = getEngineModelById(modelId);
+  if (!entry) return false;
+  return isModelPickerSelectable(entry.availability);
 }

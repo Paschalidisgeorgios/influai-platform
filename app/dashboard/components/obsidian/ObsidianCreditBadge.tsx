@@ -1,25 +1,51 @@
 "use client";
 
 import Link from "next/link";
+import CreditBalanceBadge from "@/app/components/billing/CreditBalanceBadge";
 import { useCreativeSuite } from "../creative-suite/CreativeSuiteProvider";
 import { useLanguage } from "@/hooks/useLanguage";
+import { CREDITS_LOW } from "@/lib/copy/launch-user-copy";
+import { areCreditsConfirmed } from "@/lib/billing/credit-ui-state";
+import { A11Y } from "@/lib/obsidian/a11y-tokens";
 
 export default function ObsidianCreditBadge() {
-  const { credits, creditsLoading } = useCreativeSuite();
-  const { isDe } = useLanguage();
+  const { credits, creditsLoading, creditsError, refreshCredits } =
+    useCreativeSuite();
+  const { language } = useLanguage();
+  const lang = language === "de" ? "de" : "en";
+  const creditsConfirmed = areCreditsConfirmed(creditsLoading, creditsError);
 
-  const label = creditsLoading
-    ? "…"
-    : `${credits.toLocaleString(isDe ? "de-DE" : "en-US")} ${isDe ? "Credits" : "Credits"}`;
+  const lowCredits = creditsConfirmed && credits > 0 && credits <= 10;
 
   return (
-    <Link
-      href="/dashboard/credits"
-      className="flex w-full items-center justify-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-sm font-bold text-amber-300 transition hover:border-amber-500/40 hover:bg-amber-500/15"
-      title={isDe ? "Credits verwalten" : "Manage credits"}
-    >
-      <span aria-hidden>⚡</span>
-      <span>{label}</span>
-    </Link>
+    <div className="space-y-1">
+      {creditsError ? (
+        <CreditBalanceBadge
+          balance={credits}
+          error
+          language={lang}
+          onRetry={refreshCredits}
+          className="w-full justify-center py-2 text-sm"
+        />
+      ) : (
+        <Link
+          href="/dashboard/credits"
+          className={`block w-full ${A11Y.focusRing} rounded-full`}
+        >
+          <CreditBalanceBadge
+            balance={credits}
+            loading={creditsLoading}
+            language={lang}
+            low={lowCredits}
+            className="w-full justify-center py-2 text-sm"
+          />
+        </Link>
+      )}
+      {lowCredits ? (
+        <p className="px-1 text-center text-[11px] leading-snug text-amber-300/95">
+          {CREDITS_LOW[lang]}
+        </p>
+      ) : null}
+    </div>
   );
 }

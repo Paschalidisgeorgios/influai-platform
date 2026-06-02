@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { blockUnlessTrainingUploadAllowed } from "@/app/lib/tools/tool-run-api-guard";
 
 export const runtime = "nodejs";
 
@@ -21,6 +22,9 @@ function getStoragePathFromPublicUrl(publicUrl: string) {
 
 export async function POST(req: Request) {
   try {
+    const blocked = blockUnlessTrainingUploadAllowed();
+    if (blocked) return blocked;
+
     const authHeader = req.headers.get("authorization");
 
     if (!authHeader) {

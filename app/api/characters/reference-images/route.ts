@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { blockUnlessTrainingUploadAllowed } from "@/app/lib/tools/tool-run-api-guard";
 
 export const runtime = "nodejs";
 
@@ -147,6 +148,9 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const blocked = blockUnlessTrainingUploadAllowed();
+    if (blocked) return blocked;
+
     const { user, error: authError } = await getUserFromRequest(req);
 
     if (!user) {

@@ -12,7 +12,7 @@ function getStripe() {
   }
 
   return new Stripe(stripeSecretKey, {
-    apiVersion: "2026-04-22.dahlia",
+    apiVersion: "2024-06-20" as "2026-04-22.dahlia",
   });
 }
 
@@ -84,7 +84,11 @@ export async function POST(req: Request) {
     const origin =
       originHeader && originHeader.startsWith("http")
         ? originHeader
-        : req.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL!;
+        : (req.headers.get("origin") ??
+          process.env.NEXT_PUBLIC_APP_URL ??
+          (() => {
+            throw new Error("NEXT_PUBLIC_APP_URL is not configured");
+          })());
 
     if (typeof rawCustomCredits === "number" || typeof rawCustomCredits === "string") {
       const customCredits = Number.parseInt(String(rawCustomCredits), 10);

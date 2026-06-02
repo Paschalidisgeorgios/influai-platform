@@ -2,6 +2,8 @@
  * Structured errors for POST /api/krea/image/generate — safe for clients; debugReason dev-only.
  */
 
+import { isDevRuntime } from "@/lib/env/runtime-ui";
+
 export type KreaImageRouteErrorCode =
   | "ROUTE_HIT"
   | "BODY_INVALID"
@@ -22,11 +24,12 @@ export type KreaImageRouteErrorBody = {
   success: false;
   code: KreaImageRouteErrorCode;
   error: string;
-  step: string;
-  requestId: string;
+  step?: string;
+  requestId?: string;
   refunded?: boolean;
   debugReason?: string;
   requiredCredits?: number;
+  creditsAvailable?: number;
 };
 
 const USER_ERROR: Record<KreaImageRouteErrorCode, string> = {
@@ -36,12 +39,13 @@ const USER_ERROR: Record<KreaImageRouteErrorCode, string> = {
   MISSING_KREA_API_KEY: "The processing engine is not configured.",
   UNAUTHENTICATED: "Unauthorized.",
   CREDIT_QUERY_FAILED: "Credit check failed.",
-  INSUFFICIENT_CREDITS: "Not enough credits.",
-  MODEL_NOT_CONFIGURED: "The selected model is not configured.",
+  INSUFFICIENT_CREDITS:
+    "You need more credits to generate this. Your credits were not charged.",
+  MODEL_NOT_CONFIGURED: "This workflow is not available for rendering yet.",
   PROVIDER_REQUEST_FAILED: "The processing engine rejected the request.",
   PROVIDER_BAD_RESPONSE: "The processing engine returned an invalid response.",
   NO_OUTPUT_URL: "Generation completed without an image output.",
-  GENERATION_INSERT_FAILED: "Failed to create generation record.",
+  GENERATION_INSERT_FAILED: "We could not save this to your Creator Gallery. Please try again.",
   CREDIT_REFUND_FAILED: "Generation failed; credit refund may be delayed.",
   UNKNOWN_SERVER_ERROR: "Image generation failed.",
 };
@@ -51,21 +55,24 @@ const USER_ERROR_DE: Partial<Record<KreaImageRouteErrorCode, string>> = {
   MISSING_KREA_API_KEY: "Die Rechen-Engine ist nicht konfiguriert.",
   UNAUTHENTICATED: "Nicht autorisiert.",
   CREDIT_QUERY_FAILED: "Credit-Prüfung fehlgeschlagen.",
-  INSUFFICIENT_CREDITS: "Nicht genug Credits.",
-  MODEL_NOT_CONFIGURED: "Das ausgewählte Modell ist nicht konfiguriert.",
+  INSUFFICIENT_CREDITS:
+    "Du brauchst mehr Credits für diese Generierung. Es wurden keine Credits abgebucht.",
+  MODEL_NOT_CONFIGURED:
+    "Dieser Workflow ist für Rendering noch nicht verfügbar.",
   PROVIDER_REQUEST_FAILED:
     "Die Rechen-Engine hat einen Fehler zurückgegeben. Deine Credits wurden erstattet.",
   PROVIDER_BAD_RESPONSE:
     "Die Rechen-Engine hat einen Fehler zurückgegeben. Deine Credits wurden erstattet.",
   NO_OUTPUT_URL:
     "Die Rechen-Engine hat kein Bild zurückgegeben. Deine Credits wurden erstattet.",
-  GENERATION_INSERT_FAILED: "Generierung konnte nicht gespeichert werden.",
+  GENERATION_INSERT_FAILED:
+    "Speichern in der Creator Gallery ist fehlgeschlagen. Bitte erneut versuchen.",
   UNKNOWN_SERVER_ERROR:
     "Die Rechen-Engine hat einen Fehler zurückgegeben. Deine Credits wurden erstattet.",
 };
 
 export function isDevEnvironment(): boolean {
-  return process.env.NODE_ENV === "development";
+  return isDevRuntime();
 }
 
 export function truncateDebugReason(message: string, max = 400): string {
@@ -80,6 +87,7 @@ export function buildKreaImageRouteError(
     debugReason?: string;
     refunded?: boolean;
     requiredCredits?: number;
+    creditsAvailable?: number;
     language?: "de" | "en";
   }
 ): KreaImageRouteErrorBody {
@@ -93,13 +101,15 @@ export function buildKreaImageRouteError(
     success: false,
     code,
     error,
-    step: options.step,
-    requestId: options.requestId,
+    ...(isDevRuntime() ? { step: options.step, requestId: options.requestId } : {}),
     ...(options.refunded !== undefined ? { refunded: options.refunded } : {}),
     ...(options.requiredCredits !== undefined
       ? { requiredCredits: options.requiredCredits }
       : {}),
-    ...(isDevEnvironment() && options.debugReason
+    ...(options.creditsAvailable !== undefined
+      ? { creditsAvailable: options.creditsAvailable }
+      : {}),
+    ...(isDevRuntime() && options.debugReason
       ? { debugReason: truncateDebugReason(options.debugReason) }
       : {}),
   };
@@ -116,9 +126,12 @@ export function classifyProviderFailure(message: string): KreaImageRouteErrorCod
   }
   if (
     lower.includes("api request failed") ||
+    lower.includes("krea api error") ||
     lower.includes("404") ||
     lower.includes("403") ||
-    lower.includes("401")
+    lower.includes("401") ||
+    lower.includes("402") ||
+    lower.includes("requires a higher plan")
   ) {
     return "PROVIDER_REQUEST_FAILED";
   }

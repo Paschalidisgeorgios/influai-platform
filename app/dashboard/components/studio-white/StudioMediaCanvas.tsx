@@ -61,14 +61,14 @@ export default function StudioMediaCanvas({
               className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-700/80 bg-neutral-950/80 px-3 py-1.5 text-[11px] font-semibold text-neutral-200 backdrop-blur-md transition hover:border-amber-500/40 hover:text-amber-400"
             >
               <Download className="h-3.5 w-3.5" />
-              {isDe ? "Download" : "Download"}
+              {isDe ? "Export" : "Export"}
             </a>
             <Link
-              href="/dashboard/assets"
+              href="/dashboard/gallery"
               className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-700/80 bg-neutral-950/80 px-3 py-1.5 text-[11px] font-semibold text-neutral-200 backdrop-blur-md transition hover:border-amber-500/40 hover:text-amber-400"
             >
               <LayoutGrid className="h-3.5 w-3.5" />
-              {isDe ? "Assets" : "Assets"}
+              {isDe ? "Galerie" : "Gallery"}
             </Link>
           </div>
         ) : null}

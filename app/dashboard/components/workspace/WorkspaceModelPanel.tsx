@@ -1,5 +1,7 @@
 "use client";
 
+import { isDevUiEnabled } from "@/lib/env/runtime-ui";
+
 type ModelCard = {
   name: string;
   status: string;
@@ -60,7 +62,7 @@ export function WorkspaceModelPanel({
                 {card.status}
               </span>
             </div>
-            {card.modelId && process.env.NODE_ENV === "development" ? (
+            {card.modelId && isDevUiEnabled() ? (
               <p
                 className={`mt-1.5 font-mono text-[10px] leading-4 ${
                   isLight ? "text-slate-500" : "text-white/35"

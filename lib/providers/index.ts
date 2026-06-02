@@ -7,8 +7,10 @@ export type {
 
 export {
   isKreaProviderEnabled,
+  isFalProviderEnabled,
   isCreatifyProviderEnabled,
   assertKreaConfigured,
+  assertFalConfigured,
   assertCreatifyConfigured,
 } from "./flags";
 

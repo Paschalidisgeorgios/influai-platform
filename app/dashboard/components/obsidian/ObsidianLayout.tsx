@@ -5,9 +5,13 @@ import { useCreativeSuite } from "../creative-suite/CreativeSuiteProvider";
 import { StudioUpsellProvider } from "../studio-white/StudioUpsellProvider";
 
 function UpsellBridge({ children }: { children: ReactNode }) {
-  const { credits, creditsLoading } = useCreativeSuite();
+  const { credits, creditsLoading, creditsError } = useCreativeSuite();
   return (
-    <StudioUpsellProvider credits={credits} creditsLoading={creditsLoading}>
+    <StudioUpsellProvider
+      credits={credits}
+      creditsLoading={creditsLoading}
+      creditsError={creditsError}
+    >
       {children}
     </StudioUpsellProvider>
   );

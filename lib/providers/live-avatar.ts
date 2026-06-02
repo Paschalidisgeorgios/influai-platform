@@ -1,5 +1,6 @@
 import { getKreaApiKey, kreaRequest, pollKreaJob } from "./krea";
 import { getKreaMotionTransferModelPath, resolveLiveAvatarProviderState } from "./provider-strategy";
+import { isMotionTransferServerEnabled } from "@/lib/launch/server-flags";
 
 /**
  * Motion transfer — Krea-only when KREA_MOTION_TRANSFER_MODEL_PATH is set.
@@ -13,9 +14,7 @@ export type LiveAvatarProvider = "krea";
 export { resolveLiveAvatarProviderState, type LiveAvatarProviderState } from "./provider-strategy";
 
 export function isLiveAvatarEnabled(): boolean {
-  const serverFlag = process.env.ENABLE_LIVE_AVATAR;
-  const publicFlag = process.env.NEXT_PUBLIC_ENABLE_LIVE_AVATAR;
-  if (serverFlag === "false" || publicFlag === "false") return false;
+  if (!isMotionTransferServerEnabled()) return false;
   return resolveLiveAvatarProviderState() === "krea";
 }
 

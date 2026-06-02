@@ -10,12 +10,21 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import CreditUpsellModal from "./CreditUpsellModal";
+import UpgradeOrBuyCreditsModal, {
+  type UpgradeOrBuyCreditsContext,
+} from "@/app/components/billing/UpgradeOrBuyCreditsModal";
+import { useDashboardLanguage } from "../../DashboardLanguageProvider";
+
+export type UpsellOpenOptions = UpgradeOrBuyCreditsContext;
 
 type StudioUpsellContextValue = {
-  openUpsell: () => void;
+  openUpsell: (options?: UpsellOpenOptions) => void;
   closeUpsell: () => void;
-  handleInsufficientCredits: (status?: number, code?: string) => void;
+  handleInsufficientCredits: (
+    status?: number,
+    code?: string,
+    options?: UpsellOpenOptions
+  ) => void;
 };
 
 const StudioUpsellContext = createContext<StudioUpsellContextValue | null>(null);
@@ -24,31 +33,54 @@ export function StudioUpsellProvider({
   children,
   credits,
   creditsLoading,
+  creditsError = false,
 }: {
   children: ReactNode;
   credits: number;
   creditsLoading: boolean;
+  creditsError?: boolean;
 }) {
+  const { language } = useDashboardLanguage();
+  const lang = language === "de" ? "de" : "en";
   const [open, setOpen] = useState(false);
+  const [upsellContext, setUpsellContext] = useState<UpsellOpenOptions>({});
   const shownZeroRef = useRef(false);
 
-  const openUpsell = useCallback(() => setOpen(true), []);
-  const closeUpsell = useCallback(() => setOpen(false), []);
+  const openUpsell = useCallback(
+    (options?: UpsellOpenOptions) => {
+      setUpsellContext({
+        balance: credits,
+        ...options,
+      });
+      setOpen(true);
+    },
+    [credits]
+  );
+
+  const closeUpsell = useCallback(() => {
+    setOpen(false);
+    setUpsellContext({});
+  }, []);
 
   const handleInsufficientCredits = useCallback(
-    (status?: number, code?: string) => {
-      if (status === 402 || code === "insufficient_credits") {
-        openUpsell();
+    (status?: number, code?: string, options?: UpsellOpenOptions) => {
+      const normalized = code?.toUpperCase();
+      if (
+        status === 402 ||
+        normalized === "INSUFFICIENT_CREDITS" ||
+        code === "insufficient_credits"
+      ) {
+        openUpsell(options);
       }
     },
     [openUpsell]
   );
 
   useEffect(() => {
-    if (creditsLoading || credits > 0 || shownZeroRef.current) return;
+    if (creditsLoading || creditsError || credits > 0 || shownZeroRef.current) return;
     shownZeroRef.current = true;
-    openUpsell();
-  }, [credits, creditsLoading, openUpsell]);
+    openUpsell({ balance: 0, requiredCredits: 1 });
+  }, [credits, creditsLoading, creditsError, openUpsell]);
 
   const value = useMemo(
     () => ({ openUpsell, closeUpsell, handleInsufficientCredits }),
@@ -58,7 +90,12 @@ export function StudioUpsellProvider({
   return (
     <StudioUpsellContext.Provider value={value}>
       {children}
-      <CreditUpsellModal open={open} onClose={closeUpsell} />
+      <UpgradeOrBuyCreditsModal
+        open={open}
+        onClose={closeUpsell}
+        language={lang}
+        context={{ balance: credits, ...upsellContext }}
+      />
     </StudioUpsellContext.Provider>
   );
 }

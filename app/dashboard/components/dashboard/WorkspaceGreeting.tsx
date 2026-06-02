@@ -17,6 +17,7 @@ import {
   setResumePromptFlag,
 } from "@/lib/dashboard/workspace-persistence";
 import { OBS_SPRING } from "@/lib/obsidian/dashboard-tokens";
+import { PROMPT_ASSIST } from "@/lib/copy/launch-user-copy";
 import { useCreativeSuite } from "../creative-suite/CreativeSuiteProvider";
 import { useDashboardLanguage } from "../../DashboardLanguageProvider";
 
@@ -126,7 +127,7 @@ export default function WorkspaceGreeting({ variant = "full" }: { variant?: "ful
       aria-label={isDe ? "Workspace Begrüßung" : "Workspace greeting"}
     >
       <span className="inline-block rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300">
-        Workspace Intelligence
+        AI Creator Studio
       </span>
 
       <h1 className={`mt-4 font-black italic tracking-[-0.05em] text-white ${isCompact ? "text-2xl md:text-3xl" : "text-4xl md:text-6xl"}`}>
@@ -184,9 +185,13 @@ export default function WorkspaceGreeting({ variant = "full" }: { variant?: "ful
       {!isCompact ? (
       <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-left">
         <p className="text-sm text-white/55">
-          {isDe
-            ? "Du kannst auch nur wenige Wörter eingeben — das Studio formt daraus einen starken Kampagnenprompt."
-            : "You can enter just a few words — the studio will shape them into a strong campaign prompt."}
+          {isDe ? PROMPT_ASSIST.tagline.de : PROMPT_ASSIST.tagline.en}
+        </p>
+        <p className="mt-2 text-xs text-white/45">
+          {isDe ? PROMPT_ASSIST.improvedNoteImage.de : PROMPT_ASSIST.improvedNoteImage.en}
+        </p>
+        <p className="mt-1 text-xs text-white/40">
+          {isDe ? PROMPT_ASSIST.originalIntact.de : PROMPT_ASSIST.originalIntact.en}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {examples.map((ex) => (
@@ -198,9 +203,6 @@ export default function WorkspaceGreeting({ variant = "full" }: { variant?: "ful
             </span>
           ))}
         </div>
-        <p className="mt-3 text-[10px] uppercase tracking-[0.16em] text-white/30">
-          {isDe ? "Prompt Copilot · demnächst" : "Prompt Copilot · coming soon"}
-        </p>
       </div>
       ) : null}
     </motion.section>

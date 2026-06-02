@@ -16,32 +16,29 @@ export type WhiteLabelEngineCard = {
 export const IMAGE_STUDIO_ENGINES: WhiteLabelEngineCard[] = [
   {
     id: "krea-2-large",
-    labelEn: "Flux 1.1 Pro Ultra",
-    labelDe: "Flux 1.1 Pro Ultra",
+    labelEn: "Premium Image",
+    labelDe: "Premium Image",
     descriptionEn:
-      "Our flagship engine for ultra-realistic studio lighting and photography.",
+      "Highest detail for campaign-ready visuals and polished creator assets.",
     descriptionDe:
-      "Unser Flaggschiff-Modell für ultra-realistisches Studiolicht und Fotografie.",
+      "Höchste Detailtiefe für kampagnenreife Visuals und polierte Creator-Assets.",
     badgeEn: "Recommended",
     badgeDe: "Empfohlen",
   },
   {
     id: "krea-2-medium",
-    labelEn: "Flux Fast Draft",
-    labelDe: "Flux Fast Draft",
-    descriptionEn:
-      "Optimized for fast iterations, clean graphics, and layouts.",
+    labelEn: "Fast Draft",
+    labelDe: "Fast Draft",
+    descriptionEn: "Quick iterations and low-cost drafts for testing ideas.",
     descriptionDe:
-      "Optimiert für blitzschnelle Entwürfe, saubere Grafiken und Layouts.",
+      "Schnelle Iterationen und günstige Entwürfe zum Testen von Ideen.",
   },
   {
     id: "nano-banana",
-    labelEn: "Nano Realtime Render",
-    labelDe: "Nano Realtime Render",
-    descriptionEn:
-      "Millisecond processing pipeline built for instant concept generation.",
-    descriptionDe:
-      "Millisekunden-Rechen-Pipeline für sofortige Konzept-Generierung in Echtzeit.",
+    labelEn: "Realtime Render",
+    labelDe: "Realtime Render",
+    descriptionEn: "Fast render for rapid creative exploration.",
+    descriptionDe: "Schnelles Rendern für schnelle kreative Exploration.",
   },
   {
     id: "flux-11-pro",
@@ -57,86 +54,54 @@ export const IMAGE_STUDIO_ENGINES: WhiteLabelEngineCard[] = [
 export const VIDEO_ENGINE_ENGINES: WhiteLabelEngineCard[] = [
   {
     id: "kling-3",
-    labelEn: "Kling 3.0 Cinematic",
-    labelDe: "Kling 3.0 Cinematic",
+    labelEn: "Social Video",
+    labelDe: "Social Video",
     descriptionEn:
-      "Hollywood-grade physics engine for ultra-realistic camera movements.",
+      "Cinematic motion for ultra-realistic short-form social clips.",
     descriptionDe:
-      "Hollywood-reife Physik-Engine für ultra-realistische Kamerabewegungen.",
+      "Kinematische Bewegung für ultra-realistische Social-Clips.",
     badgeEn: "Recommended",
     badgeDe: "Empfohlen",
   },
   {
     id: "runway-gen-45",
-    labelEn: "Runway Motion Pro",
-    labelDe: "Runway Motion Pro",
+    labelEn: "Cinematic Motion",
+    labelDe: "Cinematic Motion",
     descriptionEn:
-      "Advanced visual effects engine for cinematic transitions and dynamic lighting.",
+      "Cinematic transitions and dynamic lighting for premium clips.",
     descriptionDe:
-      "Fortschrittliche Visual-Effects-Engine für cineastische Übergänge und dynamisches Licht.",
+      "Cinematische Übergänge und dynamisches Licht für Premium-Clips.",
   },
   {
     id: "hailuo-23",
-    labelEn: "Hailuo Fast Engine",
-    labelDe: "Hailuo Fast Engine",
+    labelEn: "Fast Social Clip",
+    labelDe: "Fast Social Clip",
     descriptionEn:
-      "Blazing fast generation pipeline optimized for social media ads and rapid concepts.",
+      "Fast generation for social ads and rapid concept tests.",
     descriptionDe:
-      "Blitzschnelle Generierungs-Pipeline für Social-Media-Ads und schnelle Konzepte.",
+      "Schnelle Generierung für Social Ads und schnelle Konzept-Tests.",
   },
   {
     id: "seedance-pro",
-    labelEn: "Seedance Character Retain",
-    labelDe: "Seedance Character Retain",
+    labelEn: "Character Motion",
+    labelDe: "Character Motion",
     descriptionEn:
-      "Specialized pipeline that preserves human facial features across dynamic motion.",
+      "Preserves subject identity across dynamic motion.",
     descriptionDe:
-      "Spezialisierte Pipeline, die menschliche Gesichtszüge bei dynamischer Bewegung erhält.",
+      "Erhält die Identität des Motivs bei dynamischer Bewegung.",
   },
 ];
 
-export const MOTION_TRANSFER_ENGINES: WhiteLabelEngineCard[] = [
-  {
-    id: "runway-motion-pro",
-    labelEn: "Runway Motion Pro",
-    labelDe: "Runway Motion Pro",
-    descriptionEn:
-      "Anatomical movement vector skeleton mapping for live motion transfer.",
-    descriptionDe:
-      "Anatomisches Bewegungs-Vektor-Skelett-Mapping für Live Motion Transfer.",
-    badgeEn: "Recommended",
-    badgeDe: "Empfohlen",
-  },
-  {
-    id: "kling-motion",
-    labelEn: "Kling 3.0 Cinematic",
-    labelDe: "Kling 3.0 Cinematic",
-    descriptionEn: "Temporal physics engine for cinematic body dynamics.",
-    descriptionDe: "Temporale Physik-Engine für cineastische Körperdynamik.",
-  },
-  {
-    id: "flux-motion-draft",
-    labelEn: "Flux Fast Draft",
-    labelDe: "Flux Fast Draft",
-    descriptionEn: "Rapid motion preview pipeline for iteration cycles.",
-    descriptionDe: "Schnelle Motion-Preview-Pipeline für Iterationszyklen.",
-  },
-  {
-    id: "nano-motion",
-    labelEn: "Nano Realtime Render",
-    labelDe: "Nano Realtime Render",
-    descriptionEn: "Low-latency motion retargeting for social formats.",
-    descriptionDe: "Niedriglatente Motion-Retargeting-Pipeline für Social Formate.",
-  },
-];
+/** @deprecated Use getMotionTransferModelCatalog() from lib/ai/krea-model-ui.ts */
+export const MOTION_TRANSFER_ENGINES: WhiteLabelEngineCard[] = [];
 
 export const ENHANCER_ENGINES: WhiteLabelEngineCard[] = [
   {
     id: "topaz-standard",
     labelEn: "Standard Smart Enhance",
     labelDe: "Standard Smart-Verbesserung",
-    descriptionEn: "Balanced clarity and detail for everyday campaign assets.",
-    descriptionDe: "Ausgewogene Klarheit und Details für tägliche Kampagnen-Assets.",
+    descriptionEn: "Balanced clarity and detail for everyday creator assets.",
+    descriptionDe: "Ausgewogene Klarheit und Details für tägliche Creator-Assets.",
   },
   {
     id: "topaz-bloom",
@@ -149,8 +114,8 @@ export const ENHANCER_ENGINES: WhiteLabelEngineCard[] = [
     id: "topaz-generative",
     labelEn: "Max Reality 22K",
     labelDe: "Max Realität 22K",
-    descriptionEn: "Maximum realism upscale for hero campaign visuals.",
-    descriptionDe: "Maximale Realitäts-Skalierung für Hero-Kampagnenvisuals.",
+    descriptionEn: "Maximum realism upscale for hero creator visuals.",
+    descriptionDe: "Maximale Realitäts-Skalierung für Hero-Creator-Visuals.",
   },
 ];
 
@@ -176,11 +141,20 @@ export function getWhiteLabelEnginesForTool(
   return IMAGE_STUDIO_ENGINES;
 }
 
-/** Strip provider branding from registry-generated strings (fallback). */
+/** Strip provider branding and raw registry ids from user-facing strings. */
 export function sanitizeUserFacingEngineText(text: string): string {
   return text
-    .replace(/\bkrea\s*ai\b/gi, "InfluExAi Engine")
-    .replace(/\bkrea\b/gi, "Flux")
+    .replace(/\bfal[_\-\.]?ai\b/gi, "")
+    .replace(/\bfal_[a-z0-9_]+\b/gi, "")
+    .replace(/\bkrea\s*ai\b/gi, "InfluExAI")
+    .replace(/\bkrea\b/gi, "")
+    .replace(/\bflux[\s\d.]*(?:pro|ultra|fast|draft)?[\w-]*/gi, "Premium Image")
+    .replace(/\bnano[\s\w-]*/gi, "Realtime Render")
+    .replace(/\bkling[\s\d.]+/gi, "Social Video")
+    .replace(/\brunway[\s\w-]*/gi, "Cinematic Motion")
+    .replace(/\bhailuo[\s\w-]*/gi, "Fast Social Clip")
+    .replace(/\bseedance[\s\w-]*/gi, "Character Motion")
+    .replace(/\btopaz[\s\w-]*/gi, "Enhance")
     .replace(/\s{2,}/g, " ")
     .trim();
 }

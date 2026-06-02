@@ -13,7 +13,9 @@ export function modelAvailabilityState(
   availability?: ModelAvailability
 ): ModelAvailabilityState {
   const isHidden = availability === "hidden";
-  const isUnavailable = availability === "not_configured";
+  const isFailedValidation = availability === "failed_validation";
+  const isUnavailable =
+    availability === "not_configured" || isFailedValidation;
   const isExperimental = availability === "experimental";
   const isActive = availability === "active" || availability === undefined;
   const isSelectable = isActive || isExperimental;

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { blockUnlessReferenceUploadAllowed } from "@/app/lib/tools/tool-run-api-guard";
 
 export const runtime = "nodejs";
 
@@ -35,6 +36,9 @@ function resolveExtension(file: File): "png" | "jpg" | "webp" | null {
 
 export async function POST(req: Request) {
   try {
+    const blocked = blockUnlessReferenceUploadAllowed();
+    if (blocked) return blocked;
+
     const authHeader = req.headers.get("authorization");
 
     if (!authHeader) {

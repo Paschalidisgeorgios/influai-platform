@@ -22,9 +22,9 @@ export const KG = {
   whiteCta:
     "rounded-xl bg-white px-8 py-4 font-black tracking-wider text-black shadow-xl transition-all hover:bg-neutral-200",
   engineSelected:
-    "border-amber-500 bg-amber-500/10 font-bold text-amber-400 ring-1 ring-amber-500",
+    "border border-white/[0.08] bg-amber-500/10 font-bold text-amber-400 ring-2 ring-amber-500/50 shadow-[0_0_24px_rgba(245,158,11,0.14)] transition-[box-shadow,transform]",
   engineDefault:
-    "border-neutral-800/80 bg-neutral-900/40 text-neutral-200 hover:border-white/30",
+    "border border-white/[0.08] bg-neutral-900/40 text-neutral-200 transition-[box-shadow,transform] hover:-translate-y-px hover:ring-1 hover:ring-white/25 hover:shadow-[0_0_16px_rgba(255,255,255,0.06)]",
   previewCanvas:
     "mx-auto mb-6 w-full max-w-4xl max-h-[55vh] rounded-2xl border border-neutral-800/50 bg-neutral-900/20 object-contain p-2 shadow-2xl",
   input:

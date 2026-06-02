@@ -17,6 +17,8 @@ import LipSyncVoiceLibrary from "../studio/LipSyncVoiceLibrary";
 import { useStudioUpsell } from "./StudioUpsellProvider";
 import FormatAspectGrid from "./FormatAspectGrid";
 import StudioWhiteToolFrame from "./StudioWhiteToolFrame";
+import SmartCommandBox from "@/components/dashboard/SmartCommandBox";
+import { areCreditsConfirmed } from "@/lib/billing/credit-ui-state";
 
 type LipSyncMode = "system_voice" | "audio_upload" | "record";
 
@@ -25,7 +27,13 @@ const LIP_SYNC_CREDITS = 30;
 export default function StudioWhiteLipSyncStudio() {
   const { language } = useDashboardLanguage();
   const lang = language === "de" ? "de" : "en";
-  const { credits, onGenerationQueued } = useCreativeSuite();
+  const {
+    credits,
+    creditsLoading,
+    creditsError,
+    onGenerationQueued,
+  } = useCreativeSuite();
+  const creditsConfirmed = areCreditsConfirmed(creditsLoading, creditsError);
   const { handleInsufficientCredits } = useStudioUpsell();
   const supabase = createClient();
 
@@ -61,12 +69,14 @@ export default function StudioWhiteLipSyncStudio() {
   const [audioLabel, setAudioLabel] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
 
   const effectiveAudioMode = inputMode === "record" ? "audio_upload" : inputMode;
 
   const canGenerate =
+    creditsConfirmed &&
     !!sourceVideoUrl &&
     !uploading &&
     !loading &&
@@ -189,8 +199,10 @@ export default function StudioWhiteLipSyncStudio() {
   };
 
   const handleGenerate = async () => {
+    if (!creditsConfirmed) return;
     if (!canGenerate || !sourceVideoUrl) return;
     setLoading(true);
+    setIsPreviewOpen(true);
     setError(null);
     clearPreviewError();
     setPreviewLoading(
@@ -219,9 +231,7 @@ export default function StudioWhiteLipSyncStudio() {
 
       if (!result.success) {
         handleInsufficientCredits(result.status, result.code);
-        const msg = formatToolGenerateError(result, lang);
-        setError(msg);
-        setPreviewError(msg);
+        setPreviewError(formatToolGenerateError(result, lang));
         return;
       }
 
@@ -230,9 +240,7 @@ export default function StudioWhiteLipSyncStudio() {
         pollGeneration(result.generationId, lang);
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Generation failed";
-      setError(msg);
-      setPreviewError(msg);
+      setPreviewError(e instanceof Error ? e.message : "Generation failed");
     } finally {
       setLoading(false);
     }
@@ -363,20 +371,32 @@ export default function StudioWhiteLipSyncStudio() {
 
   return (
     <StudioWhiteToolFrame
+      layout="guided"
+      promptPlacement="top"
+      isPreviewOpen={isPreviewOpen}
+      onPreviewClose={() => setIsPreviewOpen(false)}
       previewState={preview}
-      idlePreviewLabel={
-        lang === "de"
-          ? "Dein Lip-Sync-Video erscheint hier."
-          : "Your lip-sync video appears here."
+      showCommandBar={false}
+      commandBox={
+        inputMode === "system_voice" ? (
+          <SmartCommandBox
+            value={scriptText}
+            onChange={setScriptText}
+            onGenerate={() => void handleGenerate()}
+            isGenerating={loading}
+            disabled={!canGenerate}
+            submitLabel={
+              lang === "de"
+                ? `Generieren (${LIP_SYNC_CREDITS} Credits)`
+                : `Generate (${LIP_SYNC_CREDITS} Credits)`
+            }
+            selectedModelLabel={lang === "de" ? "Lip Sync" : "Lip Sync"}
+            selectedModelCredits={LIP_SYNC_CREDITS}
+            creditsAvailable={creditsConfirmed ? credits : null}
+            currentLanguage={lang}
+          />
+        ) : undefined
       }
-      prompt={scriptText}
-      onPromptChange={setScriptText}
-      onSubmit={() => void handleGenerate()}
-      pills={pills}
-      loading={loading}
-      disabled={!canGenerate}
-      showCommandBar={inputMode === "system_voice"}
-      error={error}
       formatGrid={
         <FormatAspectGrid selectedId={formatId} onSelect={setFormatId} />
       }

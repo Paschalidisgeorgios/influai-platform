@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isKreaTrainLoRARouteEnabled } from "@/lib/ai/krea-style-profiles";
+import { blockUnlessTrainingUploadAllowed } from "@/app/lib/tools/tool-run-api-guard";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -10,6 +11,9 @@ export const maxDuration = 300;
  * Never debits credits or writes to generations in stub mode.
  */
 export async function POST() {
+  const blocked = blockUnlessTrainingUploadAllowed();
+  if (blocked) return blocked;
+
   if (!isKreaTrainLoRARouteEnabled()) {
     return NextResponse.json(
       {

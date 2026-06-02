@@ -1,10 +1,10 @@
 import ObsidianLayout from "../components/obsidian/ObsidianLayout";
-import NewAssetsEmpty from "../components/reset/NewAssetsEmpty";
+import ObsidianAssetsGallery from "../components/reset/ObsidianAssetsGallery";
 
 export default function AssetsPage() {
   return (
     <ObsidianLayout>
-      <NewAssetsEmpty />
+      <ObsidianAssetsGallery />
     </ObsidianLayout>
   );
 }

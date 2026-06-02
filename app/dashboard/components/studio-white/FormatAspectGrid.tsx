@@ -41,7 +41,7 @@ export default function FormatAspectGrid({ selectedId, onSelect }: Props) {
             key={format.id}
             type="button"
             onClick={() => onSelect(format.id)}
-            className={`rounded-2xl border p-4 text-left backdrop-blur-2xl transition ${
+            className={`rounded-2xl p-4 text-left backdrop-blur-2xl transition-[box-shadow,transform] ${
               selected ? KG.engineSelected : KG.engineDefault
             }`}
           >

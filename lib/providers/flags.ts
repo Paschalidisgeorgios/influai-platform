@@ -6,6 +6,16 @@ import { isKreaEnabled } from "./krea-workflows";
 export function isKreaProviderEnabled(): boolean {
   return isKreaEnabled();
 }
+
+/** fal.ai provider for video, motion, lipsync, enhancer when Krea is plan-limited. */
+export function isFalProviderEnabled(): boolean {
+  if (process.env.ENABLE_FAL_PROVIDER === "false") return false;
+  if (process.env.ENABLE_FAL_PROVIDER === "true") {
+    return Boolean(process.env.FAL_KEY?.trim());
+  }
+  return Boolean(process.env.FAL_KEY?.trim());
+}
+
 export function isCreatifyProviderEnabled(): boolean {
   return process.env.ENABLE_CREATIFY_PROVIDER === "true";
 }
@@ -16,6 +26,15 @@ export function assertKreaConfigured(): void {
   }
   getKreaApiKey();
 }
+export function assertFalConfigured(): void {
+  if (!isFalProviderEnabled()) {
+    throw new Error(FEATURE_DISABLED_MESSAGE);
+  }
+  if (!process.env.FAL_KEY?.trim()) {
+    throw new Error("FAL_KEY is not configured.");
+  }
+}
+
 export function assertCreatifyConfigured(): void {
   if (!isCreatifyProviderEnabled()) {
     throw new Error(FEATURE_DISABLED_MESSAGE);

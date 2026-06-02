@@ -71,7 +71,7 @@ export function getWorkspaceRecommendation(
   if (credits !== null && credits <= 0) {
     return {
       titleDe: "Credits aufladen, um weiterzuarbeiten",
-      titleEn: "Top up credits to keep creating",
+      titleEn: "You're low on credits. Add credits to keep creating.",
       subtitleDe:
         "Basierend auf deinem Workspace — aktuell sind keine Credits verfügbar.",
       subtitleEn:
@@ -113,8 +113,8 @@ export function getWorkspaceRecommendation(
       : "";
 
     return {
-      titleDe: "Mit deinem letzten Kampagnenvisual weitermachen?",
-      titleEn: "Continue your last campaign visual?",
+      titleDe: "Mit deinem letzten Creator-Asset weitermachen?",
+      titleEn: "Continue your last creator asset?",
       subtitleDe: `Empfohlener nächster Schritt: Preview verfeinern oder Asset speichern.${toolHintDe}`,
       subtitleEn: `Suggested next step: refine the preview or save the asset.${toolHintEn}`,
       primaryActionDe: "Weiterarbeiten",
@@ -147,14 +147,14 @@ export function getWorkspaceRecommendation(
 
   if (!hasWorkspaceHistory(input)) {
     return {
-      titleDe: "Erstes Kampagnenvisual erstellen",
-      titleEn: "Create your first campaign visual",
+      titleDe: "Erstes Creator-Visual erstellen",
+      titleEn: "Create your first creator visual",
       subtitleDe:
-        "Starte mit einem Prompt im Image Studio — empfohlener Einstieg für neue Workspaces.",
+        "Starte mit einem Prompt — InfluExAI hilft beim Verfeinern.",
       subtitleEn:
-        "Start with a prompt in Image Studio — the recommended entry for new workspaces.",
-      primaryActionDe: "Neues Asset erstellen",
-      primaryActionEn: "Create new asset",
+        "Start with a prompt — InfluExAI helps you refine your idea.",
+      primaryActionDe: "Jetzt erstellen",
+      primaryActionEn: "Start Creating",
       secondaryActionDe: "Modelle erkunden",
       secondaryActionEn: "Explore models",
       intent: "create_new_asset",
@@ -168,8 +168,8 @@ export function getWorkspaceRecommendation(
     titleEn: "Resume your workspace",
     subtitleDe: "Basierend auf deinem letzten Workspace — wähle den nächsten Schritt.",
     subtitleEn: "Based on your last workspace — pick your next step.",
-    primaryActionDe: "Image Studio öffnen",
-    primaryActionEn: "Open Image Studio",
+    primaryActionDe: "Weiter erstellen",
+    primaryActionEn: "Keep creating",
     secondaryActionDe: "Assets ansehen",
     secondaryActionEn: "View assets",
     intent: "explore_models",
@@ -212,6 +212,18 @@ export function deriveWorkspaceDisplayName(
 }
 
 export const COPILOT_PROMPT_EXAMPLES = {
-  de: ["rote haare fitness marke", "luxus parfum ad", "creator video tiktok"],
-  en: ["red hair fitness brand", "luxury perfume ad", "creator video tiktok"],
+  de: [
+    "restaurant gericht social visual",
+    "wireless earbuds katalog hero",
+    "immobilien listing interior",
+    "saas dashboard linkedin post",
+    "streetwear drop teaser reel",
+  ],
+  en: [
+    "restaurant dish social visual",
+    "wireless earbuds catalog hero",
+    "real estate listing interior",
+    "saas dashboard linkedin post",
+    "streetwear drop teaser reel",
+  ],
 } as const;

@@ -7,7 +7,18 @@ import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { OBS, OBS_SPRING } from "@/lib/obsidian/dashboard-tokens";
+import { obsidianButtonClass } from "@/lib/obsidian/button-tokens";
 import { useLanguage } from "@/hooks/useLanguage";
+import {
+  continuePendingPackageCheckout,
+  creditsPageHref,
+  getPendingPackage,
+  normalizePackageKey,
+  pricingPageHref,
+  setPendingPackage,
+} from "@/lib/billing/pending-package-checkout";
+import type { PackageKey } from "@/app/lib/billing/credit-packages";
+import { getCheckoutAuthCopy } from "@/lib/billing/pricing-auth-copy";
 
 type AuthMode = "login" | "register";
 
@@ -15,14 +26,17 @@ const AUTH_COPY = {
   en: {
     loginTab: "Sign In",
     registerTab: "Register",
-    headlineLogin: "Enter Engine Room",
-    headlineRegister: "Create Workspace",
-    subtitleLogin: "Access your cinematic command workstation.",
-    subtitleRegister: "Build your AI creator workspace in seconds.",
+    headlineLogin: "Welcome back",
+    headlineRegister: "Create your studio account",
+    subtitleLogin: "Sign in to continue creating images and videos.",
+    subtitleRegister: "Start with a simple idea — we'll help improve it.",
     email: "Work email",
     password: "Password",
+    confirmPassword: "Confirm password",
     emailPlaceholder: "you@studio.com",
     passwordPlaceholder: "Minimum 6 characters",
+    confirmPasswordPlaceholder: "Repeat your password",
+    passwordMismatch: "Passwords do not match.",
     google: "Continue with Google",
     submitLogin: "Sign In",
     submitRegister: "Create Account",
@@ -45,14 +59,17 @@ const AUTH_COPY = {
   de: {
     loginTab: "Anmelden",
     registerTab: "Registrieren",
-    headlineLogin: "Engine Room betreten",
-    headlineRegister: "Workspace erstellen",
-    subtitleLogin: "Zugang zu deiner cinematic command workstation.",
-    subtitleRegister: "Erstelle deinen AI-Creator-Workspace in Sekunden.",
+    headlineLogin: "Willkommen zurück",
+    headlineRegister: "Studio-Konto erstellen",
+    subtitleLogin: "Melde dich an, um weiter Bilder und Videos zu erstellen.",
+    subtitleRegister: "Starte mit einer einfachen Idee — wir helfen beim Verfeinern.",
     email: "E-Mail",
     password: "Passwort",
+    confirmPassword: "Passwort bestätigen",
     emailPlaceholder: "du@studio.com",
     passwordPlaceholder: "Mindestens 6 Zeichen",
+    confirmPasswordPlaceholder: "Passwort wiederholen",
+    passwordMismatch: "Passwörter stimmen nicht überein.",
     google: "Mit Google fortfahren",
     submitLogin: "Anmelden",
     submitRegister: "Konto erstellen",
@@ -84,7 +101,7 @@ function InfluExLogo() {
           AI
         </span>
       </p>
-      <p className={`mt-2 ${OBS.mono}`}>HYPER-KINETIC OBSIDIAN · AUTH</p>
+      <p className={`mt-2 ${OBS.mono}`}>AI CREATOR STUDIO · AUTH</p>
     </div>
   );
 }
@@ -100,19 +117,40 @@ function GoogleIcon() {
   );
 }
 
-export default function AuthWorkspace() {
+type AuthWorkspaceProps = {
+  /** Render inside pricing/auth modal — no full-page chrome */
+  embedded?: boolean;
+  /** Pricing pack purchase — register-first, preserve package */
+  checkoutIntent?: boolean;
+  pendingPackageKey?: PackageKey;
+  onClose?: () => void;
+};
+
+export default function AuthWorkspace({
+  embedded = false,
+  checkoutIntent = false,
+  pendingPackageKey,
+  onClose,
+}: AuthWorkspaceProps) {
   const supabase = createClient();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { language, setLanguage } = useLanguage();
   const copy = AUTH_COPY[language];
+  const checkoutCopy = getCheckoutAuthCopy(language === "de" ? "de" : "en");
+  const packageFromUrl = normalizePackageKey(searchParams.get("package"));
+  const isCheckoutFlow = checkoutIntent || Boolean(packageFromUrl);
 
-  const initialMode: AuthMode =
-    searchParams.get("mode") === "register" ? "register" : "login";
+  const initialMode: AuthMode = isCheckoutFlow
+    ? "register"
+    : searchParams.get("mode") === "register"
+      ? "register"
+      : "login";
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
@@ -125,6 +163,55 @@ export default function AuthWorkspace() {
     setErrorPulse((k) => k + 1);
   }, []);
 
+  const routeAfterAuth = useCallback(
+    async (accessToken: string) => {
+      const pending =
+        getPendingPackage() ??
+        pendingPackageKey ??
+        normalizePackageKey(searchParams.get("package"));
+
+      if (pending) {
+        setPendingPackage(pending);
+        const result = await continuePendingPackageCheckout(accessToken);
+        if (result.url) {
+          window.location.href = result.url;
+          return true;
+        }
+        const fallbackKey = result.packageKey ?? pending;
+        if (embedded || isCheckoutFlow) {
+          onClose?.();
+          router.replace(
+            embedded ? pricingPageHref(fallbackKey) : creditsPageHref(fallbackKey)
+          );
+          return true;
+        }
+        router.replace(creditsPageHref(fallbackKey));
+        return true;
+      }
+
+      if (embedded) {
+        onClose?.();
+        return true;
+      }
+
+      router.replace("/dashboard");
+      return true;
+    },
+    [embedded, isCheckoutFlow, onClose, pendingPackageKey, router, searchParams]
+  );
+
+  useEffect(() => {
+    const fromUrl = normalizePackageKey(searchParams.get("package"));
+    const key = pendingPackageKey ?? fromUrl;
+    if (key) setPendingPackage(key);
+  }, [searchParams, pendingPackageKey]);
+
+  useEffect(() => {
+    if (isCheckoutFlow) {
+      setMode("register");
+    }
+  }, [isCheckoutFlow]);
+
   useEffect(() => {
     async function checkSessionAndParams() {
       try {
@@ -132,8 +219,8 @@ export default function AuthWorkspace() {
           data: { session },
         } = await supabase.auth.getSession();
 
-        if (session) {
-          router.replace("/dashboard");
+        if (session?.access_token) {
+          await routeAfterAuth(session.access_token);
           return;
         }
 
@@ -154,11 +241,24 @@ export default function AuthWorkspace() {
     }
 
     void checkSessionAndParams();
-  }, [copy.errors, router, searchParams, supabase.auth, triggerError]);
+  }, [
+    copy.errors,
+    routeAfterAuth,
+    searchParams,
+    supabase.auth,
+    triggerError,
+  ]);
 
   useEffect(() => {
+    if (isCheckoutFlow) return;
     setMode(searchParams.get("mode") === "register" ? "register" : "login");
-  }, [searchParams]);
+  }, [searchParams, isCheckoutFlow]);
+
+  useEffect(() => {
+    if (mode === "login") {
+      setConfirmPassword("");
+    }
+  }, [mode]);
 
   const tabs = useMemo(
     () =>
@@ -175,10 +275,19 @@ export default function AuthWorkspace() {
       setErrorMessage(null);
       setStatusMessage(null);
 
+      const pending =
+        getPendingPackage() ??
+        normalizePackageKey(searchParams.get("package"));
+      if (pending) setPendingPackage(pending);
+
+      const next = pending
+        ? encodeURIComponent("/dashboard/credits?autoCheckout=1")
+        : encodeURIComponent("/dashboard");
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+          redirectTo: `${window.location.origin}/auth/callback?next=${next}`,
         },
       });
 
@@ -214,18 +323,39 @@ export default function AuthWorkspace() {
         }
 
         setStatusMessage(copy.successLogin);
-        window.setTimeout(() => router.replace("/dashboard"), 500);
+        await routeAfterAuth(data.session.access_token);
         return;
       }
 
-      const { error } = await supabase.auth.signUp({ email, password });
+      if (password !== confirmPassword) {
+        triggerError(copy.passwordMismatch);
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signUp({ email, password });
 
       if (error) {
         triggerError(error.message);
         return;
       }
 
-      setStatusMessage(copy.successRegister);
+      if (data.session?.access_token) {
+        setStatusMessage(copy.successLogin);
+        await routeAfterAuth(data.session.access_token);
+        return;
+      }
+
+      const pending =
+        getPendingPackage() ??
+        pendingPackageKey ??
+        normalizePackageKey(searchParams.get("package"));
+      if (pending) setPendingPackage(pending);
+
+      setStatusMessage(
+        isCheckoutFlow || pending
+          ? checkoutCopy.successRegisterPending
+          : copy.successRegister
+      );
       setMode("login");
     } catch {
       triggerError(copy.errors.generic);
@@ -234,36 +364,7 @@ export default function AuthWorkspace() {
     }
   }
 
-  return (
-    <main className="relative min-h-screen overflow-hidden bg-[#050505] text-white antialiased">
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-0 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-amber-500/10 blur-[120px]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_40%)]" />
-      </div>
-
-      <Link
-        href="/"
-        className="absolute left-4 top-4 z-20 rounded-full border border-neutral-800/80 bg-neutral-900/40 px-4 py-2 text-xs font-bold text-neutral-400 backdrop-blur-xl transition hover:border-amber-500/40 hover:text-amber-400 sm:left-6 sm:top-6"
-      >
-        {copy.backHome}
-      </Link>
-
-      <div className="absolute right-4 top-4 z-20 flex gap-1 sm:right-6 sm:top-6">
-        {(["en", "de"] as const).map((lang) => (
-          <button
-            key={lang}
-            type="button"
-            onClick={() => setLanguage(lang)}
-            className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase ${
-              language === lang ? "bg-amber-500 text-black" : "text-neutral-600 hover:text-neutral-300"
-            }`}
-          >
-            {lang}
-          </button>
-        ))}
-      </div>
-
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-20 sm:px-6">
+  const authCard = (
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{
@@ -288,53 +389,59 @@ export default function AuthWorkspace() {
               : OBS_SPRING
           }
           key={errorPulse}
-          className="w-full max-w-md rounded-3xl border border-neutral-800/80 bg-neutral-900/40 p-6 backdrop-blur-2xl sm:p-8"
+          className={`w-full max-w-md rounded-3xl border border-neutral-800/80 bg-neutral-900/40 backdrop-blur-2xl ${
+            isCheckoutFlow && embedded ? "border-0 bg-transparent p-0" : "p-6 sm:p-8"
+          }`}
         >
-          <InfluExLogo />
+          {!isCheckoutFlow ? <InfluExLogo /> : null}
 
           {checkingSession ? (
-            <div className={`mt-6 rounded-2xl border border-neutral-800/80 bg-neutral-950/40 px-4 py-3 text-sm text-neutral-400 ${OBS.mono}`}>
+            <div className={`${isCheckoutFlow ? "mt-2" : "mt-6"} rounded-2xl border border-neutral-800/80 bg-neutral-950/40 px-4 py-3 text-sm text-neutral-400 ${OBS.mono}`}>
               {copy.checkingSession}
             </div>
           ) : null}
 
-          <div className="mt-8 flex rounded-2xl border border-neutral-800/80 bg-neutral-950/50 p-1">
-            {tabs.map((tab) => {
-              const active = mode === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => {
-                    setMode(tab.id);
-                    setErrorMessage(null);
-                    setStatusMessage(null);
-                  }}
-                  className={`relative flex-1 rounded-xl px-3 py-2.5 text-xs font-black uppercase tracking-wider transition sm:text-sm ${
-                    active ? "text-amber-400" : "text-neutral-500 hover:text-neutral-300"
-                  }`}
-                >
-                  {active ? (
-                    <motion.span
-                      layoutId="auth-tab"
-                      className="absolute inset-0 rounded-xl border border-amber-500/50 bg-amber-500/10"
-                      transition={OBS_SPRING}
-                    />
-                  ) : null}
-                  <span className="relative">{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
+          {!isCheckoutFlow ? (
+            <div className="mt-8 flex rounded-2xl border border-neutral-800/80 bg-neutral-950/50 p-1">
+              {tabs.map((tab) => {
+                const active = mode === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => {
+                      setMode(tab.id);
+                      setErrorMessage(null);
+                      setStatusMessage(null);
+                    }}
+                    className={`relative flex-1 rounded-xl px-3 py-2.5 text-xs font-black uppercase tracking-wider transition sm:text-sm ${
+                      active ? "text-amber-400" : "text-neutral-500 hover:text-neutral-300"
+                    }`}
+                  >
+                    {active ? (
+                      <motion.span
+                        layoutId="auth-tab"
+                        className="absolute inset-0 rounded-xl border border-amber-500/50 bg-amber-500/10"
+                        transition={OBS_SPRING}
+                      />
+                    ) : null}
+                    <span className="relative">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
 
-          <div className="mt-6 text-center">
-            <h1 className="text-2xl font-extrabold uppercase italic tracking-tight sm:text-3xl">
-              {mode === "login" ? copy.headlineLogin : copy.headlineRegister}
-            </h1>
-            <p className="mt-2 text-sm leading-relaxed text-neutral-500">
-              {mode === "login" ? copy.subtitleLogin : copy.subtitleRegister}
-            </p>
-          </div>
+          {!isCheckoutFlow ? (
+            <div className="mt-6 text-center">
+              <h1 className="text-2xl font-extrabold uppercase italic tracking-tight sm:text-3xl">
+                {mode === "login" ? copy.headlineLogin : copy.headlineRegister}
+              </h1>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-500">
+                {mode === "login" ? copy.subtitleLogin : copy.subtitleRegister}
+              </p>
+            </div>
+          ) : null}
 
           {statusMessage ? (
             <p className="mt-5 rounded-2xl border border-neutral-800/80 bg-neutral-950/40 px-4 py-3 text-sm text-neutral-300">
@@ -359,7 +466,7 @@ export default function AuthWorkspace() {
             ) : (
               <GoogleIcon />
             )}
-            {copy.google}
+            {isCheckoutFlow ? checkoutCopy.google : copy.google}
           </button>
 
           <div className="relative my-6">
@@ -409,28 +516,121 @@ export default function AuthWorkspace() {
               </div>
             </div>
 
+            {mode === "register" ? (
+              <div>
+                <label
+                  htmlFor="auth-confirm-password"
+                  className={`mb-2 block ${OBS.mono} text-neutral-500`}
+                >
+                  {copy.confirmPassword}
+                </label>
+                <div className="border-b border-neutral-800 transition focus-within:border-amber-500 focus-within:shadow-[0_1px_16px_rgba(245,158,11,0.35)]">
+                  <input
+                    id="auth-confirm-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder={copy.confirmPasswordPlaceholder}
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
+                    className="w-full bg-transparent py-3 text-sm text-neutral-100 outline-none placeholder:text-neutral-600"
+                  />
+                </div>
+              </div>
+            ) : null}
+
             <motion.button
               type="submit"
               disabled={loading || oauthLoading}
               whileTap={{ scale: 0.98 }}
               transition={OBS_SPRING}
-              className="mt-2 flex h-12 w-full items-center justify-center rounded-xl bg-amber-500 text-sm font-black text-neutral-950 transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+              className={`mt-2 w-full ${obsidianButtonClass("primary", {
+                size: "lg",
+                fullWidth: true,
+                surface: "landing",
+              })}`}
             >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {mode === "login" ? copy.submittingLogin : copy.submittingRegister}
+                  {mode === "login"
+                    ? isCheckoutFlow
+                      ? checkoutCopy.submittingLogin
+                      : copy.submittingLogin
+                    : isCheckoutFlow
+                      ? checkoutCopy.submittingRegister
+                      : copy.submittingRegister}
                 </>
               ) : mode === "login" ? (
-                copy.submitLogin
+                isCheckoutFlow ? checkoutCopy.submitLogin : copy.submitLogin
+              ) : isCheckoutFlow ? (
+                checkoutCopy.submitRegister
               ) : (
                 copy.submitRegister
               )}
             </motion.button>
           </form>
 
-          <p className={`mt-6 text-center ${OBS.mono} text-neutral-600`}>{copy.secureNote}</p>
+          {isCheckoutFlow ? (
+            <p className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode(mode === "login" ? "register" : "login");
+                  setErrorMessage(null);
+                  setStatusMessage(null);
+                }}
+                className="text-sm font-semibold text-amber-400/90 underline-offset-2 hover:text-amber-300 hover:underline"
+              >
+                {mode === "login"
+                  ? checkoutCopy.newHere
+                  : checkoutCopy.alreadyHaveAccount}
+              </button>
+            </p>
+          ) : (
+            <p className={`mt-6 text-center ${OBS.mono} text-neutral-600`}>
+              {copy.secureNote}
+            </p>
+          )}
         </motion.div>
+  );
+
+  if (embedded) {
+    return <div className="w-full text-white antialiased">{authCard}</div>;
+  }
+
+  return (
+    <main className="relative min-h-screen overflow-hidden bg-[#050505] text-white antialiased">
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="absolute left-1/2 top-0 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-amber-500/10 blur-[120px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_40%)]" />
+      </div>
+
+      <Link
+        href="/"
+        className="absolute left-4 top-4 z-20 rounded-full border border-neutral-800/80 bg-neutral-900/40 px-4 py-2 text-xs font-bold text-neutral-400 backdrop-blur-xl transition hover:border-amber-500/40 hover:text-amber-400 sm:left-6 sm:top-6"
+      >
+        {copy.backHome}
+      </Link>
+
+      <div className="absolute right-4 top-4 z-20 flex gap-1 sm:right-6 sm:top-6">
+        {(["en", "de"] as const).map((lang) => (
+          <button
+            key={lang}
+            type="button"
+            onClick={() => setLanguage(lang)}
+            className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase ${
+              language === lang ? "bg-amber-500 text-black" : "text-neutral-600 hover:text-neutral-300"
+            }`}
+          >
+            {lang}
+          </button>
+        ))}
+      </div>
+
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-20 sm:px-6">
+        {authCard}
       </div>
     </main>
   );

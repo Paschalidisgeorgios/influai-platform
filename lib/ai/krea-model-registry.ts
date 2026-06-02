@@ -8,6 +8,7 @@
  * @see lib/ai/krea-model-registry-data.ts — add new models there
  */
 
+import { KREA_OFFICIAL_MODEL_PATHS } from "@/lib/krea/krea-official-endpoints.generated";
 import { KREA_MODEL_REGISTRY_ENTRIES } from "./krea-model-registry-data";
 import {
   getDefaultKreaImageStudioModel,
@@ -87,7 +88,29 @@ export type ModelAvailability =
   | "active"
   | "experimental"
   | "not_configured"
+  | "failed_validation"
   | "hidden";
+
+/** @deprecated Use ModelAvailability */
+export type KreaModelAvailability = ModelAvailability;
+
+export type KreaRequiredInput =
+  | "prompt"
+  | "sourceImageUrl"
+  | "sourceVideoUrl"
+  | "sourceAudioUrl"
+  | "referenceImageUrl"
+  | "scriptText"
+  | "trainingImages";
+
+export type KreaOutputType =
+  | "image"
+  | "video"
+  | "audio"
+  | "text"
+  | "mesh"
+  | "style"
+  | "model";
 
 export type KreaModelConfig = {
   id: string;
@@ -101,17 +124,27 @@ export type KreaModelConfig = {
   descriptionEn: string;
   descriptionDe: string;
   credits: number;
-  outputType: "image" | "video" | "audio" | "text" | "mesh" | "style" | "model";
+  outputType: KreaOutputType;
   availability: ModelAvailability;
   isRecommended?: boolean;
   isPremium?: boolean;
+  /** Krea API route kind — image | video | enhance | training */
+  endpointKey?: string;
+  /** Required inputs before generation */
+  requiredInputs?: KreaRequiredInput[];
+  validation?: {
+    lastStatus?: "passed" | "failed" | "skipped";
+    lastCheckedAt?: string;
+    lastErrorCode?: string;
+    notes?: string;
+  };
   /** API route kind — derived from category when omitted */
   endpointKind?: "image" | "video" | "enhance" | "training";
   /** InfluExAi workflow keys that default to this model */
   workflowKeys?: string[];
   /** Env var that can override `internalModel` path (server-only) */
   envOverride?: string;
-  /** Required input fields before generation can run */
+  /** @deprecated Use requiredInputs */
   requires?: string[];
   /** @deprecated Use internalModel */
   model?: string;
@@ -122,19 +155,30 @@ export type KreaModelConfig = {
 /** Default model id per InfluExAi tool workspace */
 export const TOOL_DEFAULT_KREA_MODEL_ID: Partial<Record<KreaToolKey, string>> = {
   image: "krea-2-large",
-  video: "kling-3",
-  enhancer: "topaz-standard",
+  video: "hailuo-fast",
+  enhancer: "topaz-generative",
   realtime: "flux-1-dev",
   edit: "nano-banana-pro",
   product_photography: "imagen-4",
   brand_assets: "flux-11-pro",
   "3d_objects": "krea-3d-render",
   video_restyle: "runway-gen-45",
+  motion_transfer: "runway-motion-pro",
   batch_generator: "flux-1-dev",
   campaign_builder: "krea-2-large",
   train_lora: "style_lora_training",
   style_training: "style_lora_training",
 };
+
+/** Motion Transfer tool — only registry rows with category motion_transfer. */
+export function getKreaMotionTransferModels(
+  options: GetModelsForToolOptions = {}
+): KreaModelConfig[] {
+  return getKreaModelsByCategory("motion_transfer", {
+    includeUnavailable: options.includeUnavailable ?? true,
+    selectableOnly: options.selectableOnly ?? false,
+  });
+}
 
 /** Default model id per generation workflow key */
 export const WORKFLOW_DEFAULT_KREA_MODEL_ID: Record<string, string> = {
@@ -144,13 +188,30 @@ export const WORKFLOW_DEFAULT_KREA_MODEL_ID: Record<string, string> = {
   premium_image: "flux-11-pro",
   brand_assets: "flux-11-pro",
   reference_edit: "nano-banana-pro",
-  enhance_asset: "topaz-standard",
+  enhance_asset: "topaz-generative",
   video_image_to_video: "kling-3",
+};
+
+/** Legacy / API aliases → canonical registry id */
+const KREA_MODEL_ID_ALIASES: Readonly<Record<string, string>> = {
+  runway_motion_pro: "runway-motion-pro",
 };
 
 const REGISTRY_BY_ID = new Map<string, KreaModelConfig>(
   KREA_MODEL_REGISTRY_ENTRIES.map((entry) => [entry.id, entry])
 );
+
+/** Normalize model id (aliases, underscore → hyphen) for registry lookup. */
+export function resolveKreaModelId(id: string): string {
+  const trimmed = id.trim();
+  const aliased = KREA_MODEL_ID_ALIASES[trimmed];
+  if (aliased) return aliased;
+  if (trimmed.includes("_")) {
+    const hyphenated = trimmed.replace(/_/g, "-");
+    if (REGISTRY_BY_ID.has(hyphenated)) return hyphenated;
+  }
+  return trimmed;
+}
 
 const REGISTRY_BY_PATH = new Map<string, KreaModelConfig>(
   KREA_MODEL_REGISTRY_ENTRIES.map((entry) => [
@@ -193,14 +254,19 @@ export function isKreaTrainingApiPath(modelPath: string): boolean {
   return modelPath.trim().startsWith("styles/");
 }
 
-/** True when internalModel is a real Krea API path segment (not a placeholder). */
+/** True when internalModel maps to a verified Krea API endpoint (OpenAPI snapshot). */
 export function isExecutableModelPath(modelPath: string): boolean {
   const path = modelPath.trim();
-  return (
-    path.length > 0 &&
-    !path.startsWith("pending/") &&
-    !path.startsWith("resolver/")
-  );
+  if (!path || path.startsWith("pending/") || path.startsWith("resolver/")) {
+    return false;
+  }
+  if (isKreaTrainingApiPath(path)) return true;
+  return KREA_OFFICIAL_MODEL_PATHS.has(path);
+}
+
+/** Placeholder registry row — no official Krea subscribe path yet. */
+export function isPendingRegistryModelPath(modelPath: string): boolean {
+  return modelPath.trim().startsWith("pending/");
 }
 
 /** Image generate picker / /api/krea/image/generate must exclude training workflows. */
@@ -277,9 +343,160 @@ export function getKreaModelDescription(
 }
 
 export function isKreaModelExecutable(entry: KreaModelConfig): boolean {
+  if (
+    entry.availability === "failed_validation" ||
+    entry.availability === "not_configured" ||
+    entry.availability === "hidden"
+  ) {
+    return false;
+  }
+  const path = getKreaInternalModel(entry);
+  if (isPendingRegistryModelPath(path)) return false;
+  if (!isExecutableModelPath(path) && !isKreaTrainingApiPath(path)) {
+    return false;
+  }
+  return entry.availability === "active" || entry.availability === "experimental";
+}
+
+/** Model blocked after live validation — Krea 402 plan limit. */
+export function isKreaPlanLimitedModel(entry: KreaModelConfig): boolean {
   return (
-    entry.availability === "active" || entry.availability === "experimental"
+    entry.availability === "failed_validation" &&
+    entry.validation?.lastErrorCode === "KREA_PLAN_LIMIT"
   );
+}
+
+export function kreaPlanLimitUserMessage(language: "de" | "en"): string {
+  return language === "de"
+    ? "Dieser Modus ist mit deinem aktuellen Plan nicht verfügbar."
+    : "This mode is not available on your current plan.";
+}
+
+const LEGACY_REQUIRES_MAP: Record<string, KreaRequiredInput> = {
+  source_image_url: "sourceImageUrl",
+  sourceImageUrl: "sourceImageUrl",
+  source_video_url: "sourceVideoUrl",
+  sourceVideoUrl: "sourceVideoUrl",
+  driving_video_url: "sourceVideoUrl",
+  audio_url: "sourceAudioUrl",
+  sourceAudioUrl: "sourceAudioUrl",
+  reference_image_url: "referenceImageUrl",
+  referenceImageUrl: "referenceImageUrl",
+  reference_images: "trainingImages",
+  training_images: "trainingImages",
+  script: "scriptText",
+  scriptText: "scriptText",
+  script_text: "scriptText",
+  prompt: "prompt",
+};
+
+export function legacyRequiresToInputs(
+  requires?: string[]
+): KreaRequiredInput[] {
+  if (!requires?.length) return [];
+  const out: KreaRequiredInput[] = [];
+  for (const r of requires) {
+    const mapped = LEGACY_REQUIRES_MAP[r];
+    if (mapped && !out.includes(mapped)) out.push(mapped);
+  }
+  return out;
+}
+
+export function getKreaRequiredInputs(entry: KreaModelConfig): KreaRequiredInput[] {
+  if (entry.requiredInputs?.length) return entry.requiredInputs;
+  const fromLegacy = legacyRequiresToInputs(entry.requires);
+  if (fromLegacy.length) return fromLegacy;
+  if (
+    entry.category === "image" ||
+    entry.category === "realtime" ||
+    entry.category === "video"
+  ) {
+    return ["prompt"];
+  }
+  return [];
+}
+
+export function getKreaEndpointKey(entry: KreaModelConfig): string {
+  if (entry.endpointKey?.trim()) return entry.endpointKey.trim();
+  if (entry.endpointKind) return entry.endpointKind;
+  switch (entry.category) {
+    case "video":
+    case "lipsync":
+    case "motion_transfer":
+    case "video_restyle":
+      return "video";
+    case "enhancer":
+      return "enhance";
+    case "training":
+    case "style_training":
+      return "training";
+    default:
+      return "image";
+  }
+}
+
+export function getKreaModelsByCategory(
+  category: KreaModelCategory,
+  options: GetModelsForToolOptions = {}
+): KreaModelConfig[] {
+  const { includeUnavailable = false, selectableOnly = false } = options;
+  return KREA_MODEL_REGISTRY_ENTRIES.filter((entry) => {
+    if (entry.category !== category) return false;
+    if (entry.availability === "hidden") return false;
+    if (selectableOnly && !isKreaModelExecutable(entry)) return false;
+    if (!includeUnavailable && entry.availability === "not_configured") {
+      return false;
+    }
+    return true;
+  }).sort(sortModelsForDisplay);
+}
+
+export function countKreaRegistryStats(): {
+  total: number;
+  byCategory: Record<string, number>;
+  active: number;
+  experimental: number;
+  not_configured: number;
+  failed_validation: number;
+  hidden: number;
+} {
+  const byCategory: Record<string, number> = {};
+  let active = 0;
+  let experimental = 0;
+  let not_configured = 0;
+  let failed_validation = 0;
+  let hidden = 0;
+
+  for (const entry of KREA_MODEL_REGISTRY_ENTRIES) {
+    byCategory[entry.category] = (byCategory[entry.category] ?? 0) + 1;
+    switch (entry.availability) {
+      case "active":
+        active++;
+        break;
+      case "experimental":
+        experimental++;
+        break;
+      case "not_configured":
+        not_configured++;
+        break;
+      case "failed_validation":
+        failed_validation++;
+        break;
+      case "hidden":
+        hidden++;
+        break;
+    }
+  }
+
+  return {
+    total: KREA_MODEL_REGISTRY_ENTRIES.length,
+    byCategory,
+    active,
+    experimental,
+    not_configured,
+    failed_validation,
+    hidden,
+  };
 }
 
 export function isKreaModelConfigured(entry: KreaModelConfig): boolean {
@@ -320,7 +537,7 @@ export function getKreaModelRegistry(): readonly KreaModelConfig[] {
 }
 
 export function getKreaModelById(id: string): KreaModelConfig | undefined {
-  return REGISTRY_BY_ID.get(id);
+  return REGISTRY_BY_ID.get(resolveKreaModelId(id));
 }
 
 export function getKreaModelByPath(modelPath: string): KreaModelConfig | undefined {
@@ -660,6 +877,7 @@ function sortModelsForDisplay(a: KreaModelConfig, b: KreaModelConfig): number {
       "active",
       "experimental",
       "not_configured",
+      "failed_validation",
       "hidden",
     ];
     return order.indexOf(a.availability) - order.indexOf(b.availability);

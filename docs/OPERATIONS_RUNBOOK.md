@@ -79,6 +79,7 @@ Failed jobs should refund via existing refund RPC on failure paths — verify `c
 
 1. Webhook endpoint URL: `https://<production-domain>/api/stripe/webhook`
 2. `STRIPE_WEBHOOK_SECRET` matches endpoint signing secret in Stripe.
+3. Endpoint listens for: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`.
 3. Vercel function logs for webhook route (500 errors).
 4. Supabase: `credit_transactions` for new `purchase` rows.
 

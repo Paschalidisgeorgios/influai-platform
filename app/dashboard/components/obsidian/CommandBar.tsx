@@ -26,6 +26,14 @@ type Props = {
   /** Nested inside SmartCommandBox — no extra glass shell */
   embedded?: boolean;
   autoFocus?: boolean;
+  /** Override default image-studio typewriter prompts */
+  typewriterPlaceholders?: readonly string[];
+  /** Static placeholder (create page) */
+  placeholder?: string;
+  /** Hide generate/submit button (e.g. pack workflow uses its own CTAs) */
+  hideSubmit?: boolean;
+  /** Typewriter prompt ghost — generator overlay only */
+  enableTypewriterGhost?: boolean;
 };
 
 const TYPE_MS = 70;
@@ -45,9 +53,15 @@ export default function CommandBar({
   className = "",
   embedded = false,
   autoFocus = false,
+  typewriterPlaceholders,
+  placeholder,
+  hideSubmit = false,
+  enableTypewriterGhost = false,
 }: Props) {
   const { language, isDe } = useLanguage();
-  const placeholders = isDe ? TYPEWRITER_PLACEHOLDERS.de : TYPEWRITER_PLACEHOLDERS.en;
+  const placeholders =
+    typewriterPlaceholders ??
+    (isDe ? TYPEWRITER_PLACEHOLDERS.de : TYPEWRITER_PLACEHOLDERS.en);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [display, setDisplay] = useState("");
@@ -75,7 +89,13 @@ export default function CommandBar({
   }, [autoFocus, floating]);
 
   useEffect(() => {
-    if (focused || value.trim().length > 0) return;
+    if (!enableTypewriterGhost || placeholder || focused || value.trim().length > 0) {
+      if (!enableTypewriterGhost) {
+        displayRef.current = "";
+        setDisplay("");
+      }
+      return;
+    }
 
     let cancelled = false;
     let timeout: ReturnType<typeof setTimeout>;
@@ -118,9 +138,12 @@ export default function CommandBar({
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, [focused, value, placeholders]);
+  }, [enableTypewriterGhost, focused, value, placeholders, placeholder]);
 
-  const showPlaceholder = !focused && value.length === 0;
+  const showTypewriter =
+    enableTypewriterGhost && !placeholder && !focused && value.length === 0;
+  const showPlaceholder = showTypewriter;
+  const staticPlaceholder = placeholder && !value.length;
   const submitDisabled = disabled || loading;
 
   const dockClass = floating
@@ -149,14 +172,27 @@ export default function CommandBar({
           {headerSlot ? <div className="mb-4 border-b border-neutral-800/60 pb-4">{headerSlot}</div> : null}
 
           <div
-            className={`relative min-h-[120px] rounded-xl transition ${
-              focused ? "ring-1 ring-amber-500/30" : ""
+            className={`relative min-h-[140px] max-h-[140px] rounded-xl transition-[box-shadow] duration-300 ${
+              focused
+                ? enableTypewriterGhost
+                  ? "ring-2 ring-amber-500/30 shadow-[inset_0_0_30px_rgba(245,158,11,0.08)]"
+                  : "ring-2 ring-[#8B5CF6]/25 shadow-[inset_0_0_30px_rgba(139,92,246,0.06)]"
+                : "ring-2 ring-transparent"
             }`}
           >
             {showPlaceholder ? (
-              <p className="pointer-events-none absolute inset-0 z-0 px-0.5 text-base leading-relaxed text-white/40 sm:text-base">
+              <p className="pointer-events-none absolute inset-0 z-0 px-0.5 text-base leading-relaxed text-[#9CA3AF] sm:text-lg">
                 {display}
-                <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-amber-500 align-middle" />
+                <span
+                  className={`ml-0.5 inline-block h-4 w-0.5 animate-pulse align-middle ${
+                    enableTypewriterGhost ? "bg-amber-500" : "bg-[#8B5CF6]"
+                  }`}
+                />
+              </p>
+            ) : null}
+            {staticPlaceholder ? (
+              <p className="pointer-events-none absolute inset-0 z-0 px-0.5 text-base leading-relaxed text-[#9CA3AF] sm:text-lg">
+                {placeholder}
               </p>
             ) : null}
             <textarea
@@ -168,12 +204,12 @@ export default function CommandBar({
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  if (!submitDisabled) onSubmit();
+                  if (!submitDisabled && !hideSubmit) onSubmit();
                 }
               }}
               disabled={loading}
-              rows={3}
-              className={`${OBS.input} relative z-10 min-h-[120px] text-base sm:text-base`}
+              rows={4}
+              className="relative z-10 h-[140px] min-h-[140px] max-h-[140px] w-full resize-none overflow-y-auto border-none bg-transparent text-base text-[#F9FAFB] caret-[#8B5CF6] outline-none placeholder:text-transparent sm:text-lg"
               aria-label={isDe ? "Prompt" : "Prompt"}
             />
           </div>
@@ -183,44 +219,46 @@ export default function CommandBar({
               {pills.map((pill) => (
                 <span
                   key={pill.id}
-                  className="rounded-full border border-neutral-800/80 bg-neutral-950/50 px-3 py-1 text-[11px] font-semibold text-neutral-400 sm:text-xs"
+                  className="rounded-full border border-white/[0.08] bg-[#111827]/80 px-3 py-1 text-[11px] font-medium text-[#9CA3AF] sm:text-xs"
                 >
                   {pill.label}
                 </span>
               ))}
             </div>
-            {submitLabel ? (
-              <ShockwaveButton
-                disabled={submitDisabled}
-                onClick={() => onSubmit()}
-                className="inline-flex w-full shrink-0 items-center justify-center gap-2 sm:w-auto"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {isDe ? "Läuft…" : "Running…"}
-                  </>
-                ) : (
-                  <>
-                    {submitLabel}
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
-              </ShockwaveButton>
-            ) : (
-              <ShockwaveButton
-                disabled={submitDisabled}
-                onClick={() => onSubmit()}
-                className="w-full p-2.5 sm:w-auto"
-                aria-label={isDe ? "Generieren" : "Generate"}
-              >
-                {loading ? (
-                  <Loader2 className="mx-auto h-5 w-5 animate-spin" />
-                ) : (
-                  <ArrowRight className="mx-auto h-5 w-5" />
-                )}
-              </ShockwaveButton>
-            )}
+            {!hideSubmit ? (
+              submitLabel ? (
+                <ShockwaveButton
+                  disabled={submitDisabled}
+                  onClick={() => onSubmit()}
+                  className="inline-flex w-full shrink-0 items-center justify-center gap-2 sm:w-auto"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {isDe ? "Läuft…" : "Running…"}
+                    </>
+                  ) : (
+                    <>
+                      {submitLabel}
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </ShockwaveButton>
+              ) : (
+                <ShockwaveButton
+                  disabled={submitDisabled}
+                  onClick={() => onSubmit()}
+                  className="w-full p-2.5 sm:w-auto"
+                  aria-label={isDe ? "Generieren" : "Generate"}
+                >
+                  {loading ? (
+                    <Loader2 className="mx-auto h-5 w-5 animate-spin" />
+                  ) : (
+                    <ArrowRight className="mx-auto h-5 w-5" />
+                  )}
+                </ShockwaveButton>
+              )
+            ) : null}
           </div>
         </div>
       </div>

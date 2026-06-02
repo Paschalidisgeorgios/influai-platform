@@ -1,14 +1,8 @@
-// LEGACY: old dashboard motion transfer route — not used by the new dashboard.
-import { NextResponse } from "next/server";
-import { buildGenerationErrorPayload } from "@/lib/generation/generation-errors";
+import { handleMotionTransferGenerate } from "@/lib/krea/motion-transfer-generate-handler";
 
 export const runtime = "nodejs";
+export const maxDuration = 300;
 
-export async function POST() {
-  return NextResponse.json(
-    buildGenerationErrorPayload("KREA_MOTION_NOT_IMPLEMENTED", {
-      refunded: false,
-    }),
-    { status: 410 }
-  );
+export async function POST(req: Request) {
+  return handleMotionTransferGenerate(req);
 }

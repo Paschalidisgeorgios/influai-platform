@@ -12,36 +12,27 @@ import {
   Sparkles,
   Tag,
   UserRound,
-  Zap,
 } from "lucide-react";
 import {
   formatCredits,
-  formatEurPrice,
-  PRICING_PACKAGES,
-  type PackageKey,
-  type PricingPackage,
-} from "../components/landing/pricingPackages";
+  CREDIT_PACKAGES,
+} from "@/app/lib/billing/credit-packages";
+import CreditPackCard from "@/app/components/billing/CreditPackCard";
+import CreditModeCostReference from "@/app/components/billing/CreditModeCostReference";
 import { createClient } from "@/lib/supabase/client";
 import { useDashboardLanguage } from "./DashboardLanguageProvider";
-import { formatCopy } from "./i18n";
 
 type CreditsCardProps = {
   refreshKey?: number;
   appearance?: "light" | "dark";
 };
 
-type CreditPackage = PricingPackage & {
-  tagline: string;
-  description: string;
-  benefits: string[];
-  buttonLabel: string;
-};
-
 export default function CreditsCard({
   refreshKey = 0,
   appearance = "light",
 }: CreditsCardProps) {
-  const { copy } = useDashboardLanguage();
+  const { copy, language } = useDashboardLanguage();
+  const lang = language === "de" ? "de" : "en";
   const supabase = createClient();
   const [packagesFocused, setPackagesFocused] = useState(false);
   const isDark = appearance === "dark";
@@ -72,25 +63,17 @@ export default function CreditsCard({
     [copy]
   );
 
-  const creditPackages: CreditPackage[] = useMemo(
+  const packageBenefits = useMemo(
     () =>
-      PRICING_PACKAGES.map((pkg) => {
-        const extras = copy.credits.packages[pkg.key];
-        return {
-          ...pkg,
-          badge: pkg.badge ? copy.credits.recommended : pkg.badge,
-          tagline: extras.tagline,
-          description: extras.description,
-          benefits: [...extras.benefits],
-          buttonLabel: extras.button,
-        };
-      }),
+      CREDIT_PACKAGES.map((pkg) => ({
+        pkg,
+        benefits: [...copy.credits.packages[pkg.key].benefits],
+      })),
     [copy]
   );
 
   const [credits, setCredits] = useState<number>(0);
   const [loading, setLoading] = useState(true);
-  const [checkoutPackage, setCheckoutPackage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [customCredits, setCustomCredits] = useState<string>("100");
   const [customSubmitting, setCustomSubmitting] = useState(false);
@@ -141,80 +124,6 @@ export default function CreditsCard({
       setLoading(false);
     }
   }
-
-  async function startCheckout(packageKey: PackageKey) {
-    try {
-      setCheckoutPackage(packageKey);
-      setErrorMessage(null);
-
-      const token = await getAccessToken();
-
-      if (!token) {
-        setErrorMessage(copy.credits.sessionExpired);
-        setCheckoutPackage(null);
-        return;
-      }
-
-      const response = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          packageKey,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setErrorMessage(data.error || copy.credits.checkoutFailed);
-        setCheckoutPackage(null);
-        return;
-      }
-
-      if (!data.url) {
-        setErrorMessage(copy.credits.checkoutNoUrl);
-        setCheckoutPackage(null);
-        return;
-      }
-
-      window.location.href = data.url;
-    } catch (error) {
-      console.error("Checkout error:", error);
-      setErrorMessage(copy.credits.checkoutConnection);
-      setCheckoutPackage(null);
-    }
-  }
-
-  const checkoutInProgress = checkoutPackage !== null;
-
-  const parsedCustomCredits = (() => {
-    const value = parseInt(customCredits, 10);
-    if (!Number.isFinite(value) || Number.isNaN(value)) return NaN;
-    return value;
-  })();
-
-  const customCreditsValid =
-    Number.isFinite(parsedCustomCredits) &&
-    parsedCustomCredits >= 100 &&
-    parsedCustomCredits <= 10000;
-
-  const customPriceEur = customCreditsValid
-    ? (parsedCustomCredits * 0.1).toFixed(2)
-    : "0.00";
-
-  const customPriceDisplay = `€${customPriceEur}`;
-
-  const showCustomMinError =
-    customCredits.trim() !== "" &&
-    (!Number.isFinite(parsedCustomCredits) || parsedCustomCredits < 100);
-
-  const showCustomMaxError =
-    Number.isFinite(parsedCustomCredits) && parsedCustomCredits > 10000;
-
-  const quickTopUpAmounts = [100, 250, 500, 1000];
 
   async function startCustomCheckout() {
     const amount = parsedCustomCredits;
@@ -278,6 +187,34 @@ export default function CreditsCard({
       setCustomSubmitting(false);
     }
   }
+
+  const checkoutInProgress = customSubmitting;
+
+  const parsedCustomCredits = (() => {
+    const value = parseInt(customCredits, 10);
+    if (!Number.isFinite(value) || Number.isNaN(value)) return NaN;
+    return value;
+  })();
+
+  const customCreditsValid =
+    Number.isFinite(parsedCustomCredits) &&
+    parsedCustomCredits >= 100 &&
+    parsedCustomCredits <= 10000;
+
+  const customPriceEur = customCreditsValid
+    ? (parsedCustomCredits * 0.1).toFixed(2)
+    : "0.00";
+
+  const customPriceDisplay = `€${customPriceEur}`;
+
+  const showCustomMinError =
+    customCredits.trim() !== "" &&
+    (!Number.isFinite(parsedCustomCredits) || parsedCustomCredits < 100);
+
+  const showCustomMaxError =
+    Number.isFinite(parsedCustomCredits) && parsedCustomCredits > 10000;
+
+  const quickTopUpAmounts = [100, 250, 500, 1000];
 
   return (
     <section className="space-y-4 sm:space-y-6">
@@ -472,123 +409,32 @@ export default function CreditsCard({
           </p>
         </div>
 
+        <div className={`mb-4 rounded-2xl border p-4 ${surface}`}>
+          <CreditModeCostReference language={lang} />
+        </div>
+
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:items-stretch">
-          {creditPackages.map((creditPackage) => {
-            const isLoading = checkoutPackage === creditPackage.key;
-            const isDisabled = checkoutInProgress && !isLoading;
-            const shownCredits = creditPackage.displayCredits;
-
-            return (
-              <div
-                key={creditPackage.key}
-                className={`relative flex flex-col overflow-hidden rounded-2xl border p-5 shadow-sm transition ${
-                  creditPackage.highlight
-                    ? isDark
-                      ? "order-first border-orange-500 bg-orange-500/10 ring-1 ring-orange-500 lg:order-none"
-                      : "order-first border-orange-200 bg-white shadow-md ring-1 ring-orange-100 lg:order-none"
-                    : isDark
-                      ? "border-white/10 bg-white/5"
-                      : "border-gray-100 bg-white"
-                }`}
-              >
-                <div className="flex flex-1 flex-col">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">
-                      {creditPackage.highlight ? (
-                        <Sparkles className="h-5 w-5" />
-                      ) : creditPackage.key === "ultimate" ? (
-                        <Zap className="h-5 w-5" />
-                      ) : (
-                        <CreditCard className="h-5 w-5" />
-                      )}
-                    </div>
-
-                    <div className="flex flex-col items-end gap-1.5">
-                      {creditPackage.badge && (
-                        <span className="rounded-full bg-orange-500 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
-                          {creditPackage.badge}
-                        </span>
-                      )}
-                      {creditPackage.key === "professional" ? (
-                        <span className="rounded-full border border-orange-100 bg-orange-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-orange-700">
-                          {copy.credits.mostPopular}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <p className="mt-3 text-[10px] font-bold uppercase tracking-wide text-orange-600">
-                    {creditPackage.tagline}
-                  </p>
-
-                  <h4 className={`mt-1.5 text-xl font-bold sm:text-2xl ${heading}`}>
-                    {creditPackage.name}
-                  </h4>
-
-                  <p className={`mt-1.5 text-sm leading-5 ${body}`}>
-                    {creditPackage.description}
-                  </p>
-
-                  <div className="mt-4">
-                    <p className={`text-[10px] font-bold uppercase tracking-wide ${muted}`}>
-                      {copy.credits.price}
-                    </p>
-                    <p className={`mt-1 text-3xl font-bold tracking-tight sm:text-4xl ${heading}`}>
-                      {formatEurPrice(creditPackage.priceEur)}
-                    </p>
-
-                    <p className={`mt-3 text-[10px] font-bold uppercase tracking-wide ${muted}`}>
-                      {copy.credits.creditsIncluded}
-                    </p>
-                    <p className={`mt-1 text-xl font-bold sm:text-2xl ${heading}`}>
-                      {formatCredits(shownCredits)}{" "}
-                      <span className={`text-base font-semibold sm:text-lg ${body}`}>
-                        {copy.credits.creditsUnit}
-                      </span>
-                    </p>
-                    <p className={`mt-2 text-xs leading-5 ${body}`}>
-                      {formatCopy(copy.credits.standardImages, {
-                        count: shownCredits,
-                      })}
-                    </p>
-                  </div>
-
-                  <ul className="mt-4 flex-1 space-y-2">
-                    {creditPackage.benefits.map((benefit) => (
-                      <li
-                        key={benefit}
-                        className={`flex items-start gap-2 text-sm leading-5 ${isDark ? "text-white/70" : "text-slate-700"}`}
-                      >
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
-                        <span>{benefit}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <button
-                    type="button"
-                    onClick={() => startCheckout(creditPackage.key)}
-                    disabled={checkoutInProgress}
-                    aria-busy={isLoading}
-                    className={`mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-5 py-2.5 text-sm font-bold transition disabled:cursor-not-allowed ${
-                      creditPackage.highlight
-                        ? "bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-60"
-                        : "border border-orange-100 bg-orange-50 text-orange-700 hover:bg-orange-100 disabled:opacity-60"
-                    } ${isDisabled ? "opacity-60" : ""}`}
+          {packageBenefits.map(({ pkg, benefits }) => (
+            <div key={pkg.key} className="flex flex-col gap-3">
+              <CreditPackCard
+                pkg={pkg}
+                language={lang}
+                appearance={isDark ? "dark" : "light"}
+                disabled={checkoutInProgress}
+              />
+              <ul className="space-y-2 px-1">
+                {benefits.map((benefit) => (
+                  <li
+                    key={benefit}
+                    className={`flex items-start gap-2 text-sm leading-5 ${isDark ? "text-white/70" : "text-slate-700"}`}
                   >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {copy.credits.redirecting}
-                      </>
-                    ) : (
-                      creditPackage.buttonLabel
-                    )}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
+                    <span>{benefit}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
         <ul className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, ChevronDown } from "lucide-react";
+import ObsidianButton from "@/app/components/shared/ObsidianButton";
+import { LANDING_SECTION_SCROLL_MT } from "@/lib/landing/landing-section-nav";
+import { LANDING_LAYOUT } from "@/lib/obsidian/premium-tokens";
 import type { LandingLanguage } from "./magnificContent";
 import { magnificContent } from "./magnificContent";
 
@@ -20,8 +23,11 @@ export default function BrutalistTrustFaq({
 
   return (
     <>
-      <section className="border-t border-neutral-800 bg-black py-20 text-white">
-        <div className="mx-auto grid max-w-6xl gap-6 px-4 sm:grid-cols-3 sm:px-6">
+      <section
+        id="trust"
+        className={`border-t border-neutral-800 bg-black text-white ${LANDING_SECTION_SCROLL_MT} ${LANDING_LAYOUT.section}`}
+      >
+        <div className="mx-auto grid max-w-6xl gap-4 px-4 sm:grid-cols-3 sm:px-6 lg:gap-5">
           {t.metrics.map((metric, i) => (
             <motion.article
               key={metric.title}
@@ -29,9 +35,9 @@ export default function BrutalistTrustFaq({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className="rounded-2xl border border-neutral-800 bg-neutral-900 p-8 text-center font-mono shadow-[0_0_40px_rgba(0,0,0,0.5)] ring-1 ring-amber-500/5"
+              className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6 text-center font-mono shadow-[0_0_40px_rgba(0,0,0,0.5)] ring-1 ring-amber-500/5"
             >
-              <p className="text-4xl font-black text-lime-400">{metric.value}</p>
+              <p className="text-4xl font-black text-amber-400">{metric.value}</p>
               <p className="mt-3 text-[11px] font-bold uppercase tracking-wider text-neutral-500">
                 {metric.title}
               </p>
@@ -40,13 +46,16 @@ export default function BrutalistTrustFaq({
         </div>
       </section>
 
-      <section id="faq" className="bg-neutral-950 py-20">
+      <section
+        id="faq"
+        className={`bg-neutral-950 ${LANDING_SECTION_SCROLL_MT} ${LANDING_LAYOUT.section}`}
+      >
         <div className="mx-auto max-w-4xl px-4 sm:px-6">
           <h2 className="text-2xl font-black uppercase italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white to-neutral-500 md:text-4xl">
             {t.faqTitle}
           </h2>
 
-          <div className="mt-10 divide-y divide-neutral-800 border border-neutral-800 bg-neutral-900 shadow-[8px_8px_0_0_#000]">
+          <div className={`${LANDING_LAYOUT.afterHeader} divide-y divide-neutral-800 border border-neutral-800 bg-neutral-900 shadow-[8px_8px_0_0_#000]`}>
             {t.faq.map((item, index) => {
               const open = openIndex === index;
               return (
@@ -60,7 +69,7 @@ export default function BrutalistTrustFaq({
                       {item.q}
                     </span>
                     <ChevronDown
-                      className={`h-5 w-5 shrink-0 text-lime-400 transition ${open ? "rotate-180" : ""}`}
+                      className={`h-5 w-5 shrink-0 text-amber-400 transition ${open ? "rotate-180" : ""}`}
                     />
                   </button>
                   {open ? (
@@ -75,18 +84,21 @@ export default function BrutalistTrustFaq({
         </div>
       </section>
 
-      <section className="relative overflow-hidden border-t border-neutral-800 bg-neutral-900 py-16 text-center">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-lime-500/10 via-transparent to-transparent" />
+      <section className={`relative overflow-hidden border-t border-neutral-800 bg-neutral-900 text-center ${LANDING_LAYOUT.sectionCompact}`}>
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent" />
         <h2 className="relative px-4 text-xl font-black uppercase italic tracking-tighter text-white md:text-3xl">
           {finalCta.headline}
         </h2>
-        <Link
+        <ObsidianButton
           href={studioHref}
-          className="relative mt-8 inline-flex items-center rounded-xl bg-lime-400 px-8 py-4 font-mono text-sm font-black uppercase tracking-widest text-neutral-950 shadow-[0_0_40px_rgba(163,230,53,0.35)] transition hover:bg-lime-500 hover:shadow-[0_0_60px_rgba(163,230,53,0.5)]"
+          variant="primary"
+          size="lg"
+          surface="landing"
+          className="relative mt-6 font-mono uppercase tracking-widest"
         >
           {finalCta.cta}
-          <ArrowRight className="ml-2 h-5 w-5" />
-        </Link>
+          <ArrowRight className="h-5 w-5" aria-hidden />
+        </ObsidianButton>
       </section>
     </>
   );

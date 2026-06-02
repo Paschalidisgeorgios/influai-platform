@@ -3,22 +3,27 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useLanguage } from "@/hooks/useLanguage";
-
-import CampaignFeatureGrid from "./CampaignFeatureGrid";
-import CreditValueStrip from "./CreditValueStrip";
-import BrutalistMarquee from "./BrutalistMarquee";
+import KineticHeroSection from "./KineticHeroSection";
+import ProductTheatreSection from "./ProductTheatreSection";
+import ModelExplorerSection from "./ModelExplorerSection";
+import LandingMediaProofSection from "./LandingMediaProofSection";
+import CreativeScoreSection from "./CreativeScoreSection";
+import LandingCreditsSection from "./LandingCreditsSection";
 import BrutalistPricingGrid from "./BrutalistPricingGrid";
 import BrutalistTrustFaq from "./BrutalistTrustFaq";
-import FullWidthComparisonSlider from "./FullWidthComparisonSlider";
-import ScrollZoomSection from "./ScrollZoomSection";
-import VideoPreviewStudio from "./VideoPreviewStudio";
 import { magnificContent, type LandingLanguage } from "./magnificContent";
-import ObsidianHero from "./obsidian/ObsidianHero";
 import ObsidianNavbar from "./obsidian/ObsidianNavbar";
+import AIBackgroundField from "./AIBackgroundField";
+import PricingUiProvider from "@/app/components/billing/PricingUiProvider";
 
+/**
+ * Cinematic landing — product theatre first, not a long generic SaaS scroll.
+ * 1. Kinetic Hero · 2. Product Theatre · 3. Model Explorer · 4. Media proof
+ * 5. Creative Score · 6. Credits + Pricing · 7. Trust FAQ + Final CTA
+ */
 export default function ObsidianLanding() {
   const { language: currentLanguage, setLanguage } = useLanguage();
-  const [studioHref, setStudioHref] = useState("/auth");
+  const [studioHref, setStudioHref] = useState("/auth?next=/dashboard");
   const supabase = createClient();
   const copy = magnificContent[currentLanguage].nav;
 
@@ -34,14 +39,14 @@ export default function ObsidianLanding() {
         data: { session },
       } = await supabase.auth.getSession();
       if (!mounted) return;
-      setStudioHref(session ? "/dashboard" : "/auth");
+      setStudioHref(session ? "/dashboard" : "/auth?next=/dashboard");
     }
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event: unknown, session: unknown) => {
       if (!mounted) return;
-      setStudioHref(session ? "/dashboard" : "/auth");
+      setStudioHref(session ? "/dashboard" : "/auth?next=/dashboard");
     });
 
     void resolveSessionTarget();
@@ -52,39 +57,51 @@ export default function ObsidianLanding() {
   }, [supabase.auth]);
 
   return (
-    <main className="relative min-h-screen bg-[#050505] text-white antialiased selection:bg-amber-500 selection:text-black">
-      <ObsidianNavbar
-        currentLanguage={currentLanguage}
-        setCurrentLanguage={handleLanguageChange}
-        studioHref={studioHref}
-        copy={copy}
-      />
+    <PricingUiProvider language={currentLanguage}>
+      <main className="relative min-h-screen overflow-x-hidden bg-[#050505] text-white antialiased selection:bg-amber-500 selection:text-black">
+        <AIBackgroundField />
 
-      <ObsidianHero currentLanguage={currentLanguage} studioHref={studioHref} />
+        <div className="relative z-10">
+        <ObsidianNavbar
+          currentLanguage={currentLanguage}
+          setCurrentLanguage={handleLanguageChange}
+          studioHref={studioHref}
+          copy={copy}
+        />
 
-      <ScrollZoomSection currentLanguage={currentLanguage} />
+        <KineticHeroSection
+          currentLanguage={currentLanguage}
+          studioHref={studioHref}
+        />
 
-      <CampaignFeatureGrid currentLanguage={currentLanguage} />
+        <ProductTheatreSection
+          currentLanguage={currentLanguage}
+          studioHref={studioHref}
+        />
 
-      <VideoPreviewStudio currentLanguage={currentLanguage} />
+        <ModelExplorerSection currentLanguage={currentLanguage} />
 
-      <FullWidthComparisonSlider currentLanguage={currentLanguage} />
+        <LandingMediaProofSection currentLanguage={currentLanguage} />
 
-      <BrutalistMarquee currentLanguage={currentLanguage} />
+        <CreativeScoreSection currentLanguage={currentLanguage} />
 
-      <CreditValueStrip currentLanguage={currentLanguage} />
+        <LandingCreditsSection currentLanguage={currentLanguage} />
 
-      <div id="pricing">
-        <BrutalistPricingGrid currentLanguage={currentLanguage} />
-      </div>
+        <div id="pricing">
+          <BrutalistPricingGrid currentLanguage={currentLanguage} />
+        </div>
 
-      <div id="faq">
-        <BrutalistTrustFaq currentLanguage={currentLanguage} studioHref={studioHref} />
-      </div>
+        <BrutalistTrustFaq
+          currentLanguage={currentLanguage}
+          studioHref={studioHref}
+        />
 
-      <footer className="border-t border-neutral-800/80 bg-[#050505] py-8 text-center text-[10px] font-black uppercase tracking-[0.2em] text-neutral-600">
-        © {new Date().getFullYear()} InfluExAI · AI Campaign Studio · Cinematic Creative Suite
-      </footer>
-    </main>
+        <footer className="border-t border-neutral-800/80 bg-[#050505]/80 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-neutral-600 backdrop-blur-sm">
+          © {new Date().getFullYear()} InfluExAI · The Content Engine · Images,
+          motion & social-ready packs
+        </footer>
+        </div>
+      </main>
+    </PricingUiProvider>
   );
 }

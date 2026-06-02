@@ -12,17 +12,27 @@ import {
   getKreaInternalModel,
   getKreaModelById,
   getKreaModelRegistry,
+  getKreaMotionTransferModels,
   isExecutableModelPath,
   isKreaModelExecutable,
+  isKreaPlanLimitedModel,
   isKreaTrainingApiPath,
+  isPendingRegistryModelPath,
   isKreaTrainingModel,
   resolveKreaInternalModel,
+  resolveKreaModelId,
   type KreaModelCategory,
   type KreaModelConfig,
   type KreaToolKey,
   type ModelAvailability,
 } from "./krea-model-registry";
-import { createKreaImageJob, waitForKreaJob } from "@/lib/providers";
+import {
+  auditRegistryModelPath,
+  countOfficialCatalogStats,
+} from "@/lib/krea/krea-official-catalog";
+import { generateViaKreaSubscribe } from "@/lib/krea/krea-subscribe-generation";
+import { runKreaModel } from "@/lib/krea/krea-generation-router";
+import { resolveMotionValidationFixtures, resolvePortraitValidationFixture } from "@/lib/krea/krea-validation-fixtures";
 
 export type ValidationMode = "dry_run" | "live_test";
 
@@ -61,6 +71,7 @@ export type ModelValidationSummary = {
   failed: number;
   skipped: number;
   tested?: number;
+  officialCatalog?: ReturnType<typeof countOfficialCatalogStats>;
   results: ModelValidationResult[];
 };
 
@@ -68,6 +79,7 @@ const VALID_AVAILABILITY: ModelAvailability[] = [
   "active",
   "experimental",
   "not_configured",
+  "failed_validation",
   "hidden",
 ];
 
@@ -82,13 +94,7 @@ const VALID_OUTPUT_TYPES = new Set([
 ]);
 
 const LIVE_TEST_NOT_IMPLEMENTED_TOOLS = new Set<ValidationToolFilter>([
-  "video",
-  "edit",
-  "enhancer",
   "lipsync",
-  "motion_transfer",
-  "video_restyle",
-  "3d_objects",
   "audio",
   "train_lora",
   "style_training",
@@ -96,6 +102,26 @@ const LIVE_TEST_NOT_IMPLEMENTED_TOOLS = new Set<ValidationToolFilter>([
 
 export const KREA_VALIDATION_TEST_PROMPT =
   "Minimal premium product campaign visual, black background, amber studio light, no readable text, no logo";
+
+const KREA_PLAN_LIMIT_VALIDATION_MESSAGE =
+  "Krea returned 402. This model may require a higher API plan.";
+
+function mapKreaLiveTestProviderError(e: unknown): {
+  errorCode: string;
+  message: string;
+} {
+  const message = e instanceof Error ? e.message : "Provider call failed";
+  const isPlanLimit =
+    message.includes("(402)") ||
+    /higher plan|plan limit|not available for current plan/i.test(message);
+  if (isPlanLimit) {
+    return {
+      errorCode: "KREA_PLAN_LIMIT",
+      message: KREA_PLAN_LIMIT_VALIDATION_MESSAGE,
+    };
+  }
+  return { errorCode: "PROVIDER_FAILED", message: message.slice(0, 400) };
+}
 
 type Candidate = {
   modelId: string;
@@ -105,6 +131,68 @@ type Candidate = {
 
 function toolToRegistryKey(tool: ValidationToolFilter): KreaToolKey {
   return tool as KreaToolKey;
+}
+
+/** Whether a registry row belongs to the validation tool filter. */
+function registryEntryMatchesTool(
+  entry: KreaModelConfig,
+  tool: ValidationToolFilter
+): boolean {
+  if (entry.availability === "hidden") return false;
+
+  const registryKey = toolToRegistryKey(tool);
+
+  if (entry.tools.includes(registryKey)) return true;
+
+  switch (tool) {
+    case "image":
+      return entry.category === "image" || entry.category === "realtime";
+    case "video":
+      return entry.category === "video";
+    case "motion_transfer":
+      return entry.category === "motion_transfer";
+    case "lipsync":
+      return entry.category === "lipsync";
+    case "enhancer":
+      return entry.category === "enhancer";
+    case "edit":
+      return entry.category === "edit";
+    case "video_restyle":
+      return entry.category === "video_restyle";
+    case "audio":
+      return entry.category === "audio";
+    case "3d_objects":
+      return entry.category === "3d";
+    case "train_lora":
+    case "style_training":
+      return (
+        entry.category === "training" ||
+        entry.category === "style_training" ||
+        entry.tools.includes(tool)
+      );
+    default:
+      return entry.category === (registryKey as KreaModelCategory);
+  }
+}
+
+function collectRegistryCandidatesForTool(tool: ValidationToolFilter): Candidate[] {
+  if (tool === "motion_transfer") {
+    return getKreaMotionTransferModels({
+      includeUnavailable: true,
+      selectableOnly: false,
+    }).map((entry) => ({
+      modelId: entry.id,
+      label: entry.label,
+      source: "registry" as const,
+    }));
+  }
+
+  const out: Candidate[] = [];
+  for (const entry of getKreaModelRegistry()) {
+    if (!registryEntryMatchesTool(entry, tool)) continue;
+    out.push({ modelId: entry.id, label: entry.label, source: "registry" });
+  }
+  return out;
 }
 
 function collectCandidates(
@@ -121,7 +209,8 @@ function collectCandidates(
   };
 
   if (modelIds?.length) {
-    for (const id of modelIds) {
+    for (const rawId of modelIds) {
+      const id = resolveKreaModelId(rawId);
       const studio = getKreaImageStudioModel(id);
       if (studio) {
         add({ modelId: studio.id, label: studio.label, source: "studio" });
@@ -131,41 +220,93 @@ function collectCandidates(
       if (entry) {
         add({ modelId: entry.id, label: entry.label, source: "registry" });
       } else {
-        add({ modelId: id, label: id, source: "registry" });
+        add({ modelId: id, label: rawId, source: "registry" });
       }
     }
     return out;
   }
 
-  if (!tool || tool === "image") {
+  if (!tool) {
     for (const studio of KREA_IMAGE_MODELS) {
       if (studio.availability !== "hidden") {
         add({ modelId: studio.id, label: studio.label, source: "studio" });
       }
     }
+    for (const entry of getKreaModelRegistry()) {
+      if (entry.availability === "hidden") continue;
+      add({ modelId: entry.id, label: entry.label, source: "registry" });
+    }
+    return out;
   }
 
-  if (tool) {
-    const key = toolToRegistryKey(tool);
-    for (const entry of getKreaModelRegistry()) {
-      if (entry.availability === "hidden") continue;
-      if (!entry.tools.includes(key)) continue;
-      add({ modelId: entry.id, label: entry.label, source: "registry" });
+  if (tool === "image") {
+    for (const studio of KREA_IMAGE_MODELS) {
+      if (studio.availability !== "hidden") {
+        add({ modelId: studio.id, label: studio.label, source: "studio" });
+      }
     }
-  } else {
-    for (const entry of getKreaModelRegistry()) {
-      if (entry.availability === "hidden") continue;
-      add({ modelId: entry.id, label: entry.label, source: "registry" });
-    }
+    return out;
+  }
+
+  for (const candidate of collectRegistryCandidatesForTool(tool)) {
+    add(candidate);
   }
 
   return out;
+}
+
+/** Resolved candidate list for a validation request (exported for admin route / tests). */
+export function collectValidationCandidates(
+  tool?: ValidationToolFilter,
+  modelIds?: string[]
+): Candidate[] {
+  return collectCandidates(tool, modelIds);
+}
+
+const VALIDATION_TOOL_FILTERS = new Set<ValidationToolFilter>([
+  "image",
+  "video",
+  "edit",
+  "enhancer",
+  "lipsync",
+  "motion_transfer",
+  "video_restyle",
+  "3d_objects",
+  "audio",
+  "train_lora",
+  "style_training",
+]);
+
+export function parseValidationToolFilter(
+  value: unknown
+): ValidationToolFilter | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim() as ValidationToolFilter;
+  return VALIDATION_TOOL_FILTERS.has(trimmed) ? trimmed : undefined;
 }
 
 function dryRunRegistryEntry(entry: KreaModelConfig): ModelValidationResult {
   const warnings: string[] = [];
   const internalModel = getKreaInternalModel(entry);
   let errorCode: string | undefined;
+
+  if (
+    entry.availability === "not_configured" ||
+    isPendingRegistryModelPath(internalModel)
+  ) {
+    return {
+      modelId: entry.id,
+      label: entry.label,
+      internalModel: internalModel || null,
+      source: "registry",
+      status: "skipped",
+      errorCode: "NOT_EXECUTABLE",
+      message: isPendingRegistryModelPath(internalModel)
+        ? `Placeholder path "${internalModel}" — awaiting official Krea subscribe path`
+        : "Model marked not_configured in registry",
+      warnings: [],
+    };
+  }
 
   if (!entry.id?.trim()) errorCode = "MISSING_ID";
   else if (!entry.label?.trim()) errorCode = "MISSING_LABEL";
@@ -200,14 +341,24 @@ function dryRunRegistryEntry(entry: KreaModelConfig): ModelValidationResult {
   } else if (!isExecutableModelPath(internalModel)) {
     errorCode = "INVALID_INTERNAL_MODEL";
     warnings.push(`internalModel "${internalModel}" is not executable`);
-  } else if (!entry.category) errorCode = "MISSING_CATEGORY";
-  else if (!entry.tools?.length) errorCode = "EMPTY_TOOLS";
-  else if (!entry.capabilities?.length) errorCode = "EMPTY_CAPABILITIES";
-  else if (typeof entry.credits !== "number" || entry.credits < 0) {
+  } else {
+    const audit = auditRegistryModelPath(internalModel);
+    if (!audit.ok && audit.reason === "not_in_openapi") {
+      errorCode = "NOT_IN_OFFICIAL_CATALOG";
+      warnings.push(
+        `internalModel "${internalModel}" is not in the official Krea OpenAPI catalog`
+      );
+    }
+  }
+
+  if (!errorCode && !entry.category) errorCode = "MISSING_CATEGORY";
+  else if (!errorCode && !entry.tools?.length) errorCode = "EMPTY_TOOLS";
+  else if (!errorCode && !entry.capabilities?.length) errorCode = "EMPTY_CAPABILITIES";
+  else if (!errorCode && (typeof entry.credits !== "number" || entry.credits < 0)) {
     errorCode = "INVALID_CREDITS";
-  } else if (!VALID_AVAILABILITY.includes(entry.availability)) {
+  } else if (!errorCode && !VALID_AVAILABILITY.includes(entry.availability)) {
     errorCode = "INVALID_AVAILABILITY";
-  } else if (!VALID_OUTPUT_TYPES.has(entry.outputType)) {
+  } else if (!errorCode && !VALID_OUTPUT_TYPES.has(entry.outputType)) {
     errorCode = "INVALID_OUTPUT_TYPE";
   }
 
@@ -255,6 +406,19 @@ function dryRunStudio(studioId: string): ModelValidationResult {
   let errorCode: string | undefined;
   let resolvedPath: string | null = null;
 
+  if (studio.availability === "not_configured") {
+    return {
+      modelId: studio.id,
+      label: studio.label,
+      internalModel: null,
+      source: "studio",
+      status: "skipped",
+      errorCode: "NOT_EXECUTABLE",
+      message: "Studio model not configured",
+      warnings: [],
+    };
+  }
+
   if (studio.provider !== "krea") errorCode = "INVALID_PROVIDER";
   else if (typeof studio.credits !== "number") errorCode = "INVALID_CREDITS";
   else if (!VALID_AVAILABILITY.includes(studio.availability)) {
@@ -283,10 +447,21 @@ function dryRunStudio(studioId: string): ModelValidationResult {
 
   const registry = getKreaModelById(studio.targetRegistryId);
   if (registry) {
-    const regCheck = dryRunRegistryEntry(registry);
-    warnings.push(...regCheck.warnings);
-    if (regCheck.status === "failed" && !errorCode) {
-      errorCode = regCheck.errorCode;
+    if (
+      registry.availability === "not_configured" ||
+      isPendingRegistryModelPath(getKreaInternalModel(registry))
+    ) {
+      warnings.push(
+        `targetRegistryId "${studio.targetRegistryId}" is a placeholder — studio stays disabled until wired`
+      );
+    } else {
+      const regCheck = dryRunRegistryEntry(registry);
+      if (regCheck.status === "failed") {
+        warnings.push(...regCheck.warnings);
+        if (!errorCode) errorCode = regCheck.errorCode;
+      } else if (regCheck.warnings.length) {
+        warnings.push(...regCheck.warnings);
+      }
     }
   } else if (
     studio.targetRegistryId !== "smart_auto_pilot" &&
@@ -324,6 +499,118 @@ function dryRunCandidate(candidate: Candidate): ModelValidationResult {
     };
   }
   return dryRunRegistryEntry(entry);
+}
+
+async function liveTestCategoryCandidate(
+  candidate: Candidate,
+  expect: "image" | "video"
+): Promise<ModelValidationResult> {
+  const registryEntry = getKreaModelById(candidate.modelId);
+  if (registryEntry && !isKreaModelExecutable(registryEntry)) {
+    if (isKreaPlanLimitedModel(registryEntry)) {
+      return {
+        modelId: candidate.modelId,
+        label: candidate.label,
+        internalModel: getKreaInternalModel(registryEntry),
+        source: candidate.source,
+        status: "failed",
+        errorCode: "KREA_PLAN_LIMIT",
+        message: KREA_PLAN_LIMIT_VALIDATION_MESSAGE,
+        warnings: [],
+      };
+    }
+    return {
+      modelId: candidate.modelId,
+      label: candidate.label,
+      internalModel: getKreaInternalModel(registryEntry),
+      source: candidate.source,
+      status: "skipped",
+      errorCode: "NOT_EXECUTABLE",
+      warnings: [],
+    };
+  }
+
+  if (
+    registryEntry?.requiredInputs?.some((input) =>
+      ["sourceImageUrl", "sourceVideoUrl", "referenceImageUrl", "trainingImages"].includes(
+        input
+      )
+    ) ||
+    registryEntry?.requires?.some((r) =>
+      ["source_image_url", "source_video_url", "reference_image_url", "reference_images"].includes(
+        r
+      )
+    )
+  ) {
+    return {
+      modelId: candidate.modelId,
+      label: candidate.label,
+      internalModel: registryEntry ? getKreaInternalModel(registryEntry) : null,
+      source: candidate.source,
+      status: "skipped",
+      errorCode: "REQUIRES_INPUT",
+      message: `Requires: ${registryEntry?.requiredInputs?.join(", ")}`,
+      warnings: [],
+    };
+  }
+
+  let modelPath: string;
+  try {
+    const tool =
+      expect === "video"
+        ? "video"
+        : registryEntry?.category === "enhancer"
+          ? "enhancer"
+          : "image";
+    modelPath = resolveKreaInternalModel(candidate.modelId, tool as never);
+  } catch (e) {
+    return {
+      modelId: candidate.modelId,
+      label: candidate.label,
+      internalModel: null,
+      source: candidate.source,
+      status: "failed",
+      errorCode: "MODEL_NOT_CONFIGURED",
+      message: e instanceof Error ? e.message : "Resolve failed",
+      warnings: [],
+    };
+  }
+
+  try {
+    const result = await generateViaKreaSubscribe({
+      modelPath,
+      prompt: KREA_VALIDATION_TEST_PROMPT,
+      aspectRatio: "1:1",
+      expect,
+      ...(expect === "video" ? { duration: 3 } : {}),
+    });
+
+    const ok =
+      expect === "video" ? Boolean(result.videoUrl) : Boolean(result.imageUrl);
+    return {
+      modelId: candidate.modelId,
+      label: candidate.label,
+      internalModel: modelPath,
+      source: candidate.source,
+      status: ok ? "passed" : "failed",
+      errorCode: ok ? undefined : "NO_OUTPUT_URL",
+      hasImageUrl: Boolean(result.imageUrl),
+      imageUrlStart: result.imageUrl?.slice(0, 48),
+      warnings: [],
+    };
+  } catch (e) {
+    const mapped = mapKreaLiveTestProviderError(e);
+    return {
+      modelId: candidate.modelId,
+      label: candidate.label,
+      internalModel: modelPath,
+      source: candidate.source,
+      status: "failed",
+      errorCode: mapped.errorCode,
+      message: mapped.message,
+      warnings: [],
+    };
+  }
 }
 
 async function liveTestImageCandidate(
@@ -386,30 +673,11 @@ async function liveTestImageCandidate(
   }
 
   try {
-    const job = await createKreaImageJob({
+    const result = await generateViaKreaSubscribe({
+      modelPath,
       prompt: KREA_VALIDATION_TEST_PROMPT,
       aspectRatio: "1:1",
-      modelPath,
-    });
-
-    if (!job.providerJobId) {
-      return {
-        modelId: candidate.modelId,
-        label: candidate.label,
-        internalModel: modelPath,
-        source: candidate.source,
-        status: "failed",
-        errorCode: "PROVIDER_BAD_RESPONSE",
-        message: "No job_id returned",
-        warnings: [],
-      };
-    }
-
-    const result = await waitForKreaJob(job.providerJobId, {
-      modelPath,
       expect: "image",
-      maxAttempts: 45,
-      intervalMs: 2000,
     });
 
     const hasImageUrl = Boolean(result.imageUrl);
@@ -425,15 +693,232 @@ async function liveTestImageCandidate(
       warnings: [],
     };
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Provider call failed";
+    const mapped = mapKreaLiveTestProviderError(e);
     return {
       modelId: candidate.modelId,
       label: candidate.label,
       internalModel: modelPath,
       source: candidate.source,
       status: "failed",
-      errorCode: "PROVIDER_FAILED",
-      message: message.slice(0, 400),
+      errorCode: mapped.errorCode,
+      message: mapped.message,
+      warnings: [],
+    };
+  }
+}
+
+async function liveTestMotionTransferCandidate(
+  candidate: Candidate
+): Promise<ModelValidationResult> {
+  const registryEntry = getKreaModelById(candidate.modelId);
+
+  if (!registryEntry) {
+    return {
+      modelId: candidate.modelId,
+      label: candidate.label,
+      internalModel: null,
+      source: candidate.source,
+      status: "failed",
+      errorCode: "MODEL_NOT_CONFIGURED",
+      message: `Unknown model id "${candidate.modelId}"`,
+      warnings: [],
+    };
+  }
+
+  if (!isKreaModelExecutable(registryEntry)) {
+    if (isKreaPlanLimitedModel(registryEntry)) {
+      return {
+        modelId: candidate.modelId,
+        label: candidate.label,
+        internalModel: getKreaInternalModel(registryEntry),
+        source: candidate.source,
+        status: "failed",
+        errorCode: "KREA_PLAN_LIMIT",
+        message: KREA_PLAN_LIMIT_VALIDATION_MESSAGE,
+        warnings: [],
+      };
+    }
+    return {
+      modelId: candidate.modelId,
+      label: candidate.label,
+      internalModel: getKreaInternalModel(registryEntry),
+      source: candidate.source,
+      status: "skipped",
+      errorCode: "NOT_EXECUTABLE",
+      message: "Model has no verified Krea subscribe path",
+      warnings: [],
+    };
+  }
+
+  const fixtures = resolveMotionValidationFixtures();
+  if (!fixtures.ok) {
+    return {
+      modelId: candidate.modelId,
+      label: candidate.label,
+      internalModel: getKreaInternalModel(registryEntry),
+      source: candidate.source,
+      status:
+        fixtures.errorCode === "MISSING_VALIDATION_FIXTURE" ? "skipped" : "failed",
+      errorCode: fixtures.errorCode,
+      message: fixtures.message,
+      warnings: [],
+    };
+  }
+
+  let modelPath: string;
+  try {
+    modelPath = resolveKreaInternalModel(candidate.modelId, "motion_transfer");
+  } catch (e) {
+    return {
+      modelId: candidate.modelId,
+      label: candidate.label,
+      internalModel: getKreaInternalModel(registryEntry),
+      source: candidate.source,
+      status: "failed",
+      errorCode: "MODEL_NOT_CONFIGURED",
+      message: e instanceof Error ? e.message : "Resolve failed",
+      warnings: [],
+    };
+  }
+
+  try {
+    const result = await runKreaModel({
+      model: registryEntry,
+      prompt:
+        "Apply the driving motion to the portrait while preserving identity and likeness.",
+      inputs: {
+        sourceImageUrl: fixtures.portraitUrl,
+        sourceVideoUrl: fixtures.motionVideoUrl,
+      },
+    });
+
+    const hasVideoUrl = Boolean(result.videoUrl);
+    return {
+      modelId: candidate.modelId,
+      label: candidate.label,
+      internalModel: modelPath,
+      source: candidate.source,
+      status: hasVideoUrl ? "passed" : "failed",
+      errorCode: hasVideoUrl ? undefined : "NO_OUTPUT_URL",
+      warnings: [],
+    };
+  } catch (e) {
+    const mapped = mapKreaLiveTestProviderError(e);
+    return {
+      modelId: candidate.modelId,
+      label: candidate.label,
+      internalModel: modelPath,
+      source: candidate.source,
+      status: "failed",
+      errorCode: mapped.errorCode,
+      message: mapped.message,
+      warnings: [],
+    };
+  }
+}
+
+async function liveTestEnhancerCandidate(
+  candidate: Candidate
+): Promise<ModelValidationResult> {
+  const registryEntry = getKreaModelById(candidate.modelId);
+
+  if (!registryEntry) {
+    return {
+      modelId: candidate.modelId,
+      label: candidate.label,
+      internalModel: null,
+      source: candidate.source,
+      status: "failed",
+      errorCode: "MODEL_NOT_CONFIGURED",
+      message: `Unknown model id "${candidate.modelId}"`,
+      warnings: [],
+    };
+  }
+
+  if (!isKreaModelExecutable(registryEntry)) {
+    if (isKreaPlanLimitedModel(registryEntry)) {
+      return {
+        modelId: candidate.modelId,
+        label: candidate.label,
+        internalModel: getKreaInternalModel(registryEntry),
+        source: candidate.source,
+        status: "failed",
+        errorCode: "KREA_PLAN_LIMIT",
+        message: KREA_PLAN_LIMIT_VALIDATION_MESSAGE,
+        warnings: [],
+      };
+    }
+    return {
+      modelId: candidate.modelId,
+      label: candidate.label,
+      internalModel: getKreaInternalModel(registryEntry),
+      source: candidate.source,
+      status: "skipped",
+      errorCode: "NOT_EXECUTABLE",
+      message: "Model has no verified Krea subscribe path",
+      warnings: [],
+    };
+  }
+
+  const portrait = resolvePortraitValidationFixture();
+  if (!portrait.ok) {
+    return {
+      modelId: candidate.modelId,
+      label: candidate.label,
+      internalModel: getKreaInternalModel(registryEntry),
+      source: candidate.source,
+      status:
+        portrait.errorCode === "MISSING_VALIDATION_FIXTURE" ? "skipped" : "failed",
+      errorCode: portrait.errorCode,
+      message: portrait.message,
+      warnings: [],
+    };
+  }
+
+  let modelPath: string;
+  try {
+    modelPath = resolveKreaInternalModel(candidate.modelId, "enhancer");
+  } catch (e) {
+    return {
+      modelId: candidate.modelId,
+      label: candidate.label,
+      internalModel: getKreaInternalModel(registryEntry),
+      source: candidate.source,
+      status: "failed",
+      errorCode: "MODEL_NOT_CONFIGURED",
+      message: e instanceof Error ? e.message : "Resolve failed",
+      warnings: [],
+    };
+  }
+
+  try {
+    const result = await runKreaModel({
+      model: registryEntry,
+      inputs: { sourceImageUrl: portrait.portraitUrl },
+    });
+
+    const hasImageUrl = Boolean(result.imageUrl);
+    return {
+      modelId: candidate.modelId,
+      label: candidate.label,
+      internalModel: modelPath,
+      source: candidate.source,
+      status: hasImageUrl ? "passed" : "failed",
+      errorCode: hasImageUrl ? undefined : "NO_OUTPUT_URL",
+      hasImageUrl,
+      imageUrlStart: result.imageUrl?.slice(0, 48),
+      warnings: [],
+    };
+  } catch (e) {
+    const mapped = mapKreaLiveTestProviderError(e);
+    return {
+      modelId: candidate.modelId,
+      label: candidate.label,
+      internalModel: modelPath,
+      source: candidate.source,
+      status: "failed",
+      errorCode: mapped.errorCode,
+      message: mapped.message,
       warnings: [],
     };
   }
@@ -514,10 +999,30 @@ export async function runKreaModelValidation(options: {
       continue;
     }
 
+    const entry = getKreaModelById(candidate.modelId);
+    if (
+      options.tool === "motion_transfer" ||
+      entry?.category === "motion_transfer"
+    ) {
+      results.push(await liveTestMotionTransferCandidate(candidate));
+      continue;
+    }
+    if (options.tool === "video" || entry?.category === "video") {
+      results.push(await liveTestCategoryCandidate(candidate, "video"));
+      continue;
+    }
+    if (options.tool === "enhancer" || entry?.category === "enhancer") {
+      results.push(await liveTestEnhancerCandidate(candidate));
+      continue;
+    }
+    if (options.tool === "edit" || entry?.category === "edit") {
+      results.push(skipNonImageLive(candidate, "edit"));
+      continue;
+    }
+
     if (candidate.source === "studio" || options.tool === "image" || !options.tool) {
       results.push(await liveTestImageCandidate(candidate));
     } else {
-      const entry = getKreaModelById(candidate.modelId);
       if (entry?.category === "image" || entry?.tools.includes("image")) {
         results.push(await liveTestImageCandidate(candidate));
       } else {
@@ -539,6 +1044,7 @@ export async function runKreaModelValidation(options: {
     failed,
     skipped,
     results,
+    officialCatalog: countOfficialCatalogStats(),
   };
 
   if (mode === "live_test") {

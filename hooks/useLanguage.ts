@@ -16,7 +16,8 @@ export type UseLanguageReturn = {
 };
 
 export function useLanguage(): UseLanguageReturn {
-  const [language, setLanguageState] = useState<AppLanguage>(() => readAppLanguage());
+  // Default "en" for SSR/first paint — read localStorage only after mount to avoid hydration mismatch.
+  const [language, setLanguageState] = useState<AppLanguage>("en");
 
   useEffect(() => {
     setLanguageState(readAppLanguage());

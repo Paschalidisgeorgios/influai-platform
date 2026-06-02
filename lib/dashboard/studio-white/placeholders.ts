@@ -10,3 +10,16 @@ export const TYPEWRITER_PLACEHOLDERS = {
     "Cinematischer Drohnenflug durch eine zukunftsweisende Cyberpunk-Schlucht...",
   ],
 } as const;
+
+export const VIDEO_STUDIO_PLACEHOLDERS = {
+  en: [
+    "Slow cinematic push-in on a premium product, soft amber studio light, shallow depth of field...",
+    "Vertical social clip: confident creator walking through a moody city street at golden hour...",
+    "Smooth orbit around a hero bottle, black background, subtle smoke and neon rim light...",
+  ],
+  de: [
+    "Langsame cinematic Push-In auf ein Premium-Produkt, warmes Amber-Studiolicht, geringe Schärfentiefe...",
+    "Vertikaler Social-Clip: Creator läuft selbstbewusst durch eine stimmungsvolle Stadt bei Golden Hour...",
+    "Sanfte Orbit-Kamera um eine Hero-Flasche, schwarzer Hintergrund, dezenter Nebel und Neon-Rimlight...",
+  ],
+} as const;

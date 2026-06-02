@@ -10,20 +10,29 @@ import {
   truncateDebugReason,
   type KreaImageRouteErrorCode,
 } from "@/lib/generation/krea-image-route-errors";
+import { refundChargedGenerationOnce } from "@/app/lib/generation/refund-generation";
 import {
   markGenerationCompleted,
   markGenerationFailed,
-  refundUserCredits,
   uploadImageFromRemoteUrl,
 } from "@/lib/generation/poc-shared";
 import {
   assertKreaConfigured,
-  createKreaImageJob,
   isKreaProviderEnabled,
   kreaAspectRatioFromFormatKey,
   kreaDimensionsFromAspectRatio,
-  waitForKreaJob,
 } from "@/lib/providers";
+import { generateViaKreaSubscribe } from "@/lib/krea/krea-subscribe-generation";
+import { generateCampaignExpansion } from "@/lib/intelligence/campaign-expansion-engine";
+import {
+  ModelModeResolutionError,
+  resolveModelModeForGeneration,
+} from "@/app/lib/model-modes/resolve-model-mode";
+import {
+  assertToolCanRun,
+  isToolRunBlockedError,
+  isToolRunInsufficientCreditsError,
+} from "@/app/lib/tools/assert-tool-can-run";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -48,6 +57,8 @@ function errorResponse(
     debugReason?: string;
     refunded?: boolean;
     requiredCredits?: number;
+    creditsAvailable?: number;
+    language?: "de" | "en";
     status?: number;
   }
 ) {
@@ -88,7 +99,12 @@ export async function POST(req: Request) {
 
     currentStep = "env_check";
     const hasKreaKey = Boolean(process.env.KREA_API_KEY?.trim());
-    logStep(requestId, "env_check", { hasKreaKey, kreaProviderEnabled: true });
+    logStep(requestId, "env_check", {
+      hasKreaKey,
+      kreaProviderEnabled: isKreaProviderEnabled(),
+      nodeEnv: process.env.NODE_ENV ?? null,
+      vercelEnv: process.env.VERCEL_ENV ?? null,
+    });
 
     if (!hasKreaKey) {
       return errorResponse("MISSING_KREA_API_KEY", {
@@ -150,10 +166,56 @@ export async function POST(req: Request) {
 
     const record = body as Record<string, unknown>;
     const prompt = typeof record.prompt === "string" ? record.prompt.trim() : "";
-    requestModelId =
-      typeof record.kreaModelId === "string" ? record.kreaModelId.trim() : undefined;
+    const modelModeId =
+      typeof record.modelModeId === "string" ? record.modelModeId.trim() : "";
+    const actionId =
+      typeof record.actionId === "string" ? record.actionId.trim() : "";
+    const currentLanguage: "de" | "en" =
+      record.currentLanguage === "en" ? "en" : "de";
+
+    let modelModeCreditOverride: number | undefined;
+
+    if (modelModeId && actionId) {
+      try {
+        const modeResolved = resolveModelModeForGeneration(
+          modelModeId,
+          actionId,
+          { language: currentLanguage }
+        );
+        requestModelId = modeResolved.apiModelId;
+        modelModeCreditOverride = modeResolved.credits;
+      } catch (modeError) {
+        if (modeError instanceof ModelModeResolutionError) {
+          return errorResponse("MODEL_NOT_CONFIGURED", {
+            requestId,
+            step: "model_mode_resolve",
+            debugReason: modeError.message,
+            status: modeError.status,
+            language: currentLanguage,
+          });
+        }
+        return errorResponse("MODEL_NOT_CONFIGURED", {
+          requestId,
+          step: "model_mode_resolve",
+          debugReason: "model mode resolution failed",
+          language: currentLanguage,
+        });
+      }
+    } else {
+      requestModelId =
+        typeof record.kreaModelId === "string"
+          ? record.kreaModelId.trim()
+          : typeof record.selectedModelId === "string"
+            ? record.selectedModelId.trim()
+            : undefined;
+    }
+
     const outputFormat =
-      typeof record.outputFormat === "string" ? record.outputFormat.trim() : undefined;
+      typeof record.outputFormat === "string"
+        ? record.outputFormat.trim()
+        : typeof record.selectedFormat === "string"
+          ? record.selectedFormat.trim()
+          : undefined;
 
     logStep(requestId, "body_received", {
       promptLength: prompt.length,
@@ -198,7 +260,8 @@ export async function POST(req: Request) {
 
     const { entry, modelPath, storedModel, credits, workflow, studioModelId } =
       modelResolution;
-    creditsUsed = credits;
+    creditsUsed =
+      modelModeCreditOverride !== undefined ? modelModeCreditOverride : credits;
 
     resolvedModelDebug = {
       requestModelId: requestModelId ?? null,
@@ -260,6 +323,52 @@ export async function POST(req: Request) {
         requestId,
         step: currentStep,
         debugReason: creditReadError.message,
+        language: currentLanguage,
+      });
+    }
+
+    const creditsAvailable = creditRow?.credits ?? 0;
+
+    currentStep = "tool_gate";
+    try {
+      assertToolCanRun({
+        actionId: actionId || "create_image",
+        modelModeId: modelModeId || undefined,
+        engineId: entry.id,
+        userCreditBalance: creditsAvailable,
+        language: currentLanguage,
+      });
+    } catch (gateError) {
+      if (isToolRunBlockedError(gateError)) {
+        return errorResponse("MODEL_NOT_CONFIGURED", {
+          requestId,
+          step: currentStep,
+          debugReason: gateError.internalReason ?? gateError.code,
+          status: gateError.status,
+          language: currentLanguage,
+        });
+      }
+      if (isToolRunInsufficientCreditsError(gateError)) {
+        return errorResponse("INSUFFICIENT_CREDITS", {
+          requestId,
+          step: currentStep,
+          debugReason: `balance=${creditsAvailable}, cost=${creditsUsed}`,
+          requiredCredits: creditsUsed,
+          creditsAvailable,
+          language: currentLanguage,
+        });
+      }
+      throw gateError;
+    }
+
+    if (creditsAvailable < creditsUsed) {
+      return errorResponse("INSUFFICIENT_CREDITS", {
+        requestId,
+        step: currentStep,
+        debugReason: `balance=${creditsAvailable}, cost=${creditsUsed}`,
+        requiredCredits: creditsUsed,
+        creditsAvailable,
+        language: currentLanguage,
       });
     }
 
@@ -283,8 +392,10 @@ export async function POST(req: Request) {
       return errorResponse("INSUFFICIENT_CREDITS", {
         requestId,
         step: "credits_consume",
-        debugReason: `balance=${creditRow?.credits ?? 0}, cost=${creditsUsed}`,
+        debugReason: `balance=${creditsAvailable}, cost=${creditsUsed}`,
         requiredCredits: creditsUsed,
+        creditsAvailable,
+        language: currentLanguage,
       });
     }
 
@@ -307,6 +418,7 @@ export async function POST(req: Request) {
         credits_used: creditsUsed,
         output_width: width,
         output_height: height,
+        ...(outputFormat ? { output_format: outputFormat } : {}),
         error_message: null,
         started_at: new Date().toISOString(),
       })
@@ -319,10 +431,10 @@ export async function POST(req: Request) {
       });
 
       try {
-        await refundUserCredits({
+        await refundChargedGenerationOnce({
           userId: user.id,
           creditsToRefund: creditsUsed,
-          source: "krea_image_create_failure",
+          fallbackSource: `krea_image_create_failure:${requestId}`,
         });
       } catch (refundError) {
         return errorResponse("CREDIT_REFUND_FAILED", {
@@ -359,80 +471,119 @@ export async function POST(req: Request) {
       aspectRatio,
     });
 
-    const job = await createKreaImageJob({
+    const expansionPromise = generateCampaignExpansion({
       prompt,
-      width,
-      height,
-      aspectRatio,
-      modelPath,
-      workflow,
+      language: currentLanguage,
     });
 
-    logStep(requestId, "provider_job_created", {
-      providerJobId: job.providerJobId ?? null,
-      hasProviderJobId: Boolean(job.providerJobId),
-    });
+    const kreaPipelinePromise = (async () => {
+      const result = await generateViaKreaSubscribe({
+        modelPath,
+        prompt,
+        width,
+        height,
+        aspectRatio,
+        expect: "image",
+      });
 
-    if (!job.providerJobId) {
-      throw new Error("Krea did not return a job_id.");
+      logStep(requestId, "provider_response", {
+        hasImageUrl: Boolean(result.imageUrl),
+        providerJobId: result.providerJobId ?? null,
+      });
+
+      if (!result.imageUrl) {
+        throw new Error("Krea did not return an image URL.");
+      }
+
+      logStep(requestId, "image_url_extracted", { hasImageUrl: true });
+
+      currentStep = "storage_upload";
+      const publicUrl = await uploadImageFromRemoteUrl({
+        userId: user.id,
+        remoteUrl: result.imageUrl,
+      });
+
+      logStep(requestId, "storage_upload_ok", { hasPublicUrl: Boolean(publicUrl) });
+
+      const resolvedModel = result.model ?? storedModel;
+
+      currentStep = "db_complete";
+      try {
+        await markGenerationCompleted({
+          generationId: generation.id,
+          imageUrl: publicUrl,
+          providerJobId: result.providerJobId,
+        });
+      } catch (saveError) {
+        throw new Error(
+          `DB_SAVE_FAILED: ${saveError instanceof Error ? saveError.message : "save failed"}`
+        );
+      }
+
+      await supabase
+        .from("generations")
+        .update({ model: resolvedModel })
+        .eq("id", generation.id);
+
+      return {
+        publicUrl,
+        resolvedModel,
+        providerJobId: result.providerJobId,
+      };
+    })();
+
+    const [imageResult, expansionResult] = await Promise.allSettled([
+      kreaPipelinePromise,
+      expansionPromise,
+    ]);
+
+    if (imageResult.status === "rejected") {
+      throw imageResult.reason;
     }
 
-    currentStep = "provider_poll";
-    const result = await waitForKreaJob(job.providerJobId, {
-      modelPath,
-      workflow,
-      expect: "image",
-    });
+    const { publicUrl } = imageResult.value;
 
-    logStep(requestId, "provider_response", {
-      hasImageUrl: Boolean(result.imageUrl),
-      providerJobId: result.providerJobId ?? null,
-      responseKeys:
-        result.raw && typeof result.raw === "object"
-          ? Object.keys(result.raw as Record<string, unknown>)
-          : [],
-    });
+    let campaignExpansion: Awaited<ReturnType<typeof generateCampaignExpansion>> | null =
+      null;
+    let campaignExpansionWarning: string | undefined;
 
-    if (!result.imageUrl) {
-      throw new Error("Krea did not return an image URL.");
+    if (expansionResult.status === "fulfilled") {
+      campaignExpansion = expansionResult.value;
+    } else {
+      campaignExpansionWarning =
+        currentLanguage === "de"
+          ? "Kampagnentexte konnten nicht erstellt werden."
+          : "Campaign text could not be generated.";
+      logStep(requestId, "campaign_expansion_failed", {
+        reason:
+          expansionResult.reason instanceof Error
+            ? expansionResult.reason.message
+            : "unknown",
+      });
     }
 
-    logStep(requestId, "image_url_extracted", { hasImageUrl: true });
-
-    currentStep = "storage_upload";
-    const publicUrl = await uploadImageFromRemoteUrl({
-      userId: user.id,
-      remoteUrl: result.imageUrl,
-    });
-
-    logStep(requestId, "storage_upload_ok", { hasPublicUrl: Boolean(publicUrl) });
-
-    const resolvedModel = result.model ?? storedModel;
-
-    currentStep = "db_complete";
-    await markGenerationCompleted({
-      generationId: generation.id,
-      imageUrl: publicUrl,
-      providerJobId: result.providerJobId,
-    });
-
-    await supabase
-      .from("generations")
-      .update({ model: resolvedModel })
-      .eq("id", generation.id);
+    const { data: creditsAfterRow } = await supabase
+      .from("user_credits")
+      .select("credits")
+      .eq("user_id", user.id)
+      .maybeSingle();
 
     logStep(requestId, "success", { generationId: generation.id, creditsUsed });
 
     return NextResponse.json({
       success: true,
+      outputType: "image",
       requestId,
       generationId: generation.id,
       workflow,
       provider: PROVIDER,
-      model: resolvedModel,
+      model: imageResult.value.resolvedModel,
       kreaModelId: studioModelId ?? entry.id,
       creditsUsed,
+      creditsAfter: creditsAfterRow?.credits ?? null,
       imageUrl: publicUrl,
+      campaignExpansion,
+      ...(campaignExpansionWarning ? { campaignExpansionWarning } : {}),
     });
   } catch (error) {
     const internalMessage =
@@ -451,12 +602,12 @@ export async function POST(req: Request) {
     let refunded = false;
     if (userId && creditsUsed > 0) {
       try {
-        await refundUserCredits({
+        refunded = await refundChargedGenerationOnce({
           userId,
           creditsToRefund: creditsUsed,
-          source: "krea_image_failure",
+          generationId,
+          fallbackSource: `krea_image_failure:${requestId}`,
         });
-        refunded = true;
       } catch (refundError) {
         logStep(requestId, "credit_refund_failed", {
           message:

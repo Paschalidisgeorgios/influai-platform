@@ -2,11 +2,14 @@
 
 import { useCallback, type MouseEvent, type ReactNode } from "react";
 import { useMotionValue } from "framer-motion";
+import { usePathname } from "next/navigation";
 import { OBS } from "@/lib/obsidian/dashboard-tokens";
 import KineticCursor from "./KineticCursor";
 import ObsidianHUDSidebar from "./ObsidianHUDSidebar";
 
 export default function ObsidianShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const showKineticCursor = pathname !== "/dashboard";
   const cursorX = useMotionValue(0);
   const cursorY = useMotionValue(0);
 
@@ -22,11 +25,13 @@ export default function ObsidianShell({ children }: { children: ReactNode }) {
     <div className={`flex h-screen ${OBS.page}`} onMouseMove={onMouseMove}>
       <ObsidianHUDSidebar />
       <div className="flex min-w-0 flex-1 flex-col">
-        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 lg:px-8">
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden overflow-x-hidden px-4 py-6 lg:px-8">
           {children}
         </main>
       </div>
-      <KineticCursor cursorX={cursorX} cursorY={cursorY} />
+      {showKineticCursor ? (
+        <KineticCursor cursorX={cursorX} cursorY={cursorY} />
+      ) : null}
     </div>
   );
 }

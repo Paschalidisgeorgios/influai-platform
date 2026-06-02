@@ -3,6 +3,7 @@ import {
   authenticateBearerToken,
   uploadWorkspaceMedia,
 } from "@/lib/storage/workspace-media-upload";
+import { blockUnlessToolCanRun } from "@/app/lib/tools/tool-run-api-guard";
 
 export const runtime = "nodejs";
 
@@ -10,6 +11,9 @@ const STORAGE_BUCKET = "lip-sync";
 
 export async function POST(req: Request) {
   try {
+    const blocked = blockUnlessToolCanRun({ toolId: "lipsync_creator" });
+    if (blocked) return blocked;
+
     const user = await authenticateBearerToken(req.headers.get("authorization"));
     if (!user) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });

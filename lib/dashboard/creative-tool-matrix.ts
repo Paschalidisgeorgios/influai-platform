@@ -139,7 +139,7 @@ export const CREATIVE_TOOL_MATRIX: CreativeToolMatrixEntry[] = [
     creditCost: 1,
     workspaceKind: "studio_image",
     initialImageMode: "standard",
-    generateRoute: "/api/krea/image/generate",
+    generateRoute: "/api/generate",
     imageMode: "standard",
   },
   {

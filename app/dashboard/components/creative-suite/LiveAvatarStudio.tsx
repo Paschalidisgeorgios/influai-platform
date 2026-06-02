@@ -5,15 +5,25 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { KG } from "@/lib/kinetic-glass/classes";
-import { MOTION_TRANSFER_ENGINES } from "@/lib/dashboard/white-label-engines";
+import {
+  getDefaultMotionTransferModelId,
+  getMotionTransferCredits,
+  getMotionTransferModelCatalog,
+} from "@/lib/ai/krea-model-ui";
+import { getKreaModelById } from "@/lib/ai/krea-model-registry";
+import {
+  canMotionGenerate,
+  formatMotionGenerateBlockReason,
+  getMotionGenerateBlockReason,
+} from "@/lib/dashboard/motion-generate-guards";
 import { useDashboardLanguage } from "../../DashboardLanguageProvider";
 import { publicLaunchFlags } from "@/lib/launch/public-flags";
+import MotionTransferActivatingCard from "../obsidian/MotionTransferActivatingCard";
 import { useCreativeSuite } from "./CreativeSuiteProvider";
 import { useStudioUpsell } from "../studio-white/StudioUpsellProvider";
 import EngineCardGrid from "../studio-white/EngineCardGrid";
 import StudioMediaCanvas from "../studio-white/StudioMediaCanvas";
 
-const LIVE_AVATAR_CREDITS = 60;
 const RECORD_LIMIT_SECONDS = 10;
 const MAX_DRIVING_VIDEO_BYTES = 20 * 1024 * 1024;
 
@@ -118,6 +128,12 @@ export default function LiveAvatarStudio() {
   const { credits, onGenerationQueued } = useCreativeSuite();
   const { handleInsufficientCredits } = useStudioUpsell();
   const copy = COPY[language === "de" ? "de" : "en"];
+  const lang = language === "de" ? "de" : "en";
+
+  const motionEngineCatalog = useMemo(
+    () => getMotionTransferModelCatalog(lang),
+    [lang]
+  );
 
   const supabaseRef = useRef(createClient());
 
@@ -155,8 +171,12 @@ export default function LiveAvatarStudio() {
     "portrait" | "landscape" | "auto"
   >("auto");
   const [selectedMotionEngine, setSelectedMotionEngine] = useState(
-    MOTION_TRANSFER_ENGINES[0]?.id ?? "runway-motion-pro"
+    getDefaultMotionTransferModelId
   );
+
+  const selectedMotionCredits =
+    getMotionTransferCredits(selectedMotionEngine) ?? 25;
+  const selectedMotionModel = getKreaModelById(selectedMotionEngine);
 
   const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -444,19 +464,45 @@ export default function LiveAvatarStudio() {
     };
   }, [closeCamera]);
 
-  const canGenerate =
-    !!sourceImageUrl &&
-    !sourceImageUrl.startsWith("blob:") &&
-    !!sourceVideoUrl &&
-    !sourceVideoUrl.startsWith("blob:") &&
-    consentAccepted &&
-    !isUploadingImage &&
-    !isUploadingVideo &&
-    !isRecording &&
-    !isGenerating;
+  const generateBlockReason = getMotionGenerateBlockReason({
+    sourceImageUrl,
+    sourceVideoUrl,
+    consentAccepted,
+    selectedModel: selectedMotionModel,
+    credits,
+    isUploading: isUploadingImage || isUploadingVideo,
+    isRecording,
+  });
+
+  const canGenerate = generateBlockReason === null && !isGenerating;
 
   const handleGenerate = async () => {
-    if (!canGenerate || !sourceImageUrl || !sourceVideoUrl) return;
+    if (isGenerating || !sourceImageUrl || !sourceVideoUrl) return;
+    if (!canMotionGenerate({
+      sourceImageUrl,
+      sourceVideoUrl,
+      consentAccepted,
+      selectedModel: selectedMotionModel,
+      credits,
+      isUploading: isUploadingImage || isUploadingVideo,
+      isRecording,
+    })) {
+      const reason = getMotionGenerateBlockReason({
+        sourceImageUrl,
+        sourceVideoUrl,
+        consentAccepted,
+        selectedModel: selectedMotionModel,
+        credits,
+        isUploading: isUploadingImage || isUploadingVideo,
+        isRecording,
+      });
+      if (reason) {
+        setErrorMessage(
+          formatMotionGenerateBlockReason(reason, language === "de" ? "de" : "en")
+        );
+      }
+      return;
+    }
 
     setIsGenerating(true);
     setErrorMessage(null);
@@ -481,6 +527,7 @@ export default function LiveAvatarStudio() {
           sourceVideoUrl,
           consentAccepted: consentAccepted,
           orientation,
+          kreaModelId: selectedMotionEngine,
         }),
       });
 
@@ -515,16 +562,16 @@ export default function LiveAvatarStudio() {
 
   const previewSrc = resultVideoUrl ?? motionPreviewSrc;
 
+  if (!publicLaunchFlags.motionTransfer) {
+    return (
+      <div className="relative mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-5xl flex-col items-center justify-center px-4 pb-10">
+        <MotionTransferActivatingCard />
+      </div>
+    );
+  }
+
   return (
     <div className="relative mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-5xl flex-col items-center px-4 pb-10">
-      {!publicLaunchFlags.liveAvatar ? (
-        <div className={`mb-6 w-full max-w-4xl text-sm text-amber-300 ${KG.glassFloat}`}>
-          {language === "de"
-            ? "Motion Transfer ist deaktiviert. Setze NEXT_PUBLIC_ENABLE_LIVE_AVATAR=true und ENABLE_LIVE_AVATAR=true in .env.local und starte den Dev-Server neu."
-            : "Motion Transfer is disabled. Set NEXT_PUBLIC_ENABLE_LIVE_AVATAR=true and ENABLE_LIVE_AVATAR=true in .env.local, then restart the dev server."}
-        </div>
-      ) : null}
-
       {isGenerating ? (
         <div className={`mx-auto mb-6 flex h-[40vh] w-full max-w-4xl flex-col items-center justify-center ${KG.glassFloat}`}>
           <Loader2 className="h-10 w-10 animate-spin text-amber-500" />
@@ -543,9 +590,10 @@ export default function LiveAvatarStudio() {
       )}
 
       <EngineCardGrid
-        engines={MOTION_TRANSFER_ENGINES}
+        engines={motionEngineCatalog}
         selectedId={selectedMotionEngine}
         onSelect={setSelectedMotionEngine}
+        motionOnlyTabs
       />
 
       <div className="mt-6 grid w-full max-w-4xl grid-cols-1 gap-4 lg:grid-cols-3">
@@ -718,7 +766,10 @@ export default function LiveAvatarStudio() {
             <p className="text-xs font-bold uppercase tracking-widest text-neutral-400">
               {language === "de" ? "Einstellungen" : "Settings"}
             </p>
-            <span className="text-[11px] font-medium text-neutral-500">{copy.credits}</span>
+            <span className="text-[11px] font-medium text-neutral-500">
+              {selectedMotionCredits}{" "}
+              {language === "de" ? "Credits" : "Credits"}
+            </span>
           </div>
 
           <div className="mt-3 rounded-2xl border border-neutral-800/50 bg-neutral-900/40 p-3">
@@ -752,8 +803,21 @@ export default function LiveAvatarStudio() {
               disabled={!canGenerate}
               className={`mt-3 inline-flex w-full items-center justify-center px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40 ${KG.amberBtn}`}
             >
-              {isGenerating ? copy.generating : copy.generate}
+              {isGenerating
+                ? copy.generating
+                : language === "de"
+                  ? `Motion Transfer erstellen (${selectedMotionCredits} Credits)`
+                  : `Generate Motion Transfer (${selectedMotionCredits} Credits)`}
             </button>
+
+            {!canGenerate && generateBlockReason ? (
+              <p className="mt-2 text-[11px] font-medium leading-snug text-amber-500/80">
+                {formatMotionGenerateBlockReason(
+                  generateBlockReason,
+                  language === "de" ? "de" : "en"
+                )}
+              </p>
+            ) : null}
 
             <p className="mt-2 text-[11px] font-medium text-neutral-500">
               {credits} {language === "de" ? "Credits verfügbar" : "credits available"}
@@ -766,8 +830,13 @@ export default function LiveAvatarStudio() {
         <p className="mt-4 text-sm font-medium text-red-400">{errorMessage}</p>
       ) : null}
 
-      {!canGenerate && !resultVideoUrl && !isGenerating ? (
-        <p className="mt-4 text-xs font-medium text-neutral-500">{copy.needInputs}</p>
+      {generateBlockReason && !resultVideoUrl && !isGenerating ? (
+        <p className="mt-4 text-xs font-medium text-neutral-500">
+          {formatMotionGenerateBlockReason(
+            generateBlockReason,
+            language === "de" ? "de" : "en"
+          )}
+        </p>
       ) : null}
 
       {resultVideoUrl ? (
