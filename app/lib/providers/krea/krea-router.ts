@@ -89,6 +89,13 @@ export type KreaProviderGenerationInput = Omit<EngineRunInput, "model"> & {
 export async function runKreaProviderGeneration(
   input: KreaProviderGenerationInput
 ): Promise<EngineRunOutput> {
+  console.error(
+    "[PROVIDER] engineId:",
+    input.engineId,
+    "inputs:",
+    JSON.stringify(input.inputs ?? {})
+  );
+
   const legacyId = resolveKreaLegacyModelId(input.engineId);
   const model = getEngineModelById(legacyId);
   if (!model) {

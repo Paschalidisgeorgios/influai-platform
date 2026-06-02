@@ -101,6 +101,13 @@ export function resolveProviderGenerationContext(
 export async function runProviderGeneration(
   input: ProviderGenerationInput
 ): Promise<EngineRunOutput & { context: ProviderGenerationContext }> {
+  console.error(
+    "[PROVIDER] engineId:",
+    input.engineId,
+    "inputs:",
+    JSON.stringify(input.inputs ?? {})
+  );
+
   const context = resolveProviderGenerationContext(input.engineId, {
     language: input.language,
   });
@@ -120,6 +127,10 @@ export async function runProviderGeneration(
         inputs: input.inputs,
       });
     } catch (error) {
+      console.error(
+        "[PROVIDER ERROR]",
+        error instanceof Error ? error.message : error
+      );
       if (error instanceof FalRouterError) {
         throw new Error(error.message);
       }
@@ -134,6 +145,10 @@ export async function runProviderGeneration(
         inputs: input.inputs,
       });
     } catch (error) {
+      console.error(
+        "[PROVIDER ERROR]",
+        error instanceof Error ? error.message : error
+      );
       if (error instanceof KreaRouterError) {
         throw new Error(error.message);
       }

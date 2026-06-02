@@ -92,21 +92,29 @@ export function extractCampaignProductLabel(
 
   const cleaned = trimmed
     .replace(/\b(soft|hard|studio|natural|golden|warm|cool)\s+light(ing)?\b/gi, "")
+    .replace(/\b(soft|studio)\s+light\b/gi, "")
+    .replace(/\bon\s+(marble|white|black|concrete|wooden|gray|grey)\b/gi, "")
     .replace(
-      /\b(on\s+)?(white|black|marble|concrete|wooden|gray|grey)\s+(background|surface|table|floor)?\b/gi,
+      /\b(white|black|marble|concrete|wooden|gray|grey)\s+(background|surface|table|floor)\b/gi,
       ""
     )
+    .replace(/\b(white|black)\s+background\b/gi, "")
+    .replace(/\bmarble\b/gi, "")
     .replace(
       /\b(instagram|tiktok|youtube|facebook|linkedin)\s+(square|story|post|reel|feed|format)?\b/gi,
       ""
     )
+    .replace(/\binstagram\s+square\b/gi, "")
     .replace(
       /\b(square|vertical|horizontal|portrait|landscape)\s*(format|shot|crop)?\b/gi,
       ""
     )
     .replace(/\b(4k|8k|hd|uhd|cinematic|editorial)\b/gi, "")
+    .replace(/\bon\s+$/gi, "")
+    .replace(/^on\s+/gi, "")
     .replace(/,+\s*,+/g, ",")
     .replace(/\s+/g, " ")
+    .replace(/,\s*$/g, "")
     .trim();
 
   const firstSegment = cleaned.split(/[,.\n;]/)[0]?.trim() ?? cleaned;

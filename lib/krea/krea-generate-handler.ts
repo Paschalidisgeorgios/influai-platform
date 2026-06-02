@@ -84,7 +84,11 @@ export async function handleKreaGenerate(req: Request): Promise<Response> {
 
     try {
       assertKreaConfigured();
-    } catch {
+    } catch (error) {
+      console.error(
+        "[PROVIDER ERROR]",
+        error instanceof Error ? error.message : error
+      );
       return errorJson("MISSING_KREA_API_KEY", "Engine not configured.", 503);
     }
 
@@ -97,7 +101,11 @@ export async function handleKreaGenerate(req: Request): Promise<Response> {
     let body: unknown;
     try {
       body = await req.json();
-    } catch {
+    } catch (error) {
+      console.error(
+        "[PROVIDER ERROR]",
+        error instanceof Error ? error.message : error
+      );
       return errorJson("BODY_INVALID", "Invalid request body.", 400);
     }
 
@@ -207,6 +215,13 @@ export async function handleKreaGenerate(req: Request): Promise<Response> {
         ? generateCampaignExpansion({ prompt: record.prompt.trim(), language })
         : Promise.resolve(null);
 
+    console.error(
+      "[PROVIDER] engineId:",
+      kreaModelId,
+      "inputs:",
+      JSON.stringify(record.inputs ?? {})
+    );
+
     let adapterResult;
     try {
       adapterResult = await runKreaModel({
@@ -216,6 +231,10 @@ export async function handleKreaGenerate(req: Request): Promise<Response> {
         inputs: record.inputs,
       });
     } catch (adapterError) {
+      console.error(
+        "[PROVIDER ERROR]",
+        adapterError instanceof Error ? adapterError.message : adapterError
+      );
       if (isKreaToolNotImplemented(adapterError)) {
         await refundUserCredits({
           userId: user.id,
@@ -262,6 +281,10 @@ export async function handleKreaGenerate(req: Request): Promise<Response> {
         providerJobId: adapterResult.providerJobId,
       });
     } catch (saveError) {
+      console.error(
+        "[PROVIDER ERROR]",
+        saveError instanceof Error ? saveError.message : saveError
+      );
       await refundUserCredits({
         userId: user.id,
         creditsToRefund: creditsUsed,
@@ -282,8 +305,11 @@ export async function handleKreaGenerate(req: Request): Promise<Response> {
     let campaignExpansion = null;
     try {
       campaignExpansion = await expansionPromise;
-    } catch {
-      /* optional */
+    } catch (error) {
+      console.error(
+        "[PROVIDER ERROR]",
+        error instanceof Error ? error.message : error
+      );
     }
 
     console.info(LOG_PREFIX, { requestId, generationId, kreaModelId, success: true });
@@ -307,6 +333,10 @@ export async function handleKreaGenerate(req: Request): Promise<Response> {
       kreaModelId: model.id,
     });
   } catch (error) {
+    console.error(
+      "[PROVIDER ERROR]",
+      error instanceof Error ? error.message : error
+    );
     console.error(LOG_PREFIX, {
       requestId,
       error: error instanceof Error ? error.message : error,
@@ -320,8 +350,11 @@ export async function handleKreaGenerate(req: Request): Promise<Response> {
           creditsToRefund: creditsUsed,
           source: "krea_generate_failure",
         });
-      } catch {
-        /* log only */
+      } catch (refundError) {
+        console.error(
+          "[PROVIDER ERROR]",
+          refundError instanceof Error ? refundError.message : refundError
+        );
       }
     }
 
