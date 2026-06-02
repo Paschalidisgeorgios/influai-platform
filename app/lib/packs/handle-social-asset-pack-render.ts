@@ -16,6 +16,7 @@ import {
   SocialAssetPackRenderError,
 } from "@/app/lib/packs/render-social-asset-pack";
 import type { SocialAssetPackRenderRequest } from "@/app/lib/packs/types";
+import { checkPromptSafety } from "@/lib/safety/prompt-safety-filter";
 
 export async function handleSocialAssetPackRenderRequest(
   req: Request
@@ -62,6 +63,30 @@ export async function handleSocialAssetPackRenderRequest(
       { success: false, error: "Prompt is too long.", code: "PROMPT_TOO_LONG" },
       { status: 400 }
     );
+  }
+
+  const safetyResult = checkPromptSafety(prompt);
+  if (!safetyResult.safe) {
+    return NextResponse.json(
+      {
+        error: safetyResult.userMessage.en,
+        safetyBlock: true,
+      },
+      { status: 422 }
+    );
+  }
+
+  if (improvedPrompt) {
+    const improvedSafety = checkPromptSafety(improvedPrompt);
+    if (!improvedSafety.safe) {
+      return NextResponse.json(
+        {
+          error: improvedSafety.userMessage.en,
+          safetyBlock: true,
+        },
+        { status: 422 }
+      );
+    }
   }
 
   const { data: creditRow } = await supabase

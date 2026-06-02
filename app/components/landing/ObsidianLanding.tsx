@@ -96,9 +96,19 @@ export default function ObsidianLanding() {
           studioHref={studioHref}
         />
 
-        <footer className="border-t border-neutral-800/80 bg-[#050505]/80 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-neutral-600 backdrop-blur-sm">
-          © {new Date().getFullYear()} InfluExAI · The Content Engine · Images,
-          motion & social-ready packs
+        <footer className="border-t border-white/[0.06] bg-[#050505] px-6 py-8 text-center">
+          <div className="flex flex-wrap justify-center gap-6 text-xs text-white/30">
+            <a href="/legal/impressum" className="transition hover:text-white/60">
+              Impressum
+            </a>
+            <a href="/legal/datenschutz" className="transition hover:text-white/60">
+              Datenschutz
+            </a>
+            <a href="/legal/agb" className="transition hover:text-white/60">
+              AGB
+            </a>
+            <span>© 2026 InfluExAi</span>
+          </div>
         </footer>
         </div>
       </main>

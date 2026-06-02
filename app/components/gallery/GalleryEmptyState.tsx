@@ -1,91 +1,49 @@
 "use client";
 
-import { ImageIcon, LayoutGrid, Sparkles, Video } from "lucide-react";
-import ObsidianButton from "@/app/components/shared/ObsidianButton";
-import { GALLERY_EMPTY } from "@/lib/copy/launch-user-copy";
-import { GALLERY_EMPTY_ACTIONS, GALLERY_FILTER_EMPTY } from "@/lib/copy/gallery-copy";
-import { OBS } from "@/lib/obsidian/dashboard-tokens";
+import Link from "next/link";
+import { Sparkles } from "lucide-react";
 
 type Props = {
-  isDe?: boolean;
-  variant?: "empty" | "filtered";
-  onClearFilters?: () => void;
+  language?: "en" | "de";
 };
 
-export default function GalleryEmptyState({
-  isDe = false,
-  variant = "empty",
-  onClearFilters,
-}: Props) {
-  const isFiltered = variant === "filtered";
-  const message = isFiltered
-    ? isDe
-      ? GALLERY_FILTER_EMPTY.de
-      : GALLERY_FILTER_EMPTY.en
-    : isDe
-      ? GALLERY_EMPTY.de
-      : GALLERY_EMPTY.en;
+const COPY = {
+  en: {
+    title: "Your first Pack is waiting",
+    subtitle: "You have free credits. Create your first Social Asset Pack now.",
+    cta: "Create Social Asset Pack →",
+    secondary: "Browse example outputs",
+  },
+  de: {
+    title: "Dein erstes Pack wartet",
+    subtitle: "Du hast kostenlose Credits. Erstelle jetzt dein erstes Social Asset Pack.",
+    cta: "Social Asset Pack erstellen →",
+    secondary: "Beispiel-Outputs ansehen",
+  },
+};
+
+export default function GalleryEmptyState({ language = "en" }: Props) {
+  const t = COPY[language];
 
   return (
-    <div
-      className={`flex flex-col items-center justify-center px-6 py-16 text-center ${OBS.glassPad}`}
-    >
-      <div className="relative mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-500/20 bg-amber-500/5">
-        <LayoutGrid className="h-7 w-7 text-amber-400/90" aria-hidden />
-        <Sparkles
-          className="absolute -right-1 -top-1 h-4 w-4 text-amber-500/70"
-          aria-hidden
-        />
+    <div className="flex flex-col items-center justify-center px-6 py-24 text-center">
+      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#d8ad5f]/20 bg-[#d8ad5f]/10">
+        <Sparkles className="h-8 w-8 text-[#d8ad5f]" />
       </div>
-
-      <h2 className="max-w-md text-lg font-bold text-white">
-        {isDe ? "Creator Gallery" : "Creator Gallery"}
-      </h2>
-      <p className="mt-3 max-w-lg text-sm leading-relaxed text-neutral-400">
-        {message}
-      </p>
-
-      {isFiltered ? (
-        <ObsidianButton
-          type="button"
-          variant="secondary"
-          size="md"
-          onClick={onClearFilters}
-          className="mt-6"
-        >
-          {isDe ? GALLERY_EMPTY_ACTIONS.clearFilters.de : GALLERY_EMPTY_ACTIONS.clearFilters.en}
-        </ObsidianButton>
-      ) : (
-        <div className="mt-8 flex w-full max-w-xl flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
-          <ObsidianButton
-            href="/dashboard/image"
-            variant="primary"
-            size="md"
-            className="gap-2"
-          >
-            <ImageIcon className="h-4 w-4" aria-hidden />
-            {isDe ? GALLERY_EMPTY_ACTIONS.createImage.de : GALLERY_EMPTY_ACTIONS.createImage.en}
-          </ObsidianButton>
-          <ObsidianButton
-            href="/dashboard/video"
-            variant="secondary"
-            size="md"
-            className="gap-2"
-          >
-            <Video className="h-4 w-4" aria-hidden />
-            {isDe ? GALLERY_EMPTY_ACTIONS.createVideo.de : GALLERY_EMPTY_ACTIONS.createVideo.en}
-          </ObsidianButton>
-          <ObsidianButton
-            href="/dashboard"
-            variant="secondary"
-            size="md"
-            className="gap-2"
-          >
-            <Sparkles className="h-4 w-4" aria-hidden />
-            {isDe ? GALLERY_EMPTY_ACTIONS.createPack.de : GALLERY_EMPTY_ACTIONS.createPack.en}
-          </ObsidianButton>
-        </div>
-      )}
+      <h3 className="mb-2 text-xl font-bold text-white">{t.title}</h3>
+      <p className="mb-8 max-w-sm text-sm text-white/50">{t.subtitle}</p>
+      <Link
+        href="/dashboard"
+        className="rounded-2xl bg-[#d8ad5f] px-8 py-3.5 text-sm font-bold text-black transition hover:bg-[#efc777]"
+      >
+        {t.cta}
+      </Link>
+      <button
+        type="button"
+        className="mt-4 text-xs text-white/25 transition hover:text-white/50"
+      >
+        {t.secondary}
+      </button>
     </div>
   );
 }

@@ -33,6 +33,7 @@ import {
   isToolRunBlockedError,
   isToolRunInsufficientCreditsError,
 } from "@/app/lib/tools/assert-tool-can-run";
+import { checkPromptSafety } from "@/lib/safety/prompt-safety-filter";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -245,6 +246,17 @@ export async function POST(req: Request) {
         step: "validation",
         debugReason: "prompt empty or missing",
       });
+    }
+
+    const safetyResult = checkPromptSafety(prompt);
+    if (!safetyResult.safe) {
+      return NextResponse.json(
+        {
+          error: safetyResult.userMessage.en,
+          safetyBlock: true,
+        },
+        { status: 422 }
+      );
     }
 
     currentStep = "model_resolve";

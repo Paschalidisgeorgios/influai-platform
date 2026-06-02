@@ -71,9 +71,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (!process.env.OPENAI_API_KEY) {
-      console.log(
-        "Prompt enhancement fallback: missing_openai_key"
-      );
+      // console.log(
+      //   "Prompt enhancement fallback: missing_openai_key"
+      // );
       return fallbackResponse(
         prompt,
         "missing_openai_key"
@@ -141,9 +141,9 @@ Create an enhanced cinematic AI image prompt.
       "";
 
     if (!enhanced) {
-      console.log(
-        "Prompt enhancement fallback: empty_response"
-      );
+      // console.log(
+      //   "Prompt enhancement fallback: empty_response"
+      // );
       return fallbackResponse(
         prompt,
         "openai_unavailable"
@@ -159,9 +159,9 @@ Create an enhanced cinematic AI image prompt.
       ? "openai_unavailable"
       : "openai_unavailable";
 
-    console.log(
-      `Prompt enhancement fallback: ${reason}`
-    );
+    // console.log(
+    //   `Prompt enhancement fallback: ${reason}`
+    // );
 
     if (!prompt) {
       return NextResponse.json(

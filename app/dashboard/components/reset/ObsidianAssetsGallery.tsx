@@ -590,13 +590,20 @@ export default function ObsidianAssetsGallery() {
       {loading ? (
         <GallerySkeletonGrid count={8} />
       ) : isGalleryEmpty ? (
-        <GalleryEmptyState isDe={isDe} variant="empty" />
+        <GalleryEmptyState language={isDe ? "de" : "en"} />
       ) : isFilterEmpty ? (
-        <GalleryEmptyState
-          isDe={isDe}
-          variant="filtered"
-          onClearFilters={clearFilters}
-        />
+        <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+          <p className="max-w-lg text-sm text-neutral-400">
+            {isDe ? "Keine Treffer für diese Filter." : "No assets match these filters."}
+          </p>
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="mt-6 rounded-xl border border-white/10 px-4 py-2 text-sm text-white/70 transition hover:bg-white/5"
+          >
+            {isDe ? "Filter zurücksetzen" : "Clear filters"}
+          </button>
+        </div>
       ) : (
         <div className="columns-2 gap-3 sm:columns-3 lg:columns-4">
           {filtered.map((asset) => (

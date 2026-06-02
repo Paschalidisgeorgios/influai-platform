@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { grantFreeTrial } from "@/lib/billing/free-trial";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -26,8 +27,12 @@ export async function GET(request: Request) {
       }
     );
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      const session = data.session;
+      if (session?.user?.id) {
+        await grantFreeTrial(session.user.id).catch(console.error);
+      }
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

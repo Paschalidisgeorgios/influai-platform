@@ -33,17 +33,17 @@ export const magnificContent = {
       models: "Models",
       pricing: "Pricing",
       signIn: "Login",
-      openStudio: "Get Started",
+      openStudio: "Create Free Pack",
     },
     hero: {
-      badge: "The Content Engine",
-      headline: "From one idea to ready-to-post content.",
+      badge: "AI Creator Studio",
+      headline: "From one idea to a ready-to-post Social Asset Pack.",
       subtitle:
-        "InfluExAI turns rough ideas into creator-ready assets — with intelligent prompting, image variations, motion video, Creative Score and export-ready formats.",
+        "InfluExAi turns rough ideas into complete content bundles — images, motion video, Creative Score, hooks, captions and export. In minutes, not hours.",
       trustLine:
-        "1 idea → 3 image variations → 1 motion clip → hooks → captions → export",
+        "1 idea → 3 image variations → motion video → score → hooks → export",
       body: "",
-      cta: "Preview your first pack",
+      cta: "Create your free Pack",
       secondaryCta: "See the workflow",
       studioMockup: {
         studioLabel: "Creator Studio",
@@ -794,17 +794,17 @@ export const magnificContent = {
       models: "Modelle",
       pricing: "Preise",
       signIn: "Login",
-      openStudio: "Starten",
+      openStudio: "Kostenloses Pack erstellen",
     },
     hero: {
-      badge: "The Content Engine",
-      headline: "Aus einer Idee wird postfertiger Content.",
+      badge: "AI Creator Studio",
+      headline: "Von einer Idee zum fertigen Social Asset Pack.",
       subtitle:
-        "InfluExAI verwandelt grobe Ideen in creator-ready Assets — mit intelligentem Prompting, Bildvarianten, Motion-Video, Creative Score und exportfertigen Formaten.",
+        "InfluExAi verwandelt Ideen in komplette Content-Pakete — Bilder, Motion Video, Creative Score, Hooks, Captions und Export. In Minuten, nicht Stunden.",
       trustLine:
-        "1 Idee → 3 Bildvarianten → 1 Motion-Clip → Hooks → Captions → Export",
+        "1 Idee → 3 Bildvarianten → Motion Video → Score → Hooks → Export",
       body: "",
-      cta: "Erstes Paket previewen",
+      cta: "Kostenloses Pack erstellen",
       secondaryCta: "Workflow ansehen",
       studioMockup: {
         studioLabel: "Creator Studio",
