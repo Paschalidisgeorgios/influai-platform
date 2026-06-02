@@ -1101,36 +1101,28 @@ export default function ObsidianIntelligentStudio({
 
   if (overlayMode && isPackWorkflow) {
     return (
-      <div className="fixed inset-0 z-[80] flex min-h-0 flex-col bg-[#0A0A0B]">
-        <header className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
-          <p className="text-sm font-semibold text-white">{workspaceToolLabel}</p>
-          <button
-            type="button"
-            onClick={() => onOverlayClose?.()}
-            className="min-h-10 rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 hover:bg-white/5"
-          >
-            {lang === "de" ? "Schließen" : "Close"}
-          </button>
-        </header>
-        <AgentPackGeneratorPanel
-          ref={packPanelRef}
-          prompt={prompt}
-          onPromptChange={setPrompt}
-          language={lang}
-          creditBalance={confirmedBalance}
-          getAccessToken={getToken}
-          onUseImprovedPrompt={setPrompt}
-          onInsufficientCredits={() =>
-            openUpsell({
-              balance: credits,
-              requiredCredits: packCredits,
-            })
-          }
-          onRenderComplete={() => onGenerationQueued({})}
-          className="min-h-0 flex-1"
-          onPackControlStateChange={handlePackControlStateChange}
-        />
-      </div>
+      <AgentPackGeneratorPanel
+        ref={packPanelRef}
+        prompt={prompt}
+        onPromptChange={setPrompt}
+        language={lang}
+        creditBalance={confirmedBalance}
+        getAccessToken={getToken}
+        onUseImprovedPrompt={setPrompt}
+        onInsufficientCredits={() =>
+          openUpsell({
+            balance: credits,
+            requiredCredits: packCredits,
+          })
+        }
+        onRenderComplete={() => onGenerationQueued({})}
+        showHeader
+        headerTitle={workspaceToolLabel}
+        onClose={() => onOverlayClose?.()}
+        controlSurface="overlay"
+        className="fixed inset-0 z-[80]"
+        onPackControlStateChange={handlePackControlStateChange}
+      />
     );
   }
 
