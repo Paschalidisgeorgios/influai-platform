@@ -388,7 +388,7 @@ export async function renderSocialAssetPack(input: {
   const packJobId = crypto.randomUUID();
   const totalCredits = getSocialAssetPackTotalCredits();
 
-  const preview = buildSocialAssetPackPreview({
+  const preview = await buildSocialAssetPackPreview({
     prompt: input.prompt,
     language,
   });
@@ -442,17 +442,23 @@ export async function renderSocialAssetPack(input: {
   const videos: SocialAssetPackAssetRef[] = [];
   const failedImageSlots: string[] = [];
 
-  for (const [index, plan] of engines.imagePlans.entries()) {
-    const prompt = variantPrompt(renderPrompt, index, language);
-    const asset = await renderImageVariant({
-      supabase: input.supabase,
-      userId: input.userId,
-      packJobId,
-      prompt,
-      plan,
-      language,
-      creditsCharged,
-    });
+  const imageResults = await Promise.all(
+    engines.imagePlans.map((plan, index) =>
+      renderImageVariant({
+        supabase: input.supabase,
+        userId: input.userId,
+        packJobId,
+        prompt: variantPrompt(renderPrompt, index, language),
+        plan,
+        language,
+        creditsCharged,
+      })
+    )
+  );
+
+  for (const [index, asset] of imageResults.entries()) {
+    const plan = engines.imagePlans[index];
+    if (!plan) continue;
 
     if (asset) {
       images.push(asset);

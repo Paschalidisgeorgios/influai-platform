@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isLaunchFeatureEnabled } from "@/app/lib/config/launch";
 import {
-  buildHooksCaptionsBundle,
+  generateHooksCaptionsBundle,
   type HooksCaptionsGenerateRequest,
 } from "@/app/lib/copy/hooks-captions";
 
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Prompt is too long." }, { status: 400 });
   }
 
-  const result = buildHooksCaptionsBundle({ prompt, language });
+  const result = await generateHooksCaptionsBundle({ prompt, language });
 
   return NextResponse.json(result);
 }

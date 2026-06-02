@@ -261,7 +261,7 @@ async function handlePackPreview(req: Request): Promise<Response> {
     return jsonError("Prompt is required.", 400, "MISSING_PROMPT");
   }
 
-  const preview = buildSocialAssetPackPreview({ prompt, language });
+  const preview = await buildSocialAssetPackPreview({ prompt, language });
   return Response.json({ success: true, ...preview });
 }
 

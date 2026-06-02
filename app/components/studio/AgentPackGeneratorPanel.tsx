@@ -88,6 +88,7 @@ const COPY = {
     statusGenerating: "GENERATING…",
     close: "Close ×",
     download: "Download",
+    generatingImage: "Generating…",
   },
   de: {
     headerTitle: "Social Asset Pack",
@@ -112,6 +113,7 @@ const COPY = {
     statusGenerating: "GENERIERT…",
     close: "Schließen ×",
     download: "Herunterladen",
+    generatingImage: "Wird generiert…",
   },
 } as const;
 
@@ -128,31 +130,43 @@ const TIMELINE_STEPS: {
   { id: "export", labelEn: "Export", labelDe: "Export" },
 ];
 
-const RENDER_ASSEMBLY_STEPS: PackAssemblyStepId[] = [
-  "idea",
-  "prompt_assist",
-  "images",
-  "motion",
-  "score",
-  "export",
-];
+type PackTimelineVisual = {
+  completedThrough: number;
+  activeIndex: number | null;
+  busy: boolean;
+};
 
-function timelineActiveIndex(
+function resolvePackTimelineVisual(
   panelState: SocialAssetPackPanelState,
-  assemblyStep: PackAssemblyStepId
-): number {
-  if (panelState === "idle") return 0;
-  if (panelState === "preview_loading") return 1;
-  if (panelState === "preview_ready" || panelState === "insufficient_credits") {
-    return 2;
+  renderTimelineStep: number
+): PackTimelineVisual {
+  const total = TIMELINE_STEPS.length;
+
+  if (isTerminalRenderState(panelState)) {
+    return { completedThrough: total, activeIndex: null, busy: false };
   }
-  if (panelState === "credit_checking") return 2;
+
+  if (panelState === "preview_loading") {
+    return { completedThrough: 0, activeIndex: 0, busy: true };
+  }
+
+  if (
+    panelState === "preview_ready" ||
+    panelState === "insufficient_credits"
+  ) {
+    return { completedThrough: 2, activeIndex: null, busy: false };
+  }
+
+  if (panelState === "credit_checking") {
+    return { completedThrough: 2, activeIndex: 2, busy: true };
+  }
+
   if (panelState === "rendering") {
-    const idx = TIMELINE_STEPS.findIndex((s) => s.id === assemblyStep);
-    return idx >= 0 ? idx : 3;
+    const step = Math.min(Math.max(renderTimelineStep, 0), total - 1);
+    return { completedThrough: step, activeIndex: step, busy: true };
   }
-  if (isTerminalRenderState(panelState)) return TIMELINE_STEPS.length;
-  return 0;
+
+  return { completedThrough: 0, activeIndex: null, busy: false };
 }
 
 function PackStudioHeader({
@@ -182,11 +196,13 @@ function PackStudioHeader({
 
 function PackAgentTimeline({
   language,
-  activeThrough,
+  completedThrough,
+  activeIndex,
   busy,
 }: {
   language: Language;
-  activeThrough: number;
+  completedThrough: number;
+  activeIndex: number | null;
   busy: boolean;
 }) {
   const isDe = language === "de";
@@ -194,11 +210,8 @@ function PackAgentTimeline({
   return (
     <ol className="flex w-full items-center">
       {TIMELINE_STEPS.map((step, index) => {
-        const done = index < activeThrough;
-        const active = index === activeThrough && busy;
-        const reached = index <= activeThrough;
-        const isActiveStyle = active || (reached && !done && busy);
-        const isDoneStyle = done || (reached && !busy && index < activeThrough);
+        const isDone = index < completedThrough;
+        const isActive = busy && activeIndex === index;
 
         return (
           <li key={step.id} className="flex min-w-0 flex-1 items-center">
@@ -213,19 +226,19 @@ function PackAgentTimeline({
                 layout
                 initial={false}
                 animate={{
-                  scale: isActiveStyle ? 1.08 : 1,
-                  opacity: reached ? 1 : 0.55,
+                  scale: isActive ? 1.08 : 1,
+                  opacity: isDone || isActive ? 1 : 0.5,
                 }}
                 transition={{ type: "spring", stiffness: 420, damping: 28 }}
                 className={`flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold ${
-                  isDoneStyle
+                  isDone
                     ? "bg-[#d8ad5f] text-black"
-                    : isActiveStyle
-                      ? "bg-[#d8ad5f] text-black"
+                    : isActive
+                      ? "animate-pulse border-2 border-[#d8ad5f] bg-transparent text-[#d8ad5f]"
                       : "border border-white/20 text-white/30"
                 }`}
               >
-                {isDoneStyle ? "✓" : index + 1}
+                {isDone ? "✓" : index + 1}
               </motion.span>
               <span className="max-w-[3.25rem] truncate text-center text-[9px] font-medium text-white/40">
                 {isDe ? step.labelDe : step.labelEn}
@@ -243,15 +256,35 @@ function PackImageSlot({
   alt,
   language,
   onDownload,
+  isLoading = false,
+  loadingLabel,
   className = "",
 }: {
   url: string | null;
   alt: string;
   language: Language;
   onDownload?: () => void;
+  isLoading?: boolean;
+  loadingLabel?: string;
   className?: string;
 }) {
   const t = COPY[language];
+  const label = loadingLabel ?? t.generatingImage;
+
+  if (isLoading && !url) {
+    return (
+      <div
+        className={`relative overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0A0A0A] ${className}`}
+        aria-busy="true"
+        aria-label={label}
+      >
+        <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-white/[0.03] via-white/[0.07] to-white/[0.03]" />
+        <p className="absolute inset-0 flex items-center justify-center text-xs text-white/20">
+          {label}
+        </p>
+      </div>
+    );
+  }
 
   if (!url) {
     return (
@@ -264,7 +297,11 @@ function PackImageSlot({
   }
 
   return (
-    <div
+    <motion.div
+      key={url}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.45, ease: "easeOut" }}
       className={`group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-black/40 ${className}`}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -284,7 +321,7 @@ function PackImageSlot({
           {t.download}
         </button>
       ) : null}
-    </div>
+    </motion.div>
   );
 }
 
@@ -438,8 +475,7 @@ const AgentPackGeneratorPanel = forwardRef<AgentPackGeneratorPanelHandle, Props>
     const [result, setResult] = useState<SocialAssetPackRenderResponse | null>(
       null
     );
-    const [assemblyStep, setAssemblyStep] =
-      useState<PackAssemblyStepId>("idea");
+    const [renderTimelineStep, setRenderTimelineStep] = useState(0);
     const [outputTab, setOutputTab] = useState<OutputTab>("hooks");
     const previewedPromptRef = useRef<string | null>(null);
 
@@ -475,16 +511,30 @@ const AgentPackGeneratorPanel = forwardRef<AgentPackGeneratorPanelHandle, Props>
     }, [creditBalance, packCredits, preview, panelState]);
 
     useEffect(() => {
-      if (panelState !== "rendering") return;
-      setAssemblyStep("idea");
-      const stepTimers = RENDER_ASSEMBLY_STEPS.map((step, index) =>
-        window.setTimeout(() => {
-          setAssemblyStep(step);
-        }, 400 + index * 850)
-      );
+      if (panelState !== "rendering") {
+        if (!isTerminalRenderState(panelState)) {
+          setRenderTimelineStep(0);
+        }
+        return;
+      }
+
+      setRenderTimelineStep(0);
+      const stepTimers = [
+        window.setTimeout(() => setRenderTimelineStep(1), 1000),
+        window.setTimeout(() => setRenderTimelineStep(2), 1100),
+        window.setTimeout(() => setRenderTimelineStep(3), 14_000),
+        window.setTimeout(() => setRenderTimelineStep(4), 28_000),
+      ];
+
       return () => {
         stepTimers.forEach(window.clearTimeout);
       };
+    }, [panelState]);
+
+    useEffect(() => {
+      if (isTerminalRenderState(panelState)) {
+        setRenderTimelineStep(TIMELINE_STEPS.length - 1);
+      }
     }, [panelState]);
 
     const canPreview =
@@ -687,11 +737,15 @@ const AgentPackGeneratorPanel = forwardRef<AgentPackGeneratorPanelHandle, Props>
     const captions = result?.captions ?? preview?.captions ?? [];
     const hashtags = result?.hashtags ?? preview?.hashtags ?? [];
 
-    const activeTimeline = timelineActiveIndex(panelState, assemblyStep);
+    const timelineVisual = resolvePackTimelineVisual(
+      panelState,
+      renderTimelineStep
+    );
     const previewLoading = panelState === "preview_loading";
     const renderLoading =
       panelState === "rendering" || panelState === "credit_checking";
     const isGenerating = previewLoading || renderLoading;
+    const imagesLoading = renderLoading;
 
     const primaryDownloadUrl =
       result?.assets.images[0]?.assetUrl ??
@@ -750,8 +804,9 @@ const AgentPackGeneratorPanel = forwardRef<AgentPackGeneratorPanelHandle, Props>
             <div className="mt-6 shrink-0">
               <PackAgentTimeline
                 language={lang}
-                activeThrough={activeTimeline}
-                busy={packBusy}
+                completedThrough={timelineVisual.completedThrough}
+                activeIndex={timelineVisual.activeIndex}
+                busy={timelineVisual.busy}
               />
             </div>
 
@@ -819,6 +874,7 @@ const AgentPackGeneratorPanel = forwardRef<AgentPackGeneratorPanelHandle, Props>
                   url={imageUrls[0] ?? null}
                   alt={lang === "de" ? "Pack Bild 1" : "Pack image 1"}
                   language={lang}
+                  isLoading={imagesLoading}
                   className="col-span-2 min-h-[180px] md:min-h-[220px]"
                   onDownload={
                     imageUrls[0]
@@ -831,6 +887,7 @@ const AgentPackGeneratorPanel = forwardRef<AgentPackGeneratorPanelHandle, Props>
                   url={imageUrls[1] ?? null}
                   alt={lang === "de" ? "Pack Bild 2" : "Pack image 2"}
                   language={lang}
+                  isLoading={imagesLoading}
                   className="min-h-[100px] md:min-h-[120px]"
                   onDownload={
                     imageUrls[1]
@@ -843,6 +900,7 @@ const AgentPackGeneratorPanel = forwardRef<AgentPackGeneratorPanelHandle, Props>
                   url={imageUrls[2] ?? null}
                   alt={lang === "de" ? "Pack Bild 3" : "Pack image 3"}
                   language={lang}
+                  isLoading={imagesLoading}
                   className="min-h-[100px] md:min-h-[120px]"
                   onDownload={
                     imageUrls[2]

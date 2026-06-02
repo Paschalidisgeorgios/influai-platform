@@ -386,7 +386,7 @@ async function smokeTestPackPreview(
 
   if (launchOk) {
     try {
-      const preview = buildSocialAssetPackPreview({
+      const preview = await buildSocialAssetPackPreview({
         prompt: SMOKE_PROMPT,
         language: "en",
       });

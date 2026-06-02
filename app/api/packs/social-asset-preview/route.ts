@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const preview = buildSocialAssetPackPreview({ prompt, language });
+  const preview = await buildSocialAssetPackPreview({ prompt, language });
 
   return NextResponse.json(preview);
 }

@@ -12,9 +12,8 @@ import type {
 } from "./types";
 import { buildRuleBasedCreativeScore } from "@/lib/intelligence/creative-score-engine";
 import {
-  buildCaptions as buildCaptionsFromCopy,
-  buildHashtags as buildHashtagsFromCopy,
-  buildHooks as buildHooksFromCopy,
+  extractProductLabel,
+  generateHooksCaptionsBundle,
   HOOKS_CAPTIONS_CAPTION_COUNT,
   HOOKS_CAPTIONS_HOOK_COUNT,
 } from "@/app/lib/copy/hooks-captions";
@@ -375,28 +374,29 @@ function buildExportPackageSummary(
 
 /**
  * Builds a full pack preview without image/video generation or credit charges.
- * Uses rule-based copy and Creative Score only — no OpenAI or media providers.
+ * Hooks/captions use AI when configured; otherwise viral template fallback (not raw prompt).
  */
-export function buildSocialAssetPackPreview(input: {
+export async function buildSocialAssetPackPreview(input: {
   prompt: string;
   language?: "en" | "de";
-}): SocialAssetPackPreviewResponse {
+}): Promise<SocialAssetPackPreviewResponse> {
   const language = input.language === "de" ? "de" : "en";
   const topic =
-    truncateTopic(input.prompt, 56) ||
+    extractProductLabel(input.prompt) ||
     (language === "de" ? "deine Idee" : "your idea");
   const improvedPrompt = improvePromptForPack(input.prompt, language);
+  const copy = await generateHooksCaptionsBundle({
+    prompt: input.prompt,
+    language,
+  });
 
   return {
     packName: SOCIAL_ASSET_PACK_NAME,
     assetPlan: buildSocialAssetPlan(language),
     improvedPrompt,
-    hooks: buildHooksFromCopy(topic, language).slice(0, HOOKS_CAPTIONS_HOOK_COUNT),
-    captions: buildCaptionsFromCopy(topic, language).slice(
-      0,
-      HOOKS_CAPTIONS_CAPTION_COUNT
-    ),
-    hashtags: buildHashtagsFromCopy(language),
+    hooks: copy.hooks.slice(0, HOOKS_CAPTIONS_HOOK_COUNT),
+    captions: copy.captions.slice(0, HOOKS_CAPTIONS_CAPTION_COUNT),
+    hashtags: copy.hashtags,
     formatSuggestions: [...SOCIAL_ASSET_PACK_FORMAT_SUGGESTIONS],
     includedOutputs: { ...SOCIAL_ASSET_PACK_INCLUDED_OUTPUTS },
     estimatedCredits: getSocialAssetPackTotalCredits(),

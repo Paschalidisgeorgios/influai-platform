@@ -82,38 +82,68 @@ export function validateCampaignExpansionPayload(
   return { viral_hooks, video_script, hashtags };
 }
 
-function truncatePrompt(prompt: string, max = 80): string {
-  const t = prompt.trim();
-  if (t.length <= max) return t;
-  return `${t.slice(0, max).trim()}…`;
+/** Short product label for hooks — never the full raw prompt. */
+export function extractCampaignProductLabel(
+  prompt: string,
+  maxLen = 48
+): string {
+  const trimmed = prompt.trim();
+  if (!trimmed) return "";
+
+  const firstSegment =
+    trimmed.split(/[,.\n;]/)[0]?.trim() ?? trimmed;
+  if (firstSegment.length <= maxLen) return firstSegment;
+
+  const cut = firstSegment.slice(0, maxLen);
+  const lastSpace = cut.lastIndexOf(" ");
+  const shortened =
+    lastSpace > 16 ? cut.slice(0, lastSpace).trim() : cut.trim();
+  return `${shortened}…`;
 }
 
 export function buildRuleBasedCampaignExpansion(
   prompt: string,
   language: CampaignExpansionLanguage
 ): CampaignExpansionResult {
-  const topic = truncatePrompt(prompt) || (language === "de" ? "deine Marke" : "your brand");
+  const product =
+    extractCampaignProductLabel(prompt) ||
+    (language === "de" ? "dieses Produkt" : "this product");
+  const shortDesc =
+    extractCampaignProductLabel(prompt, 36) ||
+    (language === "de" ? "deine Idee" : "your idea");
 
   if (language === "de") {
     return {
       viral_hooks: [
-        `Stopp — so sieht ${topic} aus, wenn es wirklich konvertiert.`,
-        `3 Sekunden, die ${topic} auf Social zum Scroll-Stopper machen.`,
-        `Würdest du für ${topic} swipen oder kaufen? Genau.`,
+        `Wusstest du, dass ${product} sofort Premium im Feed wirkt?`,
+        `Stopp scrolling — das musst du sehen: ${shortDesc}.`,
+        `3 Sekunden, die alles verändern: ${product}.`,
       ],
-      video_script: `[0–3s] Hook: Aufmerksamkeit auf ${topic}.\n[3–8s] Nutzen zeigen — klar, visuell, ohne Floskeln.\n[8–12s] Social Proof oder Ergebnis andeuten.\n[12–15s] CTA: Jetzt entdecken / Link in Bio.`,
-      hashtags: ["#ContentCreator", "#SocialMediaMarketing", "#BrandGrowth", "#ReelsTips", "#InfluencerMarketing"],
+      video_script: `[0–3s] Hook: ${shortDesc} — Scroll-Stop in 2 Sekunden.\n[3–8s] Nutzen von ${product} visuell zeigen.\n[8–12s] Social Proof oder Ergebnis andeuten.\n[12–15s] CTA: Jetzt entdecken / Link in Bio.`,
+      hashtags: [
+        "#ContentCreator",
+        "#SocialMediaMarketing",
+        "#BrandGrowth",
+        "#ReelsTips",
+        "#InfluencerMarketing",
+      ],
     };
   }
 
   return {
     viral_hooks: [
-      `Stop scrolling — this is what ${topic} looks like when it converts.`,
-      `3 seconds that turn ${topic} into a scroll-stopper.`,
-      `Would you swipe or buy for ${topic}? Exactly.`,
+      `Did you know ${product} can look premium in feed instantly?`,
+      `Stop scrolling — you need to see this: ${shortDesc}.`,
+      `3 seconds that change everything: ${product}.`,
     ],
-    video_script: `[0–3s] Hook: Grab attention for ${topic}.\n[3–8s] Show the benefit — clear, visual, no fluff.\n[8–12s] Hint at proof or outcome.\n[12–15s] CTA: Discover now / link in bio.`,
-    hashtags: ["#ContentCreator", "#SocialMediaMarketing", "#BrandGrowth", "#ReelsTips", "#InfluencerMarketing"],
+    video_script: `[0–3s] Hook: ${shortDesc} — scroll-stop in 2 seconds.\n[3–8s] Show the benefit of ${product} visually.\n[8–12s] Hint at proof or outcome.\n[12–15s] CTA: Discover now / link in bio.`,
+    hashtags: [
+      "#ContentCreator",
+      "#SocialMediaMarketing",
+      "#BrandGrowth",
+      "#ReelsTips",
+      "#InfluencerMarketing",
+    ],
   };
 }
 

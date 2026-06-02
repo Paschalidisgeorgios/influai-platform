@@ -1,6 +1,11 @@
 /**
- * Hooks, Captions & Hashtags — local copy generation (no provider calls, no credits).
+ * Hooks, Captions & Hashtags — copy generation (AI when configured, rule-based fallback).
  */
+
+import {
+  extractCampaignProductLabel,
+  generateCampaignExpansion,
+} from "@/lib/intelligence/campaign-expansion-engine";
 
 export const HOOKS_CAPTIONS_ID = "hooks_captions";
 
@@ -81,29 +86,36 @@ export const HOOKS_CAPTIONS_UI_COPY = {
   },
 } as const;
 
-function truncateTopic(prompt: string, max = 72): string {
-  const t = prompt.trim();
-  if (!t) return "";
-  if (t.length <= max) return t;
-  return `${t.slice(0, max).trim()}…`;
+export function extractProductLabel(
+  prompt: string,
+  maxLen = 48
+): string {
+  return extractCampaignProductLabel(prompt, maxLen);
 }
 
-export function buildHooks(topic: string, language: "en" | "de"): string[] {
+export function buildHooks(product: string, language: "en" | "de"): string[] {
+  const label =
+    product.trim() || (language === "de" ? "dieses Produkt" : "this product");
+  const short =
+    product.trim().length > 36
+      ? extractProductLabel(product, 36)
+      : label;
+
   if (language === "de") {
     return [
-      `Stopp — so wirkt ${topic} im Feed.`,
-      `3 Sekunden, die ${topic} unübersehbar machen.`,
-      `Würdest du für ${topic} stoppen oder swipen?`,
-      `Das sieht aus wie Premium-Content für ${topic}.`,
-      `Creator-Tipp: ${topic} mit diesem Hook testen.`,
+      `Wusstest du, dass ${label} sofort Premium im Feed wirkt?`,
+      `Stopp scrolling — das musst du sehen: ${short}.`,
+      `3 Sekunden, die alles verändern: ${label}.`,
+      `POV: ${label} stoppt den Scroll in 2 Sekunden.`,
+      `Creator-Tipp: Teste ${label} mit diesem Hook zuerst.`,
     ];
   }
   return [
-    `Stop scrolling — this is how ${topic} hits in feed.`,
-    `3 seconds that make ${topic} impossible to ignore.`,
-    `Would you stop or swipe for ${topic}?`,
-    `This looks like premium creator content for ${topic}.`,
-    `Creator tip: test ${topic} with this hook first.`,
+    `Did you know ${label} can look premium in feed instantly?`,
+    `Stop scrolling — you need to see this: ${short}.`,
+    `3 seconds that change everything: ${label}.`,
+    `POV: ${label} stops the scroll in 2 seconds.`,
+    `Creator tip: test ${label} with this hook first.`,
   ];
 }
 
@@ -186,8 +198,26 @@ export function buildPlatformVariants(
   ];
 }
 
+function buildCaptionsFromScript(
+  videoScript: string,
+  topic: string,
+  language: "en" | "de"
+): string[] {
+  const lines = videoScript
+    .split(/\n+/)
+    .map((line) => line.replace(/^\[[^\]]+\]\s*/, "").trim())
+    .filter(Boolean);
+
+  const fromScript = lines.slice(0, HOOKS_CAPTIONS_CAPTION_COUNT);
+  if (fromScript.length >= HOOKS_CAPTIONS_CAPTION_COUNT) {
+    return fromScript;
+  }
+
+  return buildCaptions(topic, language).slice(0, HOOKS_CAPTIONS_CAPTION_COUNT);
+}
+
 /**
- * Builds hooks, captions, hashtags and platform variants — no external APIs.
+ * Rule-based bundle — synchronous fallback.
  */
 export function buildHooksCaptionsBundle(input: {
   prompt: string;
@@ -195,7 +225,7 @@ export function buildHooksCaptionsBundle(input: {
 }): HooksCaptionsGenerateResponse {
   const language = input.language === "de" ? "de" : "en";
   const topic =
-    truncateTopic(input.prompt, 56) ||
+    extractProductLabel(input.prompt) ||
     (language === "de" ? "deine Idee" : "your idea");
 
   return {
@@ -206,6 +236,54 @@ export function buildHooksCaptionsBundle(input: {
       HOOKS_CAPTIONS_CAPTION_COUNT
     ),
     hashtags: buildHashtags(language),
+    platformVariants: buildPlatformVariants(topic, language),
+    creditsCharged: HOOKS_CAPTIONS_CREDITS,
+  };
+}
+
+/**
+ * AI copy when OpenAI/Gemini is configured; otherwise viral hook templates (not raw prompt).
+ */
+export async function generateHooksCaptionsBundle(input: {
+  prompt: string;
+  language?: "en" | "de";
+}): Promise<HooksCaptionsGenerateResponse> {
+  const language = input.language === "de" ? "de" : "en";
+  const topic =
+    extractProductLabel(input.prompt) ||
+    (language === "de" ? "deine Idee" : "your idea");
+
+  const expansion = await generateCampaignExpansion({
+    prompt: input.prompt,
+    language,
+  });
+
+  const hooks = expansion.viral_hooks.slice(0, HOOKS_CAPTIONS_HOOK_COUNT);
+  const paddedHooks =
+    hooks.length >= HOOKS_CAPTIONS_HOOK_COUNT
+      ? hooks
+      : [
+          ...hooks,
+          ...buildHooks(topic, language).slice(
+            hooks.length,
+            HOOKS_CAPTIONS_HOOK_COUNT
+          ),
+        ];
+
+  const hashtags =
+    expansion.hashtags.length > 0
+      ? expansion.hashtags
+      : buildHashtags(language);
+
+  return {
+    topic,
+    hooks: paddedHooks,
+    captions: buildCaptionsFromScript(
+      expansion.video_script,
+      topic,
+      language
+    ),
+    hashtags,
     platformVariants: buildPlatformVariants(topic, language),
     creditsCharged: HOOKS_CAPTIONS_CREDITS,
   };
