@@ -82,7 +82,7 @@ export function validateCampaignExpansionPayload(
   return { viral_hooks, video_script, hashtags };
 }
 
-/** Short product label for hooks — never the full raw prompt. */
+/** Short product label for hooks — strips shoot/format noise, keeps core product. */
 export function extractCampaignProductLabel(
   prompt: string,
   maxLen = 48
@@ -90,15 +90,35 @@ export function extractCampaignProductLabel(
   const trimmed = prompt.trim();
   if (!trimmed) return "";
 
-  const firstSegment =
-    trimmed.split(/[,.\n;]/)[0]?.trim() ?? trimmed;
-  if (firstSegment.length <= maxLen) return firstSegment;
+  const cleaned = trimmed
+    .replace(/\b(soft|hard|studio|natural|golden|warm|cool)\s+light(ing)?\b/gi, "")
+    .replace(
+      /\b(on\s+)?(white|black|marble|concrete|wooden|gray|grey)\s+(background|surface|table|floor)?\b/gi,
+      ""
+    )
+    .replace(
+      /\b(instagram|tiktok|youtube|facebook|linkedin)\s+(square|story|post|reel|feed|format)?\b/gi,
+      ""
+    )
+    .replace(
+      /\b(square|vertical|horizontal|portrait|landscape)\s*(format|shot|crop)?\b/gi,
+      ""
+    )
+    .replace(/\b(4k|8k|hd|uhd|cinematic|editorial)\b/gi, "")
+    .replace(/,+\s*,+/g, ",")
+    .replace(/\s+/g, " ")
+    .trim();
 
-  const cut = firstSegment.slice(0, maxLen);
+  const firstSegment = cleaned.split(/[,.\n;]/)[0]?.trim() ?? cleaned;
+  const result =
+    firstSegment.length > 0
+      ? firstSegment
+      : (trimmed.split(/[,.\n;]/)[0]?.trim() ?? trimmed);
+
+  if (result.length <= maxLen) return result;
+  const cut = result.slice(0, maxLen);
   const lastSpace = cut.lastIndexOf(" ");
-  const shortened =
-    lastSpace > 16 ? cut.slice(0, lastSpace).trim() : cut.trim();
-  return `${shortened}…`;
+  return lastSpace > 16 ? cut.slice(0, lastSpace).trim() : cut.trim();
 }
 
 export function buildRuleBasedCampaignExpansion(

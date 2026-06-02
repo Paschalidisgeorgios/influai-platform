@@ -198,7 +198,7 @@ export function buildPlatformVariants(
   ];
 }
 
-function buildCaptionsFromScript(
+export function buildCaptionsFromScript(
   videoScript: string,
   topic: string,
   language: "en" | "de"

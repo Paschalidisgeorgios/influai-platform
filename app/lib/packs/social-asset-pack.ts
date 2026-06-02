@@ -12,11 +12,14 @@ import type {
 } from "./types";
 import { buildRuleBasedCreativeScore } from "@/lib/intelligence/creative-score-engine";
 import {
+  buildCaptionsFromScript,
+  buildHashtags,
+  buildHooks,
   extractProductLabel,
-  generateHooksCaptionsBundle,
   HOOKS_CAPTIONS_CAPTION_COUNT,
   HOOKS_CAPTIONS_HOOK_COUNT,
 } from "@/app/lib/copy/hooks-captions";
+import { generateCampaignExpansion } from "@/lib/intelligence/campaign-expansion-engine";
 
 export const SOCIAL_ASSET_PACK_ID = "social_asset_pack";
 
@@ -385,18 +388,40 @@ export async function buildSocialAssetPackPreview(input: {
     extractProductLabel(input.prompt) ||
     (language === "de" ? "deine Idee" : "your idea");
   const improvedPrompt = improvePromptForPack(input.prompt, language);
-  const copy = await generateHooksCaptionsBundle({
+  const expansion = await generateCampaignExpansion({
     prompt: input.prompt,
     language,
   });
+
+  let hooks = expansion.viral_hooks.slice(0, HOOKS_CAPTIONS_HOOK_COUNT);
+  if (hooks.length < HOOKS_CAPTIONS_HOOK_COUNT) {
+    hooks = [
+      ...hooks,
+      ...buildHooks(topic, language).slice(
+        hooks.length,
+        HOOKS_CAPTIONS_HOOK_COUNT
+      ),
+    ];
+  }
+
+  const captions = buildCaptionsFromScript(
+    expansion.video_script,
+    topic,
+    language
+  ).slice(0, HOOKS_CAPTIONS_CAPTION_COUNT);
+
+  const hashtags =
+    expansion.hashtags.length > 0
+      ? expansion.hashtags
+      : buildHashtags(language);
 
   return {
     packName: SOCIAL_ASSET_PACK_NAME,
     assetPlan: buildSocialAssetPlan(language),
     improvedPrompt,
-    hooks: copy.hooks.slice(0, HOOKS_CAPTIONS_HOOK_COUNT),
-    captions: copy.captions.slice(0, HOOKS_CAPTIONS_CAPTION_COUNT),
-    hashtags: copy.hashtags,
+    hooks,
+    captions,
+    hashtags,
     formatSuggestions: [...SOCIAL_ASSET_PACK_FORMAT_SUGGESTIONS],
     includedOutputs: { ...SOCIAL_ASSET_PACK_INCLUDED_OUTPUTS },
     estimatedCredits: getSocialAssetPackTotalCredits(),

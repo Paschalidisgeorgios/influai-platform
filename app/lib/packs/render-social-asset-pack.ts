@@ -171,6 +171,8 @@ type ResolvedPackEngines = {
 };
 
 function validatePackEngines(language: "en" | "de"): ResolvedPackEngines {
+  console.error("[PACK ENGINES] Starting engine validation, language:", language);
+
   const config = SOCIAL_ASSET_PACK_RENDER_CONFIG;
 
   if (config.packId !== "social_asset_pack") {
@@ -206,6 +208,15 @@ function validatePackEngines(language: "en" | "de"): ResolvedPackEngines {
       };
     });
 
+  console.error(
+    "[PACK ENGINES] Image plans:",
+    imagePlans.map((p) => ({
+      engineId: p.engineId,
+      provider: p.provider,
+      modelRegistryId: p.modelRegistryId,
+    }))
+  );
+
   const videoResolved = resolveModelModeForGeneration(
     config.videoModelModeId,
     "create_video",
@@ -215,6 +226,11 @@ function validatePackEngines(language: "en" | "de"): ResolvedPackEngines {
     videoResolved.engineId,
     { language }
   );
+
+  console.error("[PACK ENGINES] Video plan:", {
+    engineId: videoResolved.engineId,
+    provider: videoContext.resolved.provider,
+  });
 
   return {
     imagePlans,
@@ -288,6 +304,12 @@ async function renderImageVariant(params: {
       };
     } catch (error) {
       lastError = error instanceof Error ? error : new Error("Image render failed");
+      console.error(
+        "[PACK IMAGE FAIL] attempt:",
+        attempt,
+        "error:",
+        error instanceof Error ? error.message : error
+      );
       if (generationId) {
         await markGenerationFailed({
           generationId,
@@ -362,6 +384,12 @@ async function renderVideoClip(params: {
       };
     } catch (error) {
       lastError = error instanceof Error ? error : new Error("Video render failed");
+      console.error(
+        "[PACK VIDEO FAIL] attempt:",
+        attempt,
+        "error:",
+        error instanceof Error ? error.message : error
+      );
       if (generationId) {
         await markGenerationFailed({
           generationId,
