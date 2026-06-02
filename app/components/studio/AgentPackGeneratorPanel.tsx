@@ -7,26 +7,21 @@ import {
   useImperativeHandle,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
-import Link from "next/link";
-import { Loader2, Package, Sparkles } from "lucide-react";
-import SocialAssetPackShowcase from "@/app/components/pack/SocialAssetPackShowcase";
-import AgentWorkflowPanel from "@/app/components/studio/AgentWorkflowPanel";
-import type { PackAssemblyStepId } from "@/app/components/pack/pack-showcase-types";
-import PackGalleryGroup from "@/app/components/gallery/PackGalleryGroup";
-import CreditCostPreview from "@/app/components/billing/CreditCostPreview";
-import PackResultActions from "@/app/components/studio/PackResultActions";
 import {
-  formatPackRenderCta,
-  getSocialAssetPackBuyCreditsLabel,
-  getSocialAssetPackCopy,
-  getSocialAssetPackTotalCredits,
-} from "@/app/lib/packs/social-asset-pack";
+  ChevronDown,
+  Download,
+  ImageIcon,
+  Loader2,
+} from "lucide-react";
+import type { PackAssemblyStepId } from "@/app/components/pack/pack-showcase-types";
+import PackResultActions from "@/app/components/studio/PackResultActions";
+import { getSocialAssetPackTotalCredits } from "@/app/lib/packs/social-asset-pack";
 import {
   canStartPreview,
   canStartRender,
   isTerminalRenderState,
-  PACK_PANEL_STATE_COPY,
   resolvePreviewReadyState,
   resolveRenderOutcomeState,
   type SocialAssetPackPanelState,
@@ -36,16 +31,6 @@ import type {
   SocialAssetPackRenderResponse,
 } from "@/app/lib/packs/types";
 import { sanitizeUserFacingApiError } from "@/lib/env/user-facing-errors";
-import { CREDITS_PAGE } from "@/lib/copy/launch-user-copy";
-import { ParallaxDepthLayers } from "@/app/components/motion/ParallaxDepthBackdrop";
-import { useSubtleParallax } from "@/lib/motion/use-subtle-parallax";
-import { useAgentVisualEffectsEnabled } from "@/lib/studio/agent-visual-effects-context";
-import { obsidianButtonClass } from "@/lib/obsidian/button-tokens";
-import {
-  AGENT_STUDIO_SCROLL_CLASS,
-  AGENT_STUDIO_WINDOW_CLASS,
-  PACK_STATUS_BANNER_SLOT_CLASS,
-} from "@/lib/studio/stable-panel-layout";
 import type {
   AgentPackGeneratorPanelHandle,
   PackOverlayControlState,
@@ -57,9 +42,12 @@ export type {
   PackOverlayControlState,
 } from "@/lib/studio/pack-overlay-control";
 
+type Language = "en" | "de";
+
 type Props = {
   prompt: string;
-  language?: "en" | "de";
+  onPromptChange?: (value: string) => void;
+  language?: Language;
   disabled?: boolean;
   creditBalance?: number;
   getAccessToken: () => Promise<string | null>;
@@ -68,323 +56,361 @@ type Props = {
   onRenderComplete?: () => void;
   showHeader?: boolean;
   className?: string;
-  /** Overlay footer owns preview/render CTAs — hide duplicate buttons in panel. */
   controlSurface?: "inline" | "overlay";
   onPackControlStateChange?: (state: PackOverlayControlState) => void;
 };
 
-const AGENT_COPY = {
+const COPY = {
   en: {
-    title: "Social Asset Pack Agent",
-    subtitle:
-      "InfluExAI assembles images, motion, hooks, captions, hashtags and export formats from one idea.",
-    previewCta: "Preview Pack",
-    estimatedCost: "Estimated render cost",
-    renderingLabel: "Rendering pack…",
+    placeholder: "Describe your idea…",
+    previewCta: "Preview",
+    renderCta: (credits: number) => `Render · ${credits} credits`,
+    previewing: "Previewing…",
+    rendering: "Rendering pack…",
+    checking: "Checking credits…",
     previewFailed: "Preview failed.",
     renderFailed: "Pack rendering failed.",
     signInAgain: "Please sign in again.",
     notEnoughCredits: "Not enough credits.",
-    openGallery: "Open Creator Gallery",
-    previewAgain: "Preview another pack",
+    creditsBadge: (cost: number, balance: number) =>
+      `${cost} credits · ${balance} available`,
+    hooks: "Hooks",
+    captions: "Captions",
+    hashtags: "Hashtags",
+    emptyImages: "Images appear after preview or render",
+    download: "Download",
   },
   de: {
-    title: "Social Asset Pack Agent",
-    subtitle:
-      "InfluExAI stellt aus einer Idee Bilder, Motion, Hooks, Captions, Hashtags und Export-Formate zusammen.",
-    previewCta: "Pack-Vorschau",
-    estimatedCost: "Geschätzte Render-Kosten",
-    renderingLabel: "Pack wird gerendert…",
+    placeholder: "Beschreibe deine Idee…",
+    previewCta: "Vorschau",
+    renderCta: (credits: number) => `Rendern · ${credits} Credits`,
+    previewing: "Vorschau…",
+    rendering: "Pack wird gerendert…",
+    checking: "Prüfe Credits…",
     previewFailed: "Vorschau fehlgeschlagen.",
     renderFailed: "Pack-Rendering fehlgeschlagen.",
     signInAgain: "Bitte erneut anmelden.",
     notEnoughCredits: "Nicht genug Credits.",
-    openGallery: "Creator Gallery öffnen",
-    previewAgain: "Weiteres Pack previewen",
+    creditsBadge: (cost: number, balance: number) =>
+      `${cost} Credits · ${balance} verfügbar`,
+    hooks: "Hooks",
+    captions: "Captions",
+    hashtags: "Hashtags",
+    emptyImages: "Bilder erscheinen nach Vorschau oder Render",
+    download: "Herunterladen",
   },
 } as const;
+
+const TIMELINE_STEPS: {
+  id: PackAssemblyStepId;
+  labelEn: string;
+  labelDe: string;
+}[] = [
+  { id: "idea", labelEn: "Idea", labelDe: "Idee" },
+  { id: "prompt_assist", labelEn: "Prompt", labelDe: "Prompt" },
+  { id: "images", labelEn: "Images", labelDe: "Bilder" },
+  { id: "motion", labelEn: "Motion", labelDe: "Motion" },
+  { id: "score", labelEn: "Score", labelDe: "Score" },
+  { id: "export", labelEn: "Export", labelDe: "Export" },
+];
 
 const RENDER_ASSEMBLY_STEPS: PackAssemblyStepId[] = [
   "idea",
   "prompt_assist",
   "images",
   "motion",
-  "copy",
   "score",
   "export",
 ];
 
-function PackStateBanner({
-  state,
+function timelineActiveIndex(
+  panelState: SocialAssetPackPanelState,
+  assemblyStep: PackAssemblyStepId
+): number {
+  if (panelState === "idle") return 0;
+  if (panelState === "preview_loading") return 1;
+  if (panelState === "preview_ready" || panelState === "insufficient_credits") {
+    return 2;
+  }
+  if (panelState === "credit_checking") return 2;
+  if (panelState === "rendering") {
+    const idx = TIMELINE_STEPS.findIndex((s) => s.id === assemblyStep);
+    return idx >= 0 ? idx : 3;
+  }
+  if (isTerminalRenderState(panelState)) return TIMELINE_STEPS.length;
+  return 0;
+}
+
+function PackTimeline({
   language,
-  message,
+  activeThrough,
+  busy,
 }: {
-  state: SocialAssetPackPanelState;
-  language: "en" | "de";
-  message?: string;
+  language: Language;
+  activeThrough: number;
+  busy: boolean;
 }) {
-  const stateCopy = PACK_PANEL_STATE_COPY[language];
+  const isDe = language === "de";
+  return (
+    <ol className="flex w-full items-start justify-between gap-1">
+      {TIMELINE_STEPS.map((step, index) => {
+        const done = index < activeThrough;
+        const active = index === activeThrough && busy;
+        const reached = index <= activeThrough;
+        return (
+          <li
+            key={step.id}
+            className="flex min-w-0 flex-1 flex-col items-center gap-1.5"
+          >
+            <span
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold transition ${
+                done
+                  ? "border-[#d8ad5f]/50 bg-[#d8ad5f]/20 text-[#efc777]"
+                  : active
+                    ? "border-[#d8ad5f] bg-[#d8ad5f]/30 text-white"
+                    : reached
+                      ? "border-white/20 bg-white/10 text-white/70"
+                      : "border-white/10 bg-white/[0.03] text-white/30"
+              }`}
+            >
+              {done ? "✓" : index + 1}
+            </span>
+            <span className="max-w-[4.5rem] truncate text-center text-[9px] font-medium text-white/45">
+              {isDe ? step.labelDe : step.labelEn}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 
-  const banner = (() => {
-    switch (state) {
-      case "preview_loading":
-        return {
-          tone: "neutral" as const,
-          text: stateCopy.previewLoading,
-          spin: true,
-        };
-      case "credit_checking":
-        return {
-          tone: "amber" as const,
-          text: stateCopy.creditChecking,
-          spin: true,
-        };
-      case "rendering":
-        return {
-          tone: "amber" as const,
-          text: stateCopy.rendering,
-          spin: true,
-        };
-      case "partial_success":
-        return {
-          tone: "amber" as const,
-          text: message ?? stateCopy.partialSuccess,
-          spin: false,
-        };
-      case "completed":
-        return {
-          tone: "success" as const,
-          text: message ?? stateCopy.completed,
-          spin: false,
-        };
-      case "failed_refunded":
-        return {
-          tone: "calm" as const,
-          text: message ?? stateCopy.failedRefunded,
-          spin: false,
-        };
-      default:
-        return null;
-    }
-  })();
-
-  if (!banner) return null;
-
-  const toneClass =
-    banner.tone === "success"
-      ? "border-emerald-500/25 bg-emerald-500/5 text-emerald-200"
-      : banner.tone === "amber"
-        ? "border-amber-500/25 bg-amber-500/5 text-amber-200"
-        : banner.tone === "calm"
-          ? "border-neutral-700/80 bg-neutral-950/50 text-neutral-300"
-          : "border-neutral-800/80 bg-neutral-950/40 text-neutral-400";
+function PackImageSlot({
+  url,
+  alt,
+  language,
+  onDownload,
+}: {
+  url: string | null;
+  alt: string;
+  language: Language;
+  onDownload?: () => void;
+}) {
+  const t = COPY[language];
+  if (!url) {
+    return (
+      <div className="flex h-full min-h-[7rem] flex-col items-center justify-center rounded-xl border border-dashed border-white/15 bg-white/[0.02] text-white/30">
+        <ImageIcon className="mb-2 h-8 w-8" aria-hidden />
+        <p className="px-2 text-center text-[10px]">{t.emptyImages}</p>
+      </div>
+    );
+  }
 
   return (
-    <div
-      className={`flex w-full items-center gap-2 rounded-xl border px-4 py-2.5 text-xs ${toneClass}`}
-      role="status"
-      aria-live="polite"
-    >
-      {banner.spin ? (
-        <Loader2 className="h-4 w-4 shrink-0 animate-spin text-amber-400" aria-hidden />
+    <div className="group relative h-full min-h-[7rem] overflow-hidden rounded-xl border border-white/10 bg-black/40">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt={alt}
+        className="h-full w-full object-cover"
+        loading="lazy"
+      />
+      {onDownload ? (
+        <button
+          type="button"
+          onClick={onDownload}
+          className="absolute right-2 top-2 flex min-h-9 items-center gap-1 rounded-lg bg-[#d8ad5f] px-2.5 py-1.5 text-[10px] font-bold text-black opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100"
+        >
+          <Download className="h-3.5 w-3.5" aria-hidden />
+          {t.download}
+        </button>
       ) : null}
-      <span>{banner.text}</span>
     </div>
   );
 }
 
-const AgentPackGeneratorPanel = forwardRef<
-  AgentPackGeneratorPanelHandle,
-  Props
->(function AgentPackGeneratorPanel(
-  {
-    prompt,
-    language = "en",
-    disabled = false,
-    creditBalance,
-    getAccessToken,
-    onUseImprovedPrompt,
-    onInsufficientCredits,
-    onRenderComplete,
-    showHeader = true,
-    className = "",
-    controlSurface = "inline",
-    onPackControlStateChange,
-  },
-  ref
-) {
-  const lang = language === "de" ? "de" : "en";
-  const copy = AGENT_COPY[lang];
-  const packCopy = getSocialAssetPackCopy(lang);
-  const packCredits = getSocialAssetPackTotalCredits();
-  const renderCtaLabel = formatPackRenderCta(packCredits, lang);
-  const buyCreditsLabel = getSocialAssetPackBuyCreditsLabel(lang);
+function PackCollapsible({
+  title,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  children: ReactNode;
+  defaultOpen?: boolean;
+}) {
+  return (
+    <details
+      className="group rounded-xl border border-white/10 bg-white/[0.02]"
+      open={defaultOpen}
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 text-sm font-semibold text-white/80 [&::-webkit-details-marker]:hidden">
+        {title}
+        <ChevronDown
+          className="h-4 w-4 shrink-0 text-white/40 transition group-open:rotate-180"
+          aria-hidden
+        />
+      </summary>
+      <div className="border-t border-white/10 px-3 py-2.5 text-xs leading-relaxed text-white/55">
+        {children}
+      </div>
+    </details>
+  );
+}
 
-  const [panelState, setPanelState] = useState<SocialAssetPackPanelState>("idle");
-  const [error, setError] = useState<string | null>(null);
-  const [preview, setPreview] = useState<SocialAssetPackPreviewResponse | null>(null);
-  const [result, setResult] = useState<SocialAssetPackRenderResponse | null>(null);
-  const [assemblyStep, setAssemblyStep] = useState<PackAssemblyStepId>("idea");
-  const [assemblyProgress, setAssemblyProgress] = useState(0);
-  const previewedPromptRef = useRef<string | null>(null);
-  const agentEffects =
-    useAgentVisualEffectsEnabled() && controlSurface !== "overlay";
-  const { containerRef, getLayerStyle, enabled } = useSubtleParallax<HTMLElement>({
-    maxPx: 8,
-    disabled: !agentEffects,
-  });
+const AgentPackGeneratorPanel = forwardRef<AgentPackGeneratorPanelHandle, Props>(
+  function AgentPackGeneratorPanel(
+    {
+      prompt,
+      onPromptChange,
+      language = "en",
+      disabled = false,
+      creditBalance,
+      getAccessToken,
+      onUseImprovedPrompt,
+      onInsufficientCredits,
+      onRenderComplete,
+      className = "",
+      onPackControlStateChange,
+    },
+    ref
+  ) {
+    const lang: Language = language === "de" ? "de" : "en";
+    const t = COPY[lang];
+    const packCredits = getSocialAssetPackTotalCredits();
 
-  const trimmedPrompt = prompt.trim();
-
-  useEffect(() => {
-    if (
-      preview &&
-      previewedPromptRef.current &&
-      trimmedPrompt !== previewedPromptRef.current &&
-      !isTerminalRenderState(panelState)
-    ) {
-      setPreview(null);
-      setResult(null);
-      setError(null);
-      previewedPromptRef.current = null;
-      setPanelState("idle");
-    }
-  }, [trimmedPrompt, preview, panelState]);
-
-  useEffect(() => {
-    if (
-      preview &&
-      (panelState === "preview_ready" || panelState === "insufficient_credits")
-    ) {
-      setPanelState(resolvePreviewReadyState(creditBalance, packCredits));
-    }
-  }, [creditBalance, packCredits, preview, panelState]);
-
-  useEffect(() => {
-    if (panelState !== "rendering") return;
-
-    setAssemblyStep("idea");
-    setAssemblyProgress(8);
-
-    const stepTimers = RENDER_ASSEMBLY_STEPS.map((step, index) =>
-      window.setTimeout(() => {
-        setAssemblyStep(step);
-        setAssemblyProgress(Math.min(92, 12 + index * 13));
-      }, 400 + index * 850)
+    const [panelState, setPanelState] =
+      useState<SocialAssetPackPanelState>("idle");
+    const [error, setError] = useState<string | null>(null);
+    const [preview, setPreview] = useState<SocialAssetPackPreviewResponse | null>(
+      null
     );
+    const [result, setResult] = useState<SocialAssetPackRenderResponse | null>(
+      null
+    );
+    const [assemblyStep, setAssemblyStep] =
+      useState<PackAssemblyStepId>("idea");
+    const previewedPromptRef = useRef<string | null>(null);
 
-    return () => {
-      stepTimers.forEach(window.clearTimeout);
-    };
-  }, [panelState]);
+    const trimmedPrompt = prompt.trim();
+    const balance = creditBalance ?? 0;
 
-  const canPreview =
-    trimmedPrompt.length >= 3 &&
-    !disabled &&
-    canStartPreview(panelState) &&
-    panelState !== "preview_loading" &&
-    panelState !== "credit_checking" &&
-    panelState !== "rendering";
+    useEffect(() => {
+      if (
+        preview &&
+        previewedPromptRef.current &&
+        trimmedPrompt !== previewedPromptRef.current &&
+        !isTerminalRenderState(panelState)
+      ) {
+        setPreview(null);
+        setResult(null);
+        setError(null);
+        previewedPromptRef.current = null;
+        setPanelState("idle");
+      }
+    }, [trimmedPrompt, preview, panelState]);
 
-  const canRender =
-    canStartRender(panelState) &&
-    trimmedPrompt.length >= 3 &&
-    !disabled &&
-    typeof creditBalance === "number" &&
-    creditBalance >= packCredits;
+    useEffect(() => {
+      if (
+        preview &&
+        (panelState === "preview_ready" || panelState === "insufficient_credits")
+      ) {
+        setPanelState(resolvePreviewReadyState(creditBalance, packCredits));
+      }
+    }, [creditBalance, packCredits, preview, panelState]);
 
-  const packBusy =
-    panelState === "preview_loading" ||
-    panelState === "credit_checking" ||
-    panelState === "rendering";
-
-  useEffect(() => {
-    onPackControlStateChange?.({
-      canPreview,
-      canRender,
-      panelState,
-      busy: packBusy,
-    });
-  }, [
-    canPreview,
-    canRender,
-    panelState,
-    packBusy,
-    onPackControlStateChange,
-  ]);
-
-  const runPreview = useCallback(async () => {
-    if (!canPreview) return;
-
-    setPanelState("preview_loading");
-    setError(null);
-    setResult(null);
-
-    try {
-      const res = await fetch("/api/packs/social-asset-preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: trimmedPrompt, language: lang }),
-      });
-      const data = (await res.json()) as SocialAssetPackPreviewResponse & {
-        error?: string;
+    useEffect(() => {
+      if (panelState !== "rendering") return;
+      setAssemblyStep("idea");
+      const stepTimers = RENDER_ASSEMBLY_STEPS.map((step, index) =>
+        window.setTimeout(() => {
+          setAssemblyStep(step);
+        }, 400 + index * 850)
+      );
+      return () => {
+        stepTimers.forEach(window.clearTimeout);
       };
+    }, [panelState]);
 
-      if (!res.ok || data.error) {
-        setError(
-          sanitizeUserFacingApiError(data.error, copy.previewFailed, lang)
-        );
+    const canPreview =
+      trimmedPrompt.length >= 3 &&
+      !disabled &&
+      canStartPreview(panelState) &&
+      panelState !== "preview_loading" &&
+      panelState !== "credit_checking" &&
+      panelState !== "rendering";
+
+    const canRender =
+      canStartRender(panelState) &&
+      trimmedPrompt.length >= 3 &&
+      !disabled &&
+      typeof creditBalance === "number" &&
+      creditBalance >= packCredits;
+
+    const packBusy =
+      panelState === "preview_loading" ||
+      panelState === "credit_checking" ||
+      panelState === "rendering";
+
+    useEffect(() => {
+      onPackControlStateChange?.({
+        canPreview,
+        canRender,
+        panelState,
+        busy: packBusy,
+      });
+    }, [canPreview, canRender, panelState, packBusy, onPackControlStateChange]);
+
+    const runPreview = useCallback(async () => {
+      if (!canPreview) return;
+      setPanelState("preview_loading");
+      setError(null);
+      setResult(null);
+
+      try {
+        const res = await fetch("/api/packs/social-asset-preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: trimmedPrompt, language: lang }),
+        });
+        const data = (await res.json()) as SocialAssetPackPreviewResponse & {
+          error?: string;
+        };
+
+        if (!res.ok || data.error) {
+          setError(
+            sanitizeUserFacingApiError(data.error, t.previewFailed, lang)
+          );
+          setPreview(null);
+          setPanelState("idle");
+          return;
+        }
+
+        setPreview(data);
+        previewedPromptRef.current = trimmedPrompt;
+        onUseImprovedPrompt?.(data.improvedPrompt);
+        setPanelState(resolvePreviewReadyState(creditBalance, packCredits));
+      } catch {
+        setError(t.previewFailed);
         setPreview(null);
         setPanelState("idle");
+      }
+    }, [
+      canPreview,
+      trimmedPrompt,
+      lang,
+      t.previewFailed,
+      creditBalance,
+      packCredits,
+      onUseImprovedPrompt,
+    ]);
+
+    const runRender = useCallback(async () => {
+      if (!preview) return;
+      if (panelState === "insufficient_credits") {
+        onInsufficientCredits?.();
         return;
       }
-
-      setPreview(data);
-      previewedPromptRef.current = trimmedPrompt;
-      onUseImprovedPrompt?.(data.improvedPrompt);
-      setPanelState(resolvePreviewReadyState(creditBalance, packCredits));
-    } catch {
-      setError(copy.previewFailed);
-      setPreview(null);
-      setPanelState("idle");
-    }
-  }, [
-    canPreview,
-    trimmedPrompt,
-    lang,
-    copy.previewFailed,
-    creditBalance,
-    packCredits,
-    onUseImprovedPrompt,
-  ]);
-
-  const runRender = useCallback(async () => {
-    if (!preview) return;
-
-    if (panelState === "insufficient_credits") {
-      onInsufficientCredits?.();
-      return;
-    }
-
-    if (!canStartRender(panelState)) return;
-
-    if (typeof creditBalance !== "number" || creditBalance < packCredits) {
-      setPanelState("insufficient_credits");
-      onInsufficientCredits?.();
-      return;
-    }
-
-    setPanelState("credit_checking");
-    setError(null);
-    setResult(null);
-
-    try {
-      const token = await getAccessToken();
-      if (!token) {
-        setError(copy.signInAgain);
-        setPanelState(resolvePreviewReadyState(creditBalance, packCredits));
-        return;
-      }
+      if (!canStartRender(panelState)) return;
 
       if (typeof creditBalance !== "number" || creditBalance < packCredits) {
         setPanelState("insufficient_credits");
@@ -392,506 +418,288 @@ const AgentPackGeneratorPanel = forwardRef<
         return;
       }
 
-      setPanelState("rendering");
+      setPanelState("credit_checking");
+      setError(null);
+      setResult(null);
 
-      const res = await fetch("/api/packs/social-asset-render", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          prompt: trimmedPrompt,
-          language: lang,
-          improvedPrompt: preview.improvedPrompt?.trim() || undefined,
-        }),
-      });
-
-      const data = (await res.json()) as SocialAssetPackRenderResponse & {
-        error?: string;
-        code?: string;
-      };
-
-      if (data.code === "INSUFFICIENT_CREDITS" || res.status === 402) {
-        onInsufficientCredits?.();
-        setError(copy.notEnoughCredits);
-        setPanelState("insufficient_credits");
-        return;
-      }
-
-      if (!data.packJobId) {
-        setError(data.error ?? data.message ?? copy.renderFailed);
-        setPanelState(
-          data.creditsRefunded && data.creditsRefunded > 0
-            ? "failed_refunded"
-            : resolvePreviewReadyState(creditBalance, packCredits)
-        );
-        return;
-      }
-
-      setResult(data);
-      setPanelState(resolveRenderOutcomeState(data));
-      onRenderComplete?.();
-    } catch {
-      setError(copy.renderFailed);
-      setPanelState(resolvePreviewReadyState(creditBalance, packCredits));
-    }
-  }, [
-    preview,
-    panelState,
-    creditBalance,
-    packCredits,
-    copy,
-    getAccessToken,
-    lang,
-    onInsufficientCredits,
-    onRenderComplete,
-    trimmedPrompt,
-  ]);
-
-  useImperativeHandle(
-    ref,
-    () => ({
-      runPreview: () => {
-        void runPreview();
-      },
-      runRender: () => {
-        void runRender();
-      },
-    }),
-    [runPreview, runRender]
-  );
-
-  const showPreviewPlan =
-    preview &&
-    (panelState === "preview_ready" ||
-      panelState === "insufficient_credits" ||
-      panelState === "credit_checking");
-
-  const workflowMode =
-    panelState === "preview_loading"
-      ? ("planning" as const)
-      : panelState === "rendering"
-        ? ("rendering" as const)
-        : isTerminalRenderState(panelState)
-          ? ("complete" as const)
-          : preview
-            ? ("preview" as const)
-            : ("idle" as const);
-
-  const showcaseMode = showPreviewPlan
-    ? ("preview" as const)
-    : panelState === "rendering"
-      ? ("rendering" as const)
-      : result && isTerminalRenderState(panelState)
-        ? ("result" as const)
-        : null;
-
-  const idleWindowCopy =
-    controlSurface === "overlay"
-      ? null
-      : lang === "de"
-        ? "Pack-Vorschau starten, um die Zusammenstellung im Fenster zu sehen."
-        : "Run a pack preview to see assembly inside the window.";
-
-  const studioWindowClass =
-    controlSurface === "overlay"
-      ? "mt-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border-0 bg-transparent"
-      : AGENT_STUDIO_WINDOW_CLASS;
-
-  const previewLoading = panelState === "preview_loading";
-  const renderLoading =
-    panelState === "rendering" || panelState === "credit_checking";
-
-  const previewButton = (
-    <button
-      type="button"
-      onClick={() => void runPreview()}
-      disabled={!canPreview || previewLoading}
-      className={`${obsidianButtonClass("secondary", { size: "sm" })} min-h-11 gap-2 border-[#8B5CF6]/35 bg-[#8B5CF6]/10 text-[#C4B5FD] hover:border-[#8B5CF6]/45 hover:bg-[#8B5CF6]/20 hover:text-[#DDD6FE] ${
-        previewLoading ? "cursor-not-allowed opacity-60" : ""
-      }`}
-    >
-      {previewLoading ? (
-        <span className="flex items-center gap-2">
-          <svg
-            className="h-4 w-4 animate-spin"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
-          </svg>
-          {lang === "de" ? "Vorschau…" : "Previewing…"}
-        </span>
-      ) : (
-        <>
-          <Sparkles className="h-3.5 w-3.5" aria-hidden />
-          {isTerminalRenderState(panelState) ? copy.previewAgain : copy.previewCta}
-        </>
-      )}
-    </button>
-  );
-
-  const renderButton = (
-    <button
-      type="button"
-      onClick={() => void runRender()}
-      disabled={!canRender || renderLoading}
-      title={
-        panelState === "insufficient_credits"
-          ? lang === "de"
-            ? "Nicht genug Credits"
-            : "Not enough credits"
-          : !preview
-            ? lang === "de"
-              ? "Zuerst kostenlose Pack-Vorschau anzeigen"
-              : "Run the free pack preview first"
-            : undefined
-      }
-      className={`${obsidianButtonClass("primary", { size: "sm" })} min-h-11 gap-2 ${
-        renderLoading ? "cursor-not-allowed opacity-60" : ""
-      }`}
-    >
-      {renderLoading ? (
-        <span className="flex items-center gap-2">
-          <svg
-            className="h-4 w-4 animate-spin"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
-          </svg>
-          {panelState === "rendering"
-            ? copy.renderingLabel
-            : lang === "de"
-              ? "Prüfe Credits…"
-              : "Checking credits…"}
-        </span>
-      ) : (
-        <>
-          <Package className="h-3.5 w-3.5" aria-hidden />
-          {renderCtaLabel}
-        </>
-      )}
-    </button>
-  );
-
-  const resetPackState = useCallback(() => {
-    setResult(null);
-    setPreview(null);
-    setError(null);
-    previewedPromptRef.current = null;
-    setPanelState("idle");
-  }, []);
-
-  const primaryResultDownloadUrl =
-    result?.assets.images[0]?.assetUrl ??
-    result?.assets.videos[0]?.assetUrl ??
-    null;
-
-  return (
-    <section
-      ref={containerRef}
-      id="social-asset-pack-panel"
-      className={`relative isolate min-w-0 overflow-x-hidden rounded-2xl border border-white/[0.08] bg-[#111827]/50 p-4 sm:p-5 ${
-        controlSurface === "overlay" ? "flex h-full min-h-0 flex-col" : ""
-      } ${className}`}
-      aria-labelledby={showHeader ? "agent-pack-title" : undefined}
-      data-panel-state={panelState}
-    >
-      {agentEffects ? (
-        <ParallaxDepthLayers
-          variant="agent-panel"
-          getLayerStyle={getLayerStyle}
-          enabled={enabled}
-        />
-      ) : null}
-      <div
-        className={
-          controlSurface === "overlay"
-            ? "relative z-[1] flex min-h-0 flex-1 flex-col"
-            : "relative z-[1]"
+      try {
+        const token = await getAccessToken();
+        if (!token) {
+          setError(t.signInAgain);
+          setPanelState(resolvePreviewReadyState(creditBalance, packCredits));
+          return;
         }
+
+        setPanelState("rendering");
+
+        const res = await fetch("/api/packs/social-asset-render", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            prompt: trimmedPrompt,
+            language: lang,
+            improvedPrompt: preview.improvedPrompt?.trim() || undefined,
+          }),
+        });
+
+        const data = (await res.json()) as SocialAssetPackRenderResponse & {
+          error?: string;
+          code?: string;
+        };
+
+        if (res.status === 401 || data.code === "UNAUTHENTICATED") {
+          setError(t.signInAgain);
+          setPanelState(resolvePreviewReadyState(creditBalance, packCredits));
+          return;
+        }
+
+        if (data.code === "INSUFFICIENT_CREDITS" || res.status === 402) {
+          onInsufficientCredits?.();
+          setError(t.notEnoughCredits);
+          setPanelState("insufficient_credits");
+          return;
+        }
+
+        if (!res.ok && !data.packJobId) {
+          setError(
+            sanitizeUserFacingApiError(
+              data.error,
+              t.renderFailed,
+              lang
+            ) ?? t.renderFailed
+          );
+          setPanelState(resolvePreviewReadyState(creditBalance, packCredits));
+          return;
+        }
+
+        if (!data.packJobId) {
+          setError(data.error ?? data.message ?? t.renderFailed);
+          setPanelState(
+            data.creditsRefunded && data.creditsRefunded > 0
+              ? "failed_refunded"
+              : resolvePreviewReadyState(creditBalance, packCredits)
+          );
+          return;
+        }
+
+        setResult(data);
+        setPanelState(resolveRenderOutcomeState(data));
+        onRenderComplete?.();
+      } catch {
+        setError(t.renderFailed);
+        setPanelState(resolvePreviewReadyState(creditBalance, packCredits));
+      }
+    }, [
+      preview,
+      panelState,
+      creditBalance,
+      packCredits,
+      t,
+      getAccessToken,
+      lang,
+      onInsufficientCredits,
+      onRenderComplete,
+      trimmedPrompt,
+    ]);
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        runPreview: () => {
+          void runPreview();
+        },
+        runRender: () => {
+          void runRender();
+        },
+      }),
+      [runPreview, runRender]
+    );
+
+    const resetPackState = useCallback(() => {
+      setResult(null);
+      setPreview(null);
+      setError(null);
+      previewedPromptRef.current = null;
+      setPanelState("idle");
+    }, []);
+
+    const imageUrls = result?.assets.images.map((img) => img.assetUrl) ?? [];
+    const hooks = result?.hooks ?? preview?.hooks ?? [];
+    const captions = result?.captions ?? preview?.captions ?? [];
+    const hashtags = result?.hashtags ?? preview?.hashtags ?? [];
+
+    const activeTimeline = timelineActiveIndex(panelState, assemblyStep);
+    const previewLoading = panelState === "preview_loading";
+    const renderLoading =
+      panelState === "rendering" || panelState === "credit_checking";
+
+    const primaryDownloadUrl =
+      result?.assets.images[0]?.assetUrl ??
+      result?.assets.videos[0]?.assetUrl ??
+      null;
+
+    return (
+      <section
+        id="social-asset-pack-panel"
+        className={`flex min-h-0 flex-col overflow-hidden bg-[#0A0A0B] lg:min-h-[min(100dvh,920px)] ${className}`}
+        data-panel-state={panelState}
       >
-      {showHeader ? (
-        <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/25 bg-amber-500/10 text-amber-400">
-            <Package className="h-5 w-5" aria-hidden />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3
-                id="agent-pack-title"
-                className="text-sm font-semibold text-[#F9FAFB]"
-              >
-                {copy.title}
-              </h3>
-              <span className="rounded-full border border-neutral-600/40 bg-neutral-800/40 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-neutral-300">
-                {lang === "de" ? "Kostenlose Vorschau" : "Free preview"}
-              </span>
-              <span className="rounded-full border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-300">
-                {packCredits.toLocaleString(lang === "de" ? "de-DE" : "en-US")}{" "}
-                {lang === "de" ? "Credits" : "Credits"}
-              </span>
-            </div>
-            <p className="mt-1.5 text-xs leading-relaxed text-[#9CA3AF]">
-              {copy.subtitle}
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          {/* Left — input & controls (40%) */}
+          <div className="flex w-full shrink-0 flex-col border-b border-white/10 p-4 lg:w-[40%] lg:border-b-0 lg:border-r lg:p-6">
+            <textarea
+              value={prompt}
+              onChange={(e) => onPromptChange?.(e.target.value)}
+              disabled={disabled || packBusy}
+              rows={5}
+              placeholder={t.placeholder}
+              className="min-h-[140px] w-full resize-none rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-relaxed text-white placeholder:text-white/35 focus:border-[#d8ad5f]/40 focus:outline-none focus:ring-2 focus:ring-[#d8ad5f]/20 disabled:opacity-50"
+            />
+
+            <p className="mt-4 rounded-xl border border-[#d8ad5f]/25 bg-[#d8ad5f]/10 px-3 py-2 text-center text-xs font-medium text-[#efc777]">
+              {t.creditsBadge(packCredits, balance)}
             </p>
-          </div>
-        </div>
-      ) : controlSurface !== "overlay" ? (
-        <div className="rounded-xl border border-white/[0.08] bg-[#0E1220]/50 px-4 py-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold text-[#F9FAFB]">{copy.title}</p>
-            <span className="rounded-full border border-neutral-600/40 bg-neutral-800/40 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-neutral-300">
-              {lang === "de" ? "Kostenlose Vorschau" : "Free preview"}
-            </span>
-            <span className="rounded-full border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-300">
-              {packCredits.toLocaleString(lang === "de" ? "de-DE" : "en-US")}{" "}
-              {lang === "de" ? "Credits" : "Credits"}
-            </span>
-          </div>
-          <p className="mt-1 text-xs leading-relaxed text-[#9CA3AF]">{copy.subtitle}</p>
-        </div>
-      ) : null}
 
-      {controlSurface !== "overlay" ? (
-        <div className="mt-3 space-y-1 text-[11px] leading-relaxed text-neutral-500">
-          <p>{packCopy.previewFreeNote}</p>
-          <p>{packCopy.costNote}</p>
-          <p>{packCopy.partialRefundNote}</p>
-        </div>
-      ) : null}
-
-      {controlSurface === "inline" &&
-      preview &&
-      (panelState === "preview_ready" ||
-        panelState === "insufficient_credits") ? (
-        <div className="mt-4">
-          <CreditCostPreview
-            creditCost={preview.estimatedCredits ?? packCredits}
-            balance={creditBalance ?? 0}
-            language={lang}
-            showSummaryLine
-            showPolicyNote={false}
-            onBuyCredits={() => onInsufficientCredits?.()}
-            onUpgrade={() => onInsufficientCredits?.()}
-          />
-        </div>
-      ) : null}
-
-      {controlSurface === "inline" ? (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          {(panelState === "idle" ||
-            panelState === "preview_loading" ||
-            isTerminalRenderState(panelState)) && (
-            previewButton
-          )}
-          {(panelState === "preview_ready" ||
-            panelState === "insufficient_credits") && (
-            <>
-              {previewButton}
-              {renderButton}
-            </>
-          )}
-        </div>
-      ) : null}
-
-      {panelState === "insufficient_credits" ? (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <p className="text-xs font-medium text-amber-400/90" role="status">
-            {PACK_PANEL_STATE_COPY[lang].insufficientCredits}{" "}
-            {lang === "de"
-              ? `(${renderCtaLabel} erfordert ${packCredits.toLocaleString("de-DE")} Credits.)`
-              : `(${renderCtaLabel} requires ${packCredits.toLocaleString("en-US")} credits.)`}
-          </p>
-          <Link
-            href="/dashboard/credits"
-            onClick={() => onInsufficientCredits?.()}
-            className={obsidianButtonClass("primary", { size: "sm" })}
-          >
-            {buyCreditsLabel}
-          </Link>
-        </div>
-      ) : null}
-
-      {error && panelState !== "failed_refunded" ? (
-        <p className="mt-3 text-xs text-red-400" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <div className={studioWindowClass} aria-label={copy.title}>
-        <div className="shrink-0 border-b border-white/[0.06]">
-          <AgentWorkflowPanel
-            language={lang}
-            mode={workflowMode}
-            activeStep={panelState === "rendering" ? assemblyStep : undefined}
-            progress={panelState === "rendering" ? assemblyProgress : undefined}
-            progressLabel={
-              panelState === "preview_loading"
-                ? PACK_PANEL_STATE_COPY[lang].previewLoading
-                : panelState === "rendering"
-                  ? copy.renderingLabel
-                  : undefined
-            }
-            showHeader={false}
-            className="rounded-none border-0 bg-transparent"
-          />
-        </div>
-
-        <div className={PACK_STATUS_BANNER_SLOT_CLASS}>
-          <PackStateBanner
-            state={panelState}
-            language={lang}
-            message={result?.message}
-          />
-        </div>
-
-        <div className={AGENT_STUDIO_SCROLL_CLASS}>
-          {showPreviewPlan && preview ? (
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-neutral-800/80 bg-neutral-950/40 px-3 py-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
-                {copy.estimatedCost}
-              </span>
-              <span className="text-sm font-bold text-amber-400">
-                {preview.estimatedCredits.toLocaleString(lang === "de" ? "de-DE" : "en-US")}{" "}
-                {lang === "de" ? "Credits" : "Credits"}
-              </span>
-            </div>
-          ) : null}
-
-          {showcaseMode === "preview" && preview ? (
-            <SocialAssetPackShowcase
-              mode="preview"
-              language={lang}
-              preview={preview}
-              prompt={trimmedPrompt}
-              hideWorkflow
-            />
-          ) : showcaseMode === "rendering" ? (
-            <SocialAssetPackShowcase
-              mode="rendering"
-              language={lang}
-              prompt={trimmedPrompt}
-              improvedPrompt={preview?.improvedPrompt}
-              activeStep={assemblyStep}
-              assemblyProgress={assemblyProgress}
-              hideWorkflow
-            />
-          ) : showcaseMode === "result" && result ? (
-            <div className="space-y-4">
-              <SocialAssetPackShowcase
-                mode="result"
+            <div className="mt-5">
+              <PackTimeline
                 language={lang}
-                result={result}
-                hideWorkflow
+                activeThrough={activeTimeline}
+                busy={packBusy}
               />
+            </div>
 
-              {result.creditsRefunded > 0 ? (
-                <p className="text-xs text-neutral-400">
-                  {lang === "de" ? "Erstattet" : "Refunded"}: {result.creditsRefunded}{" "}
-                  {lang === "de" ? "Credits" : "credits"}
-                </p>
+            {error ? (
+              <p className="mt-4 text-xs text-red-400" role="alert">
+                {error}
+              </p>
+            ) : null}
+
+            <div className="mt-auto flex flex-col gap-2 pt-6 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => void runPreview()}
+                disabled={!canPreview || previewLoading}
+                className="min-h-11 flex-1 rounded-2xl border border-white/15 bg-transparent px-4 py-3 text-sm font-semibold text-white transition hover:border-white/30 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {previewLoading ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                    {t.previewing}
+                  </span>
+                ) : (
+                  t.previewCta
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => void runRender()}
+                disabled={!canRender || renderLoading}
+                className="min-h-11 flex-1 rounded-2xl bg-[#d8ad5f] px-4 py-3 text-sm font-bold text-black transition hover:bg-[#efc777] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {renderLoading ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                    {panelState === "rendering" ? t.rendering : t.checking}
+                  </span>
+                ) : (
+                  t.renderCta(packCredits)
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Right — output (60%) */}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-4 lg:p-6">
+            <div className="grid min-h-[220px] shrink-0 grid-cols-2 grid-rows-2 gap-3 lg:min-h-[280px] lg:flex-[2]">
+              <div className="row-span-2 min-h-0">
+                <PackImageSlot
+                  url={imageUrls[0] ?? null}
+                  alt={lang === "de" ? "Pack Bild 1" : "Pack image 1"}
+                  language={lang}
+                  onDownload={
+                    imageUrls[0]
+                      ? () =>
+                          window.open(imageUrls[0], "_blank", "noopener,noreferrer")
+                      : undefined
+                  }
+                />
+              </div>
+              <div className="min-h-0">
+                <PackImageSlot
+                  url={imageUrls[1] ?? null}
+                  alt={lang === "de" ? "Pack Bild 2" : "Pack image 2"}
+                  language={lang}
+                  onDownload={
+                    imageUrls[1]
+                      ? () =>
+                          window.open(imageUrls[1], "_blank", "noopener,noreferrer")
+                      : undefined
+                  }
+                />
+              </div>
+              <div className="min-h-0">
+                <PackImageSlot
+                  url={imageUrls[2] ?? null}
+                  alt={lang === "de" ? "Pack Bild 3" : "Pack image 3"}
+                  language={lang}
+                  onDownload={
+                    imageUrls[2]
+                      ? () =>
+                          window.open(imageUrls[2], "_blank", "noopener,noreferrer")
+                      : undefined
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+              {hooks.length > 0 ? (
+                <PackCollapsible title={t.hooks} defaultOpen>
+                  <ul className="space-y-1">
+                    {hooks.map((hook) => (
+                      <li key={hook}>{hook}</li>
+                    ))}
+                  </ul>
+                </PackCollapsible>
+              ) : null}
+              {captions.length > 0 ? (
+                <PackCollapsible title={t.captions}>
+                  <ul className="space-y-2">
+                    {captions.map((cap) => (
+                      <li key={cap}>{cap}</li>
+                    ))}
+                  </ul>
+                </PackCollapsible>
+              ) : null}
+              {hashtags.length > 0 ? (
+                <PackCollapsible title={t.hashtags}>
+                  <p>{hashtags.join(" ")}</p>
+                </PackCollapsible>
               ) : null}
 
-              {(panelState === "completed" || panelState === "partial_success") &&
-              result.assets.images.length + result.assets.videos.length > 0 ? (
-                <PackGalleryGroup
-                  packJobId={result.packJobId}
-                  packName={result.packName}
-                  images={result.assets.images}
-                  videos={result.assets.videos}
-                  hooks={result.hooks}
-                  captions={result.captions}
-                  hashtags={result.hashtags}
-                  formatSuggestions={result.formatSuggestions}
+              {result && isTerminalRenderState(panelState) ? (
+                <PackResultActions
                   language={lang}
+                  downloadUrl={primaryDownloadUrl}
+                  hooks={hooks}
+                  onCreateVariation={() => {
+                    setResult(null);
+                    setError(null);
+                    void runRender();
+                  }}
+                  onNewPack={resetPackState}
+                  className="mt-1 shrink-0"
                 />
               ) : null}
-
-              <PackResultActions
-                language={lang}
-                downloadUrl={primaryResultDownloadUrl}
-                hooks={result.hooks}
-                onCreateVariation={() => {
-                  setResult(null);
-                  setError(null);
-                  void runRender();
-                }}
-                onNewPack={resetPackState}
-              />
-
-              <div className="flex justify-center">
-                <Link
-                  href="/dashboard/gallery"
-                  className={`${obsidianButtonClass("ghost", { size: "sm" })} min-h-11`}
-                >
-                  {copy.openGallery}
-                </Link>
-              </div>
-
-              <p className="text-center text-[11px] text-neutral-500">
-                {CREDITS_PAGE.footerNote[lang]}
-              </p>
             </div>
-          ) : panelState === "preview_loading" ? (
-            <div
-              className="flex h-full min-h-[12rem] flex-col items-center justify-center gap-2 px-4 text-center"
-              role="status"
-              aria-live="polite"
-            >
-              <Loader2 className="h-6 w-6 animate-spin text-amber-400" aria-hidden />
-              <p className="max-w-xs text-xs leading-relaxed text-neutral-500">
-                {PACK_PANEL_STATE_COPY[lang].previewLoading}
-              </p>
-            </div>
-          ) : idleWindowCopy ? (
-            <div className="flex h-full min-h-[12rem] items-center justify-center px-4 text-center">
-              <p className="max-w-xs text-xs leading-relaxed text-neutral-500">
-                {idleWindowCopy}
-              </p>
-            </div>
-          ) : (
-            <div className="flex h-full min-h-[12rem] items-center justify-center px-4 text-center">
-              <p className="max-w-xs text-xs leading-relaxed text-neutral-500">
-                {lang === "de"
-                  ? "Pack-Vorschau und Render findest du in der Leiste unten."
-                  : "Use the bar below for free pack preview and render."}
-              </p>
-            </div>
-          )}
+          </div>
         </div>
-      </div>
-      </div>
-    </section>
-  );
-});
+      </section>
+    );
+  }
+);
 
 export default AgentPackGeneratorPanel;

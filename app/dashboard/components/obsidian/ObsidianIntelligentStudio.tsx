@@ -577,6 +577,7 @@ export default function ObsidianIntelligentStudio({
       ) : isPackWorkflow ? (
         <AgentPackGeneratorPanel
           prompt={prompt}
+          onPromptChange={setPrompt}
           language={lang}
           creditBalance={confirmedBalance}
           getAccessToken={getToken}
@@ -589,7 +590,7 @@ export default function ObsidianIntelligentStudio({
           }
           onRenderComplete={() => onGenerationQueued({})}
           showHeader={false}
-          className="scroll-mt-24"
+          className="scroll-mt-24 min-h-[min(100dvh,920px)]"
         />
       ) : (
         <div className="space-y-3">
@@ -1031,28 +1032,6 @@ export default function ObsidianIntelligentStudio({
     />
   ) : null;
 
-  const packOverlayWorkspace = (
-    <AgentPackGeneratorPanel
-      ref={packPanelRef}
-      prompt={prompt}
-      language={lang}
-      creditBalance={confirmedBalance}
-      getAccessToken={getToken}
-      onUseImprovedPrompt={setPrompt}
-      onInsufficientCredits={() =>
-        openUpsell({
-          balance: credits,
-          requiredCredits: packCredits,
-        })
-      }
-      onRenderComplete={() => onGenerationQueued({})}
-      showHeader={false}
-      controlSurface="overlay"
-      onPackControlStateChange={handlePackControlStateChange}
-      className="h-full min-h-0 !border-0 !bg-transparent !p-0"
-    />
-  );
-
   const studioPreviewFrame = (
     <StudioWhiteToolFrame
       className="flex min-h-0 w-full flex-col px-1 pb-2 pt-1 sm:px-2"
@@ -1118,10 +1097,42 @@ export default function ObsidianIntelligentStudio({
       ? createMotionVideoModeControls
       : null;
 
-  const generatorPreviewSlot =
-    overlayMode && isPackWorkflow
-      ? packOverlayWorkspace
-      : studioPreviewFrame;
+  const generatorPreviewSlot = studioPreviewFrame;
+
+  if (overlayMode && isPackWorkflow) {
+    return (
+      <div className="fixed inset-0 z-[80] flex min-h-0 flex-col bg-[#0A0A0B]">
+        <header className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
+          <p className="text-sm font-semibold text-white">{workspaceToolLabel}</p>
+          <button
+            type="button"
+            onClick={() => onOverlayClose?.()}
+            className="min-h-10 rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 hover:bg-white/5"
+          >
+            {lang === "de" ? "Schließen" : "Close"}
+          </button>
+        </header>
+        <AgentPackGeneratorPanel
+          ref={packPanelRef}
+          prompt={prompt}
+          onPromptChange={setPrompt}
+          language={lang}
+          creditBalance={confirmedBalance}
+          getAccessToken={getToken}
+          onUseImprovedPrompt={setPrompt}
+          onInsufficientCredits={() =>
+            openUpsell({
+              balance: credits,
+              requiredCredits: packCredits,
+            })
+          }
+          onRenderComplete={() => onGenerationQueued({})}
+          className="min-h-0 flex-1"
+          onPackControlStateChange={handlePackControlStateChange}
+        />
+      </div>
+    );
+  }
 
   if (overlayMode) {
     return (

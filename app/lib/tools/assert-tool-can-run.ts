@@ -6,6 +6,7 @@
 import { getActionById } from "@/app/lib/actions/action-registry";
 import { getModelModeById } from "@/app/lib/model-modes/model-modes";
 import { resolveProviderGenerationContext } from "@/app/lib/providers/provider-router";
+import { assertSocialAssetPackCanRender } from "@/app/lib/packs/assert-social-asset-pack-can-render";
 import {
   getAllCreatorTools,
   getCreatorToolById,
@@ -207,6 +208,33 @@ export function assertToolCanRun(
   const toolId = resolveCreatorToolIdFromRequest(input);
   if (!toolId) {
     block("TOOL_UNKNOWN", language, "tool id not resolved");
+  }
+
+  if (toolId === "social_asset_pack") {
+    const { requiredCredits } = assertSocialAssetPackCanRender({
+      userCreditBalance: input.userCreditBalance,
+      language,
+    });
+    const resolved = resolveCreatorTool("social_asset_pack", {
+      language,
+      userPlan: input.userPlan,
+    });
+    if (!resolved) {
+      block("TOOL_UNKNOWN", language, "social_asset_pack not found");
+    }
+    return {
+      toolId: "social_asset_pack",
+      resolved: {
+        ...resolved,
+        status: "live",
+        canRun: true,
+        providerValidated: true,
+        requiresCredits: requiredCredits > 0,
+        requiredCredits,
+        reasonIfUnavailable: null,
+      },
+      requiredCredits,
+    };
   }
 
   const resolved = resolveCreatorTool(toolId, {

@@ -6,8 +6,8 @@
 import { NextResponse } from "next/server";
 import { authenticateBearerUser } from "@/app/lib/supabase-admin";
 import { isLaunchFeatureEnabled } from "@/app/lib/config/launch";
+import { assertSocialAssetPackCanRender } from "@/app/lib/packs/assert-social-asset-pack-can-render";
 import {
-  assertToolCanRun,
   isToolRunBlockedError,
   isToolRunInsufficientCreditsError,
 } from "@/app/lib/tools/assert-tool-can-run";
@@ -96,8 +96,7 @@ export async function handleSocialAssetPackRenderRequest(
     .maybeSingle();
 
   try {
-    assertToolCanRun({
-      toolId: "social_asset_pack",
+    assertSocialAssetPackCanRender({
       userCreditBalance: creditRow?.credits ?? 0,
       language,
     });
