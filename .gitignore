@@ -44,3 +44,8 @@ next-env.d.ts
 .vercel
 .env*
 !.env.example
+
+public/assets/*.mp4
+public/assets/*.mp4.mp4
+public/assets/*.mov
+public/assets/*.webm
