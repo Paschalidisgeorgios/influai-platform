@@ -78,7 +78,8 @@ export async function GET(req: Request) {
         output_format,
         image_size,
         output_width,
-        output_height
+        output_height,
+        creative_score
       `,
         { count: "exact" }
       )
@@ -114,7 +115,7 @@ export async function GET(req: Request) {
 
     if (
       error &&
-      /video_url|duration_seconds|Could not find the .* column/i.test(
+      /video_url|duration_seconds|creative_score|Could not find the .* column/i.test(
         error.message ?? ""
       )
     ) {
@@ -176,6 +177,7 @@ export async function GET(req: Request) {
         ...row,
         video_url: null,
         duration_seconds: null,
+        creative_score: null,
       }));
       error = fallbackResult.error;
       count = fallbackResult.count;

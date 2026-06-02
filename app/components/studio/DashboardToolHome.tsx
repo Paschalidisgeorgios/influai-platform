@@ -166,7 +166,7 @@ export default function DashboardToolHome({
                   type="button"
                   role="tab"
                   aria-selected={active}
-                  className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] transition-all duration-200 sm:px-3 sm:text-[10px] ${
+                  className={`min-h-11 shrink-0 whitespace-nowrap rounded-full border px-3 py-2.5 text-[9px] font-bold uppercase tracking-[0.12em] transition-all duration-200 sm:px-4 sm:text-[10px] ${
                     active
                       ? "border-amber-500/55 bg-amber-500/14 text-amber-100 shadow-[0_0_18px_rgba(245,158,11,0.28)] [text-shadow:0_0_12px_rgba(251,191,36,0.45)]"
                       : "border-transparent bg-white/[0.03] text-neutral-400 hover:bg-white/[0.06] hover:text-neutral-200"

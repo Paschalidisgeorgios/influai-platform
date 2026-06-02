@@ -74,7 +74,7 @@ export default function ModelExplorerSection({ currentLanguage }: Props) {
         >
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.08] px-4 py-2.5">
             <div className="flex items-center gap-2">
-              <Layers className="h-3.5 w-3.5 text-amber-400" aria-hidden />
+              <Layers className="h-3.5 w-3.5 text-[#d8ad5f]" aria-hidden />
               <span className="text-xs font-semibold text-white">
                 {language === "de" ? "Workflow-Kategorien" : "Workflow categories"}
               </span>

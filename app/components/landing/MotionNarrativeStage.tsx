@@ -127,7 +127,7 @@ export default function MotionNarrativeStage({
             aria-hidden
           >
             <motion.div
-              className="h-full bg-gradient-to-r from-amber-500/80 to-amber-400/40"
+              className="h-full bg-gradient-to-r from-[#d8ad5f]/80 to-[#d8ad5f]/40"
               animate={{
                 width: `${((activeIndex + 1) / NARRATIVE_STEP_ORDER.length) * 100}%`,
               }}
@@ -147,7 +147,7 @@ export default function MotionNarrativeStage({
               animate={{ opacity: 1, y: 0 }}
               transition={OBS_SPRING}
             >
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-500/80">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#faf3e3]0/80">
                 {String(activeIndex + 1).padStart(2, "0")} · {activeCopy.label}
               </p>
               <p className="mt-2 text-lg font-semibold leading-snug text-white sm:text-xl">

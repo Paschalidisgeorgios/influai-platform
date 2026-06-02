@@ -72,7 +72,7 @@ export default function CreativeScoreSection({
                 </ul>
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-400/90">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#d8ad5f]/90">
                   {t.improveTitle}
                 </p>
                 <ul className="mt-2 space-y-1.5">
@@ -81,7 +81,7 @@ export default function CreativeScoreSection({
                       key={item}
                       className="flex items-start gap-2 text-xs leading-relaxed text-white/60"
                     >
-                      <Minus className="mt-0.5 h-3 w-3 shrink-0 text-amber-400/80" aria-hidden />
+                      <Minus className="mt-0.5 h-3 w-3 shrink-0 text-[#d8ad5f]/80" aria-hidden />
                       {item}
                     </li>
                   ))}

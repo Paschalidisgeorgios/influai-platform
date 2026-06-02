@@ -122,7 +122,7 @@ export default function HooksCaptionsPanel({
       type="button"
       onClick={() => void runGenerate()}
       disabled={!canGenerate}
-      className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-2.5 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+      className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-2.5 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
     >
       {loading ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />

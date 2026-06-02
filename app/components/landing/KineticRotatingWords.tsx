@@ -67,7 +67,7 @@ export default function KineticRotatingWords({ words, className = "" }: Props) {
             skipMotion ? undefined : { opacity: 0, y: -10, filter: "blur(4px)" }
           }
           transition={{ duration: skipMotion ? 0 : 0.38, ease: [0.22, 1, 0.36, 1] }}
-          className="col-start-1 row-start-1 whitespace-nowrap bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-[1.35rem] font-black tracking-tight text-transparent sm:text-[1.5rem]"
+          className="col-start-1 row-start-1 whitespace-nowrap bg-gradient-to-r from-[#f0d4a8] via-[#d8ad5f] to-[#d8ad5f] bg-clip-text text-[1.35rem] font-black tracking-tight text-transparent sm:text-[1.5rem]"
         >
           {current}
         </motion.span>

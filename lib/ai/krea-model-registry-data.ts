@@ -428,9 +428,9 @@ export const KREA_MODEL_REGISTRY_ENTRIES: readonly KreaModelConfig[] = [
   }),
   m({
     id: "kling-25",
-    label: "Kling 2.5",
+    label: "Kling 3.0",
     provider: "krea",
-    model: "kling/kling-2.5",
+    model: "kling/kling-3.0",
     category: "video",
     tools: ["video"],
     capabilities: ["image_to_video"],

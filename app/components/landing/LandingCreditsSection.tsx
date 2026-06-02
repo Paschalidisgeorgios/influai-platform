@@ -37,7 +37,7 @@ export default function LandingCreditsSection({
               {t.headline}
             </h2>
             <p className="mt-4 text-base leading-7 text-white/65 sm:text-lg">{t.body}</p>
-            <p className="mt-6 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-sm text-amber-200/80">
+            <p className="mt-6 rounded-xl border border-[#d8ad5f]/20 bg-[#d8ad5f]/5 px-4 py-3 text-sm text-[#f0d4a8]/80">
               {t.footnote}
             </p>
           </motion.div>
@@ -51,7 +51,7 @@ export default function LandingCreditsSection({
             aria-hidden
           >
             <div className="flex items-center gap-2 border-b border-white/[0.08] pb-4">
-              <Coins className="h-4 w-4 text-amber-400" aria-hidden />
+              <Coins className="h-4 w-4 text-[#d8ad5f]" aria-hidden />
               <span className="text-sm font-semibold text-white">{m.yourCredits}</span>
             </div>
 
@@ -82,7 +82,7 @@ export default function LandingCreditsSection({
                   key={pack.key}
                   className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2.5 ${
                     pack.popular
-                      ? "border-amber-500/35 bg-amber-500/8"
+                      ? "border-[#d8ad5f]/35 bg-[#d8ad5f]/8"
                       : "border-white/[0.08] bg-[#070A12]/60"
                   }`}
                 >
@@ -93,7 +93,7 @@ export default function LandingCreditsSection({
                     </span>
                   </div>
                   {pack.badge ? (
-                    <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-300">
+                    <span className="rounded-full bg-[#d8ad5f]/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#efc777]">
                       {pack.badge}
                     </span>
                   ) : null}

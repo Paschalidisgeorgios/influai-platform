@@ -8,6 +8,11 @@ import CreditCostBadge, { PremiumBadge } from "./CreditCostBadge";
 import UpgradeHint from "./UpgradeHint";
 import { PREMIUM_CLASSES, PREMIUM_SPRING } from "@/lib/obsidian/premium-tokens";
 import type { AccessTier } from "@/app/lib/model-modes/types";
+import {
+  MODEL_DESCRIPTIONS,
+  MODEL_DISPLAY_NAMES,
+  resolveModelsForModelMode,
+} from "@/lib/ai/model-recommendations";
 
 type Props = {
   modes: ClientModelModeView[];
@@ -31,6 +36,13 @@ export default function ModelModeSelector({
   const isDe = language === "de";
 
   if (!modes.length) return null;
+
+  const modelHint = resolveModelsForModelMode(selectedId);
+  const hintLang = isDe ? "de" : "en";
+  const modelDesc =
+    MODEL_DESCRIPTIONS[modelHint.activeModel]?.[hintLang] ?? modelHint.rationale;
+  const modelLabel =
+    MODEL_DISPLAY_NAMES[modelHint.activeModel] ?? modelHint.activeModel;
 
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
@@ -96,6 +108,11 @@ export default function ModelModeSelector({
           );
         })}
       </div>
+      <p className="text-xs text-white/40" role="note">
+        <span className="text-white/50">{modelLabel}</span>
+        {" · "}
+        {modelDesc}
+      </p>
     </div>
   );
 }

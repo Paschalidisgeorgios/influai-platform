@@ -65,7 +65,7 @@ export const KREA_CAPABILITY_MATRIX: readonly KreaCapabilityRow[] = [
   {
     workflow: "video_image_to_video",
     status: "production",
-    kreaEndpoint: "POST /generate/video/kling/kling-2.5",
+    kreaEndpoint: "POST /generate/video/kling/kling-3.0",
     credits: 25,
     notes: "Async job polling via GET /jobs/{id}.",
   },

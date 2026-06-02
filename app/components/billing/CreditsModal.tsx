@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEscapeKey } from "@/lib/hooks/use-escape-key";
 import Link from "next/link";
 import { Loader2, X } from "lucide-react";
 import {
@@ -91,6 +92,8 @@ export default function CreditsModal({
       setLoadingKey(null);
     }
   }
+
+  useEscapeKey(onClose, open);
 
   if (!open) return null;
 

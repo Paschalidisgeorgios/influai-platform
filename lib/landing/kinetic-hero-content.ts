@@ -17,49 +17,46 @@ export type KineticHeroCopy = {
 
 export const KINETIC_HERO_COPY: Record<LandingLanguage, KineticHeroCopy> = {
   en: {
-    badge: "The Content Engine",
-    headline: "From one idea to ready-to-post content.",
-    rotatingPrefix: "Delivering",
+    badge: "AI Creator Studio — Social Asset Packs",
+    headline: "One idea. Three images. One video. Ready to post.",
+    rotatingPrefix: "Each pack includes",
     rotatingWords: [
-      "image variations",
-      "motion clips",
+      "3 image variations",
+      "1 motion clip",
+      "Creative Score",
       "hooks",
       "captions",
-      "hashtags",
-      "export formats",
+      "export ZIP",
     ],
     subheadline:
-      "InfluExAI turns rough ideas into creator-ready assets — with intelligent prompting, image variations, motion video, Creative Score and export-ready formats.",
-    proofLine:
-      "1 idea → 3 image variations → 1 motion clip → hooks → captions → export",
-    primaryCta: "Preview your first pack",
-    secondaryCta: "See the workflow",
+      "InfluExAi builds your complete content bundle — images, motion video, Creative Score, hooks and captions. In under 10 minutes.",
+    proofLine: "Idea → Images → Video → Score → Hooks → Export → Post",
+    primaryCta: "Create your free Pack",
+    secondaryCta: "See how it works",
     demoBadge: "Pack preview",
     demoDisclaimer: "Static demo · illustrative outputs only",
-    mobilePackSummary: "Hooks · captions · hashtags · Creative Score · export formats",
+    mobilePackSummary: "3 images · motion · score · hooks · captions · ZIP",
   },
   de: {
-    badge: "The Content Engine",
-    headline: "Aus einer Idee wird postfertiger Content.",
-    rotatingPrefix: "Liefert",
+    badge: "AI Creator Studio — Social Asset Packs",
+    headline: "Eine Idee. Drei Bilder. Ein Video. Bereit zum Posten.",
+    rotatingPrefix: "Jedes Pack enthält",
     rotatingWords: [
-      "Bildvarianten",
-      "Motion-Clips",
+      "3 Bildvarianten",
+      "1 Motion-Clip",
+      "Creative Score",
       "Hooks",
       "Captions",
-      "Hashtags",
-      "Exportformate",
+      "Export-ZIP",
     ],
     subheadline:
-      "InfluExAI verwandelt grobe Ideen in creator-ready Assets — mit intelligentem Prompting, Bildvarianten, Motion-Video, Creative Score und exportfertigen Formaten.",
-    proofLine:
-      "1 Idee → 3 Bildvarianten → 1 Motion-Clip → Hooks → Captions → Export",
-    primaryCta: "Erstes Paket previewen",
-    secondaryCta: "Workflow ansehen",
+      "InfluExAi erstellt dein komplettes Content-Bundle — Bilder, Motion Video, Creative Score, Hooks und Captions. In unter 10 Minuten.",
+    proofLine: "Idee → Bilder → Video → Score → Hooks → Export → Posten",
+    primaryCta: "Kostenloses Pack erstellen",
+    secondaryCta: "So funktioniert es",
     demoBadge: "Pack-Vorschau",
     demoDisclaimer: "Statische Demo · nur illustrative Beispiele",
-    mobilePackSummary:
-      "Hooks · Captions · Hashtags · Creative Score · Exportformate",
+    mobilePackSummary: "3 Bilder · Motion · Score · Hooks · Captions · ZIP",
   },
 };
 

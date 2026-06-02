@@ -34,7 +34,7 @@ export default function ScrollTextReveal({
     <section
       ref={sectionRef}
       aria-label={text}
-      className={`relative h-[220vh] bg-[#0D0D0F] ${className}`}
+      className={`relative h-[220vh] bg-[#0A0A0B] ${className}`}
     >
       <div className="sticky top-0 flex h-screen items-center justify-center overflow-hidden px-6">
         <h2 className="max-w-6xl text-center text-5xl font-black tracking-tight md:text-7xl lg:text-8xl">

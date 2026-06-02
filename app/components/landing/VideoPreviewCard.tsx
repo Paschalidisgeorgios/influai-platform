@@ -123,8 +123,8 @@ export default function VideoPreviewCard({
               : { duration: 2.8, repeat: Infinity, ease: "easeInOut" }
           }
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-500/35 bg-amber-500/15 shadow-[0_0_14px_rgba(245,158,11,0.2)]">
-            <Play className="h-3.5 w-3.5 text-amber-200/90" aria-hidden />
+          <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d8ad5f]/35 bg-[#d8ad5f]/15 shadow-[0_0_14px_rgba(216,173,95,0.2)]">
+            <Play className="h-3.5 w-3.5 text-[#f0d4a8]/90" aria-hidden />
           </span>
         </motion.div>
       ) : null}

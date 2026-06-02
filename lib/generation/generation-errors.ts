@@ -45,24 +45,33 @@ const COPY: Record<
 > = {
   MODEL_NOT_CONFIGURED: {
     error: {
-      en: "This creation mode is not available yet. Your credits were not charged.",
-      de: "Dieser Erstellungsmodus ist noch nicht verfügbar. Es wurden keine Credits abgebucht.",
+      en: "This feature is not available yet. No credits were charged.",
+      de: "Diese Funktion ist noch nicht verfügbar. Es wurden keine Credits abgebucht.",
     },
-    reason: { en: "", de: "" },
+    reason: {
+      en: "Try another mode or check back soon.",
+      de: "Probiere einen anderen Modus oder schau bald wieder vorbei.",
+    },
   },
   ENGINE_NOT_CONFIGURED: {
     error: {
-      en: "This creation mode is not available yet. Your credits were not charged.",
-      de: "Dieser Erstellungsmodus ist noch nicht verfügbar. Es wurden keine Credits abgebucht.",
+      en: "This feature is not available yet. No credits were charged.",
+      de: "Diese Funktion ist noch nicht verfügbar. Es wurden keine Credits abgebucht.",
     },
-    reason: { en: "", de: "" },
+    reason: {
+      en: "Try another mode or check back soon.",
+      de: "Probiere einen anderen Modus oder schau bald wieder vorbei.",
+    },
   },
   INSUFFICIENT_CREDITS: {
     error: {
-      en: "You need more credits to generate this. Your credits were not charged.",
-      de: "Du brauchst mehr Credits für diese Generierung. Es wurden keine Credits abgebucht.",
+      en: "Not enough credits for this pack. Your credits were not charged.",
+      de: "Nicht genug Credits für dieses Pack. Es wurden keine Credits abgebucht.",
     },
-    reason: { en: "", de: "" },
+    reason: {
+      en: "Buy more credits to continue.",
+      de: "Credits kaufen, um fortzufahren.",
+    },
   },
   ACTION_UNAVAILABLE: {
     error: {
@@ -125,38 +134,53 @@ const COPY: Record<
   },
   NO_OUTPUT_URL: {
     error: {
-      en: "Generation failed. Credits were refunded.",
-      de: "Generierung fehlgeschlagen. Credits wurden erstattet.",
+      en: "Generation failed. Your credits were refunded automatically.",
+      de: "Generierung fehlgeschlagen. Deine Credits wurden automatisch zurückerstattet.",
     },
-    reason: { en: "", de: "" },
+    reason: {
+      en: "Try again or contact support if it keeps failing.",
+      de: "Erneut versuchen oder Support kontaktieren, wenn es weiter fehlschlägt.",
+    },
   },
   GENERATION_TIMEOUT: {
     error: {
-      en: "Generation timed out. Credits were refunded.",
-      de: "Zeitüberschreitung bei der Generierung. Credits wurden erstattet.",
+      en: "Generation timed out. Your credits were refunded automatically.",
+      de: "Zeitüberschreitung. Deine Credits wurden automatisch zurückerstattet.",
     },
-    reason: { en: "", de: "" },
+    reason: {
+      en: "Try again with a shorter prompt.",
+      de: "Erneut versuchen mit einem kürzeren Prompt.",
+    },
   },
   UPLOAD_FAILED: {
     error: {
-      en: "We could not save your result. Credits were refunded.",
-      de: "Ergebnis konnte nicht gespeichert werden. Credits wurden erstattet.",
+      en: "We could not save your result. Your credits were refunded automatically.",
+      de: "Ergebnis konnte nicht gespeichert werden. Deine Credits wurden automatisch zurückerstattet.",
     },
-    reason: { en: "", de: "" },
+    reason: {
+      en: "Try again or contact support.",
+      de: "Erneut versuchen oder Support kontaktieren.",
+    },
   },
   PROVIDER_ERROR: {
     error: {
-      en: "Generation failed. Credits were refunded.",
-      de: "Generierung fehlgeschlagen. Credits wurden erstattet.",
+      en: "Generation failed. Your credits were refunded automatically.",
+      de: "Generierung fehlgeschlagen. Deine Credits wurden automatisch zurückerstattet.",
     },
-    reason: { en: "", de: "" },
+    reason: {
+      en: "Try again in a few minutes.",
+      de: "In ein paar Minuten erneut versuchen.",
+    },
   },
   GENERATION_FAILED: {
     error: {
-      en: "Generation failed. Credits were refunded.",
-      de: "Generierung fehlgeschlagen. Credits wurden erstattet.",
+      en: "Generation failed. Your credits were refunded automatically.",
+      de: "Generierung fehlgeschlagen. Deine Credits wurden automatisch zurückerstattet.",
     },
-    reason: { en: "", de: "" },
+    reason: {
+      en: "Try again or contact support if it keeps failing.",
+      de: "Erneut versuchen oder Support kontaktieren, wenn es weiter fehlschlägt.",
+    },
   },
 };
 

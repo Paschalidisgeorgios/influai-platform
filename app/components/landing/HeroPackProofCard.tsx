@@ -32,15 +32,15 @@ export default function HeroPackProofCard({ language, className = "" }: Props) {
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border border-amber-500/20 bg-neutral-900/50 shadow-[0_0_48px_rgba(245,158,11,0.1)] backdrop-blur-2xl ${className}`}
+      className={`relative overflow-hidden rounded-2xl border border-[#d8ad5f]/20 bg-neutral-900/50 shadow-[0_0_48px_rgba(216,173,95,0.1)] backdrop-blur-2xl ${className}`}
       aria-label={demo.title}
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#d8ad5f]/50 to-transparent" />
 
       <div className="border-b border-white/[0.06] px-4 py-3 sm:px-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-2.5">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-amber-500/35 bg-amber-500/10 text-amber-400">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#d8ad5f]/35 bg-[#d8ad5f]/10 text-[#d8ad5f]">
               <Package className="h-4 w-4" aria-hidden />
             </span>
             <div className="min-w-0">
@@ -62,7 +62,7 @@ export default function HeroPackProofCard({ language, className = "" }: Props) {
       <div className="space-y-3 p-4 sm:p-5">
         <div>
           <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-neutral-300">
-            <ImageIcon className="h-3 w-3 text-amber-400/90" aria-hidden />
+            <ImageIcon className="h-3 w-3 text-[#d8ad5f]/90" aria-hidden />
             {outputs.imageVariations}
           </p>
           <div className="grid grid-cols-3 gap-1.5">
@@ -92,12 +92,12 @@ export default function HeroPackProofCard({ language, className = "" }: Props) {
         </div>
 
         <div className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-[#0a0a0a]/80 px-3 py-2">
-          <Clapperboard className="h-4 w-4 shrink-0 text-amber-400/90" aria-hidden />
+          <Clapperboard className="h-4 w-4 shrink-0 text-[#d8ad5f]/90" aria-hidden />
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold text-neutral-200">{outputs.motionClip}</p>
             <p className="text-[10px] text-neutral-500">{demo.motionClipHint}</p>
           </div>
-          <span className="rounded-md border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold text-amber-200">
+          <span className="rounded-md border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-1.5 py-0.5 text-[9px] font-bold text-[#f0d4a8]">
             5s
           </span>
         </div>
@@ -157,10 +157,10 @@ export default function HeroPackProofCard({ language, className = "" }: Props) {
           </p>
         </div>
 
-        <div className="hidden items-center justify-between gap-2 rounded-lg border border-amber-500/25 bg-amber-500/8 px-3 py-2 md:flex">
+        <div className="hidden items-center justify-between gap-2 rounded-lg border border-[#d8ad5f]/25 bg-[#d8ad5f]/8 px-3 py-2 md:flex">
           <div className="flex items-center gap-2">
-            <Download className="h-3.5 w-3.5 text-amber-300" aria-hidden />
-            <span className="text-[10px] font-bold uppercase tracking-wide text-amber-100">
+            <Download className="h-3.5 w-3.5 text-[#efc777]" aria-hidden />
+            <span className="text-[10px] font-bold uppercase tracking-wide text-[#f5e6c8]">
               {outputs.exportPack}
             </span>
           </div>

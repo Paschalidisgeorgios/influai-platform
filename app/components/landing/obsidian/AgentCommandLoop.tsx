@@ -76,14 +76,14 @@ export default function AgentCommandLoop({
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-500 to-transparent"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#d8ad5f] to-transparent"
       />
 
       <div className="relative z-10">
         <div className="mb-4 flex items-center justify-between gap-3">
           <p className={OBS.mono}>OMNI-DIRECTIONAL AGENT LOOP</p>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-neutral-800/80 bg-neutral-950/60 px-2.5 py-1 text-[10px] font-medium text-neutral-400">
-            <Cpu className="h-3 w-3 text-amber-500" />
+            <Cpu className="h-3 w-3 text-[#faf3e3]0" />
             {activeTrack + 1}/{tracks.length}
           </span>
         </div>
@@ -110,7 +110,7 @@ export default function AgentCommandLoop({
               key={i}
               className={`h-1 flex-1 rounded-full transition-all ${
                 i === activeTrack
-                  ? "bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.9)]"
+                  ? "bg-[#d8ad5f] shadow-[0_0_12px_rgba(216,173,95,0.9)]"
                   : "bg-neutral-800"
               }`}
             />
@@ -119,16 +119,16 @@ export default function AgentCommandLoop({
 
         <div
           className={`mt-4 rounded-xl border bg-neutral-950/60 px-4 py-3 font-mono text-xs leading-relaxed sm:text-sm ${
-            phase === "typing" ? "border-amber-500/30 text-neutral-200" : "border-neutral-800/80 text-neutral-500"
+            phase === "typing" ? "border-[#d8ad5f]/30 text-neutral-200" : "border-neutral-800/80 text-neutral-500"
           }`}
         >
-          <span className="text-amber-500">&gt; </span>
+          <span className="text-[#faf3e3]0">&gt; </span>
           {typed}
           {phase === "typing" ? (
             <motion.span
               animate={{ opacity: [1, 0.15, 1] }}
               transition={{ repeat: Infinity, duration: 0.7 }}
-              className="ml-0.5 inline-block h-4 w-0.5 bg-amber-500 align-middle"
+              className="ml-0.5 inline-block h-4 w-0.5 bg-[#d8ad5f] align-middle"
             />
           ) : null}
         </div>
@@ -143,7 +143,7 @@ export default function AgentCommandLoop({
               transition={OBS_SPRING}
               className="mt-3 overflow-hidden"
             >
-              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#d8ad5f]">
                 {hero.generateLabel}
               </p>
               <div className="mt-2 flex items-center justify-between text-[10px] font-medium uppercase tracking-widest text-neutral-500">
@@ -152,7 +152,7 @@ export default function AgentCommandLoop({
               </div>
               <div className="mt-2 h-px overflow-hidden rounded-full bg-neutral-800">
                 <motion.div
-                  className="h-full rounded-full bg-amber-500 shadow-[0_0_14px_rgba(245,158,11,0.95)]"
+                  className="h-full rounded-full bg-[#d8ad5f] shadow-[0_0_14px_rgba(216,173,95,0.95)]"
                   style={{ width: `${renderProgress}%` }}
                 />
               </div>
@@ -170,7 +170,7 @@ export default function AgentCommandLoop({
               transition={OBS_SPRING}
               className="mt-3"
             >
-              <div className="relative aspect-[4/5] overflow-hidden rounded-xl border border-amber-500/30 bg-neutral-950 sm:aspect-video">
+              <div className="relative aspect-[4/5] overflow-hidden rounded-xl border border-[#d8ad5f]/30 bg-neutral-950 sm:aspect-video">
                 <Image
                   src={previewSrc}
                   alt=""
@@ -182,11 +182,11 @@ export default function AgentCommandLoop({
                   onError={() => setPreviewSrc(HERO_MODEL1_STILL_FALLBACK)}
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                <span className="absolute bottom-3 left-3 rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-400">
+                <span className="absolute bottom-3 left-3 rounded-full border border-[#d8ad5f]/40 bg-[#d8ad5f]/10 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#d8ad5f]">
                   {hero.previewLabel}
                 </span>
               </div>
-              <p className="mt-2 text-[10px] font-medium uppercase tracking-widest text-amber-400/90">
+              <p className="mt-2 text-[10px] font-medium uppercase tracking-widest text-[#d8ad5f]/90">
                 {hero.resultLabel}
               </p>
             </motion.div>
@@ -205,7 +205,7 @@ export default function AgentCommandLoop({
                   transition={OBS_SPRING}
                   className={`rounded-xl border px-3 py-2 ${
                     active
-                      ? "border-amber-500/50 bg-amber-500/10"
+                      ? "border-[#d8ad5f]/50 bg-[#d8ad5f]/10"
                       : "border-white/10 bg-white/[0.05]"
                   }`}
                 >

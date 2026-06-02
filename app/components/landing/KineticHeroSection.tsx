@@ -35,6 +35,7 @@ export default function KineticHeroSection({
       ref={containerRef}
       className="relative overflow-hidden bg-transparent text-white"
     >
+      <div className="grain-overlay" aria-hidden />
       <ParallaxDepthLayers
         variant="landing-hero"
         getLayerStyle={getLayerStyle}
@@ -62,7 +63,7 @@ export default function KineticHeroSection({
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={OBS_SPRING}
-              className={`mb-4 inline-flex rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 ${OBS.mono} text-amber-200/90`}
+              className={`mb-4 inline-flex rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-3 py-1 ${OBS.mono} text-[#f0d4a8]/90`}
             >
               {copy.badge}
             </motion.span>
@@ -106,7 +107,7 @@ export default function KineticHeroSection({
                 ...OBS_SPRING,
                 delay: reduceMotion ? 0 : wordCount * 0.1 + 0.26,
               }}
-              className="mt-4 max-w-xl text-sm font-medium tracking-wide text-amber-500/80"
+              className="mt-4 max-w-xl text-sm font-medium tracking-wide text-[#faf3e3]0/80"
             >
               {copy.proofLine}
             </motion.p>
@@ -118,13 +119,14 @@ export default function KineticHeroSection({
                 ...OBS_SPRING,
                 delay: reduceMotion ? 0 : wordCount * 0.1 + 0.32,
               }}
-              className="mt-6 flex flex-wrap items-center gap-3"
+              className="mt-6 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center"
             >
               <ObsidianButton
                 href={studioHref}
                 variant="primary"
                 size="lg"
                 surface="landing"
+                className="w-full justify-center sm:w-auto"
               >
                 {copy.primaryCta}
                 <ArrowRight className="h-4 w-4" aria-hidden />
@@ -134,6 +136,7 @@ export default function KineticHeroSection({
                 variant="secondary"
                 size="lg"
                 surface="landing"
+                className="w-full justify-center sm:w-auto"
               >
                 {copy.secondaryCta}
               </ObsidianButton>

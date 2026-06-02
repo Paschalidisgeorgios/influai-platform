@@ -47,11 +47,11 @@ function PackPreviewTile({
   const labels = isDe ? tile.variationLabelsDe : tile.variationLabelsEn;
 
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-xl border border-amber-500/20 bg-neutral-900/40 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+    <div className="flex h-full min-h-0 flex-col rounded-xl border border-[#d8ad5f]/20 bg-neutral-900/40 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
       <div className="mb-2 flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 text-[11px] font-bold text-white">
-            <Sparkles className="h-3 w-3 shrink-0 text-amber-400" aria-hidden />
+            <Sparkles className="h-3 w-3 shrink-0 text-[#d8ad5f]" aria-hidden />
             {title}
           </p>
           <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-neutral-500">
@@ -62,7 +62,7 @@ function PackPreviewTile({
       </div>
 
       <p className="mb-1.5 flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-neutral-500">
-        <ImageIcon className="h-3 w-3 text-amber-400/80" aria-hidden />
+        <ImageIcon className="h-3 w-3 text-[#d8ad5f]/80" aria-hidden />
         {isDe ? "3 Bildvarianten" : "3 image variations"}
       </p>
       <div className="grid min-h-0 flex-1 grid-cols-3 gap-1.5">
@@ -107,7 +107,7 @@ function GalleryTile({
     <div className="flex h-full flex-col rounded-xl border border-white/[0.08] bg-[#0c0f14]/80 p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="flex items-center gap-1.5 text-[11px] font-bold text-white">
-          <Layers className="h-3 w-3 text-amber-400/90" aria-hidden />
+          <Layers className="h-3 w-3 text-[#d8ad5f]/90" aria-hidden />
           {title}
         </p>
         <CategoryChip categoryId={tile.categoryId} language={language} />
@@ -144,7 +144,7 @@ function BeforeAfterTile({
         <p className="text-[11px] font-bold text-white">{title}</p>
         <CategoryChip categoryId={tile.categoryId} language={language} />
       </div>
-      <p className="mb-2 line-clamp-2 font-mono text-[9px] leading-relaxed text-amber-200/70">
+      <p className="mb-2 line-clamp-2 font-mono text-[9px] leading-relaxed text-[#f0d4a8]/70">
         {prompt}
       </p>
       <div className="grid min-h-0 flex-1 grid-cols-2 gap-1.5">

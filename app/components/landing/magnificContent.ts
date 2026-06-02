@@ -29,22 +29,21 @@ export type HeroTrack = {
 export const magnificContent = {
   en: {
     nav: {
-      features: "Features",
-      models: "Models",
+      features: "How it works",
+      models: "Studio",
       pricing: "Pricing",
-      signIn: "Login",
+      signIn: "Sign in",
       openStudio: "Create Free Pack",
     },
     hero: {
-      badge: "AI Creator Studio",
-      headline: "From one idea to a ready-to-post Social Asset Pack.",
+      badge: "AI Creator Studio — Social Asset Packs",
+      headline: "One idea. Three images. One video. Ready to post.",
       subtitle:
-        "InfluExAi turns rough ideas into complete content bundles — images, motion video, Creative Score, hooks, captions and export. In minutes, not hours.",
-      trustLine:
-        "1 idea → 3 image variations → motion video → score → hooks → export",
+        "InfluExAi builds your complete content bundle — images, motion video, Creative Score, hooks and captions. In under 10 minutes.",
+      trustLine: "Idea → Images → Video → Score → Hooks → Export → Post",
       body: "",
       cta: "Create your free Pack",
-      secondaryCta: "See the workflow",
+      secondaryCta: "See how it works",
       studioMockup: {
         studioLabel: "Creator Studio",
         promptLabel: "Your idea",
@@ -117,56 +116,55 @@ export const magnificContent = {
       ] satisfies HeroTrack[],
     },
     intelligentPrompting: {
-      headline: "Intelligent prompting, built into the workflow.",
+      headline: "Start rough. Get a render-ready prompt.",
       subtitle:
-        "You can start with a rough idea. InfluExAI helps shape it into a production-ready prompt for images, motion videos and creator assets.",
+        "Write one sentence. Prompt Assist adds light, scene and format details.",
       steps: [
         {
           key: "start",
-          title: "Step 1 — Start rough",
-          exampleLabel: "Example",
+          title: "Step 1 — Your idea",
+          exampleLabel: "You write",
           body: "restaurant dish on table",
         },
         {
           key: "intent",
-          title: "Step 2 — InfluExAI understands the intent",
+          title: "Step 2 — What we detect",
           detectedLabel: "Detected",
           bullets: [
-            "Food visual",
-            "Social format",
-            "Lighting missing",
-            "Composition missing",
+            "Food shot",
+            "Social crop",
+            "Light not set",
+            "Scene not set",
           ],
         },
         {
           key: "assist",
-          title: "Step 3 — Prompt Assist improves the idea",
-          enhancedLabel: "Enhanced",
+          title: "Step 3 — Prompt improved",
+          enhancedLabel: "Ready to render",
           body: "Restaurant dish hero on a wooden table, natural window light, steam detail, appetizing color contrast, menu-ready social composition.",
         },
         {
           key: "teach",
-          title: "Step 4 — The explanation teaches the user",
-          messageLabel: "Message",
-          body: "Window light, surface texture and plating were added to make the dish clearer and more appetizing on social.",
+          title: "Step 4 — Why it changed",
+          messageLabel: "Added",
+          body: "Window light, wood surface and plating so the dish reads clearly in the feed.",
         },
       ],
-      examplesHeadline: "Image and video prompts",
-      examplesSubline:
-        "The same flow applies whether you are creating a still or a motion clip.",
+      examplesHeadline: "Same flow for image and video",
+      examplesSubline: "One rough line in. One detailed prompt out.",
       imageExample: {
         badge: "Image",
-        inputLabel: "Image input",
+        inputLabel: "Before",
         input: "restaurant dish on table",
-        improvedLabel: "Image improved",
+        improvedLabel: "After",
         improved:
           "Restaurant dish hero on a wooden table, natural window light, steam detail, appetizing color contrast, menu-ready social composition.",
       },
       videoExample: {
         badge: "Video",
-        inputLabel: "Video input",
+        inputLabel: "Before",
         input: "street style outfit",
-        improvedLabel: "Video improved",
+        improvedLabel: "After",
         improved:
           "Short street-style creator video in an urban setting, handheld camera movement, confident walking motion, natural daylight, social reel format.",
       },
@@ -184,27 +182,27 @@ export const magnificContent = {
       ],
     },
     builtFor: {
-      headline: "Built for creators, brands and teams that need content fast.",
+      headline: "Who gets a full pack from one idea",
       cards: [
         {
-          title: "Solo Creators",
-          body: "Create images, motion clips, hooks and captions without starting from a blank page.",
+          title: "Solo creators",
+          body: "3 images, one clip, hooks and captions — 5 posts a week without a blank doc.",
         },
         {
-          title: "UGC Creators",
-          body: "Turn product ideas into visuals, short clips and social-ready copy.",
+          title: "UGC creators",
+          body: "Product brief in. Pack out in minutes for client approval.",
         },
         {
-          title: "E-commerce Brands",
-          body: "Generate catalog heroes, variants and format-ready assets for social channels.",
+          title: "E-commerce brands",
+          body: "Hero shots and variants for feed, story and ads from one product line.",
         },
         {
-          title: "Real Estate Teams",
-          body: "Listing visuals, interior highlights and format-ready assets for property marketing.",
+          title: "Real estate",
+          body: "Listing photos, reel clip and captions per property in one run.",
         },
         {
           title: "Agencies",
-          body: "Prepare repeatable creator workflows, asset packs and client-ready exports.",
+          body: "One pack per client brief. ZIP export for handoff.",
         },
       ],
     },
@@ -476,8 +474,8 @@ export const magnificContent = {
       ],
     },
     creativeScore: {
-      headline: "Know what works before you post.",
-      body: "Creative Score gives practical feedback on clarity, composition, hooks and social readiness.",
+      headline: "Score every post before you publish.",
+      body: "Get a number plus clear tips on hooks, composition and feed readiness.",
       scoreLabel: "Creative Score",
       scoreValue: "82",
       scoreMax: "100",
@@ -619,9 +617,9 @@ export const magnificContent = {
       ],
     },
     campaignFeatures: {
-      headline: "Everything a creator needs in one workflow.",
+      headline: "One workflow. Every asset for the post.",
       subheadline:
-        "Available tools run in the studio today. Preview, request-access and Pro workflows are open for planning — paid rendering unlocks when each module clears.",
+        "Each tool delivers a concrete output. Costs show before you render.",
       statusLabels: {
         available: "Available",
         credit_gated: "Credits required",
@@ -632,18 +630,18 @@ export const magnificContent = {
       },
       cards: [
         {
-          title: "Create Image",
-          body: "Generate creator visuals, product shots and social assets from a simple idea.",
+          title: "Image variations",
+          body: "Create 3 image variations from one idea.",
           status: "available",
         },
         {
-          title: "Create Motion Video",
-          body: "Turn text into short motion clips for Reels, TikTok and paid social. 25 Credits per render.",
+          title: "Motion clip",
+          body: "Turn any image into a 5-second motion clip.",
           status: "credit_gated",
         },
         {
           title: "Social Asset Pack",
-          body: "Preview your pack plan for free. Full render uses 45 Credits — cost shown before you generate.",
+          body: "One pack = images, video, score, hooks, captions and ZIP export.",
           status: "credit_gated",
         },
         {
@@ -703,12 +701,12 @@ export const magnificContent = {
         },
         {
           title: "Creative Score",
-          body: "Free feedback on hook clarity, composition and social readiness — no credits required.",
+          body: "Get a score + tips to improve every post.",
           status: "available",
         },
         {
           title: "Export Pack",
-          body: "Free export manifest for TikTok, Reels, Story and Feed — no surprise charges for planning.",
+          body: "Download images, video, captions and hashtags in one ZIP.",
           status: "available",
         },
       ] satisfies LandingCreatorToolCard[],
@@ -723,9 +721,9 @@ export const magnificContent = {
     marquee:
       "InfluExAI · AI Creator Studio · Images · Motion · Packs · Score · Export · Gallery · ",
     pricing: {
-      headline: "Credit packages",
+      headline: "Pay for results, not tokens.",
       subheadline:
-        "One-time credit packs. Generation and rendering use credits — costs are shown before you generate.",
+        "Each pack includes images, score, hooks and captions. No hidden credits.",
       oneTime: "once",
       plans: {
         starter: {
@@ -758,30 +756,26 @@ export const magnificContent = {
       faqTitle: "FAQ",
       faq: [
         {
-          q: "What can I create today?",
-          a: "Create Image, Create Motion Video, Social Asset Pack (free preview; render uses credits), Creative Score, Hooks & Captions and Export Pack are available now. Reference, edit, enhance, animate and training tools open as Preview, Request access or Pro workflow — they do not render until cleared.",
+          q: "What is a Social Asset Pack?",
+          a: "One pack = 3 image variations + 1 motion video + Creative Score + hooks + captions + download.",
         },
         {
-          q: "How do credits work?",
-          a: "Credits pay for generation and rendering. You see the estimated cost before each run. Buy credit packs when you need more — no subscription required.",
+          q: "Do credits expire?",
+          a: "Monthly subscription credits reset each month. Top-up credits never expire.",
         },
         {
-          q: "What do credit packs cost?",
-          a: "Starter: 100 credits for €9. Creator: 500 credits for €29 (Most Popular). Pro: 2000 credits for €79. Larger packs offer better value per credit. Custom top-ups from 100 credits at €0.10 per credit.",
+          q: "Can I use the images commercially?",
+          a: "Yes. You own the outputs. You are responsible for the prompts you write.",
         },
         {
-          q: "Is this a subscription?",
-          a: "No. One-time credit packs. Your balance does not expire.",
-        },
-        {
-          q: "Where are my assets stored?",
-          a: "Completed generations appear in your Creator Gallery, tied to your authenticated account.",
+          q: "What AI models do you use?",
+          a: "We use Krea AI (FLUX, Kling) and Fal AI. We pick the best model for each task automatically.",
         },
       ],
     },
     finalCta: {
-      headline: "Ready to create your first asset?",
-      cta: "Start creating",
+      headline: "Ready for your first pack?",
+      cta: "Create Free Pack",
     },
     checkout: {
       loading: "Opening secure checkout…",
@@ -790,22 +784,21 @@ export const magnificContent = {
   },
   de: {
     nav: {
-      features: "Funktionen",
-      models: "Modelle",
+      features: "So funktioniert es",
+      models: "Studio",
       pricing: "Preise",
-      signIn: "Login",
+      signIn: "Anmelden",
       openStudio: "Kostenloses Pack erstellen",
     },
     hero: {
-      badge: "AI Creator Studio",
-      headline: "Von einer Idee zum fertigen Social Asset Pack.",
+      badge: "AI Creator Studio — Social Asset Packs",
+      headline: "Eine Idee. Drei Bilder. Ein Video. Bereit zum Posten.",
       subtitle:
-        "InfluExAi verwandelt Ideen in komplette Content-Pakete — Bilder, Motion Video, Creative Score, Hooks, Captions und Export. In Minuten, nicht Stunden.",
-      trustLine:
-        "1 Idee → 3 Bildvarianten → Motion Video → Score → Hooks → Export",
+        "InfluExAi erstellt dein komplettes Content-Bundle — Bilder, Motion Video, Creative Score, Hooks und Captions. In unter 10 Minuten.",
+      trustLine: "Idee → Bilder → Video → Score → Hooks → Export → Posten",
       body: "",
       cta: "Kostenloses Pack erstellen",
-      secondaryCta: "Workflow ansehen",
+      secondaryCta: "So funktioniert es",
       studioMockup: {
         studioLabel: "Creator Studio",
         promptLabel: "Deine Idee",
@@ -878,56 +871,55 @@ export const magnificContent = {
       ] satisfies HeroTrack[],
     },
     intelligentPrompting: {
-      headline: "Intelligentes Prompting — fest im Workflow verankert.",
+      headline: "Grob starten. Render-fertigen Prompt bekommen.",
       subtitle:
-        "Du kannst mit einer groben Idee starten. InfluExAI formt sie zu einem produktionsreifen Prompt für Bilder, Motion-Videos und Creator-Assets.",
+        "Ein Satz reicht. Prompt Assist ergänzt Licht, Szene und Format.",
       steps: [
         {
           key: "start",
-          title: "Schritt 1 — Grob starten",
-          exampleLabel: "Beispiel",
+          title: "Schritt 1 — Deine Idee",
+          exampleLabel: "Du schreibst",
           body: "Restaurant-Gericht auf Tisch",
         },
         {
           key: "intent",
-          title: "Schritt 2 — InfluExAI versteht die Absicht",
+          title: "Schritt 2 — Was wir erkennen",
           detectedLabel: "Erkannt",
           bullets: [
-            "Food-Visual",
-            "Social-Format",
+            "Food-Shot",
+            "Social-Crop",
             "Licht fehlt",
-            "Komposition fehlt",
+            "Szene fehlt",
           ],
         },
         {
           key: "assist",
-          title: "Schritt 3 — Prompt Assist verbessert die Idee",
-          enhancedLabel: "Verbessert",
+          title: "Schritt 3 — Prompt verbessert",
+          enhancedLabel: "Bereit zum Rendern",
           body: "Restaurant-Gericht Hero auf Holztisch, natürliches Fensterlicht, Dampf-Detail, appetitlicher Farbkontrast, menü-taugliche Social-Komposition.",
         },
         {
           key: "teach",
-          title: "Schritt 4 — Die Erklärung hilft beim Lernen",
-          messageLabel: "Hinweis",
-          body: "Fensterlicht, Oberfläche und Anrichtung wurden ergänzt, damit das Gericht auf Social klarer und appetitlicher wirkt.",
+          title: "Schritt 4 — Warum es sich ändert",
+          messageLabel: "Ergänzt",
+          body: "Fensterlicht, Holzoberfläche und Anrichtung — damit das Gericht im Feed klar wirkt.",
         },
       ],
-      examplesHeadline: "Bild- und Video-Prompts",
-      examplesSubline:
-        "Derselbe Ablauf gilt für Stills und Motion-Clips.",
+      examplesHeadline: "Gleicher Ablauf für Bild und Video",
+      examplesSubline: "Eine grobe Zeile rein. Ein detaillierter Prompt raus.",
       imageExample: {
         badge: "Bild",
-        inputLabel: "Bild-Input",
+        inputLabel: "Vorher",
         input: "Restaurant-Gericht auf Tisch",
-        improvedLabel: "Bild verbessert",
+        improvedLabel: "Nachher",
         improved:
           "Restaurant-Gericht Hero auf Holztisch, natürliches Fensterlicht, Dampf-Detail, appetitlicher Farbkontrast, menü-taugliche Social-Komposition.",
       },
       videoExample: {
         badge: "Video",
-        inputLabel: "Video-Input",
+        inputLabel: "Vorher",
         input: "Street-Style-Outfit",
-        improvedLabel: "Video verbessert",
+        improvedLabel: "Nachher",
         improved:
           "Kurzes Street-Style-Creator-Video in urbaner Umgebung, Handkamera-Bewegung, selbstbewusster Gang, Tageslicht, Social-Reel-Format.",
       },
@@ -945,28 +937,27 @@ export const magnificContent = {
       ],
     },
     builtFor: {
-      headline:
-        "Gebaut für Creator, Brands und Teams, die schnell Content brauchen.",
+      headline: "Wer aus einer Idee ein komplettes Pack bekommt",
       cards: [
         {
-          title: "Solo Creator",
-          body: "Erstelle Bilder, Motion-Clips, Hooks und Captions — ohne bei null anzufangen.",
+          title: "Solo-Creator",
+          body: "3 Bilder, ein Clip, Hooks und Captions — 5 Posts pro Woche ohne leeres Doc.",
         },
         {
-          title: "UGC Creator",
-          body: "Verwandle Produktideen in Visuals, kurze Clips und social-ready Copy.",
+          title: "UGC-Creator",
+          body: "Produkt-Brief rein. Pack in Minuten raus zur Freigabe.",
         },
         {
-          title: "E-Commerce Brands",
-          body: "Generiere Katalog-Heros, Varianten und format-fertige Assets für Social Channels.",
+          title: "E-Commerce",
+          body: "Hero und Varianten für Feed, Story und Ads aus einer Produktzeile.",
         },
         {
-          title: "Immobilien-Teams",
-          body: "Listing-Visuals, Interior-Highlights und format-fertige Assets für Immobilien-Marketing.",
+          title: "Immobilien",
+          body: "Listing-Fotos, Reel-Clip und Captions pro Objekt in einem Lauf.",
         },
         {
           title: "Agenturen",
-          body: "Bereite wiederholbare Creator-Workflows, Asset-Packs und export-fertige Deliverables für Kunden vor.",
+          body: "Ein Pack pro Kunden-Brief. ZIP-Export für die Übergabe.",
         },
       ],
     },
@@ -1238,8 +1229,8 @@ export const magnificContent = {
       ],
     },
     creativeScore: {
-      headline: "Wisse, was funktioniert — bevor du postest.",
-      body: "Creative Score liefert praktisches Feedback zu Klarheit, Komposition, Hooks und Social-Tauglichkeit.",
+      headline: "Bewerte jeden Post vor dem Veröffentlichen.",
+      body: "Score plus klare Tipps zu Hooks, Komposition und Feed-Tauglichkeit.",
       scoreLabel: "Creative Score",
       scoreValue: "82",
       scoreMax: "100",
@@ -1390,9 +1381,9 @@ export const magnificContent = {
       ],
     },
     campaignFeatures: {
-      headline: "Alles, was ein Creator in einem Workflow braucht.",
+      headline: "Ein Workflow. Alle Assets für den Post.",
       subheadline:
-        "Verfügbare Tools laufen heute im Studio. Vorschau-, Zugang-anfragen- und Pro-Workflows sind zum Planen offen — bezahltes Rendering startet, sobald jedes Modul freigeschaltet ist.",
+        "Jedes Tool liefert ein konkretes Ergebnis. Kosten siehst du vor dem Rendern.",
       statusLabels: {
         available: "Verfügbar",
         credit_gated: "Credits erforderlich",
@@ -1403,18 +1394,18 @@ export const magnificContent = {
       },
       cards: [
         {
-          title: "Bild erstellen",
-          body: "Erstelle Creator-Visuals, Produktshots und Social Assets aus einer einfachen Idee.",
+          title: "Bildvarianten",
+          body: "Erstelle 3 Bildvarianten aus einer Idee.",
           status: "available",
         },
         {
-          title: "Motion-Video erstellen",
-          body: "Verwandle Text in kurze Motion-Clips für Reels, TikTok und Paid Social. 25 Credits pro Render.",
+          title: "Motion-Clip",
+          body: "Verwandle jedes Bild in einen 5-Sekunden Motion Clip.",
           status: "credit_gated",
         },
         {
           title: "Social Asset Pack",
-          body: "Pack-Plan kostenlos in der Vorschau. Volles Rendering kostet 45 Credits — Kosten vor dem Generieren sichtbar.",
+          body: "Ein Pack = Bilder, Video, Score, Hooks, Captions und ZIP-Export.",
           status: "credit_gated",
         },
         {
@@ -1474,12 +1465,12 @@ export const magnificContent = {
         },
         {
           title: "Creative Score",
-          body: "Kostenloses Feedback zu Hook-Klarheit, Komposition und Social-Tauglichkeit — keine Credits.",
+          body: "Score + konkrete Tipps für jeden Post.",
           status: "available",
         },
         {
-          title: "Export-Paket",
-          body: "Kostenloses Export-Manifest für TikTok, Reels, Story und Feed — keine Überraschungskosten beim Planen.",
+          title: "Export Pack",
+          body: "Bilder, Video, Captions und Hashtags als ZIP herunterladen.",
           status: "available",
         },
       ] satisfies LandingCreatorToolCard[],
@@ -1494,9 +1485,9 @@ export const magnificContent = {
     marquee:
       "InfluExAI · AI Creator Studio · Bilder · Motion · Packs · Score · Export · Gallery · ",
     pricing: {
-      headline: "Credit-Pakete",
+      headline: "Bezahle für Ergebnisse, nicht für Tokens.",
       subheadline:
-        "Einmalige Credit-Pakete. Generierung und Rendering verbrauchen Credits — Kosten werden vor dem Generieren angezeigt.",
+        "Jedes Pack enthält Bilder, Score, Hooks und Captions. Keine versteckten Credits.",
       oneTime: "einmalig",
       plans: {
         starter: {
@@ -1529,30 +1520,26 @@ export const magnificContent = {
       faqTitle: "FAQ",
       faq: [
         {
-          q: "Was kann ich heute erstellen?",
-          a: "Bild erstellen, Motion-Video erstellen, Social Asset Pack (kostenlose Vorschau; Rendering mit Credits), Creative Score, Hooks & Captions und Export-Paket sind jetzt verfügbar. Referenz-, Bearbeitungs-, Verbesserungs-, Animations- und Trainings-Tools öffnen als Vorschau, Zugang anfragen oder Pro-Workflow — sie rendern erst nach Freigabe.",
+          q: "Was ist ein Social Asset Pack?",
+          a: "Ein Pack = 3 Bildvarianten + 1 Motion Video + Creative Score + Hooks + Captions + Download.",
         },
         {
-          q: "Wie funktionieren Credits?",
-          a: "Credits bezahlen Generierung und Rendering. Du siehst die geschätzten Kosten vor jedem Lauf. Kaufe Credit-Pakete bei Bedarf — kein Abo nötig.",
+          q: "Verfallen Credits?",
+          a: "Abo-Credits werden monatlich zurückgesetzt. Top-Up Credits verfallen nicht.",
         },
         {
-          q: "Was kosten die Credit-Pakete?",
-          a: "Starter: 100 Credits für 9 €. Creator: 500 Credits für 29 € (Am beliebtesten). Pro: 2000 Credits für 79 €. Größere Pakete bieten besseren Preis pro Credit. Individuelle Aufladung ab 100 Credits für 0,10 € pro Credit.",
+          q: "Darf ich die Bilder kommerziell nutzen?",
+          a: "Ja. Du besitzt die Outputs. Du bist verantwortlich für deine Prompts.",
         },
         {
-          q: "Ist das ein Abo?",
-          a: "Nein. Einmalige Credit-Pakete. Dein Guthaben verfällt nicht.",
-        },
-        {
-          q: "Wo werden meine Assets gespeichert?",
-          a: "Fertige Generierungen erscheinen in deiner Creator Gallery, gebunden an deinen Account.",
+          q: "Welche KI-Modelle werden genutzt?",
+          a: "Krea AI (FLUX, Kling) und Fal AI. Wir wählen automatisch das beste Modell für jede Aufgabe.",
         },
       ],
     },
     finalCta: {
-      headline: "Bereit für dein erstes Asset?",
-      cta: "Jetzt erstellen",
+      headline: "Bereit für dein erstes Pack?",
+      cta: "Kostenloses Pack erstellen",
     },
     checkout: {
       loading: "Checkout wird geöffnet…",

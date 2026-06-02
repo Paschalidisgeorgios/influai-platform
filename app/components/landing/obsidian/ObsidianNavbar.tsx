@@ -26,8 +26,8 @@ function LogoMark() {
   return (
     <span className="text-lg font-black leading-none tracking-tight">
       <span className="text-white">Influ</span>
-      <span className="text-amber-400">Ex</span>
-      <span className="bg-gradient-to-r from-amber-300 via-amber-500 to-amber-700 bg-clip-text text-transparent">
+      <span className="text-[#d8ad5f]">Ex</span>
+      <span className="bg-gradient-to-r from-[#efc777] via-[#d8ad5f] to-[#a8843f] bg-clip-text text-transparent">
         AI
       </span>
     </span>
@@ -87,7 +87,7 @@ export default function ObsidianNavbar({
                   onClick={() => setCurrentLanguage(l)}
                   className={`rounded-md px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider transition sm:px-3 ${
                     currentLanguage === l
-                      ? "bg-amber-500 text-black"
+                      ? "bg-[#d8ad5f] text-black"
                       : "text-neutral-500 hover:text-white"
                   }`}
                 >
@@ -153,7 +153,7 @@ export default function ObsidianNavbar({
               <a
                 key={item.id}
                 href={item.href}
-                className="rounded-lg px-2 py-2.5 hover:bg-neutral-900/60 hover:text-amber-400"
+                className="rounded-lg px-2 py-2.5 hover:bg-neutral-900/60 hover:text-[#d8ad5f]"
                 onClick={(event) => {
                   event.preventDefault();
                   navigateToSection(item.id);
@@ -181,7 +181,7 @@ export default function ObsidianNavbar({
                 onClick={() => setCurrentLanguage(l)}
                 className={`flex-1 rounded-lg py-2 text-[10px] font-bold uppercase tracking-wider ${
                   currentLanguage === l
-                    ? "bg-amber-500 text-black"
+                    ? "bg-[#d8ad5f] text-black"
                     : "text-neutral-600"
                 }`}
               >

@@ -14,6 +14,8 @@ import SocialAssetPackShowcase from "@/app/components/pack/SocialAssetPackShowca
 import AgentWorkflowPanel from "@/app/components/studio/AgentWorkflowPanel";
 import type { PackAssemblyStepId } from "@/app/components/pack/pack-showcase-types";
 import PackGalleryGroup from "@/app/components/gallery/PackGalleryGroup";
+import CreditCostPreview from "@/app/components/billing/CreditCostPreview";
+import PackResultActions from "@/app/components/studio/PackResultActions";
 import {
   formatPackRenderCta,
   getSocialAssetPackBuyCreditsLabel,
@@ -497,19 +499,49 @@ const AgentPackGeneratorPanel = forwardRef<
       ? "mt-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border-0 bg-transparent"
       : AGENT_STUDIO_WINDOW_CLASS;
 
+  const previewLoading = panelState === "preview_loading";
+  const renderLoading =
+    panelState === "rendering" || panelState === "credit_checking";
+
   const previewButton = (
     <button
       type="button"
       onClick={() => void runPreview()}
-      disabled={!canPreview}
-      className={`${obsidianButtonClass("secondary", { size: "sm" })} gap-2 border-[#8B5CF6]/35 bg-[#8B5CF6]/10 text-[#C4B5FD] hover:border-[#8B5CF6]/45 hover:bg-[#8B5CF6]/20 hover:text-[#DDD6FE]`}
+      disabled={!canPreview || previewLoading}
+      className={`${obsidianButtonClass("secondary", { size: "sm" })} min-h-11 gap-2 border-[#8B5CF6]/35 bg-[#8B5CF6]/10 text-[#C4B5FD] hover:border-[#8B5CF6]/45 hover:bg-[#8B5CF6]/20 hover:text-[#DDD6FE] ${
+        previewLoading ? "cursor-not-allowed opacity-60" : ""
+      }`}
     >
-      {panelState === "preview_loading" ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+      {previewLoading ? (
+        <span className="flex items-center gap-2">
+          <svg
+            className="h-4 w-4 animate-spin"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
+          </svg>
+          {lang === "de" ? "Vorschau…" : "Previewing…"}
+        </span>
       ) : (
-        <Sparkles className="h-3.5 w-3.5" aria-hidden />
+        <>
+          <Sparkles className="h-3.5 w-3.5" aria-hidden />
+          {isTerminalRenderState(panelState) ? copy.previewAgain : copy.previewCta}
+        </>
       )}
-      {isTerminalRenderState(panelState) ? copy.previewAgain : copy.previewCta}
     </button>
   );
 
@@ -517,7 +549,7 @@ const AgentPackGeneratorPanel = forwardRef<
     <button
       type="button"
       onClick={() => void runRender()}
-      disabled={!canRender || panelState === "credit_checking"}
+      disabled={!canRender || renderLoading}
       title={
         panelState === "insufficient_credits"
           ? lang === "de"
@@ -529,16 +561,59 @@ const AgentPackGeneratorPanel = forwardRef<
               : "Run the free pack preview first"
             : undefined
       }
-      className={`${obsidianButtonClass("primary", { size: "sm" })} gap-2`}
+      className={`${obsidianButtonClass("primary", { size: "sm" })} min-h-11 gap-2 ${
+        renderLoading ? "cursor-not-allowed opacity-60" : ""
+      }`}
     >
-      {panelState === "rendering" || panelState === "credit_checking" ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+      {renderLoading ? (
+        <span className="flex items-center gap-2">
+          <svg
+            className="h-4 w-4 animate-spin"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
+          </svg>
+          {panelState === "rendering"
+            ? copy.renderingLabel
+            : lang === "de"
+              ? "Prüfe Credits…"
+              : "Checking credits…"}
+        </span>
       ) : (
-        <Package className="h-3.5 w-3.5" aria-hidden />
+        <>
+          <Package className="h-3.5 w-3.5" aria-hidden />
+          {renderCtaLabel}
+        </>
       )}
-      {panelState === "rendering" ? copy.renderingLabel : renderCtaLabel}
     </button>
   );
+
+  const resetPackState = useCallback(() => {
+    setResult(null);
+    setPreview(null);
+    setError(null);
+    previewedPromptRef.current = null;
+    setPanelState("idle");
+  }, []);
+
+  const primaryResultDownloadUrl =
+    result?.assets.images[0]?.assetUrl ??
+    result?.assets.videos[0]?.assetUrl ??
+    null;
 
   return (
     <section
@@ -611,6 +686,23 @@ const AgentPackGeneratorPanel = forwardRef<
           <p>{packCopy.previewFreeNote}</p>
           <p>{packCopy.costNote}</p>
           <p>{packCopy.partialRefundNote}</p>
+        </div>
+      ) : null}
+
+      {controlSurface === "inline" &&
+      preview &&
+      (panelState === "preview_ready" ||
+        panelState === "insufficient_credits") ? (
+        <div className="mt-4">
+          <CreditCostPreview
+            creditCost={preview.estimatedCredits ?? packCredits}
+            balance={creditBalance ?? 0}
+            language={lang}
+            showSummaryLine
+            showPolicyNote={false}
+            onBuyCredits={() => onInsufficientCredits?.()}
+            onUpgrade={() => onInsufficientCredits?.()}
+          />
         </div>
       ) : null}
 
@@ -744,26 +836,25 @@ const AgentPackGeneratorPanel = forwardRef<
                 />
               ) : null}
 
-              <div className="flex flex-wrap gap-2">
+              <PackResultActions
+                language={lang}
+                downloadUrl={primaryResultDownloadUrl}
+                hooks={result.hooks}
+                onCreateVariation={() => {
+                  setResult(null);
+                  setError(null);
+                  void runRender();
+                }}
+                onNewPack={resetPackState}
+              />
+
+              <div className="flex justify-center">
                 <Link
                   href="/dashboard/gallery"
-                  className={obsidianButtonClass("secondary", { size: "sm" })}
+                  className={`${obsidianButtonClass("ghost", { size: "sm" })} min-h-11`}
                 >
                   {copy.openGallery}
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setResult(null);
-                    setPreview(null);
-                    setError(null);
-                    previewedPromptRef.current = null;
-                    setPanelState("idle");
-                  }}
-                  className={obsidianButtonClass("ghost", { size: "sm" })}
-                >
-                  {copy.previewAgain}
-                </button>
               </div>
 
               <p className="text-center text-[11px] text-neutral-500">

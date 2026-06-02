@@ -16,6 +16,24 @@ import ObsidianNavbar from "./obsidian/ObsidianNavbar";
 import AIBackgroundField from "./AIBackgroundField";
 import PricingUiProvider from "@/app/components/billing/PricingUiProvider";
 
+function SectionBridgeDarkToClear() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none h-16 bg-gradient-to-b from-[#0A0A0B] to-transparent"
+    />
+  );
+}
+
+function SectionBridgeClearToDark() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none h-16 bg-gradient-to-b from-transparent to-[#0A0A0B]"
+    />
+  );
+}
+
 /**
  * Cinematic landing — product theatre first, not a long generic SaaS scroll.
  * 1. Kinetic Hero · 2. Product Theatre · 3. Model Explorer · 4. Media proof
@@ -58,58 +76,79 @@ export default function ObsidianLanding() {
 
   return (
     <PricingUiProvider language={currentLanguage}>
-      <main className="relative min-h-screen overflow-x-hidden bg-[#050505] text-white antialiased selection:bg-amber-500 selection:text-black">
+      <main className="relative min-h-screen overflow-x-hidden bg-[#050505] text-white antialiased selection:bg-[#d8ad5f] selection:text-black">
         <AIBackgroundField />
 
         <div className="relative z-10">
-        <ObsidianNavbar
-          currentLanguage={currentLanguage}
-          setCurrentLanguage={handleLanguageChange}
-          studioHref={studioHref}
-          copy={copy}
-        />
+          <ObsidianNavbar
+            currentLanguage={currentLanguage}
+            setCurrentLanguage={handleLanguageChange}
+            studioHref={studioHref}
+            copy={copy}
+          />
 
-        <KineticHeroSection
-          currentLanguage={currentLanguage}
-          studioHref={studioHref}
-        />
+          <KineticHeroSection
+            currentLanguage={currentLanguage}
+            studioHref={studioHref}
+          />
 
-        <ProductTheatreSection
-          currentLanguage={currentLanguage}
-          studioHref={studioHref}
-        />
+          <SectionBridgeDarkToClear />
+          <SectionBridgeClearToDark />
 
-        <ModelExplorerSection currentLanguage={currentLanguage} />
+          <ProductTheatreSection
+            currentLanguage={currentLanguage}
+            studioHref={studioHref}
+          />
 
-        <LandingMediaProofSection currentLanguage={currentLanguage} />
+          <SectionBridgeDarkToClear />
+          <SectionBridgeClearToDark />
 
-        <CreativeScoreSection currentLanguage={currentLanguage} />
+          <ModelExplorerSection currentLanguage={currentLanguage} />
 
-        <LandingCreditsSection currentLanguage={currentLanguage} />
+          <SectionBridgeDarkToClear />
+          <SectionBridgeClearToDark />
 
-        <div id="pricing">
-          <BrutalistPricingGrid currentLanguage={currentLanguage} />
-        </div>
+          <LandingMediaProofSection currentLanguage={currentLanguage} />
 
-        <BrutalistTrustFaq
-          currentLanguage={currentLanguage}
-          studioHref={studioHref}
-        />
+          <SectionBridgeDarkToClear />
+          <SectionBridgeClearToDark />
 
-        <footer className="border-t border-white/[0.06] bg-[#050505] px-6 py-8 text-center">
-          <div className="flex flex-wrap justify-center gap-6 text-xs text-white/30">
-            <a href="/legal/impressum" className="transition hover:text-white/60">
-              Impressum
-            </a>
-            <a href="/legal/datenschutz" className="transition hover:text-white/60">
-              Datenschutz
-            </a>
-            <a href="/legal/agb" className="transition hover:text-white/60">
-              AGB
-            </a>
-            <span>© 2026 InfluExAi</span>
+          <CreativeScoreSection currentLanguage={currentLanguage} />
+
+          <SectionBridgeDarkToClear />
+          <SectionBridgeClearToDark />
+
+          <LandingCreditsSection currentLanguage={currentLanguage} />
+
+          <SectionBridgeDarkToClear />
+          <SectionBridgeClearToDark />
+
+          <div id="pricing">
+            <BrutalistPricingGrid currentLanguage={currentLanguage} />
           </div>
-        </footer>
+
+          <SectionBridgeDarkToClear />
+          <SectionBridgeClearToDark />
+
+          <BrutalistTrustFaq
+            currentLanguage={currentLanguage}
+            studioHref={studioHref}
+          />
+
+          <footer className="border-t border-white/[0.06] bg-[#050505] px-6 py-8 text-center">
+            <div className="flex flex-wrap justify-center gap-6 text-xs text-white/30">
+              <a href="/legal/impressum" className="transition hover:text-white/60">
+                Impressum
+              </a>
+              <a href="/legal/datenschutz" className="transition hover:text-white/60">
+                Datenschutz
+              </a>
+              <a href="/legal/agb" className="transition hover:text-white/60">
+                AGB
+              </a>
+              <span>© 2026 InfluExAi</span>
+            </div>
+          </footer>
         </div>
       </main>
     </PricingUiProvider>

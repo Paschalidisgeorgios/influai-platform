@@ -53,7 +53,7 @@ export default function HeroStudioMockup({
 
       <div className="mb-3 flex items-center justify-between gap-2">
         <span className={PREMIUM_CLASSES.mono}>{m.studioLabel}</span>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-amber-300">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#efc777]">
           <Sparkles className="h-3 w-3" aria-hidden />
           {m.creditsBadge}
         </span>

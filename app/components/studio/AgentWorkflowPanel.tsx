@@ -13,6 +13,11 @@ import {
 import type { PackAssemblyStepId } from "@/app/components/pack/pack-showcase-types";
 import { usePackMotion } from "@/app/components/pack/use-pack-motion";
 import { useAgentWorkflowProgress } from "./use-agent-workflow-progress";
+import {
+  MODEL_DESCRIPTIONS,
+  MODEL_DISPLAY_NAMES,
+  resolveModelsForModelMode,
+} from "@/lib/ai/model-recommendations";
 
 const ROW_HEIGHT_PX = 36;
 const STEP_COUNT = AGENT_WORKFLOW_STEPS.length;
@@ -26,6 +31,8 @@ type Props = {
   statusLine?: string;
   showHeader?: boolean;
   className?: string;
+  /** Optional — shows which engine model backs the current quality mode. */
+  modelModeId?: string;
 };
 
 export default function AgentWorkflowPanel({
@@ -37,6 +44,7 @@ export default function AgentWorkflowPanel({
   statusLine,
   showHeader = true,
   className = "",
+  modelModeId,
 }: Props) {
   const isDe = language === "de";
   const { reduceMotion } = usePackMotion();
@@ -52,6 +60,18 @@ export default function AgentWorkflowPanel({
     mode === "demo" || mode === "planning" || mode === "rendering" || mode === "preview";
   const progressFill =
     mode === "complete" ? 100 : Math.min(100, Math.max(0, progress));
+
+  const modelHint = modelModeId
+    ? resolveModelsForModelMode(modelModeId)
+    : null;
+  const hintLang = isDe ? "de" : "en";
+  const modelDesc = modelHint
+    ? (MODEL_DESCRIPTIONS[modelHint.activeModel]?.[hintLang] ??
+      modelHint.rationale)
+    : null;
+  const modelLabel = modelHint
+    ? (MODEL_DISPLAY_NAMES[modelHint.activeModel] ?? modelHint.activeModel)
+    : null;
 
   return (
     <section
@@ -78,6 +98,13 @@ export default function AgentWorkflowPanel({
               <p className="mt-0.5 truncate text-[10px] text-neutral-500 sm:text-[11px]">
                 {status}
               </p>
+              {modelHint && modelLabel && modelDesc ? (
+                <p className="mt-1 text-xs text-white/40" role="note">
+                  <span className="text-white/50">{modelLabel}</span>
+                  {" · "}
+                  {modelDesc}
+                </p>
+              ) : null}
             </div>
           </div>
         </div>

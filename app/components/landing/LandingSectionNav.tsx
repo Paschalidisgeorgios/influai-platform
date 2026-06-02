@@ -49,15 +49,15 @@ export default function LandingSectionNav({
               key={item.id}
               href={item.href}
               onClick={handleSectionClick(item.id, onNavigate)}
-              className={`relative transition hover:text-amber-400 ${
-                active ? "text-amber-300" : ""
+              className={`relative transition hover:text-[#d8ad5f] ${
+                active ? "text-[#efc777]" : ""
               }`}
               aria-current={active ? "location" : undefined}
             >
               {item.label}
               {active ? (
                 <span
-                  className="absolute -bottom-1 left-0 right-0 h-px bg-amber-500/70"
+                  className="absolute -bottom-1 left-0 right-0 h-px bg-[#d8ad5f]/70"
                   aria-hidden
                 />
               ) : null}
@@ -82,7 +82,7 @@ export default function LandingSectionNav({
             onClick={handleSectionClick(item.id, onNavigate)}
             className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${
               active
-                ? "bg-amber-500/15 text-amber-100 ring-1 ring-amber-500/35"
+                ? "bg-[#d8ad5f]/15 text-[#f5e6c8] ring-1 ring-[#d8ad5f]/35"
                 : "border border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:text-white"
             }`}
             aria-current={active ? "location" : undefined}

@@ -34,7 +34,7 @@ export default function ScrollScaleHero({
     <section
       ref={sectionRef}
       aria-label={title}
-      className={`relative h-[240vh] bg-[#0D0D0F] ${className}`}
+      className={`relative h-[240vh] bg-[#0A0A0B] ${className}`}
     >
       <div className="sticky top-0 flex h-screen items-center justify-center overflow-hidden px-6">
         {prefersReducedMotion ? (

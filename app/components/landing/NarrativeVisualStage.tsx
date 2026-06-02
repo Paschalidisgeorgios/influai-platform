@@ -43,7 +43,7 @@ export default function NarrativeVisualStage({ stepId, language }: Props) {
       aria-live="polite"
       aria-atomic="true"
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-500/35 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#d8ad5f]/35 to-transparent" />
       <span className="absolute right-3 top-3 z-10 rounded-full border border-white/[0.1] bg-black/40 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-neutral-400">
         {copy.demoBadge}
       </span>
@@ -80,7 +80,7 @@ function IdeaVisual({ copy }: { copy: StageCopy }) {
     <div className="flex min-h-0 flex-1 flex-col justify-center">
       <p className={PREMIUM_CLASSES.mono}>Your idea</p>
       <div className="mt-3 rounded-xl border border-white/[0.08] bg-[#0a0a0a]/70 p-4">
-        <p className="font-mono text-sm leading-relaxed text-amber-100/90 sm:text-base">
+        <p className="font-mono text-sm leading-relaxed text-[#f5e6c8]/90 sm:text-base">
           {copy.roughIdea}
         </p>
       </div>
@@ -91,7 +91,7 @@ function IdeaVisual({ copy }: { copy: StageCopy }) {
 function PromptAssistVisual({ copy }: { copy: StageCopy }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col justify-center gap-3">
-      <div className="flex items-center gap-2 text-amber-400">
+      <div className="flex items-center gap-2 text-[#d8ad5f]">
         <Wand2 className="h-4 w-4" aria-hidden />
         <span className="text-xs font-semibold text-white">Prompt Assist</span>
       </div>
@@ -100,8 +100,8 @@ function PromptAssistVisual({ copy }: { copy: StageCopy }) {
           {copy.roughIdea}
         </p>
       </div>
-      <div className="rounded-xl border border-amber-500/25 bg-amber-500/8 px-3 py-2.5">
-        <p className="text-xs leading-relaxed text-amber-50/90 sm:text-sm">
+      <div className="rounded-xl border border-[#d8ad5f]/25 bg-[#d8ad5f]/8 px-3 py-2.5">
+        <p className="text-xs leading-relaxed text-[#faf3e3]/90 sm:text-sm">
           {copy.enhancedPrompt}
         </p>
       </div>
@@ -129,7 +129,7 @@ function AssetPlanVisual({ language }: { language: "en" | "de" }) {
             key={label}
             className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-[#111827]/60 px-3 py-2.5"
           >
-            <Icon className="h-3.5 w-3.5 shrink-0 text-amber-400/90" aria-hidden />
+            <Icon className="h-3.5 w-3.5 shrink-0 text-[#d8ad5f]/90" aria-hidden />
             <span className="text-[11px] font-semibold text-neutral-200">{label}</span>
           </li>
         ))}
@@ -168,19 +168,19 @@ function RenderVisual({
               }}
             />
             {index === 0 ? (
-              <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-[9px] font-bold uppercase tracking-wide text-amber-200">
+              <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-[9px] font-bold uppercase tracking-wide text-[#f0d4a8]">
                 {isDe ? "Rendert…" : "Rendering…"}
               </span>
             ) : null}
           </div>
         ))}
       </div>
-      <div className="flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5">
+      <div className="flex items-center justify-between rounded-xl border border-[#d8ad5f]/30 bg-[#d8ad5f]/10 px-3 py-2.5">
         <div className="flex items-center gap-2">
-          <Coins className="h-4 w-4 text-amber-300" aria-hidden />
-          <span className="text-xs font-semibold text-amber-100">{copy.creditsLabel}</span>
+          <Coins className="h-4 w-4 text-[#efc777]" aria-hidden />
+          <span className="text-xs font-semibold text-[#f5e6c8]">{copy.creditsLabel}</span>
         </div>
-        <span className="text-sm font-bold tabular-nums text-amber-200">
+        <span className="text-sm font-bold tabular-nums text-[#f0d4a8]">
           {copy.creditsValue}
         </span>
       </div>
@@ -221,8 +221,8 @@ function ExportVisual({ copy }: { copy: StageCopy }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col justify-center gap-4">
       <div className="flex items-center gap-2">
-        <Download className="h-4 w-4 text-amber-300" aria-hidden />
-        <span className="text-sm font-bold uppercase tracking-wide text-amber-100">
+        <Download className="h-4 w-4 text-[#efc777]" aria-hidden />
+        <span className="text-sm font-bold uppercase tracking-wide text-[#f5e6c8]">
           Export Pack
         </span>
       </div>

@@ -14,7 +14,7 @@ export default function InfiniteTicker({ className = "" }: InfiniteTickerProps) 
 
   return (
     <div
-      className={`overflow-hidden border-y border-white/[0.06] bg-[#0D0D0F] py-2 text-white ${className}`}
+      className={`overflow-hidden border-y border-white/[0.06] bg-[#0A0A0B] py-3 text-white ${className}`}
       aria-label={TICKER_TEXT}
     >
       {prefersReducedMotion ? (

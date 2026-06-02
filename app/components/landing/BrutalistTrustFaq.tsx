@@ -35,9 +35,9 @@ export default function BrutalistTrustFaq({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6 text-center font-mono shadow-[0_0_40px_rgba(0,0,0,0.5)] ring-1 ring-amber-500/5"
+              className="rounded-2xl border border-neutral-800 bg-neutral-900 p-6 text-center font-mono shadow-[0_0_40px_rgba(0,0,0,0.5)] ring-1 ring-[#d8ad5f]/5"
             >
-              <p className="text-4xl font-black text-amber-400">{metric.value}</p>
+              <p className="text-4xl font-black text-[#d8ad5f]">{metric.value}</p>
               <p className="mt-3 text-[11px] font-bold uppercase tracking-wider text-neutral-500">
                 {metric.title}
               </p>
@@ -69,7 +69,7 @@ export default function BrutalistTrustFaq({
                       {item.q}
                     </span>
                     <ChevronDown
-                      className={`h-5 w-5 shrink-0 text-amber-400 transition ${open ? "rotate-180" : ""}`}
+                      className={`h-5 w-5 shrink-0 text-[#d8ad5f] transition ${open ? "rotate-180" : ""}`}
                     />
                   </button>
                   {open ? (
@@ -85,7 +85,7 @@ export default function BrutalistTrustFaq({
       </section>
 
       <section className={`relative overflow-hidden border-t border-neutral-800 bg-neutral-900 text-center ${LANDING_LAYOUT.sectionCompact}`}>
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#d8ad5f]/10 via-transparent to-transparent" />
         <h2 className="relative px-4 text-xl font-black uppercase italic tracking-tighter text-white md:text-3xl">
           {finalCta.headline}
         </h2>

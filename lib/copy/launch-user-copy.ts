@@ -5,8 +5,8 @@
 import { getGenerateButtonLabel } from "@/app/lib/billing/monetization-rules";
 
 export const LAUNCH_TAGLINE = {
-  en: "Your AI Creator Studio for scroll-stopping content.",
-  de: "Dein AI Creator Studio für scroll-stopping Content.",
+  en: "One idea → complete content pack. Ready to post.",
+  de: "Eine Idee → komplettes Content-Pack. Bereit zum Posten.",
 } as const;
 
 export const LANDING_TRUST_LINE = {
@@ -16,20 +16,20 @@ export const LANDING_TRUST_LINE = {
 
 export const CREATE_PAGE = {
   headline: {
-    en: "What do you want to create?",
-    de: "Was möchtest du erstellen?",
+    en: "What's your idea?",
+    de: "Was ist deine Idee?",
   },
   subtitle: {
-    en: "Start with a Social Asset Pack, or create a single image or motion video.",
-    de: "Starte mit einem Social Asset Pack oder erstelle ein einzelnes Bild oder Motion-Video.",
+    en: "Describe it in one sentence. We'll build the full pack.",
+    de: "Beschreibe sie in einem Satz. Wir bauen das komplette Pack.",
   },
   promptPlaceholder: {
     en: "Describe an image, motion video or creator asset…",
     de: "Beschreibe ein Bild, Motion-Video oder Creator-Asset …",
   },
   promptEmptyHelper: {
-    en: "Describe your goal in one sentence. InfluExAI will help shape it.",
-    de: "Beschreibe dein Ziel in einem Satz. InfluExAI hilft beim Formen.",
+    en: "Try: 'Wireless earbuds on marble, soft light, Instagram square'",
+    de: "Versuch: 'Kabellose Kopfhörer auf Marmor, weiches Licht, Instagram quadratisch'",
   },
   canvasEmpty: {
     en: "Your result will appear here after rendering.",
@@ -39,12 +39,12 @@ export const CREATE_PAGE = {
 
 export const PROMPT_ASSIST = {
   tagline: {
-    en: "Prompt Assist",
-    de: "Prompt Assist",
+    en: "Prompt improved",
+    de: "Prompt verbessert",
   },
   useImproved: {
-    en: "Use improved prompt",
-    de: "Verbesserten Prompt verwenden",
+    en: "Use improved version",
+    de: "Verbesserte Version nutzen",
   },
   improvedNoteImage: {
     en: "Prompt improved for clearer lighting, composition and subject focus.",

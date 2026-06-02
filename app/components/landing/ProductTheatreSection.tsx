@@ -92,7 +92,7 @@ export default function ProductTheatreSection({
               variant="primary"
               size="md"
               surface="landing"
-              className="shrink-0"
+              className="w-full shrink-0 justify-center sm:w-auto"
             >
               {copy.cta}
               <ArrowRight className="h-4 w-4" aria-hidden />

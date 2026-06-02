@@ -33,13 +33,13 @@ export default function NarrativeStepCard({
       transition={OBS_SPRING}
       className={`shrink-0 rounded-xl border px-2.5 py-2 text-left transition-[box-shadow,background-color,border-color] duration-200 sm:min-w-[6.75rem] ${
         active
-          ? "border-amber-500/45 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.14)]"
+          ? "border-[#d8ad5f]/45 bg-[#d8ad5f]/10 shadow-[0_0_20px_rgba(216,173,95,0.14)]"
           : complete
             ? "border-white/[0.1] bg-white/[0.03]"
-            : "border-white/[0.06] bg-neutral-900/40 backdrop-blur-2xl hover:border-amber-500/25"
+            : "border-white/[0.06] bg-neutral-900/40 backdrop-blur-2xl hover:border-[#d8ad5f]/25"
       }`}
     >
-      <span className="block text-[9px] font-bold uppercase tracking-[0.14em] text-amber-500/80">
+      <span className="block text-[9px] font-bold uppercase tracking-[0.14em] text-[#faf3e3]0/80">
         {String(index + 1).padStart(2, "0")}
       </span>
       <span

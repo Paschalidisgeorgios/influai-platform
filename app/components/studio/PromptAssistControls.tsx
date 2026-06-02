@@ -88,7 +88,7 @@ export default function PromptAssistControls({
           type="button"
           onClick={() => void runAssist()}
           disabled={!canAssist || loading}
-          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+          className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-4 py-2.5 text-xs font-semibold transition ${
             loading
               ? "border-[#8B5CF6]/40 bg-[#8B5CF6]/15 text-[#C4B5FD]"
               : "border-white/[0.08] bg-[#111827]/60 text-[#9CA3AF] hover:text-white hover:ring-1 hover:ring-[#8B5CF6]/30 disabled:opacity-40"

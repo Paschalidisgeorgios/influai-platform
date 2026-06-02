@@ -1,14 +1,14 @@
 import { LAUNCH_CONFIG } from "@/app/lib/config/launch";
 
-const kreaPublic = process.env.NEXT_PUBLIC_ENABLE_KREA_PROVIDER === "true";
+const kreaPublic = process.env.NEXT_PUBLIC_ENABLE_KREA_PROVIDER !== "false";
 
 /** Client-safe feature flags (NEXT_PUBLIC_* only). */
 export const publicLaunchFlags = {
   fastDraft: LAUNCH_CONFIG.enableImageGeneration && kreaPublic,
   premiumImage: LAUNCH_CONFIG.enableImageGeneration && kreaPublic,
-  referenceEdit: false,
-  brandAssets: false,
-  ugcLook: false,
+  referenceEdit: LAUNCH_CONFIG.enableReferenceEdit && kreaPublic,
+  brandAssets: LAUNCH_CONFIG.enableImageGeneration && kreaPublic,
+  ugcLook: LAUNCH_CONFIG.enableImageGeneration && kreaPublic,
   videoStudio: LAUNCH_CONFIG.enableTextToVideo,
   enhance: LAUNCH_CONFIG.enableEnhancer,
   lipSync: LAUNCH_CONFIG.enableLipSync,
@@ -19,9 +19,9 @@ export const publicLaunchFlags = {
   omniCampaignAgent: false,
   socialPlanner: false,
   watermarkedPromo: false,
-  motionTransfer: LAUNCH_CONFIG.enableAvatar,
+  motionTransfer: false,
   /** @deprecated alias — use motionTransfer */
-  liveAvatar: LAUNCH_CONFIG.enableAvatar,
+  liveAvatar: false,
   kreaProvider: kreaPublic,
   legacyOpenAi: false,
   legacyFal: false,

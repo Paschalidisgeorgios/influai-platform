@@ -930,7 +930,7 @@ function resolveLegacyEnvModelPath(workflow: string): string {
       return (
         process.env.KREA_MODEL_VIDEO?.trim() ||
         process.env.KREA_VIDEO_MODEL_PATH?.trim() ||
-        "kling/kling-2.5"
+        "kling/kling-3.0"
       );
     case "enhance_asset":
       return (
